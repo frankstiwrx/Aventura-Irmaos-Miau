@@ -16,3 +16,7 @@ O projeto ainda está em desenvolvimento e novas mecânicas e animações serão
 ## 🚧 Status
 
 Em desenvolvimento.
+
+## 📹 Vídeo ilustrativo
+
+https://www.youtube.com/playlist?list=PLOzzwtd61h24
