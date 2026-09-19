@@ -9,6 +9,10 @@ import javax.swing.KeyStroke;
 
 public class InputHandler {
 
+    // =============================
+    // MIAU BRANCO
+    // =============================
+
     private boolean esquerda;
     private boolean direita;
     private boolean cima;
@@ -17,6 +21,18 @@ public class InputHandler {
     private boolean pular;
     private boolean agachar;
 
+    // =============================
+    // MIAU PRETO
+    // =============================
+
+    private boolean pretoEsquerda;
+    private boolean pretoDireita;
+    private boolean pretoCima;
+    private boolean pretoBaixo;
+
+    private boolean pretoPular;
+    private boolean pretoAgachar;
+
     public InputHandler(JComponent componente) {
 
         InputMap inputMap = componente.getInputMap(
@@ -24,6 +40,10 @@ public class InputHandler {
         );
 
         ActionMap actionMap = componente.getActionMap();
+
+        // =========================
+        // CONTROLES DO MIAU BRANCO
+        // =========================
 
         mapearTecla(
                 inputMap,
@@ -78,6 +98,64 @@ public class InputHandler {
                 () -> agachar = true,
                 () -> agachar = false
         );
+
+        // =========================
+        // CONTROLES DO MIAU PRETO
+        // =========================
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "LEFT",
+                "pretoEsquerda",
+                () -> pretoEsquerda = true,
+                () -> pretoEsquerda = false
+        );
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "RIGHT",
+                "pretoDireita",
+                () -> pretoDireita = true,
+                () -> pretoDireita = false
+        );
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "UP",
+                "pretoCima",
+                () -> pretoCima = true,
+                () -> pretoCima = false
+        );
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "DOWN",
+                "pretoBaixo",
+                () -> pretoBaixo = true,
+                () -> pretoBaixo = false
+        );
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "N",
+                "pretoPular",
+                () -> pretoPular = true,
+                () -> pretoPular = false
+        );
+
+        mapearTecla(
+                inputMap,
+                actionMap,
+                "M",
+                "pretoAgachar",
+                () -> pretoAgachar = true,
+                () -> pretoAgachar = false
+        );
     }
 
     private void mapearTecla(
@@ -93,12 +171,16 @@ public class InputHandler {
         String solta = nome + "Solta";
 
         inputMap.put(
-                KeyStroke.getKeyStroke("pressed " + tecla),
+                KeyStroke.getKeyStroke(
+                        "pressed " + tecla
+                ),
                 pressionada
         );
 
         inputMap.put(
-                KeyStroke.getKeyStroke("released " + tecla),
+                KeyStroke.getKeyStroke(
+                        "released " + tecla
+                ),
                 solta
         );
 
@@ -107,7 +189,10 @@ public class InputHandler {
                 new AbstractAction() {
 
                     @Override
-                    public void actionPerformed(ActionEvent e) {
+                    public void actionPerformed(
+                            ActionEvent e
+                    ) {
+
                         aoPressionar.run();
                     }
                 }
@@ -118,12 +203,19 @@ public class InputHandler {
                 new AbstractAction() {
 
                     @Override
-                    public void actionPerformed(ActionEvent e) {
+                    public void actionPerformed(
+                            ActionEvent e
+                    ) {
+
                         aoSoltar.run();
                     }
                 }
         );
     }
+
+    // =============================
+    // GETTERS - MIAU BRANCO
+    // =============================
 
     public boolean isEsquerda() {
         return esquerda;
@@ -147,5 +239,33 @@ public class InputHandler {
 
     public boolean isAgachar() {
         return agachar;
+    }
+
+    // =============================
+    // GETTERS - MIAU PRETO
+    // =============================
+
+    public boolean isPretoEsquerda() {
+        return pretoEsquerda;
+    }
+
+    public boolean isPretoDireita() {
+        return pretoDireita;
+    }
+
+    public boolean isPretoCima() {
+        return pretoCima;
+    }
+
+    public boolean isPretoBaixo() {
+        return pretoBaixo;
+    }
+
+    public boolean isPretoPular() {
+        return pretoPular;
+    }
+
+    public boolean isPretoAgachar() {
+        return pretoAgachar;
     }
 }

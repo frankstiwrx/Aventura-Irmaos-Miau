@@ -49,6 +49,111 @@ public abstract class IrmaoMiau {
     private double faseAnimacao = 0;
 
     // =============================
+    // SISTEMA DE IDLE
+    // =============================
+
+    private enum EstadoIdle {
+
+        NENHUM,
+        EM_PE,
+        AGACHADO,
+        TAUNT
+    }
+
+    private EstadoIdle estadoIdle =
+            EstadoIdle.EM_PE;
+
+    /*
+     * 0 = postura base
+     * 1 a 5 = pequenas variações
+     */
+    private int poseIdle = 0;
+
+    private int indiceSequenciaIdle = 0;
+
+    private long proximaTrocaIdle =
+            System.currentTimeMillis() + 500;
+
+    private long ultimaAtividade =
+            System.currentTimeMillis();
+
+    private static final long TEMPO_POSE_IDLE = 450;
+
+    private static final long TEMPO_PARA_TAUNT = 7000;
+
+    // =============================
+    // SEQUÊNCIA IDLE EM PÉ
+    // =============================
+
+    private static final int[] SEQUENCIA_IDLE_EM_PE = {
+
+        0,
+        1,
+        2,
+        3,
+        1,
+        4,
+        2,
+        5,
+        0,
+        3,
+        2,
+        4,
+        1,
+        5,
+        2,
+        0
+    };
+
+    // =============================
+    // SEQUÊNCIA IDLE AGACHADO
+    // =============================
+
+    private static final int[] SEQUENCIA_IDLE_AGACHADO = {
+
+        0,
+        1,
+        3,
+        2,
+        4,
+        2,
+        5,
+        1,
+        3,
+        0,
+        4,
+        2,
+        5,
+        3,
+        1,
+        0
+    };
+
+    // =============================
+    // SEQUÊNCIA DO TAUNT
+    // =============================
+
+    private static final int[] SEQUENCIA_IDLE_TAUNT = {
+
+        0,
+        1,
+        2,
+        1,
+        3,
+        4,
+        2,
+        5,
+        3,
+        1,
+        4,
+        0,
+        2,
+        5,
+        1,
+        3
+    };
+
+    // =============================
     // PISCAR
     // =============================
 
@@ -58,6 +163,10 @@ public abstract class IrmaoMiau {
             System.currentTimeMillis() + 2000;
 
     private long fimDoPiscar = 0;
+
+    // =============================
+    // CONSTRUTOR
+    // =============================
 
     public IrmaoMiau(
             int x,
@@ -97,9 +206,20 @@ public abstract class IrmaoMiau {
             boolean querAgachar
     ) {
 
-        andando = estaAndando && !querAgachar;
+        /*
+         * IMPORTANTE:
+         *
+         * Agora andar e agachar podem acontecer
+         * ao mesmo tempo.
+         *
+         * Isso prepara o personagem para andar
+         * agachado.
+         */
+        andando = estaAndando;
 
-        agachado = querAgachar && !pulando;
+        agachado =
+                querAgachar
+                && !pulando;
 
         // =========================
         // ANIMAÇÃO DE CAMINHADA
@@ -107,7 +227,21 @@ public abstract class IrmaoMiau {
 
         if (andando) {
 
-            faseAnimacao += 0.25;
+            /*
+             * Agachado usamos uma animação
+             * um pouco mais lenta.
+             *
+             * A VELOCIDADE REAL de movimento
+             * ainda será controlada no GamePanel.
+             */
+            if (agachado) {
+
+                faseAnimacao += 0.14;
+
+            } else {
+
+                faseAnimacao += 0.25;
+            }
 
         } else {
 
@@ -138,9 +272,201 @@ public abstract class IrmaoMiau {
 
         // Linha onde ele está
         // menos a altura do pulo
-        y = yBase - (int) Math.round(alturaPulo);
+        y =
+                yBase
+                - (int) Math.round(
+                        alturaPulo
+                );
+
+        atualizarIdle(
+                estaAndando,
+                querAgachar
+        );
 
         atualizarPiscar();
+    }
+
+    // =============================
+    // SISTEMA DE IDLE
+    // =============================
+
+    private void atualizarIdle(
+            boolean estaAndando,
+            boolean querAgachar
+    ) {
+
+        long agora =
+                System.currentTimeMillis();
+
+        /*
+         * Qualquer atividade reinicia
+         * o relógio do TAUNT.
+         */
+        if (
+                estaAndando
+                || querAgachar
+                || pulando
+        ) {
+
+            ultimaAtividade = agora;
+        }
+
+        // =========================
+        // MOVIMENTO / PULO
+        // =========================
+
+        if (
+                pulando
+                || estaAndando
+        ) {
+
+            mudarEstadoIdle(
+                    EstadoIdle.NENHUM,
+                    agora
+            );
+
+            return;
+        }
+
+        // =========================
+        // AGACHADO PARADO
+        // =========================
+
+        if (agachado) {
+
+            mudarEstadoIdle(
+                    EstadoIdle.AGACHADO,
+                    agora
+            );
+
+            atualizarPoseIdle(
+                    agora
+            );
+
+            return;
+        }
+
+        // =========================
+        // TAUNT
+        // =========================
+
+        if (
+                agora - ultimaAtividade
+                >= TEMPO_PARA_TAUNT
+        ) {
+
+            mudarEstadoIdle(
+                    EstadoIdle.TAUNT,
+                    agora
+            );
+
+            atualizarPoseIdle(
+                    agora
+            );
+
+            return;
+        }
+
+        // =========================
+        // IDLE NORMAL EM PÉ
+        // =========================
+
+        mudarEstadoIdle(
+                EstadoIdle.EM_PE,
+                agora
+        );
+
+        atualizarPoseIdle(
+                agora
+        );
+    }
+
+    private void mudarEstadoIdle(
+            EstadoIdle novoEstado,
+            long agora
+    ) {
+
+        if (
+                estadoIdle
+                == novoEstado
+        ) {
+
+            return;
+        }
+
+        estadoIdle = novoEstado;
+
+        poseIdle = 0;
+
+        indiceSequenciaIdle = 0;
+
+        proximaTrocaIdle =
+                agora + TEMPO_POSE_IDLE;
+    }
+
+    private void atualizarPoseIdle(
+            long agora
+    ) {
+
+        if (
+                estadoIdle
+                == EstadoIdle.NENHUM
+        ) {
+
+            poseIdle = 0;
+
+            return;
+        }
+
+        if (
+                agora
+                < proximaTrocaIdle
+        ) {
+
+            return;
+        }
+
+        int[] sequencia =
+                getSequenciaIdleAtual();
+
+        indiceSequenciaIdle++;
+
+        if (
+                indiceSequenciaIdle
+                >= sequencia.length
+        ) {
+
+            indiceSequenciaIdle = 0;
+        }
+
+        poseIdle =
+                sequencia[
+                        indiceSequenciaIdle
+                ];
+
+        proximaTrocaIdle =
+                agora + TEMPO_POSE_IDLE;
+    }
+
+    private int[] getSequenciaIdleAtual() {
+
+        if (
+                estadoIdle
+                == EstadoIdle.AGACHADO
+        ) {
+
+            return SEQUENCIA_IDLE_AGACHADO;
+        }
+
+        if (
+                estadoIdle
+                == EstadoIdle.TAUNT
+        ) {
+
+            return SEQUENCIA_IDLE_TAUNT;
+        }
+
+        return SEQUENCIA_IDLE_EM_PE;
     }
 
     // =============================
@@ -160,7 +486,8 @@ public abstract class IrmaoMiau {
             piscando = true;
 
             // Olho fechado por 120 ms
-            fimDoPiscar = agora + 120;
+            fimDoPiscar =
+                    agora + 120;
         }
 
         if (
@@ -170,46 +497,66 @@ public abstract class IrmaoMiau {
 
             piscando = false;
 
-            proximoPiscar = agora + 2000;
+            proximoPiscar =
+                    agora + 2000;
         }
     }
 
     // =============================
     // MOVIMENTO VERTICAL
     // =============================
-    public void moverVertical(int quantidade) {
 
-    int yMinimo = yLinha1;
+    public void moverVertical(
+            int quantidade
+    ) {
 
-    int yMaximo =
-            yLinha1
-            + (TOTAL_LINHAS - 1)
-            * ESPACO_ENTRE_LINHAS;
+        int yMinimo =
+                yLinha1;
 
-    yBase += quantidade;
+        int yMaximo =
+                yLinha1
+                + (TOTAL_LINHAS - 1)
+                * ESPACO_ENTRE_LINHAS;
 
-    // Não deixa passar da Linha 1
-    if (yBase < yMinimo) {
-        yBase = yMinimo;
+        yBase += quantidade;
+
+        // Não deixa passar da Linha 1
+        if (
+                yBase
+                < yMinimo
+        ) {
+
+            yBase = yMinimo;
+        }
+
+        // Não deixa passar da Linha 5
+        if (
+                yBase
+                > yMaximo
+        ) {
+
+            yBase = yMaximo;
+        }
+
+        // Descobre qual das 5 linhas
+        // está mais próxima da posição atual
+        linhaAtual =
+                (int) Math.round(
+                        (double) (
+                                yBase
+                                - yLinha1
+                        )
+                        / ESPACO_ENTRE_LINHAS
+                );
     }
 
-    // Não deixa passar da Linha 5
-    if (yBase > yMaximo) {
-        yBase = yMaximo;
-    }
-
-    // Descobre qual das 5 linhas
-    // está mais próxima da posição atual
-    linhaAtual = (int) Math.round(
-            (double) (yBase - yLinha1)
-            / ESPACO_ENTRE_LINHAS
-    );
-}
     // =============================
     // MOVIMENTO HORIZONTAL
     // =============================
 
-    public void moverX(int quantidade) {
+    public void moverX(
+            int quantidade
+    ) {
 
         x += quantidade;
     }
@@ -220,7 +567,9 @@ public abstract class IrmaoMiau {
 
     public void subirLinha() {
 
-        if (linhaAtual > 0) {
+        if (
+                linhaAtual > 0
+        ) {
 
             linhaAtual--;
 
@@ -230,7 +579,10 @@ public abstract class IrmaoMiau {
 
     public void descerLinha() {
 
-        if (linhaAtual < TOTAL_LINHAS - 1) {
+        if (
+                linhaAtual
+                < TOTAL_LINHAS - 1
+        ) {
 
             linhaAtual++;
 
@@ -252,7 +604,17 @@ public abstract class IrmaoMiau {
 
     public void pular() {
 
-        if (!pulando && !agachado) {
+        if (
+                !pulando
+                && !agachado
+        ) {
+
+            /*
+             * Pular também conta como atividade,
+             * portanto cancela o TAUNT.
+             */
+            ultimaAtividade =
+                    System.currentTimeMillis();
 
             pulando = true;
 
@@ -263,21 +625,187 @@ public abstract class IrmaoMiau {
     }
 
     // =============================
-    // ANIMAÇÃO
+    // ANIMAÇÃO DE CAMINHADA
     // =============================
 
     protected int getOscilacaoPasso() {
 
         if (!andando) {
+
             return 0;
         }
 
         return (int) (
-                Math.sin(faseAnimacao)
+                Math.sin(
+                        faseAnimacao
+                )
                 * 10
                 * escala
         );
     }
+
+    // =============================
+    // INFORMAÇÕES DO IDLE
+    // =============================
+
+    protected int getPoseIdle() {
+
+        return poseIdle;
+    }
+
+    protected boolean isIdleEmPe() {
+
+        return estadoIdle
+                == EstadoIdle.EM_PE;
+    }
+
+    protected boolean isIdleAgachado() {
+
+        return estadoIdle
+                == EstadoIdle.AGACHADO;
+    }
+
+    protected boolean isTaunt() {
+
+        return estadoIdle
+                == EstadoIdle.TAUNT;
+    }
+
+    protected boolean isAndando() {
+
+        return andando;
+    }
+
+    // =============================
+    // OSCILAÇÃO IDLE ANTIGA
+    // =============================
+    /*
+     * Mantivemos esse método porque
+     * IrmaoMiauBranco e IrmaoMiauPreto
+     * podem já estar usando ele.
+     *
+     * Agora ele suporta cinco poses.
+     */
+
+    protected int getOscilacaoIdle() {
+
+        switch (poseIdle) {
+
+            case 1:
+                return (int) Math.round(
+                        -3 * escala
+                );
+
+            case 2:
+                return (int) Math.round(
+                        2 * escala
+                );
+
+            case 3:
+                return (int) Math.round(
+                        -1 * escala
+                );
+
+            case 4:
+                return (int) Math.round(
+                        3 * escala
+                );
+
+            case 5:
+                return (int) Math.round(
+                        1 * escala
+                );
+
+            default:
+                return 0;
+        }
+    }
+
+    // =============================
+    // DESLOCAMENTOS PARA AS POSES
+    // =============================
+
+    protected int getIdleX(
+            int amplitude
+    ) {
+
+        switch (poseIdle) {
+
+            case 1:
+                return -amplitude;
+
+            case 2:
+                return amplitude;
+
+            case 3:
+                return 0;
+
+            case 4:
+                return amplitude / 2;
+
+            case 5:
+                return -amplitude / 2;
+
+            default:
+                return 0;
+        }
+    }
+
+    protected int getIdleY(
+            int amplitude
+    ) {
+
+        switch (poseIdle) {
+
+            case 1:
+                return 0;
+
+            case 2:
+                return amplitude;
+
+            case 3:
+                return -amplitude;
+
+            case 4:
+                return amplitude / 2;
+
+            case 5:
+                return -amplitude / 2;
+
+            default:
+                return 0;
+        }
+    }
+
+    protected int getIdleAlternado(
+            int amplitude
+    ) {
+
+        switch (poseIdle) {
+
+            case 1:
+                return amplitude;
+
+            case 2:
+                return -amplitude;
+
+            case 3:
+                return amplitude / 2;
+
+            case 4:
+                return -amplitude / 2;
+
+            case 5:
+                return amplitude;
+
+            default:
+                return 0;
+        }
+    }
+
+    // =============================
+    // POSIÇÃO VISUAL
+    // =============================
 
     protected int getYVisual() {
 
@@ -285,32 +813,168 @@ public abstract class IrmaoMiau {
 
         if (agachado) {
 
+            /*
+             * Antes estava 18 fixo.
+             *
+             * Agora cada Miau pode sobrescrever
+             * getProfundidadeAgachamento().
+             */
             deslocamentoAgachado =
-                    (int) (18 * escala);
+                    (int) Math.round(
+                            getProfundidadeAgachamento()
+                            * escala
+                    );
         }
 
-        return y + deslocamentoAgachado;
+        int deslocamentoIdle =
+                getDeslocamentoVerticalIdle();
+
+        return y
+                + deslocamentoAgachado
+                + deslocamentoIdle;
+    }
+
+    private int getDeslocamentoVerticalIdle() {
+
+        // =========================
+        // IDLE EM PÉ
+        // =========================
+
+        if (
+                estadoIdle
+                == EstadoIdle.EM_PE
+        ) {
+
+            switch (poseIdle) {
+
+                case 2:
+                    return (int) Math.round(
+                            2 * escala
+                    );
+
+                case 3:
+                    return -(int) Math.round(
+                            1 * escala
+                    );
+
+                case 4:
+                    return (int) Math.round(
+                            1 * escala
+                    );
+
+                case 5:
+                    return -(int) Math.round(
+                            1 * escala
+                    );
+
+                default:
+                    return 0;
+            }
+        }
+
+        // =========================
+        // IDLE AGACHADO
+        // =========================
+
+        if (
+                estadoIdle
+                == EstadoIdle.AGACHADO
+        ) {
+
+            switch (poseIdle) {
+
+                case 1:
+                    return (int) Math.round(
+                            1 * escala
+                    );
+
+                case 3:
+                    return (int) Math.round(
+                            1 * escala
+                    );
+
+                case 4:
+                    return -(int) Math.round(
+                            1 * escala
+                    );
+
+                default:
+                    return 0;
+            }
+        }
+
+        // =========================
+        // TAUNT
+        // =========================
+
+        if (
+                estadoIdle
+                == EstadoIdle.TAUNT
+        ) {
+
+            switch (poseIdle) {
+
+                case 2:
+                    return (int) Math.round(
+                            1 * escala
+                    );
+
+                case 4:
+                    return -(int) Math.round(
+                            1 * escala
+                    );
+
+                default:
+                    return 0;
+            }
+        }
+
+        return 0;
+    }
+
+    // =============================
+    // AGACHAMENTO
+    // =============================
+
+    protected double getProfundidadeAgachamento() {
+
+        return 18;
     }
 
     protected int getEncolhimentoAgachado() {
 
         if (agachado) {
 
-            return (int) (30 * escala);
+            return (int) (
+                    getFlexaoPernasAgachado()
+                    * escala
+            );
         }
 
         return 0;
     }
 
+    protected double getFlexaoPernasAgachado() {
+
+        return 30;
+    }
+
+    // =============================
+    // ESTADOS
+    // =============================
+
     public boolean isAgachado() {
+
         return agachado;
     }
 
     public boolean isPulando() {
+
         return pulando;
     }
 
     public int getLinhaAtual() {
+
         return linhaAtual;
     }
 
@@ -318,7 +982,9 @@ public abstract class IrmaoMiau {
     // DESENHO BASE
     // =============================
 
-    protected void prepararDesenho(Graphics2D g2) {
+    protected void prepararDesenho(
+            Graphics2D g2
+    ) {
 
         g2.setRenderingHint(
                 RenderingHints.KEY_ANTIALIASING,
@@ -326,15 +992,26 @@ public abstract class IrmaoMiau {
         );
     }
 
-    protected void desenharCabeca(Graphics2D g2) {
+    protected void desenharCabeca(
+            Graphics2D g2
+    ) {
 
-        int yCabeca = getYVisual();
+        int yCabeca =
+                getYVisual();
 
         int cabeca =
-                (int) (70 * escala);
+                (int) (
+                        70
+                        * escala
+                );
 
-        // Cabeça
-        g2.setColor(corPelo);
+        // =========================
+        // CABEÇA
+        // =========================
+
+        g2.setColor(
+                corPelo
+        );
 
         g2.fillOval(
                 x,
@@ -383,19 +1060,29 @@ public abstract class IrmaoMiau {
                 yCabeca + (int) (8 * escala)
         );
 
-        g2.fillPolygon(esquerda);
-        g2.fillPolygon(direita);
+        g2.fillPolygon(
+                esquerda
+        );
+
+        g2.fillPolygon(
+                direita
+        );
 
         // =========================
         // OLHOS
         // =========================
 
-        g2.setColor(corRosto);
+        g2.setColor(
+                corRosto
+        );
 
         if (!piscando) {
 
             int olho =
-                    (int) (6 * escala);
+                    (int) (
+                            6
+                            * escala
+                    );
 
             g2.fillOval(
                     x + (int) (22 * escala),
@@ -413,12 +1100,12 @@ public abstract class IrmaoMiau {
 
         } else {
 
-            // Quando pisca, os olhos viram
-            // dois pequenos risquinhos
-
             g2.setStroke(
                     new BasicStroke(
-                            (float) (2 * escala)
+                            (float) (
+                                    2
+                                    * escala
+                            )
                     )
             );
 
@@ -442,7 +1129,11 @@ public abstract class IrmaoMiau {
         // =========================
 
         g2.setColor(
-                new Color(220, 120, 140)
+                new Color(
+                        220,
+                        120,
+                        140
+                )
         );
 
         Polygon nariz =
@@ -463,19 +1154,31 @@ public abstract class IrmaoMiau {
                 yCabeca + (int) (48 * escala)
         );
 
-        g2.fillPolygon(nariz);
+        g2.fillPolygon(
+                nariz
+        );
 
         // =========================
         // BOCA
         // =========================
 
-        g2.setColor(corRosto);
+        g2.setColor(
+                corRosto
+        );
 
         int bocaX =
-                x + (int) (36 * escala);
+                x
+                + (int) (
+                        36
+                        * escala
+                );
 
         int bocaY =
-                yCabeca + (int) (48 * escala);
+                yCabeca
+                + (int) (
+                        48
+                        * escala
+                );
 
         g2.drawLine(
                 bocaX,
@@ -507,7 +1210,9 @@ public abstract class IrmaoMiau {
             int altura
     ) {
 
-        g2.setColor(corPelo);
+        g2.setColor(
+                corPelo
+        );
 
         g2.fillRoundRect(
                 pataX,
@@ -524,18 +1229,22 @@ public abstract class IrmaoMiau {
     // =============================
 
     public String getNome() {
+
         return nome;
     }
 
     public String getEstilo() {
+
         return estilo;
     }
 
     public int getX() {
+
         return x;
     }
 
     public int getY() {
+
         return y;
     }
 }

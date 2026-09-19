@@ -24,18 +24,31 @@ public class SelecaoPersonagemPanel extends JPanel {
             Consumer<TipoPersonagem> aoSelecionar
     ) {
 
-        setPreferredSize(new Dimension(800, 450));
-        setBackground(new Color(135, 206, 235));
-        setLayout(new GridBagLayout());
+        setPreferredSize(
+                new Dimension(800, 450)
+        );
 
-        JPanel painel = new JPanel(
+        setBackground(
+                new Color(135, 206, 235)
+        );
+
+        setLayout(
                 new GridBagLayout()
         );
 
+        JPanel painel =
+                new JPanel(
+                        new GridBagLayout()
+                );
+
         painel.setOpaque(false);
 
-        GridBagConstraints gbc
-                = new GridBagConstraints();
+        GridBagConstraints gbc =
+                new GridBagConstraints();
+
+        // =========================
+        // TÍTULO
+        // =========================
 
         JLabel titulo = new JLabel(
                 "ESCOLHA SEU MIAU",
@@ -43,33 +56,48 @@ public class SelecaoPersonagemPanel extends JPanel {
         );
 
         titulo.setFont(
-                new Font("Arial", Font.BOLD, 28)
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        28
+                )
         );
 
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.gridwidth = 2;
+
         gbc.insets = new Insets(
                 0,
                 0,
-                30,
+                25,
                 0
         );
 
-        painel.add(titulo, gbc);
-
-        JLabel imagemBranco = criarImagem(
-                "/assets/sprites/miau-branco.png"
+        painel.add(
+                titulo,
+                gbc
         );
 
-        JLabel imagemPreto = criarImagem(
-                "/assets/sprites/miau-preto.png"
-        );
+        // =========================
+        // IMAGENS
+        // =========================
+
+        JLabel imagemBranco =
+                criarImagem(
+                        "/assets/sprites/miau-branco.png"
+                );
+
+        JLabel imagemPreto =
+                criarImagem(
+                        "/assets/sprites/miau-preto.png"
+                );
 
         gbc.gridwidth = 1;
 
         gbc.gridx = 0;
         gbc.gridy = 1;
+
         gbc.insets = new Insets(
                 0,
                 20,
@@ -77,34 +105,54 @@ public class SelecaoPersonagemPanel extends JPanel {
                 20
         );
 
-        painel.add(imagemBranco, gbc);
+        painel.add(
+                imagemBranco,
+                gbc
+        );
 
         gbc.gridx = 1;
 
-        painel.add(imagemPreto, gbc);
-
-        JButton branco = new JButton(
-                "MIAU BRANCO"
+        painel.add(
+                imagemPreto,
+                gbc
         );
 
-        JButton preto = new JButton(
-                "MIAU PRETO"
-        );
+        // =========================
+        // BOTÕES INDIVIDUAIS
+        // =========================
 
-        branco.setFont(
-                new Font("Arial", Font.BOLD, 16)
-        );
+        JButton branco =
+                new JButton(
+                        "MIAU BRANCO"
+                );
 
-        preto.setFont(
-                new Font("Arial", Font.BOLD, 16)
-        );
+        JButton preto =
+                new JButton(
+                        "MIAU PRETO"
+                );
+
+        Font fonteBotao =
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        16
+                );
+
+        branco.setFont(fonteBotao);
+        preto.setFont(fonteBotao);
 
         branco.setPreferredSize(
-                new Dimension(180, 45)
+                new Dimension(
+                        180,
+                        45
+                )
         );
 
         preto.setPreferredSize(
-                new Dimension(180, 45)
+                new Dimension(
+                        180,
+                        45
+                )
         );
 
         branco.addActionListener(
@@ -121,18 +169,72 @@ public class SelecaoPersonagemPanel extends JPanel {
 
         gbc.gridx = 0;
         gbc.gridy = 2;
+
         gbc.insets = new Insets(
                 0,
+                20,
+                12,
+                20
+        );
+
+        painel.add(
+                branco,
+                gbc
+        );
+
+        gbc.gridx = 1;
+
+        painel.add(
+                preto,
+                gbc
+        );
+
+        // =========================
+        // OS DOIS MIAUS
+        // =========================
+
+        JButton ambos =
+                new JButton(
+                        "OS DOIS MIAUS"
+                );
+
+        ambos.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        16
+                )
+        );
+
+        ambos.setPreferredSize(
+                new Dimension(
+                        250,
+                        45
+                )
+        );
+
+        ambos.addActionListener(
+                e -> aoSelecionar.accept(
+                        TipoPersonagem.AMBOS
+                )
+        );
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+
+        gbc.gridwidth = 2;
+
+        gbc.insets = new Insets(
+                5,
                 20,
                 0,
                 20
         );
 
-        painel.add(branco, gbc);
-
-        gbc.gridx = 1;
-
-        painel.add(preto, gbc);
+        painel.add(
+                ambos,
+                gbc
+        );
 
         add(painel);
     }
@@ -141,43 +243,55 @@ public class SelecaoPersonagemPanel extends JPanel {
             String caminho
     ) {
 
-        URL recurso = getClass().getResource(
-                caminho
-        );
+        URL recurso =
+                getClass().getResource(
+                        caminho
+                );
 
         if (recurso == null) {
 
-            JLabel placeholder
-                    = new JLabel(
+            JLabel placeholder =
+                    new JLabel(
                             "IMAGEM",
                             SwingConstants.CENTER
                     );
 
             placeholder.setPreferredSize(
-                    new Dimension(180, 180)
+                    new Dimension(
+                            180,
+                            180
+                    )
             );
 
             return placeholder;
         }
 
-        ImageIcon original
-                = new ImageIcon(recurso);
-
-        Image imagemRedimensionada
-                = original.getImage().getScaledInstance(
-                        180,
-                        180,
-                        Image.SCALE_SMOOTH
+        ImageIcon original =
+                new ImageIcon(
+                        recurso
                 );
 
-        JLabel imagem = new JLabel(
-                new ImageIcon(
-                        imagemRedimensionada
-                )
-        );
+        Image imagemRedimensionada =
+                original
+                        .getImage()
+                        .getScaledInstance(
+                                180,
+                                180,
+                                Image.SCALE_SMOOTH
+                        );
+
+        JLabel imagem =
+                new JLabel(
+                        new ImageIcon(
+                                imagemRedimensionada
+                        )
+                );
 
         imagem.setPreferredSize(
-                new Dimension(180, 180)
+                new Dimension(
+                        180,
+                        180
+                )
         );
 
         return imagem;
