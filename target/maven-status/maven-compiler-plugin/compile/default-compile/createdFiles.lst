@@ -1,0 +1,5 @@
+com\irmaosmiau\game\GamePanel.class
+com\irmaosmiau\input\InputHandler.class
+com\irmaosmiau\entities\Inimigo.class
+com\irmaosmiau\main\Main.class
+com\irmaosmiau\entities\IrmaoMiau.class
