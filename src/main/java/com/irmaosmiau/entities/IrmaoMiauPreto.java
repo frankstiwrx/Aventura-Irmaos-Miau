@@ -17,7 +17,7 @@ public class IrmaoMiauPreto extends IrmaoMiau {
                 Color.WHITE,
                 Color.WHITE,
                 "Irmão Miau Preto",
-                "Guardeiro"
+                "Jiu-Jitsu"
         );
     }
 

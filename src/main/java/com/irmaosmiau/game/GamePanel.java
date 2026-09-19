@@ -8,9 +8,14 @@ import com.irmaosmiau.input.InputHandler;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 
+import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -18,23 +23,31 @@ public class GamePanel extends JPanel {
 
     public static final int LARGURA = 800;
     public static final int ALTURA = 450;
+
     private static final int TOPO_GRAMA = 300;
 
     private final IrmaoMiau jogador;
-
     private final InputHandler input;
-
     private final Timer gameLoop;
+
+    private final Runnable aoVoltarMenu;
+    private final Runnable aoTrocarPersonagem;
 
     private final int velocidade = 4;
 
-    // Serve para detectar um único toque
-    // em W, S e ESPAÇO.
-    //private boolean cimaAnterior = false;
-    //private boolean baixoAnterior = false;
     private boolean puloAnterior = false;
+    private boolean pausado = false;
 
-    public GamePanel(TipoPersonagem tipo) {
+    private JPanel menuPausa;
+
+    public GamePanel(
+            TipoPersonagem tipo,
+            Runnable aoVoltarMenu,
+            Runnable aoTrocarPersonagem
+    ) {
+
+        this.aoVoltarMenu = aoVoltarMenu;
+        this.aoTrocarPersonagem = aoTrocarPersonagem;
 
         setPreferredSize(
                 new Dimension(LARGURA, ALTURA)
@@ -45,6 +58,10 @@ public class GamePanel extends JPanel {
         );
 
         setFocusable(true);
+
+        // Usaremos posicionamento manual apenas
+        // para colocar o menu de pausa sobre o jogo.
+        setLayout(null);
 
         // =========================
         // PERSONAGEM
@@ -72,6 +89,16 @@ public class GamePanel extends JPanel {
         input = new InputHandler(this);
 
         // =========================
+        // MENU DE PAUSA
+        // =========================
+        criarMenuPausa();
+
+        // =========================
+        // TECLA ESC
+        // =========================
+        configurarPausa();
+
+        // =========================
         // GAME LOOP
         // =========================
         gameLoop = new Timer(
@@ -83,6 +110,13 @@ public class GamePanel extends JPanel {
     }
 
     private void atualizar() {
+
+        // Se estiver pausado, nada do jogo
+        // será atualizado.
+        if (pausado) {
+            repaint();
+            return;
+        }
 
         boolean agachando
                 = input.isAgachar();
@@ -108,11 +142,8 @@ public class GamePanel extends JPanel {
         }
 
         // =========================
-        // TROCA DE LINHA
+        // MOVIMENTO VERTICAL
         // =========================
-        // =========================
-// MOVIMENTO VERTICAL
-// =========================
         if (!agachando) {
 
             if (input.isCima()) {
@@ -154,16 +185,156 @@ public class GamePanel extends JPanel {
                 agachando
         );
 
-        // Guardamos o estado anterior
-        
-    //    cimaAnterior
-    //            = input.isCima();
+        // Guarda o estado da tecla ESPAÇO
+        // para detectar somente um toque.
+        puloAnterior = input.isPular();
 
-    //    baixoAnterior
-    //            = input.isBaixo();
+        repaint();
+    }
 
-    //    puloAnterior
-    //            = input.isPular();
+    private void criarMenuPausa() {
+
+        menuPausa = new JPanel(
+                new GridBagLayout()
+        );
+
+        menuPausa.setBackground(
+                new Color(230, 230, 230)
+        );
+
+        menuPausa.setBounds(
+                250,
+                90,
+                300,
+                270
+        );
+
+        GridBagConstraints gbc
+                = new GridBagConstraints();
+
+        gbc.gridx = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(
+                8,
+                20,
+                8,
+                20
+        );
+
+        javax.swing.JLabel titulo
+                = new javax.swing.JLabel(
+                        "PAUSADO",
+                        javax.swing.SwingConstants.CENTER
+                );
+
+        titulo.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        28
+                )
+        );
+
+        gbc.gridy = 0;
+
+        menuPausa.add(
+                titulo,
+                gbc
+        );
+
+        JButton continuar
+                = new JButton("CONTINUAR");
+
+        JButton trocarMiau
+                = new JButton("TROCAR DE MIAU");
+
+        JButton menuPrincipal
+                = new JButton("MENU PRINCIPAL");
+
+        Font fonteBotao = new Font(
+                "Arial",
+                Font.BOLD,
+                16
+        );
+
+        continuar.setFont(fonteBotao);
+        trocarMiau.setFont(fonteBotao);
+        menuPrincipal.setFont(fonteBotao);
+
+        continuar.addActionListener(
+                e -> alternarPausa()
+        );
+
+        trocarMiau.addActionListener(
+                e -> {
+                    gameLoop.stop();
+                    aoTrocarPersonagem.run();
+                }
+        );
+
+        menuPrincipal.addActionListener(
+                e -> {
+                    gameLoop.stop();
+                    aoVoltarMenu.run();
+                }
+        );
+
+        gbc.gridy = 1;
+        menuPausa.add(
+                continuar,
+                gbc
+        );
+
+        gbc.gridy = 2;
+        menuPausa.add(
+                trocarMiau,
+                gbc
+        );
+
+        gbc.gridy = 3;
+        menuPausa.add(
+                menuPrincipal,
+                gbc
+        );
+
+        menuPausa.setVisible(false);
+
+        add(menuPausa);
+    }
+
+    private void configurarPausa() {
+
+        getInputMap(
+                WHEN_IN_FOCUSED_WINDOW
+        ).put(
+                javax.swing.KeyStroke.getKeyStroke(
+                        "pressed ESCAPE"
+                ),
+                "alternarPausa"
+        );
+
+        getActionMap().put(
+                "alternarPausa",
+                new javax.swing.AbstractAction() {
+
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+
+                        alternarPausa();
+                    }
+                }
+        );
+    }
+
+    private void alternarPausa() {
+
+        pausado = !pausado;
+
+        menuPausa.setVisible(
+                pausado
+        );
 
         repaint();
     }
@@ -217,11 +388,32 @@ public class GamePanel extends JPanel {
         );
 
         g2.drawString(
-                "W/S = linhas | A/D = andar | ESPAÇO = pular | C = agachar",
+                "W/S = mover | A/D = andar | ESPAÇO = pular | C = agachar | ESC = pausar",
                 20,
                 95
         );
 
         jogador.desenhar(g2);
+
+        // Escurece levemente o jogo quando
+        // o menu de pausa estiver aberto.
+        if (pausado) {
+
+            g2.setColor(
+                    new Color(
+                            0,
+                            0,
+                            0,
+                            90
+                    )
+            );
+
+            g2.fillRect(
+                    0,
+                    0,
+                    LARGURA,
+                    ALTURA
+            );
+        }
     }
 }

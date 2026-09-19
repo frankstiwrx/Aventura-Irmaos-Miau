@@ -54,16 +54,27 @@ public class Main {
     }
 
     private static void iniciarJogo(
-            JFrame janela,
-            TipoPersonagem tipo
-    ) {
+        JFrame janela,
+        TipoPersonagem tipo
+) {
 
-        GamePanel jogo = new GamePanel(tipo);
+    GamePanel jogo = new GamePanel(
+            tipo,
 
-        trocarTela(janela, jogo);
+            // MENU PRINCIPAL
+            () -> mostrarMenu(janela),
 
-        jogo.requestFocusInWindow();
-    }
+            // TROCAR DE MIAU
+            () -> mostrarSelecao(janela)
+    );
+
+    trocarTela(
+            janela,
+            jogo
+    );
+
+    jogo.requestFocusInWindow();
+}
 
     private static void trocarTela(
             JFrame janela,
