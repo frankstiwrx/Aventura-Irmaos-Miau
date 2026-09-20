@@ -27,12 +27,32 @@ public abstract class IrmaoMiau {
 
     private boolean correndo = false;
 
-    private static final double CUSTO_PULO_ALTO = 7.0;
-    private static final double CUSTO_PULO_CURTO = 3.0;
+    private boolean respirando = false;
+    
+    // =============================
+// ROLAMENTO
+// =============================
+
+private boolean rolando = false;
+
+private Direcao direcaoRolamento = null;
+
+private int framesRolamento = 0;
+
+private static final int DURACAO_ROLAMENTO = 22;
+
+private static final double CUSTO_ROLAMENTO = 6.0;
+
+private static final double VELOCIDADE_ROLAMENTO = 7.0;
+
+    private double faseRespiracao = 0.0;
+
+    private static final double CUSTO_PULO_ALTO = 8.0;
+    private static final double CUSTO_PULO_CURTO = 3.5;
 
     private static final double VELOCIDADE_CANSADO = 0.50;
 
-    private static final double CUSTO_MOVIMENTO_CANSADO = 0.010;
+    private static final double CUSTO_MOVIMENTO_CANSADO = 0.025;
 
     private static final double LIMITE_FOLEGO_ZERO = 0.05;
 
@@ -51,6 +71,19 @@ public abstract class IrmaoMiau {
     private int yBase;
 
     // =============================
+// ESTADO CORPORAL
+// =============================
+
+public enum EstadoCorporal {
+    EM_PE,
+    AGACHADO,
+    DEITADO
+}
+
+private EstadoCorporal estadoCorporal =
+        EstadoCorporal.EM_PE;
+    
+    // =============================
     // MOVIMENTO
     // =============================
     private boolean pulando = false;
@@ -62,6 +95,80 @@ public abstract class IrmaoMiau {
 
     private double faseAnimacao = 0;
 
+    /*
+ * Guarda a parte decimal do movimento.
+ *
+ * O personagem continua sendo desenhado
+ * em coordenadas inteiras, mas não perdemos
+ * frações de velocidade entre os frames.
+     */
+    private double restoMovimentoX = 0.0;
+    private double restoMovimentoY = 0.0;
+
+    // =============================
+    // SISTEMA DE ROLAMENTO
+    // =============================
+    
+    public void iniciarRolamento(
+        Direcao direcao
+) {
+
+    /*
+     * Não existe rolamento sem direção.
+     */
+    if (direcao == null) {
+        return;
+    }
+
+    /*
+     * Não pode iniciar outro enquanto
+     * já está rolando.
+     */
+    if (rolando) {
+        return;
+    }
+
+    /*
+     * Não rola no ar.
+     */
+    if (pulando) {
+        return;
+    }
+    
+    if (isDeitado()) {
+    return;
+}
+
+    /*
+     * Precisa possuir fôlego suficiente.
+     */
+    if (folegoAtual < CUSTO_ROLAMENTO) {
+        return;
+    }
+
+    /*
+     * O rolamento interrompe outras ações.
+     */
+    correndo = false;
+    respirando = false;
+    agachado = false;
+
+    ultimaAtividade =
+        System.currentTimeMillis();
+
+faseRespiracao = 0;
+    
+    gastarEnergia(
+            CUSTO_ROLAMENTO
+    );
+
+    direcaoRolamento = direcao;
+
+    framesRolamento = 0;
+
+    rolando = true;
+}
+    
     // =============================
     // SISTEMA DE IDLE
     // =============================
@@ -169,41 +276,36 @@ public abstract class IrmaoMiau {
             = System.currentTimeMillis() + 2000;
 
     private long fimDoPiscar = 0;
-    
+
     // recuperar condicionamento
-    
     private void recuperarCondicionamentoLeve() {
 
-    /*
+        /*
      * Sem fôlego o corpo não consegue
      * recuperar condicionamento.
-     */
-    if (
-            isSemFolego()
-            || andando
-            || correndo
-            || pulando
-    ) {
+         */
+        if (isSemFolego()
+                || andando
+                || correndo
+                || pulando) {
 
-        return;
-    }
+            return;
+        }
 
-    double taxa =
-            0.002
-            + atributos.getRecuperacao()
-            * 0.000025;
+        double taxa
+                = 0.002
+                + atributos.getRecuperacao()
+                * 0.000025;
 
-    condicionamentoAtual += taxa;
+        condicionamentoAtual += taxa;
 
-    if (
+        if (condicionamentoAtual
+                > atributos.getCondicionamento()) {
+
             condicionamentoAtual
-            > atributos.getCondicionamento()
-    ) {
-
-        condicionamentoAtual =
-                atributos.getCondicionamento();
+                    = atributos.getCondicionamento();
+        }
     }
-}
 
     // =============================
     // CONSTRUTOR
@@ -246,6 +348,19 @@ public abstract class IrmaoMiau {
 
     public abstract void desenhar(Graphics2D g2);
 
+    protected int getOscilacaoRespiracao() {
+
+    if (!respirando) {
+
+        return 0;
+    }
+
+    return (int) Math.round(
+            Math.sin(
+                    faseRespiracao
+            ) * 2
+    );
+}
     // =============================
     // ATUALIZAÇÃO
     // =============================
@@ -259,9 +374,66 @@ public abstract class IrmaoMiau {
         // =========================
         andando = estaAndando;
 
+        agachado =
+        querAgachar
+        && !pulando
+        && !isDeitado();
+        
+        if (!isDeitado()) {
+
+    if (agachado) {
+
+        estadoCorporal =
+                EstadoCorporal.AGACHADO;
+
+    } else {
+
+        estadoCorporal =
+                EstadoCorporal.EM_PE;
+    }
+}
+        
+        if (rolando) {
+
+    andando = false;
+    agachado = false;
+    correndo = false;
+    respirando = false;
+
+    atualizarRolamento();
+
+    /*
+     * O rolamento também pode alterar
+     * a posição vertical.
+     *
+     * Precisamos sincronizar a posição
+     * visual antes de sair do atualizar().
+     */
+    y = yBase;
+
+    atualizarPiscar();
+
+    return;
+}
+        
+        if (
         agachado
-                = querAgachar
-                && !pulando;
+        || pulando
+        || respirando
+        || isSemFolego()
+) {
+
+            if (respirando) {
+
+    faseRespiracao += 0.10;
+
+} else {
+
+    faseRespiracao = 0;
+}
+            
+    correndo = false;
+}
 
         /*
      * Se ficou agachado ou pulou,
@@ -273,19 +445,27 @@ public abstract class IrmaoMiau {
             correndo = false;
         }
 
-        // =========================
+// =========================
 // FÔLEGO / CONDICIONAMENTO
 // =========================
 
 if (
+        respirando
+        && !pulando
+) {
+
+    recuperarFolegoRespirando();
+
+    recuperarCondicionamentoRespirando();
+
+} else if (
         correndo
         && andando
         && !isSemFolego()
 ) {
 
-    // Corrida consome fôlego rapidamente.
     gastarEnergia(
-            0.075
+            0.12
     );
 
 } else if (
@@ -293,20 +473,16 @@ if (
         && isSemFolego()
 ) {
 
-    /*
-     * O personagem ainda consegue caminhar,
-     * mas está se arrastando fisicamente.
-     */
     gastarCondicionamento(
-            CUSTO_MOVIMENTO_CANSADO
+            0.025
     );
 
 } else {
 
     recuperarFolego();
-}
 
-recuperarCondicionamentoLeve();
+    recuperarCondicionamentoLeve();
+}
 
         // =========================
         // ANIMAÇÃO DE CAMINHADA
@@ -556,7 +732,7 @@ recuperarCondicionamentoLeve();
     // MOVIMENTO VERTICAL
     // =============================
     public void moverVertical(
-            int quantidade
+            double quantidade
     ) {
 
         int yMinimo
@@ -567,24 +743,39 @@ recuperarCondicionamentoLeve();
                 + (TOTAL_LINHAS - 1)
                 * ESPACO_ENTRE_LINHAS;
 
-        yBase += quantidade;
+        // Guarda a parte decimal
+        restoMovimentoY += quantidade;
+
+        int deslocamentoInteiro
+                = (int) restoMovimentoY;
+
+        yBase += deslocamentoInteiro;
+
+        restoMovimentoY
+                -= deslocamentoInteiro;
 
         // Não deixa passar da Linha 1
-        if (yBase
-                < yMinimo) {
+        if (yBase < yMinimo) {
 
             yBase = yMinimo;
+
+            /*
+         * Evita guardar movimento
+         * contra a parede invisível.
+             */
+            restoMovimentoY = 0;
         }
 
         // Não deixa passar da Linha 5
-        if (yBase
-                > yMaximo) {
+        if (yBase > yMaximo) {
 
             yBase = yMaximo;
+
+            restoMovimentoY = 0;
         }
 
         // Descobre qual das 5 linhas
-        // está mais próxima da posição atual
+        // está mais próxima.
         linhaAtual
                 = (int) Math.round(
                         (double) (yBase
@@ -597,12 +788,178 @@ recuperarCondicionamentoLeve();
     // MOVIMENTO HORIZONTAL
     // =============================
     public void moverX(
-            int quantidade
+            double quantidade
     ) {
 
-        x += quantidade;
+        restoMovimentoX += quantidade;
+
+        int deslocamentoInteiro
+                = (int) restoMovimentoX;
+
+        x += deslocamentoInteiro;
+
+        restoMovimentoX
+                -= deslocamentoInteiro;
     }
 
+    // =============================
+    // ROLAMENTO
+    // =============================
+    
+    private void atualizarRolamento() {
+
+    if (!rolando) {
+        return;
+    }
+
+    double velocidade =
+            VELOCIDADE_ROLAMENTO;
+
+    /*
+     * Na diagonal dividimos a velocidade
+     * para não fazer a diagonal percorrer
+     * uma distância maior.
+     *
+     * 1 / sqrt(2) ≈ 0.707
+     */
+    double diagonal =
+            velocidade * 0.7071;
+
+    switch (direcaoRolamento) {
+
+        case CIMA:
+            moverVertical(
+                    -velocidade
+            );
+            break;
+
+        case BAIXO:
+            moverVertical(
+                    velocidade
+            );
+            break;
+
+        case ESQUERDA:
+            moverX(
+                    -velocidade
+            );
+            break;
+
+        case DIREITA:
+            moverX(
+                    velocidade
+            );
+            break;
+
+        case CIMA_ESQUERDA:
+            moverX(
+                    -diagonal
+            );
+
+            moverVertical(
+                    -diagonal
+            );
+            break;
+
+        case CIMA_DIREITA:
+            moverX(
+                    diagonal
+            );
+
+            moverVertical(
+                    -diagonal
+            );
+            break;
+
+        case BAIXO_ESQUERDA:
+            moverX(
+                    -diagonal
+            );
+
+            moverVertical(
+                    diagonal
+            );
+            break;
+
+        case BAIXO_DIREITA:
+            moverX(
+                    diagonal
+            );
+
+            moverVertical(
+                    diagonal
+            );
+            break;
+    }
+
+    framesRolamento++;
+
+    if (
+            framesRolamento
+            >= DURACAO_ROLAMENTO
+    ) {
+
+        finalizarRolamento();
+    }
+    
+    
+    
+}
+ // Finalizar Rolamento   
+    private void finalizarRolamento() {
+
+    rolando = false;
+
+    direcaoRolamento = null;
+
+    framesRolamento = 0;
+}
+    
+    // =============================
+// DEITAR / LEVANTAR
+// =============================
+
+public void alternarDeitado() {
+
+    /*
+     * Não pode mudar de estado corporal
+     * durante ações temporárias.
+     */
+    if (pulando || rolando) {
+        return;
+    }
+
+    /*
+     * Se já está deitado, levanta.
+     */
+    if (estadoCorporal
+            == EstadoCorporal.DEITADO) {
+
+        estadoCorporal =
+                EstadoCorporal.EM_PE;
+
+        ultimaAtividade =
+                System.currentTimeMillis();
+
+        return;
+    }
+
+    /*
+     * Entra no estado deitado.
+     */
+    estadoCorporal =
+            EstadoCorporal.DEITADO;
+
+    correndo = false;
+    respirando = false;
+    agachado = false;
+
+    faseRespiracao = 0;
+
+    ultimaAtividade =
+            System.currentTimeMillis();
+}
+    
     // =============================
     // LINHAS
     // =============================
@@ -640,59 +997,69 @@ recuperarCondicionamentoLeve();
     // =============================
     public void pular() {
 
-    if (
-            pulando
-            || agachado
-            || condicionamentoAtual <= 0
-    ) {
+        if (pulando
+        || agachado
+        || respirando
+        || rolando
+                || isDeitado()
+        || condicionamentoAtual <= 0) {
 
-        return;
-    }
+    return;
+}
 
-    /*
+        /*
      * Sem fôlego suficiente para
      * o pulo alto, ele tenta apenas
      * o pulo curto.
-     */
-    if (
-            folegoAtual
-            < CUSTO_PULO_ALTO
-    ) {
+         */
+        if (folegoAtual
+                < CUSTO_PULO_ALTO) {
 
-        pularCurto();
+            pularCurto();
 
-        return;
+            return;
+        }
+
+        ultimaAtividade
+                = System.currentTimeMillis();
+
+        gastarEnergia(
+                CUSTO_PULO_ALTO
+        );
+
+        pulando = true;
+
+        alturaPulo = 1;
+
+        velocidadePulo = 10;
     }
-
-    ultimaAtividade =
-            System.currentTimeMillis();
-
-    gastarEnergia(
-            CUSTO_PULO_ALTO
-    );
-
-    pulando = true;
-
-    alturaPulo = 1;
-
-    velocidadePulo = 10;
-}
 
     // =============================
     // CORRER
     // =============================
     public void setCorrendo(
-        boolean correndo
-) {
+            boolean correndo
+    ) {
 
-    this.correndo =
-            correndo
-            && !pulando
-            && !agachado
-            && !isSemFolego()
-            && condicionamentoAtual > 0;
+        this.correndo =
+        correndo
+        && !pulando
+        && !agachado
+        && !respirando
+        && !rolando
+                && !isDeitado()
+        && !isSemFolego()
+        && condicionamentoAtual > 0;
+    }
+
+    private double calcularVelocidadeNormal() {
+
+    return 3.2
+            + (
+                    atributos.getVelocidade()
+                    / 100.0
+            ) * 1.6;
 }
-
     public boolean isCorrendo() {
 
         return correndo;
@@ -703,48 +1070,47 @@ recuperarCondicionamentoLeve();
     // =============================
     public void pularCurto() {
 
-    if (
-            pulando
-            || agachado
-            || condicionamentoAtual <= 0
-    ) {
+        if (pulando
+                || agachado
+                || respirando
+                || rolando
+                || isDeitado()
+                || condicionamentoAtual <= 0) {
 
-        return;
-    }
+            return;
+        }
 
-    ultimaAtividade =
-            System.currentTimeMillis();
+        ultimaAtividade
+                = System.currentTimeMillis();
 
-    pulando = true;
+        pulando = true;
 
-    alturaPulo = 1;
+        alturaPulo = 1;
 
-    if (
-            folegoAtual
-            >= CUSTO_PULO_CURTO
-    ) {
+        if (folegoAtual
+                >= CUSTO_PULO_CURTO) {
 
-        gastarEnergia(
-                CUSTO_PULO_CURTO
-        );
+            gastarEnergia(
+                    CUSTO_PULO_CURTO
+            );
 
-        velocidadePulo = 6.5;
+            velocidadePulo = 6.5;
 
-    } else {
+        } else {
 
-        /*
+            /*
          * Pulinho cansado.
          *
          * Ele ainda consegue sair um pouco
          * do chão, mas não possui explosão.
-         */
-        velocidadePulo = 4.5;
+             */
+            velocidadePulo = 4.5;
 
-        gastarCondicionamento(
-                0.25
-        );
+            gastarCondicionamento(
+                    0.25
+            );
+        }
     }
-}
 
     // =============================
     // ANIMAÇÃO DE CAMINHADA
@@ -770,37 +1136,43 @@ recuperarCondicionamentoLeve();
     //Velocidade
     public double getVelocidadeBase() {
 
-    double velocidadeNormal =
-            3.2
-            + (
-                    atributos.getVelocidade()
-                    / 100.0
-            ) * 1.6;
+    double velocidade =
+            calcularVelocidadeNormal();
 
+    /*
+     * Sem fôlego:
+     * metade da velocidade.
+     */
     if (isSemFolego()) {
 
-        return velocidadeNormal
-                * VELOCIDADE_CANSADO;
+        velocidade *= 0.50;
     }
 
-    return velocidadeNormal;
+    return velocidade;
 }
+    
+    public double getVelocidadeRespirando() {
+
+    return calcularVelocidadeNormal()
+            * 0.15;
+}
+
     public double getVelocidadeCorrida() {
 
-    if (isSemFolego()) {
+        if (isSemFolego()) {
 
-        /*
+            /*
          * Sem fôlego não existe corrida.
          *
          * Retornamos apenas a velocidade
          * já reduzida do personagem.
-         */
-        return getVelocidadeBase();
-    }
+             */
+            return getVelocidadeBase();
+        }
 
-    return getVelocidadeBase()
-            * 1.70;
-}
+        return getVelocidadeBase()
+                * 1.70;
+    }
 
     public double getVelocidadeAgachado() {
 
@@ -808,6 +1180,19 @@ recuperarCondicionamentoLeve();
                 * 0.25;
     }
 
+    public double getVelocidadeRastejando() {
+
+    /*
+     * 7% da velocidade normal.
+     *
+     * O movimento decimal permite
+     * velocidades tão pequenas sem
+     * travar o personagem.
+     */
+    return calcularVelocidadeNormal()
+            * 0.07;
+}
+    
     // =============================
     // INFORMAÇÕES DO IDLE
     // =============================
@@ -991,7 +1376,8 @@ recuperarCondicionamentoLeve();
 
         return y
                 + deslocamentoAgachado
-                + deslocamentoIdle;
+                + deslocamentoIdle
+         + getOscilacaoRespiracao();
     }
 
     private int getDeslocamentoVerticalIdle() {
@@ -1119,6 +1505,12 @@ recuperarCondicionamentoLeve();
 
         return pulando;
     }
+    
+    public boolean isDeitado() {
+
+    return estadoCorporal
+            == EstadoCorporal.DEITADO;
+}
 
     public int getLinhaAtual() {
 
@@ -1377,6 +1769,35 @@ recuperarCondicionamentoLeve();
 
         return y;
     }
+    
+    protected double getProgressoRolamento() {
+
+    if (!rolando) {
+        return 0.0;
+    }
+
+    return Math.min(
+            1.0,
+            (double) framesRolamento
+            / DURACAO_ROLAMENTO
+    );
+}
+    
+    protected double getAnguloRolamento() {
+
+    if (!rolando) {
+        return 0.0;
+    }
+
+    return getProgressoRolamento()
+            * Math.PI
+            * 2.0;
+}
+    
+    public boolean isRolando() {
+
+    return rolando;
+}
 
     //fólego
     public double getPercentualFolego() {
@@ -1393,57 +1814,139 @@ recuperarCondicionamentoLeve();
 
 //consumo
     private void gastarEnergia(
-        double quantidade
-) {
+            double quantidade
+    ) {
 
-    if (quantidade <= 0) {
-        return;
-    }
-
-    folegoAtual -= quantidade;
-
-    if (folegoAtual < 0) {
-
-        folegoAtual = 0;
-    }
-}
-    
-    private void gastarCondicionamento(
-        double quantidade
-) {
-
-    if (quantidade <= 0) {
-        return;
-    }
-
-    condicionamentoAtual -= quantidade;
-
-    if (condicionamentoAtual < 0) {
-
-        condicionamentoAtual = 0;
-    }
-}
-
-    private void recuperarFolego() {
-
-        if (correndo || pulando) {
+        if (quantidade <= 0) {
             return;
         }
 
-        double taxa
-                = 0.015
-                + atributos.getRecuperacao()
-                * 0.00035;
+        folegoAtual -= quantidade;
 
-        folegoAtual += taxa;
+        if (folegoAtual < 0) {
 
-        if (folegoAtual
-                > atributos.getFolego()) {
-
-            folegoAtual
-                    = atributos.getFolego();
+            folegoAtual = 0;
         }
     }
+
+    private void gastarCondicionamento(
+            double quantidade
+    ) {
+
+        if (quantidade <= 0) {
+            return;
+        }
+
+        condicionamentoAtual -= quantidade;
+
+        if (condicionamentoAtual < 0) {
+
+            condicionamentoAtual = 0;
+        }
+    }
+
+private void recuperarFolego() {
+
+    if (
+            correndo
+            || pulando
+            || respirando
+    ) {
+
+        return;
+    }
+
+    folegoAtual +=
+            calcularTaxaRecuperacaoFolego();
+
+    if (
+            folegoAtual
+            > atributos.getFolego()
+    ) {
+
+        folegoAtual =
+                atributos.getFolego();
+    }
+}
+
+private void recuperarFolegoRespirando() {
+
+    if (pulando) {
+
+        return;
+    }
+
+    /*
+     * Respirar recupera cerca de
+     * quatro vezes mais rápido que
+     * simplesmente ficar parado.
+     */
+    double taxa =
+            calcularTaxaRecuperacaoFolego()
+            * 15.0;
+
+    folegoAtual += taxa;
+
+    if (
+            folegoAtual
+            > atributos.getFolego()
+    ) {
+
+        folegoAtual =
+                atributos.getFolego();
+    }
+}
+
+private void recuperarCondicionamentoRespirando() {
+
+    /*
+     * Precisa possuir pelo menos
+     * 25% do fôlego máximo.
+     *
+     * Primeiro recuperamos o ar,
+     * depois começamos a recuperar
+     * o condicionamento.
+     */
+    double minimoFolego =
+            atributos.getFolego()
+            * 0.25;
+
+    if (
+            folegoAtual
+            < minimoFolego
+    ) {
+
+        return;
+    }
+
+    double taxaBase =
+            0.002
+            + atributos.getRecuperacao()
+            * 0.000025;
+
+    /*
+     * Respirar também melhora um pouco
+     * a recuperação física.
+     */
+    condicionamentoAtual +=
+            taxaBase * 2.5;
+
+    if (
+            condicionamentoAtual
+            > atributos.getCondicionamento()
+    ) {
+
+        condicionamentoAtual =
+                atributos.getCondicionamento();
+    }
+}
+    
+    private double calcularTaxaRecuperacaoFolego() {
+
+    return 0.008
+            + atributos.getRecuperacao()
+            * 0.00020;
+}
 
     public boolean isSemCondicionamento() {
 
@@ -1464,9 +1967,36 @@ recuperarCondicionamentoLeve();
 
         return condicionamentoAtual;
     }
-public boolean isSemFolego() {
 
-    return folegoAtual
-            <= LIMITE_FOLEGO_ZERO;
-}
+    public boolean isSemFolego() {
+
+        return folegoAtual
+                <= LIMITE_FOLEGO_ZERO;
+    }
+
+    public void setRespirando(
+            boolean respirando
+    ) {
+
+        this.respirando =
+        respirando
+        && !pulando
+        && !rolando
+                && !isDeitado()
+        && condicionamentoAtual > 0;
+
+        /*
+     * Respirando não pode correr.
+         */
+        if (this.respirando) {
+
+            correndo = false;
+        }
+    }
+
+    public boolean isRespirando() {
+
+        return respirando;
+    }
+
 }

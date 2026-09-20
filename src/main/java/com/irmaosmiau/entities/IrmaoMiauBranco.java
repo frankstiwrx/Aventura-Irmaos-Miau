@@ -31,17 +31,798 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         );
     }
 
-    @Override
-    public void desenhar(Graphics2D g2) {
+private void desenharRolamento(
+        Graphics2D g2
+) {
 
-        prepararDesenho(g2);
-        desenharCabeca(g2);
+    double progresso =
+            getProgressoRolamento();
 
+    if (progresso < 0.15) {
+
+        desenharEntradaRolamento(
+                g2,
+                progresso / 0.15
+        );
+
+    } else if (progresso < 0.30) {
+
+        desenharMergulhoRolamento(
+                g2,
+                (progresso - 0.15) / 0.15
+        );
+
+    } else if (progresso < 0.70) {
+
+        desenharGiroRolamento(
+                g2,
+                (progresso - 0.30) / 0.40
+        );
+
+    } else if (progresso < 0.85) {
+
+        desenharSaidaRolamento(
+                g2,
+                (progresso - 0.70) / 0.15
+        );
+
+    } else {
+
+        desenharLevantandoRolamento(
+                g2,
+                (progresso - 0.85) / 0.15
+        );
+    }
+}
+
+private void desenharGiroRolamento(
+        Graphics2D g2,
+        double fase
+) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    /*
+     * Durante o miolo da cambalhota
+     * o Branco fica entre 20% e 25%
+     * maior.
+     */
+    double aumento =
+            1.20
+            + Math.sin(
+                    fase * Math.PI
+            ) * 0.05;
+
+    double centroX =
+            x + 35 * escala;
+
+    double centroY =
+            y + 195 * escala;
+
+    double angulo =
+            fase
+            * Math.PI
+            * 2.0;
+
+    copia.translate(
+            centroX,
+            centroY
+    );
+
+    copia.rotate(
+            angulo
+    );
+
+    copia.scale(
+            aumento,
+            aumento
+    );
+
+    copia.translate(
+            -centroX,
+            -centroY
+    );
+
+    // =========================
+    // CORPO ENROLADO
+    // =========================
+
+    /*
+     * Durante o giro NÃO desenhamos
+     * a cabeça separadamente.
+     *
+     * Ela está recolhida junto
+     * ao corpo.
+     */
+    copia.setColor(
+            corKimono
+    );
+
+    int largura =
+            (int) Math.round(
+                    72 * escala
+            );
+
+    int altura =
+            (int) Math.round(
+                    62 * escala
+            );
+
+    copia.fillRoundRect(
+            (int) Math.round(
+                    centroX
+                    - largura / 2.0
+            ),
+            (int) Math.round(
+                    centroY
+                    - altura / 2.0
+            ),
+            largura,
+            altura,
+            (int) Math.round(
+                    35 * escala
+            ),
+            (int) Math.round(
+                    35 * escala
+            )
+    );
+
+    // =========================
+    // PATAS RECOLHIDAS
+    // =========================
+
+    copia.setColor(
+            corPelo
+    );
+
+    copia.fillOval(
+            (int) Math.round(
+                    centroX
+                    - 31 * escala
+            ),
+            (int) Math.round(
+                    centroY
+                    + 8 * escala
+            ),
+            (int) Math.round(
+                    25 * escala
+            ),
+            (int) Math.round(
+                    19 * escala
+            )
+    );
+
+    copia.fillOval(
+            (int) Math.round(
+                    centroX
+                    + 6 * escala
+            ),
+            (int) Math.round(
+                    centroY
+                    + 8 * escala
+            ),
+            (int) Math.round(
+                    25 * escala
+            ),
+            (int) Math.round(
+                    19 * escala
+            )
+    );
+
+    copia.dispose();
+}
+    
+private void desenharEntradaRolamento(
+        Graphics2D g2,
+        double fase
+) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    prepararDesenho(copia);
+
+    /*
+     * Começa praticamente em pé e
+     * vai se abaixando para preparar
+     * a cambalhota.
+     */
+    double centroX =
+            x + 35 * escala;
+
+    double centroY =
+            y + (85 + 25 * fase) * escala;
+
+    double inclinacao =
+            fase * 0.30;
+
+    /*
+     * Cresce suavemente.
+     */
+    double aumento =
+            1.0 + fase * 0.10;
+
+    copia.translate(
+            centroX,
+            centroY
+    );
+
+    copia.rotate(
+            inclinacao
+    );
+
+    copia.scale(
+            aumento,
+            aumento
+    );
+
+    copia.translate(
+            -centroX,
+            -centroY
+    );
+
+    // CORPO
+    copia.setColor(
+            corKimono
+    );
+
+    int largura =
+            (int) Math.round(
+                    (68 + fase * 5) * escala
+            );
+
+    int altura =
+            (int) Math.round(
+                    (105 - fase * 35) * escala
+            );
+
+    copia.fillRoundRect(
+            (int) Math.round(
+                    centroX - largura / 2.0
+            ),
+            (int) Math.round(
+                    centroY - altura / 2.0
+            ),
+            largura,
+            altura,
+            (int) Math.round(25 * escala),
+            (int) Math.round(25 * escala)
+    );
+
+    /*
+     * Aqui a cabeça ainda aparece,
+     * mas começa a entrar em direção
+     * ao peito.
+     */
+    copia.setColor(
+            corPelo
+    );
+
+    int tamanhoCabeca =
+            (int) Math.round(
+                    58 * escala
+            );
+
+    int cabecaX =
+            (int) Math.round(
+                    centroX
+                    - tamanhoCabeca / 2.0
+                    + fase * 12 * escala
+            );
+
+    int cabecaY =
+            (int) Math.round(
+                    centroY
+                    - 75 * escala
+                    + fase * 35 * escala
+            );
+
+    copia.fillOval(
+            cabecaX,
+            cabecaY,
+            tamanhoCabeca,
+            tamanhoCabeca
+    );
+
+    // PERNAS COMEÇANDO A DOBRAR
+    copia.setColor(
+            corKimono
+    );
+
+    copia.setStroke(
+            new BasicStroke(
+                    (float) Math.max(
+                            2,
+                            15 * escala
+                    ),
+                    BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND
+            )
+    );
+
+    copia.drawLine(
+            (int) (centroX - 18 * escala),
+            (int) (centroY + 35 * escala),
+            (int) (centroX - 30 * escala),
+            (int) (centroY + (65 - 20 * fase) * escala)
+    );
+
+    copia.drawLine(
+            (int) (centroX + 18 * escala),
+            (int) (centroY + 35 * escala),
+            (int) (centroX + 32 * escala),
+            (int) (centroY + (65 - 20 * fase) * escala)
+    );
+
+    copia.dispose();
+}
+
+private void desenharMergulhoRolamento(
+        Graphics2D g2,
+        double fase
+) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    prepararDesenho(copia);
+
+    double centroX =
+            x + 35 * escala;
+
+    double centroY =
+            y + (100 + 8 * fase) * escala;
+
+    /*
+     * Vai de aproximadamente 20 graus
+     * até quase 90 graus.
+     */
+    double angulo =
+            0.35 + fase * 1.05;
+
+    /*
+     * Já fica visivelmente maior.
+     */
+    double aumento =
+            1.10 + fase * 0.10;
+
+    copia.translate(
+            centroX,
+            centroY
+    );
+
+    copia.rotate(
+            angulo
+    );
+
+    copia.scale(
+            aumento,
+            aumento
+    );
+
+    copia.translate(
+            -centroX,
+            -centroY
+    );
+
+    // =========================
+    // CORPO SE ENROLANDO
+    // =========================
+
+    copia.setColor(
+            corKimono
+    );
+
+    int largura =
+            (int) Math.round(
+                    (72 + 5 * fase) * escala
+            );
+
+    int altura =
+            (int) Math.round(
+                    (72 - 8 * fase) * escala
+            );
+
+    copia.fillRoundRect(
+            (int) Math.round(
+                    centroX - largura / 2.0
+            ),
+            (int) Math.round(
+                    centroY - altura / 2.0
+            ),
+            largura,
+            altura,
+            (int) Math.round(32 * escala),
+            (int) Math.round(32 * escala)
+    );
+
+    /*
+     * Não existe mais cabeça separada.
+     *
+     * Ela já está recolhida.
+     */
+
+    // BRAÇOS/PATAS ENTRANDO
+    copia.setColor(
+            corPelo
+    );
+
+    copia.fillOval(
+            (int) Math.round(
+                    centroX - 35 * escala
+            ),
+            (int) Math.round(
+                    centroY - 3 * escala
+            ),
+            (int) Math.round(
+                    25 * escala
+            ),
+            (int) Math.round(
+                    19 * escala
+            )
+    );
+
+    // JOELHOS/PATAS
+    copia.fillOval(
+            (int) Math.round(
+                    centroX + 10 * escala
+            ),
+            (int) Math.round(
+                    centroY + 12 * escala
+            ),
+            (int) Math.round(
+                    27 * escala
+            ),
+            (int) Math.round(
+                    20 * escala
+            )
+    );
+
+    copia.dispose();
+}
+
+private void desenharSaidaRolamento(
+        Graphics2D g2,
+        double fase
+) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    prepararDesenho(copia);
+
+    double centroX =
+            x + 35 * escala;
+
+    double centroY =
+            y + (108 - 8 * fase) * escala;
+
+    /*
+     * Ainda está girado no começo,
+     * mas vai voltando.
+     */
+    double angulo =
+            1.35
+            - fase * 1.05;
+
+    double aumento =
+            1.20 - fase * 0.10;
+
+    copia.translate(
+            centroX,
+            centroY
+    );
+
+    copia.rotate(
+            angulo
+    );
+
+    copia.scale(
+            aumento,
+            aumento
+    );
+
+    copia.translate(
+            -centroX,
+            -centroY
+    );
+
+    // =========================
+    // CORPO ABRINDO
+    // =========================
+
+    copia.setColor(
+            corKimono
+    );
+
+    int largura =
+            (int) Math.round(
+                    (77 - 9 * fase) * escala
+            );
+
+    int altura =
+            (int) Math.round(
+                    (64 + 35 * fase) * escala
+            );
+
+    copia.fillRoundRect(
+            (int) Math.round(
+                    centroX - largura / 2.0
+            ),
+            (int) Math.round(
+                    centroY - altura / 2.0
+            ),
+            largura,
+            altura,
+            (int) Math.round(28 * escala),
+            (int) Math.round(28 * escala)
+    );
+
+    // PATA DE APOIO
+    copia.setColor(
+            corPelo
+    );
+
+    copia.fillOval(
+            (int) Math.round(
+                    centroX - 38 * escala
+            ),
+            (int) Math.round(
+                    centroY + 20 * escala
+            ),
+            (int) Math.round(
+                    30 * escala
+            ),
+            (int) Math.round(
+                    19 * escala
+            )
+    );
+
+    /*
+     * A cabeça começa a reaparecer
+     * somente na segunda metade
+     * da saída.
+     */
+    if (fase > 0.50) {
+
+        double aparicao =
+                (fase - 0.50) / 0.50;
+
+        int tamanhoCabeca =
+                (int) Math.round(
+                        58
+                        * escala
+                        * aparicao
+                );
+
+        copia.setColor(
+                corPelo
+        );
+
+        copia.fillOval(
+                (int) Math.round(
+                        centroX
+                        - tamanhoCabeca / 2.0
+                        + 12 * escala
+                ),
+                (int) Math.round(
+                        centroY
+                        - 55 * escala
+                        * aparicao
+                ),
+                tamanhoCabeca,
+                tamanhoCabeca
+        );
+    }
+
+    copia.dispose();
+}
+
+private void desenharLevantandoRolamento(
+        Graphics2D g2,
+        double fase
+) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    prepararDesenho(copia);
+
+    double centroX =
+            x + 35 * escala;
+
+    /*
+     * Ele começa baixo e volta
+     * para a altura normal.
+     */
+    double centroY =
+            y + (100 - 20 * fase) * escala;
+
+    double aumento =
+            1.10 - fase * 0.10;
+
+    double inclinacao =
+            0.30 * (1.0 - fase);
+
+    copia.translate(
+            centroX,
+            centroY
+    );
+
+    copia.rotate(
+            inclinacao
+    );
+
+    copia.scale(
+            aumento,
+            aumento
+    );
+
+    copia.translate(
+            -centroX,
+            -centroY
+    );
+
+    // =========================
+    // CORPO VOLTANDO AO NORMAL
+    // =========================
+
+    copia.setColor(
+            corKimono
+    );
+
+    int largura =
+            (int) Math.round(
+                    (68 + 4 * fase) * escala
+            );
+
+    int altura =
+            (int) Math.round(
+                    (95 + 10 * fase) * escala
+            );
+
+    copia.fillRoundRect(
+            (int) Math.round(
+                    centroX - largura / 2.0
+            ),
+            (int) Math.round(
+                    centroY - altura / 2.0
+            ),
+            largura,
+            altura,
+            (int) Math.round(24 * escala),
+            (int) Math.round(24 * escala)
+    );
+
+    // =========================
+    // CABEÇA
+    // =========================
+
+    copia.setColor(
+            corPelo
+    );
+
+    int tamanhoCabeca =
+            (int) Math.round(
+                    58 * escala
+            );
+
+    copia.fillOval(
+            (int) Math.round(
+                    centroX
+                    - tamanhoCabeca / 2.0
+            ),
+            (int) Math.round(
+                    centroY
+                    - 76 * escala
+                    + 16 * escala * (1.0 - fase)
+            ),
+            tamanhoCabeca,
+            tamanhoCabeca
+    );
+
+    // =========================
+    // PERNAS SE ABRINDO
+    // =========================
+
+    copia.setColor(
+            corKimono
+    );
+
+    copia.setStroke(
+            new BasicStroke(
+                    (float) Math.max(
+                            2,
+                            15 * escala
+                    ),
+                    BasicStroke.CAP_ROUND,
+                    BasicStroke.JOIN_ROUND
+            )
+    );
+
+    double abertura =
+            15 + fase * 18;
+
+    copia.drawLine(
+            (int) (centroX - 14 * escala),
+            (int) (centroY + 38 * escala),
+            (int) (centroX - abertura * escala),
+            (int) (centroY + 70 * escala)
+    );
+
+    copia.drawLine(
+            (int) (centroX + 14 * escala),
+            (int) (centroY + 38 * escala),
+            (int) (centroX + abertura * escala),
+            (int) (centroY + 70 * escala)
+    );
+
+    copia.dispose();
+}
+
+private void desenharDeitado(Graphics2D g2) {
+
+    Graphics2D copia =
+            (Graphics2D) g2.create();
+
+    prepararDesenho(copia);
+
+    /*
+     * Em vez de redesenhar o personagem,
+     * usamos exatamente a pose normal
+     * e giramos o conjunto inteiro em 90 graus.
+     *
+     * O ponto de rotação fica próximo aos pés.
+     */
+    double pontoX =
+            x + 35 * escala;
+
+    double pontoY =
+            y + 244 * escala;
+
+    copia.rotate(
+            Math.PI / 2.0,
+            pontoX,
+            pontoY
+    );
+
+    /*
+     * Parado no chão:
+     * mantém a pose neutra.
+     *
+     * Rastejando:
+     * reutiliza exatamente a mesma animação
+     * de caminhada, só que com todo o Miau
+     * rotacionado em 90 graus.
+     */
+    boolean animarRastejo =
+            isAndando();
+
+    desenharEmPe(
+            copia,
+            !animarRastejo
+    );
+
+    copia.dispose();
+}
+
+
+private void desenharEmPe(
+        Graphics2D g2,
+        boolean poseNeutra
+) {
+
+    prepararDesenho(g2);
+
+    desenharCabeca(g2);
         /*
          * O Branco possui uma passada mais firme/pesada.
          */
         int passo
-                = (int) (getOscilacaoPasso() * 0.75);
+                = poseNeutra
+                        ? 0
+                        : (int) (getOscilacaoPasso() * 0.75);
 
         int encolhimento
                 = getEncolhimentoAgachado();
@@ -59,7 +840,7 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         int idleY = 0;
         int idleAlternado = 0;
 
-        if (isIdleEmPe()) {
+        if (!poseNeutra && isIdleEmPe()) {
 
             idleX
                     = getIdleX(
@@ -86,7 +867,7 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                     );
         }
 
-        if (isIdleAgachado()) {
+        if (!poseNeutra && isIdleAgachado()) {
 
             idleX
                     = getIdleX(
@@ -113,7 +894,7 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                     );
         }
 
-        if (isTaunt()) {
+        if (!poseNeutra && isTaunt()) {
 
             idleX
                     = getIdleX(
@@ -555,7 +1336,33 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                 (int) (96 * escala),
                 (int) (12 * escala)
         );
+}
+
+
+    @Override
+public void desenhar(Graphics2D g2) {
+
+    prepararDesenho(g2);
+
+    if (isRolando()) {
+
+        desenharRolamento(g2);
+
+        return;
     }
+
+    if (isDeitado()) {
+
+        desenharDeitado(g2);
+
+        return;
+    }
+
+    desenharEmPe(
+            g2,
+            false
+    );
+}
 
     @Override
     protected double getProfundidadeAgachamento() {

@@ -5,6 +5,7 @@ import com.irmaosmiau.entities.IrmaoMiauBranco;
 import com.irmaosmiau.entities.IrmaoMiauPreto;
 import com.irmaosmiau.entities.TipoPersonagem;
 import com.irmaosmiau.input.InputHandler;
+import com.irmaosmiau.entities.Direcao;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -92,238 +93,225 @@ public class GamePanel extends JPanel {
 
         if (fimDeJogo) {
 
-    atualizarMenuFim();
+            atualizarMenuFim();
 
-    menuFim.setVisible(true);
+            menuFim.setVisible(true);
 
-    setComponentZOrder(
-            menuFim,
-            0
-    );
+            setComponentZOrder(
+                    menuFim,
+                    0
+            );
 
-    repaint();
-}
+            repaint();
+        }
     }
-    
+
     // Atualizaer menu fim
-    
     private void atualizarMenuFim() {
 
-    for (
-            java.awt.Component componente
-            : menuFim.getComponents()
-    ) {
+        for (java.awt.Component componente
+                : menuFim.getComponents()) {
 
-        if (
-                componente
-                instanceof javax.swing.JLabel
-        ) {
+            if (componente instanceof javax.swing.JLabel) {
 
-            javax.swing.JLabel label =
-                    (javax.swing.JLabel) componente;
+                javax.swing.JLabel label
+                        = (javax.swing.JLabel) componente;
 
-            if (
-                    "motivoFim".equals(
-                            label.getName()
-                    )
-            ) {
+                if ("motivoFim".equals(
+                        label.getName()
+                )) {
 
-                label.setText(
-                        mensagemFim
-                );
+                    label.setText(
+                            mensagemFim
+                    );
 
-                break;
+                    break;
+                }
             }
         }
     }
-}
-    
+
     //Menu de fim
-    
     private void criarMenuFim() {
 
-    menuFim = new JPanel(
-            new GridBagLayout()
-    );
+        menuFim = new JPanel(
+                new GridBagLayout()
+        );
 
-    menuFim.setBackground(
-            new Color(
-                    230,
-                    230,
-                    230
-            )
-    );
+        menuFim.setBackground(
+                new Color(
+                        230,
+                        230,
+                        230
+                )
+        );
 
-    menuFim.setBounds(
-            220,
-            90,
-            360,
-            285
-    );
+        menuFim.setBounds(
+                220,
+                90,
+                360,
+                285
+        );
 
-    GridBagConstraints gbc =
-            new GridBagConstraints();
+        GridBagConstraints gbc
+                = new GridBagConstraints();
 
-    gbc.gridx = 0;
-    gbc.fill =
-            GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.fill
+                = GridBagConstraints.HORIZONTAL;
 
-    gbc.insets =
-            new Insets(
-                    8,
-                    25,
-                    8,
-                    25
-            );
+        gbc.insets
+                = new Insets(
+                        8,
+                        25,
+                        8,
+                        25
+                );
 
-    // =========================
-    // TÍTULO
-    // =========================
+        // =========================
+        // TÍTULO
+        // =========================
+        javax.swing.JLabel titulo
+                = new javax.swing.JLabel(
+                        "FIM",
+                        javax.swing.SwingConstants.CENTER
+                );
 
-    javax.swing.JLabel titulo =
-            new javax.swing.JLabel(
-                    "FIM",
-                    javax.swing.SwingConstants.CENTER
-            );
+        titulo.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        32
+                )
+        );
 
-    titulo.setFont(
-            new Font(
-                    "Arial",
-                    Font.BOLD,
-                    32
-            )
-    );
+        gbc.gridy = 0;
 
-    gbc.gridy = 0;
+        menuFim.add(
+                titulo,
+                gbc
+        );
 
-    menuFim.add(
-            titulo,
-            gbc
-    );
+        // =========================
+        // MOTIVO
+        // =========================
+        javax.swing.JLabel motivo
+                = new javax.swing.JLabel(
+                        "",
+                        javax.swing.SwingConstants.CENTER
+                );
 
-    // =========================
-    // MOTIVO
-    // =========================
+        motivo.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        12
+                )
+        );
 
-    javax.swing.JLabel motivo =
-            new javax.swing.JLabel(
-                    "",
-                    javax.swing.SwingConstants.CENTER
-            );
-
-    motivo.setFont(
-            new Font(
-                    "Arial",
-                    Font.BOLD,
-                    12
-            )
-    );
-
-    /*
+        /*
      * Guardamos a referência dentro
      * do próprio painel para atualizar
      * depois quando alguém perder.
-     */
-    motivo.setName("motivoFim");
+         */
+        motivo.setName("motivoFim");
 
-    gbc.gridy = 1;
+        gbc.gridy = 1;
 
-    menuFim.add(
-            motivo,
-            gbc
-    );
+        menuFim.add(
+                motivo,
+                gbc
+        );
 
-    // =========================
-    // BOTÕES
-    // =========================
+        // =========================
+        // BOTÕES
+        // =========================
+        JButton tentarNovamente
+                = new JButton(
+                        "TENTAR NOVAMENTE"
+                );
 
-    JButton tentarNovamente =
-            new JButton(
-                    "TENTAR NOVAMENTE"
-            );
+        JButton selecionarPersonagens
+                = new JButton(
+                        "SELECIONAR PERSONAGENS"
+                );
 
-    JButton selecionarPersonagens =
-            new JButton(
-                    "SELECIONAR PERSONAGENS"
-            );
+        JButton menuPrincipal
+                = new JButton(
+                        "MENU PRINCIPAL"
+                );
 
-    JButton menuPrincipal =
-            new JButton(
-                    "MENU PRINCIPAL"
-            );
+        Font fonteBotao
+                = new Font(
+                        "Arial",
+                        Font.BOLD,
+                        15
+                );
 
-    Font fonteBotao =
-            new Font(
-                    "Arial",
-                    Font.BOLD,
-                    15
-            );
+        tentarNovamente.setFont(
+                fonteBotao
+        );
 
-    tentarNovamente.setFont(
-            fonteBotao
-    );
+        selecionarPersonagens.setFont(
+                fonteBotao
+        );
 
-    selecionarPersonagens.setFont(
-            fonteBotao
-    );
+        menuPrincipal.setFont(
+                fonteBotao
+        );
 
-    menuPrincipal.setFont(
-            fonteBotao
-    );
+        tentarNovamente.addActionListener(
+                e -> {
 
-    tentarNovamente.addActionListener(
-            e -> {
+                    gameLoop.stop();
 
-                gameLoop.stop();
+                    aoTentarNovamente.run();
+                }
+        );
 
-                aoTentarNovamente.run();
-            }
-    );
+        selecionarPersonagens.addActionListener(
+                e -> {
 
-    selecionarPersonagens.addActionListener(
-            e -> {
+                    gameLoop.stop();
 
-                gameLoop.stop();
+                    aoTrocarPersonagem.run();
+                }
+        );
 
-                aoTrocarPersonagem.run();
-            }
-    );
+        menuPrincipal.addActionListener(
+                e -> {
 
-    menuPrincipal.addActionListener(
-            e -> {
+                    gameLoop.stop();
 
-                gameLoop.stop();
+                    aoVoltarMenu.run();
+                }
+        );
 
-                aoVoltarMenu.run();
-            }
-    );
+        gbc.gridy = 2;
 
-    gbc.gridy = 2;
+        menuFim.add(
+                tentarNovamente,
+                gbc
+        );
 
-    menuFim.add(
-            tentarNovamente,
-            gbc
-    );
+        gbc.gridy = 3;
 
-    gbc.gridy = 3;
+        menuFim.add(
+                selecionarPersonagens,
+                gbc
+        );
 
-    menuFim.add(
-            selecionarPersonagens,
-            gbc
-    );
+        gbc.gridy = 4;
 
-    gbc.gridy = 4;
+        menuFim.add(
+                menuPrincipal,
+                gbc
+        );
 
-    menuFim.add(
-            menuPrincipal,
-            gbc
-    );
+        menuFim.setVisible(false);
 
-    menuFim.setVisible(false);
-
-    add(menuFim);
-}
-    
+        add(menuFim);
+    }
 
     // =============================
     // PULOS
@@ -338,10 +326,26 @@ public class GamePanel extends JPanel {
     private boolean puloCurtoBrancoAnterior = false;
     private boolean puloCurtoPretoAnterior = false;
 
+    // =============================
+// ROLAMENTO
+// =============================
+    private boolean rolamentoAnterior = false;
+
+    private boolean rolamentoBrancoAnterior = false;
+    private boolean rolamentoPretoAnterior = false;
+
     private boolean fimDeJogo = false;
 
     private String mensagemFim = "";
 
+    // =============================
+// DEITAR / LEVANTAR
+// =============================
+private boolean deitarAnterior = false;
+
+private boolean deitarBrancoAnterior = false;
+private boolean deitarPretoAnterior = false;
+    
     // =============================
     // ORIENTAÇÃO
     // =============================
@@ -498,15 +502,60 @@ public class GamePanel extends JPanel {
 
         boolean agachando
                 = input.isAgachar();
+        
+        // =========================
+// DEITAR / LEVANTAR
+// =========================
+if (input.isDeitar()
+        && !deitarAnterior) {
 
+    jogadorPrincipal.alternarDeitado();
+}
+
+        // =========================
+        // RESPIRAÇÃO
+        // =========================
+        boolean respirando
+                = input.isRespirar();
+
+        jogadorPrincipal.setRespirando(
+                respirando
+        );
+
+        // =========================
+        // CORRIDA
+        // =========================
         boolean correndo
                 = input.isCorrer()
-                && !agachando;
+                && !agachando
+                && !respirando;
 
         jogadorPrincipal.setCorrendo(
                 correndo
         );
 
+        // =========================
+// ROLAMENTO
+// =========================
+        if (input.isRolar()
+                && !rolamentoAnterior) {
+
+            Direcao direcao
+                    = obterDirecao(
+                            input.isEsquerda(),
+                            input.isDireita(),
+                            input.isCima(),
+                            input.isBaixo()
+                    );
+
+            jogadorPrincipal.iniciarRolamento(
+                    direcao
+            );
+        }
+
+        // =========================
+        // MOVIMENTO
+        // =========================
         moverPersonagem(
                 jogadorPrincipal,
                 input.isEsquerda(),
@@ -514,7 +563,8 @@ public class GamePanel extends JPanel {
                 input.isCima(),
                 input.isBaixo(),
                 agachando,
-                correndo
+                correndo,
+                respirando
         );
 
         // =========================
@@ -551,6 +601,13 @@ public class GamePanel extends JPanel {
 
         puloCurtoAnterior
                 = input.isPularCurto();
+
+        rolamentoAnterior
+                = input.isRolar();
+        
+        deitarAnterior
+        = input.isDeitar();
+
     }
 
     // =====================================================
@@ -561,14 +618,59 @@ public class GamePanel extends JPanel {
         boolean agachando
                 = input.isAgachar();
 
+        // =========================
+// DEITAR / LEVANTAR
+// =========================
+if (input.isDeitar()
+        && !deitarBrancoAnterior) {
+
+    jogadorBranco.alternarDeitado();
+}
+        
+        // =========================
+        // RESPIRAÇÃO
+        // =========================
+        boolean respirando
+                = input.isRespirar();
+
+        jogadorBranco.setRespirando(
+                respirando
+        );
+
+        // =========================
+        // CORRIDA
+        // =========================
         boolean correndo
                 = input.isCorrer()
-                && !agachando;
+                && !agachando
+                && !respirando;
 
         jogadorBranco.setCorrendo(
                 correndo
         );
 
+        // =========================
+// ROLAMENTO
+// =========================
+        if (input.isRolar()
+                && !rolamentoBrancoAnterior) {
+
+            Direcao direcao
+                    = obterDirecao(
+                            input.isEsquerda(),
+                            input.isDireita(),
+                            input.isCima(),
+                            input.isBaixo()
+                    );
+
+            jogadorBranco.iniciarRolamento(
+                    direcao
+            );
+        }
+
+        // =========================
+        // MOVIMENTO
+        // =========================
         moverPersonagem(
                 jogadorBranco,
                 input.isEsquerda(),
@@ -576,17 +678,22 @@ public class GamePanel extends JPanel {
                 input.isCima(),
                 input.isBaixo(),
                 agachando,
-                correndo
+                correndo,
+                respirando
         );
 
-        // Pulo alto
+        // =========================
+        // PULO ALTO
+        // =========================
         if (input.isPular()
                 && !puloBrancoAnterior) {
 
             jogadorBranco.pular();
         }
 
-        // Pulo curto
+        // =========================
+        // PULO CURTO
+        // =========================
         if (input.isPularCurto()
                 && !puloCurtoBrancoAnterior) {
 
@@ -609,7 +716,15 @@ public class GamePanel extends JPanel {
 
         puloCurtoBrancoAnterior
                 = input.isPularCurto();
+        rolamentoBrancoAnterior
+                = input.isRolar();
+    deitarBrancoAnterior
+        = input.isDeitar();
+    
     }
+    
+    
+    
 
     // =====================================================
     // MIAU PRETO
@@ -619,14 +734,58 @@ public class GamePanel extends JPanel {
         boolean agachando
                 = input.isPretoAgachar();
 
+        // =========================
+// DEITAR / LEVANTAR
+// =========================
+if (input.isPretoDeitar()
+        && !deitarPretoAnterior) {
+
+    jogadorPreto.alternarDeitado();
+}
+        // =========================
+        // RESPIRAÇÃO
+        // =========================
+        boolean respirando
+                = input.isPretoRespirar();
+
+        jogadorPreto.setRespirando(
+                respirando
+        );
+
+        // =========================
+        // CORRIDA
+        // =========================
         boolean correndo
                 = input.isPretoCorrer()
-                && !agachando;
+                && !agachando
+                && !respirando;
 
         jogadorPreto.setCorrendo(
                 correndo
         );
 
+        // =========================
+// ROLAMENTO
+// =========================
+        if (input.isPretoRolar()
+                && !rolamentoPretoAnterior) {
+
+            Direcao direcao
+                    = obterDirecao(
+                            input.isPretoEsquerda(),
+                            input.isPretoDireita(),
+                            input.isPretoCima(),
+                            input.isPretoBaixo()
+                    );
+
+            jogadorPreto.iniciarRolamento(
+                    direcao
+            );
+        }
+
+        // =========================
+        // MOVIMENTO
+        // =========================
         moverPersonagem(
                 jogadorPreto,
                 input.isPretoEsquerda(),
@@ -634,17 +793,22 @@ public class GamePanel extends JPanel {
                 input.isPretoCima(),
                 input.isPretoBaixo(),
                 agachando,
-                correndo
+                correndo,
+                respirando
         );
 
-        // Pulo alto
+        // =========================
+        // PULO ALTO
+        // =========================
         if (input.isPretoPular()
                 && !puloPretoAnterior) {
 
             jogadorPreto.pular();
         }
 
-        // Pulo curto
+        // =========================
+        // PULO CURTO
+        // =========================
         if (input.isPretoPularCurto()
                 && !puloCurtoPretoAnterior) {
 
@@ -667,6 +831,57 @@ public class GamePanel extends JPanel {
 
         puloCurtoPretoAnterior
                 = input.isPretoPularCurto();
+
+        rolamentoPretoAnterior
+                = input.isPretoRolar();
+    
+        deitarPretoAnterior
+        = input.isPretoDeitar();
+    }
+
+    // =====================================================
+// DIREÇÃO DO ROLAMENTO
+// =====================================================
+    private Direcao obterDirecao(
+            boolean esquerda,
+            boolean direita,
+            boolean cima,
+            boolean baixo
+    ) {
+
+        if (cima && esquerda) {
+            return Direcao.CIMA_ESQUERDA;
+        }
+
+        if (cima && direita) {
+            return Direcao.CIMA_DIREITA;
+        }
+
+        if (baixo && esquerda) {
+            return Direcao.BAIXO_ESQUERDA;
+        }
+
+        if (baixo && direita) {
+            return Direcao.BAIXO_DIREITA;
+        }
+
+        if (cima) {
+            return Direcao.CIMA;
+        }
+
+        if (baixo) {
+            return Direcao.BAIXO;
+        }
+
+        if (esquerda) {
+            return Direcao.ESQUERDA;
+        }
+
+        if (direita) {
+            return Direcao.DIREITA;
+        }
+
+        return null;
     }
     // =====================================================
     // MOVIMENTO GENÉRICO
@@ -679,15 +894,33 @@ public class GamePanel extends JPanel {
             boolean cima,
             boolean baixo,
             boolean agachando,
-            boolean correndo
+            boolean correndo,
+            boolean respirando
     ) {
-
+        /*
+ * Durante o rolamento, o personagem
+ * possui movimento próprio.
+         */
+        if (personagem.isRolando()) {
+            return;
+        }
         double velocidadeAtual;
 
         // =========================
         // DEFINE A VELOCIDADE
         // =========================
-        if (agachando) {
+        if (personagem.isDeitado()) {
+
+            velocidadeAtual
+                    = personagem.getVelocidadeRastejando();
+
+        } else if (respirando) {
+
+            velocidadeAtual
+                    = personagem
+                            .getVelocidadeRespirando();
+
+        } else if (agachando) {
 
             velocidadeAtual
                     = personagem
@@ -707,21 +940,17 @@ public class GamePanel extends JPanel {
         }
 
         /*
-     * Por enquanto nosso movimento ainda usa int.
+     * Agora o deslocamento continua
+     * sendo double.
      *
-     * Quando fizermos o estado DEITADO com 7%,
-     * transformaremos isso em movimento decimal.
+     * IrmaoMiau é quem acumula
+     * as frações dos pixels.
          */
-        int deslocamento
-                = Math.max(
-                        1,
-                        (int) Math.round(
-                                velocidadeAtual
-                        )
-                );
+        double deslocamento
+                = velocidadeAtual;
 
         // =========================
-        // MOVIMENTO
+        // MOVIMENTO HORIZONTAL
         // =========================
         if (direita) {
 
@@ -737,6 +966,9 @@ public class GamePanel extends JPanel {
             );
         }
 
+        // =========================
+        // MOVIMENTO VERTICAL
+        // =========================
         if (cima) {
 
             personagem.moverVertical(
@@ -964,25 +1196,26 @@ public class GamePanel extends JPanel {
     }
 
     private void desenharFimDeJogo(
-        Graphics2D g2
-) {
+            Graphics2D g2
+    ) {
 
-    g2.setColor(
-            new Color(
-                    0,
-                    0,
-                    0,
-                    120
-            )
-    );
+        g2.setColor(
+                new Color(
+                        0,
+                        0,
+                        0,
+                        120
+                )
+        );
 
-    g2.fillRect(
-            0,
-            0,
-            LARGURA,
-            ALTURA
-    );
-}
+        g2.fillRect(
+                0,
+                0,
+                LARGURA,
+                ALTURA
+        );
+    }
+
     /*
     private void desenharFimDeJogo(
             Graphics2D g2
@@ -1052,7 +1285,7 @@ public class GamePanel extends JPanel {
                 225
         );
     }
-*/
+     */
     // =====================================================
     // DESENHO
     // =====================================================

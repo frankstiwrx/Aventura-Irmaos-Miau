@@ -22,6 +22,10 @@ public class InputHandler {
 
     private boolean correr;
     private boolean pularCurto;
+    private boolean respirar;
+    private boolean rolar;
+
+    private boolean deitar;
 
     // =============================
     // MIAU PRETO
@@ -36,6 +40,10 @@ public class InputHandler {
 
     private boolean pretoCorrer;
     private boolean pretoPularCurto;
+    private boolean pretoRespirar;
+    private boolean pretoRolar;
+    
+    private boolean pretoDeitar;
 
     public InputHandler(JComponent componente) {
 
@@ -56,6 +64,24 @@ public class InputHandler {
                 () -> esquerda = true,
                 () -> esquerda = false
         );
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "R",
+        "rolar",
+        () -> rolar = true,
+        () -> rolar = false
+);
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "F",
+        "deitar",
+        () -> deitar = true,
+        () -> deitar = false
+);
 
         mapearTecla(
                 inputMap,
@@ -110,6 +136,15 @@ public class InputHandler {
         () -> correr = true,
         () -> correr = false
 );
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "X",
+        "respirar",
+        () -> respirar = true,
+        () -> respirar = false
+);
 
 mapearTecla(
         inputMap,
@@ -131,7 +166,23 @@ mapearTecla(
                 () -> pretoEsquerda = true,
                 () -> pretoEsquerda = false
         );
-
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "O",
+        "pretoRolar",
+        () -> pretoRolar = true,
+        () -> pretoRolar = false
+);
+mapearTecla(
+        inputMap,
+        actionMap,
+        "J",
+        "pretoDeitar",
+        () -> pretoDeitar = true,
+        () -> pretoDeitar = false
+);
         mapearTecla(
                 inputMap,
                 actionMap,
@@ -167,6 +218,15 @@ mapearTecla(
                 () -> pretoPular = true,
                 () -> pretoPular = false
         );
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "L",
+        "pretoRespirar",
+        () -> pretoRespirar = true,
+        () -> pretoRespirar = false
+);
 
         mapearTecla(
                 inputMap,
@@ -287,6 +347,19 @@ public boolean isPularCurto() {
     return pularCurto;
 }
 
+public boolean isRespirar() {
+
+    return respirar;
+}
+
+public boolean isRolar() {
+
+    return rolar;
+}
+public boolean isDeitar() {
+
+    return deitar;
+}
 
     // =============================
     // GETTERS - MIAU PRETO
@@ -321,4 +394,20 @@ public boolean isPularCurto() {
 public boolean isPretoPularCurto() {
     return pretoPularCurto;
 }
+
+public boolean isPretoRespirar() {
+
+    return pretoRespirar;
+    
+}
+public boolean isPretoRolar() {
+
+    return pretoRolar;
+}
+
+public boolean isPretoDeitar() {
+
+    return pretoDeitar;
+}
+
 }
