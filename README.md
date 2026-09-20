@@ -8,11 +8,20 @@ O projeto ainda está em desenvolvimento e novas mecânicas e animações serão
 
 ## 🛠️ Tecnologias
 
-- Java
-- Java Swing
-- Java2D
-- Maven
+* Java
+* Java Swing
+* Java2D
+* Maven
 
 ## 🚧 Status
 
 Em desenvolvimento.
+
+
+
+\## 📹 Vídeo ilustrativo
+
+
+
+https://www.youtube.com/playlist?list=PLOzzwtd61h24
+

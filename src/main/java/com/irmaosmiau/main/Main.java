@@ -53,7 +53,7 @@ public class Main {
         trocarTela(janela, selecao);
     }
 
-    private static void iniciarJogo(
+private static void iniciarJogo(
         JFrame janela,
         TipoPersonagem tipo
 ) {
@@ -62,10 +62,20 @@ public class Main {
             tipo,
 
             // MENU PRINCIPAL
-            () -> mostrarMenu(janela),
+            () -> mostrarMenu(
+                    janela
+            ),
 
-            // TROCAR DE MIAU
-            () -> mostrarSelecao(janela)
+            // SELECIONAR PERSONAGENS
+            () -> mostrarSelecao(
+                    janela
+            ),
+
+            // TENTAR NOVAMENTE
+            () -> iniciarJogo(
+                    janela,
+                    tipo
+            )
     );
 
     trocarTela(

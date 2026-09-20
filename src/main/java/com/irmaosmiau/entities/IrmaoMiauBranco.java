@@ -17,7 +17,17 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                 Color.BLACK,
                 Color.BLACK,
                 "Irmão Miau Branco",
-                "Jiu-Jitsu"
+                "Jiu-Jitsu",
+                new AtributosLutador(
+                        35, // condicionamento
+                        25, // fôlego
+                        42, // força
+                        22, // velocidade
+                        25, // agilidade
+                        25, // técnica
+                        22, // recuperação
+                        72 // peso
+                )
         );
     }
 
@@ -30,14 +40,14 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         /*
          * O Branco possui uma passada mais firme/pesada.
          */
-        int passo =
-                (int) (getOscilacaoPasso() * 0.75);
+        int passo
+                = (int) (getOscilacaoPasso() * 0.75);
 
-        int encolhimento =
-                getEncolhimentoAgachado();
+        int encolhimento
+                = getEncolhimentoAgachado();
 
-        int aberturaAgachado =
-                isAgachado()
+        int aberturaAgachado
+                = isAgachado()
                         ? (int) (10 * escala)
                         : 0;
 
@@ -51,24 +61,24 @@ public class IrmaoMiauBranco extends IrmaoMiau {
 
         if (isIdleEmPe()) {
 
-            idleX =
-                    getIdleX(
+            idleX
+                    = getIdleX(
                             Math.max(
                                     1,
                                     (int) Math.round(3 * escala)
                             )
                     );
 
-            idleY =
-                    getIdleY(
+            idleY
+                    = getIdleY(
                             Math.max(
                                     1,
                                     (int) Math.round(2 * escala)
                             )
                     );
 
-            idleAlternado =
-                    getIdleAlternado(
+            idleAlternado
+                    = getIdleAlternado(
                             Math.max(
                                     1,
                                     (int) Math.round(2 * escala)
@@ -78,24 +88,24 @@ public class IrmaoMiauBranco extends IrmaoMiau {
 
         if (isIdleAgachado()) {
 
-            idleX =
-                    getIdleX(
+            idleX
+                    = getIdleX(
                             Math.max(
                                     1,
                                     (int) Math.round(4 * escala)
                             )
                     );
 
-            idleY =
-                    getIdleY(
+            idleY
+                    = getIdleY(
                             Math.max(
                                     1,
                                     (int) Math.round(2 * escala)
                             )
                     );
 
-            idleAlternado =
-                    getIdleAlternado(
+            idleAlternado
+                    = getIdleAlternado(
                             Math.max(
                                     1,
                                     (int) Math.round(3 * escala)
@@ -105,24 +115,24 @@ public class IrmaoMiauBranco extends IrmaoMiau {
 
         if (isTaunt()) {
 
-            idleX =
-                    getIdleX(
+            idleX
+                    = getIdleX(
                             Math.max(
                                     1,
                                     (int) Math.round(2 * escala)
                             )
                     );
 
-            idleY =
-                    getIdleY(
+            idleY
+                    = getIdleY(
                             Math.max(
                                     1,
                                     (int) Math.round(1 * escala)
                             )
                     );
 
-            idleAlternado =
-                    getIdleAlternado(
+            idleAlternado
+                    = getIdleAlternado(
                             Math.max(
                                     1,
                                     (int) Math.round(1 * escala)
@@ -130,16 +140,15 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                     );
         }
 
-        int corpoY =
-                getYVisual()
+        int corpoY
+                = getYVisual()
                 + (int) (70 * escala);
 
         // =========================
         // CORPO
         // =========================
-
-        Polygon corpo =
-                new Polygon();
+        Polygon corpo
+                = new Polygon();
 
         corpo.addPoint(
                 x - (int) (10 * escala),
@@ -167,7 +176,6 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // =========================
         // MEMBROS
         // =========================
-
         g2.setColor(corKimono);
 
         g2.setStroke(
@@ -182,34 +190,33 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // BRAÇO ESQUERDO
         // ombro -> cotovelo -> mão
         // =================================================
+        int ombroEsquerdoX
+                = x + (int) (3 * escala);
 
-        int ombroEsquerdoX =
-                x + (int) (3 * escala);
+        int ombroEsquerdoY
+                = corpoY + (int) (22 * escala);
 
-        int ombroEsquerdoY =
-                corpoY + (int) (22 * escala);
-
-        int cotoveloEsquerdoX =
-                x
+        int cotoveloEsquerdoX
+                = x
                 - (int) (14 * escala)
                 + passo / 3
                 - aberturaAgachado / 2
                 + idleX;
 
-        int cotoveloEsquerdoY =
-                corpoY
+        int cotoveloEsquerdoY
+                = corpoY
                 + (int) (42 * escala)
                 + idleY;
 
-        int maoEsquerdaX =
-                x
+        int maoEsquerdaX
+                = x
                 + (int) (3 * escala)
                 + passo / 2
                 - aberturaAgachado
                 + idleAlternado;
 
-        int maoEsquerdaY =
-                corpoY
+        int maoEsquerdaY
+                = corpoY
                 + (int) (58 * escala)
                 - idleY;
 
@@ -217,34 +224,33 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // BRAÇO DIREITO
         // braço da frente
         // =================================================
+        int ombroDireitoX
+                = x + (int) (73 * escala);
 
-        int ombroDireitoX =
-                x + (int) (73 * escala);
+        int ombroDireitoY
+                = corpoY + (int) (20 * escala);
 
-        int ombroDireitoY =
-                corpoY + (int) (20 * escala);
-
-        int cotoveloDireitoX =
-                x
+        int cotoveloDireitoX
+                = x
                 + (int) (95 * escala)
                 - passo / 3
                 + aberturaAgachado / 2
                 - idleAlternado;
 
-        int cotoveloDireitoY =
-                corpoY
+        int cotoveloDireitoY
+                = corpoY
                 + (int) (36 * escala)
                 - idleY;
 
-        int maoDireitaX =
-                x
+        int maoDireitaX
+                = x
                 + (int) (111 * escala)
                 - passo / 2
                 + aberturaAgachado
                 - idleX;
 
-        int maoDireitaY =
-                corpoY
+        int maoDireitaY
+                = corpoY
                 + (int) (29 * escala)
                 + idleY;
 
@@ -252,76 +258,73 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // PERNA ESQUERDA
         // quadril -> joelho -> pé
         // =================================================
+        int quadrilEsquerdoX
+                = x + (int) (22 * escala);
 
-        int quadrilEsquerdoX =
-                x + (int) (22 * escala);
+        int quadrilEsquerdoY
+                = corpoY + (int) (100 * escala);
 
-        int quadrilEsquerdoY =
-                corpoY + (int) (100 * escala);
-
-        int joelhoEsquerdoX =
-                x
+        int joelhoEsquerdoX
+                = x
                 + (int) (10 * escala)
                 - passo / 2
                 - aberturaAgachado
                 + idleAlternado;
 
-        int joelhoEsquerdoY =
-                corpoY
+        int joelhoEsquerdoY
+                = corpoY
                 + (int) (136 * escala)
                 - encolhimento / 2
                 + idleY;
 
-        int peEsquerdoX =
-                x
+        int peEsquerdoX
+                = x
                 - passo
                 - aberturaAgachado
                 + idleX;
 
-        int peEsquerdoY =
-                corpoY
+        int peEsquerdoY
+                = corpoY
                 + (int) (174 * escala)
                 - encolhimento;
 
         // =================================================
         // PERNA DIREITA
         // =================================================
+        int quadrilDireitoX
+                = x + (int) (52 * escala);
 
-        int quadrilDireitoX =
-                x + (int) (52 * escala);
+        int quadrilDireitoY
+                = corpoY + (int) (100 * escala);
 
-        int quadrilDireitoY =
-                corpoY + (int) (100 * escala);
-
-        int joelhoDireitoX =
-                x
+        int joelhoDireitoX
+                = x
                 + (int) (66 * escala)
                 + passo / 2
                 + aberturaAgachado
                 - idleAlternado;
 
-        int joelhoDireitoY =
-                corpoY
+        int joelhoDireitoY
+                = corpoY
                 + (int) (137 * escala)
                 - encolhimento / 2
                 - idleY;
 
-        int peDireitoX =
-                x
+        int peDireitoX
+                = x
                 + (int) (82 * escala)
                 + passo
                 + aberturaAgachado
                 - idleX;
 
-        int peDireitoY =
-                corpoY
+        int peDireitoY
+                = corpoY
                 + (int) (171 * escala)
                 - encolhimento;
 
         // =================================================
         // TAUNT / POSTURA NATURAL
         // =================================================
-
         if (isTaunt()) {
 
             /*
@@ -332,109 +335,104 @@ public class IrmaoMiauBranco extends IrmaoMiau {
              * - pernas mais próximas;
              * - pequenas poses continuam acontecendo.
              */
+            ombroEsquerdoX
+                    = x + (int) (7 * escala);
 
-            ombroEsquerdoX =
-                    x + (int) (7 * escala);
+            ombroEsquerdoY
+                    = corpoY + (int) (22 * escala);
 
-            ombroEsquerdoY =
-                    corpoY + (int) (22 * escala);
-
-            cotoveloEsquerdoX =
-                    x
+            cotoveloEsquerdoX
+                    = x
                     + (int) (9 * escala)
                     + idleX / 2;
 
-            cotoveloEsquerdoY =
-                    corpoY
+            cotoveloEsquerdoY
+                    = corpoY
                     + (int) (56 * escala)
                     + idleY;
 
-            maoEsquerdaX =
-                    x
+            maoEsquerdaX
+                    = x
                     + (int) (11 * escala)
                     + idleAlternado;
 
-            maoEsquerdaY =
-                    corpoY
+            maoEsquerdaY
+                    = corpoY
                     + (int) (89 * escala)
                     + idleY;
 
+            ombroDireitoX
+                    = x + (int) (69 * escala);
 
-            ombroDireitoX =
-                    x + (int) (69 * escala);
+            ombroDireitoY
+                    = corpoY + (int) (22 * escala);
 
-            ombroDireitoY =
-                    corpoY + (int) (22 * escala);
-
-            cotoveloDireitoX =
-                    x
+            cotoveloDireitoX
+                    = x
                     + (int) (68 * escala)
                     - idleX / 2;
 
-            cotoveloDireitoY =
-                    corpoY
+            cotoveloDireitoY
+                    = corpoY
                     + (int) (56 * escala)
                     - idleY;
 
-            maoDireitaX =
-                    x
+            maoDireitaX
+                    = x
                     + (int) (67 * escala)
                     - idleAlternado;
 
-            maoDireitaY =
-                    corpoY
+            maoDireitaY
+                    = corpoY
                     + (int) (89 * escala)
                     + idleY;
 
+            quadrilEsquerdoX
+                    = x + (int) (29 * escala);
 
-            quadrilEsquerdoX =
-                    x + (int) (29 * escala);
-
-            joelhoEsquerdoX =
-                    x
+            joelhoEsquerdoX
+                    = x
                     + (int) (29 * escala)
                     + idleX / 2;
 
-            peEsquerdoX =
-                    x
+            peEsquerdoX
+                    = x
                     + (int) (27 * escala)
                     + idleX;
 
+            quadrilDireitoX
+                    = x + (int) (47 * escala);
 
-            quadrilDireitoX =
-                    x + (int) (47 * escala);
-
-            joelhoDireitoX =
-                    x
+            joelhoDireitoX
+                    = x
                     + (int) (47 * escala)
                     - idleX / 2;
 
-            peDireitoX =
-                    x
+            peDireitoX
+                    = x
                     + (int) (50 * escala)
                     - idleX;
 
-            joelhoEsquerdoY =
-                    corpoY
+            joelhoEsquerdoY
+                    = corpoY
                     + (int) (137 * escala)
                     + idleY;
 
-            joelhoDireitoY =
-                    corpoY
+            joelhoDireitoY
+                    = corpoY
                     + (int) (137 * escala)
                     - idleY;
 
-            peEsquerdoY =
-                    corpoY + (int) (174 * escala);
+            peEsquerdoY
+                    = corpoY + (int) (174 * escala);
 
-            peDireitoY =
-                    corpoY + (int) (174 * escala);
+            peDireitoY
+                    = corpoY + (int) (174 * escala);
         }
 
         // =========================
         // DESENHO DOS BRAÇOS
         // =========================
-
         g2.drawLine(
                 ombroEsquerdoX,
                 ombroEsquerdoY,
@@ -466,7 +464,6 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // =========================
         // DESENHO DAS PERNAS
         // =========================
-
         g2.drawLine(
                 quadrilEsquerdoX,
                 quadrilEsquerdoY,
@@ -498,12 +495,11 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // =========================
         // MÃOS
         // =========================
+        int larguraMao
+                = (int) (20 * escala);
 
-        int larguraMao =
-                (int) (20 * escala);
-
-        int alturaMao =
-                (int) (18 * escala);
+        int alturaMao
+                = (int) (18 * escala);
 
         desenharPata(
                 g2,
@@ -524,12 +520,11 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // =========================
         // PÉS
         // =========================
+        int larguraPe
+                = (int) (25 * escala);
 
-        int larguraPe =
-                (int) (25 * escala);
-
-        int alturaPe =
-                (int) (17 * escala);
+        int alturaPe
+                = (int) (17 * escala);
 
         desenharPata(
                 g2,
@@ -550,7 +545,6 @@ public class IrmaoMiauBranco extends IrmaoMiau {
         // =========================
         // FAIXA AZUL
         // =========================
-
         g2.setColor(
                 new Color(55, 55, 220)
         );

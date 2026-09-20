@@ -20,10 +20,25 @@ public abstract class IrmaoMiau {
     protected String nome;
     protected String estilo;
 
+    protected AtributosLutador atributos;
+
+    private double condicionamentoAtual;
+    private double folegoAtual;
+
+    private boolean correndo = false;
+
+    private static final double CUSTO_PULO_ALTO = 7.0;
+    private static final double CUSTO_PULO_CURTO = 3.0;
+
+    private static final double VELOCIDADE_CANSADO = 0.50;
+
+    private static final double CUSTO_MOVIMENTO_CANSADO = 0.010;
+
+    private static final double LIMITE_FOLEGO_ZERO = 0.05;
+
     // =============================
     // LINHAS DO CENÁRIO
     // =============================
-
     private static final int TOTAL_LINHAS = 5;
     private static final int ESPACO_ENTRE_LINHAS = 20;
 
@@ -38,7 +53,6 @@ public abstract class IrmaoMiau {
     // =============================
     // MOVIMENTO
     // =============================
-
     private boolean pulando = false;
     private boolean agachado = false;
     private boolean andando = false;
@@ -51,7 +65,6 @@ public abstract class IrmaoMiau {
     // =============================
     // SISTEMA DE IDLE
     // =============================
-
     private enum EstadoIdle {
 
         NENHUM,
@@ -60,8 +73,8 @@ public abstract class IrmaoMiau {
         TAUNT
     }
 
-    private EstadoIdle estadoIdle =
-            EstadoIdle.EM_PE;
+    private EstadoIdle estadoIdle
+            = EstadoIdle.EM_PE;
 
     /*
      * 0 = postura base
@@ -71,11 +84,11 @@ public abstract class IrmaoMiau {
 
     private int indiceSequenciaIdle = 0;
 
-    private long proximaTrocaIdle =
-            System.currentTimeMillis() + 500;
+    private long proximaTrocaIdle
+            = System.currentTimeMillis() + 500;
 
-    private long ultimaAtividade =
-            System.currentTimeMillis();
+    private long ultimaAtividade
+            = System.currentTimeMillis();
 
     private static final long TEMPO_POSE_IDLE = 450;
 
@@ -84,9 +97,7 @@ public abstract class IrmaoMiau {
     // =============================
     // SEQUÊNCIA IDLE EM PÉ
     // =============================
-
     private static final int[] SEQUENCIA_IDLE_EM_PE = {
-
         0,
         1,
         2,
@@ -108,9 +119,7 @@ public abstract class IrmaoMiau {
     // =============================
     // SEQUÊNCIA IDLE AGACHADO
     // =============================
-
     private static final int[] SEQUENCIA_IDLE_AGACHADO = {
-
         0,
         1,
         3,
@@ -132,9 +141,7 @@ public abstract class IrmaoMiau {
     // =============================
     // SEQUÊNCIA DO TAUNT
     // =============================
-
     private static final int[] SEQUENCIA_IDLE_TAUNT = {
-
         0,
         1,
         2,
@@ -156,18 +163,51 @@ public abstract class IrmaoMiau {
     // =============================
     // PISCAR
     // =============================
-
     private boolean piscando = false;
 
-    private long proximoPiscar =
-            System.currentTimeMillis() + 2000;
+    private long proximoPiscar
+            = System.currentTimeMillis() + 2000;
 
     private long fimDoPiscar = 0;
+    
+    // recuperar condicionamento
+    
+    private void recuperarCondicionamentoLeve() {
+
+    /*
+     * Sem fôlego o corpo não consegue
+     * recuperar condicionamento.
+     */
+    if (
+            isSemFolego()
+            || andando
+            || correndo
+            || pulando
+    ) {
+
+        return;
+    }
+
+    double taxa =
+            0.002
+            + atributos.getRecuperacao()
+            * 0.000025;
+
+    condicionamentoAtual += taxa;
+
+    if (
+            condicionamentoAtual
+            > atributos.getCondicionamento()
+    ) {
+
+        condicionamentoAtual =
+                atributos.getCondicionamento();
+    }
+}
 
     // =============================
     // CONSTRUTOR
     // =============================
-
     public IrmaoMiau(
             int x,
             int y,
@@ -176,7 +216,8 @@ public abstract class IrmaoMiau {
             Color corKimono,
             Color corRosto,
             String nome,
-            String estilo
+            String estilo,
+            AtributosLutador atributos
     ) {
 
         this.x = x;
@@ -193,6 +234,14 @@ public abstract class IrmaoMiau {
 
         this.nome = nome;
         this.estilo = estilo;
+
+        this.atributos = atributos;
+
+        this.condicionamentoAtual
+                = atributos.getCondicionamento();
+
+        this.folegoAtual
+                = atributos.getFolego();
     }
 
     public abstract void desenhar(Graphics2D g2);
@@ -200,41 +249,75 @@ public abstract class IrmaoMiau {
     // =============================
     // ATUALIZAÇÃO
     // =============================
-
     public void atualizar(
             boolean estaAndando,
             boolean querAgachar
     ) {
 
-        /*
-         * IMPORTANTE:
-         *
-         * Agora andar e agachar podem acontecer
-         * ao mesmo tempo.
-         *
-         * Isso prepara o personagem para andar
-         * agachado.
-         */
+        // =========================
+        // ESTADO ATUAL
+        // =========================
         andando = estaAndando;
 
-        agachado =
-                querAgachar
+        agachado
+                = querAgachar
                 && !pulando;
+
+        /*
+     * Se ficou agachado ou pulou,
+     * não pode continuar correndo.
+         */
+        if (agachado
+                || pulando) {
+
+            correndo = false;
+        }
+
+        // =========================
+// FÔLEGO / CONDICIONAMENTO
+// =========================
+
+if (
+        correndo
+        && andando
+        && !isSemFolego()
+) {
+
+    // Corrida consome fôlego rapidamente.
+    gastarEnergia(
+            0.075
+    );
+
+} else if (
+        andando
+        && isSemFolego()
+) {
+
+    /*
+     * O personagem ainda consegue caminhar,
+     * mas está se arrastando fisicamente.
+     */
+    gastarCondicionamento(
+            CUSTO_MOVIMENTO_CANSADO
+    );
+
+} else {
+
+    recuperarFolego();
+}
+
+recuperarCondicionamentoLeve();
 
         // =========================
         // ANIMAÇÃO DE CAMINHADA
         // =========================
-
         if (andando) {
 
-            /*
-             * Agachado usamos uma animação
-             * um pouco mais lenta.
-             *
-             * A VELOCIDADE REAL de movimento
-             * ainda será controlada no GamePanel.
-             */
-            if (agachado) {
+            if (correndo) {
+
+                faseAnimacao += 0.42;
+
+            } else if (agachado) {
 
                 faseAnimacao += 0.14;
 
@@ -251,17 +334,14 @@ public abstract class IrmaoMiau {
         // =========================
         // PULO
         // =========================
-
         if (pulando) {
 
             alturaPulo += velocidadePulo;
 
             velocidadePulo -= 0.65;
 
-            if (
-                    alturaPulo <= 0
-                    && velocidadePulo < 0
-            ) {
+            if (alturaPulo <= 0
+                    && velocidadePulo < 0) {
 
                 alturaPulo = 0;
                 velocidadePulo = 0;
@@ -272,8 +352,8 @@ public abstract class IrmaoMiau {
 
         // Linha onde ele está
         // menos a altura do pulo
-        y =
-                yBase
+        y
+                = yBase
                 - (int) Math.round(
                         alturaPulo
                 );
@@ -289,24 +369,21 @@ public abstract class IrmaoMiau {
     // =============================
     // SISTEMA DE IDLE
     // =============================
-
     private void atualizarIdle(
             boolean estaAndando,
             boolean querAgachar
     ) {
 
-        long agora =
-                System.currentTimeMillis();
+        long agora
+                = System.currentTimeMillis();
 
         /*
          * Qualquer atividade reinicia
          * o relógio do TAUNT.
          */
-        if (
-                estaAndando
+        if (estaAndando
                 || querAgachar
-                || pulando
-        ) {
+                || pulando) {
 
             ultimaAtividade = agora;
         }
@@ -314,11 +391,8 @@ public abstract class IrmaoMiau {
         // =========================
         // MOVIMENTO / PULO
         // =========================
-
-        if (
-                pulando
-                || estaAndando
-        ) {
+        if (pulando
+                || estaAndando) {
 
             mudarEstadoIdle(
                     EstadoIdle.NENHUM,
@@ -331,7 +405,6 @@ public abstract class IrmaoMiau {
         // =========================
         // AGACHADO PARADO
         // =========================
-
         if (agachado) {
 
             mudarEstadoIdle(
@@ -349,11 +422,8 @@ public abstract class IrmaoMiau {
         // =========================
         // TAUNT
         // =========================
-
-        if (
-                agora - ultimaAtividade
-                >= TEMPO_PARA_TAUNT
-        ) {
+        if (agora - ultimaAtividade
+                >= TEMPO_PARA_TAUNT) {
 
             mudarEstadoIdle(
                     EstadoIdle.TAUNT,
@@ -370,7 +440,6 @@ public abstract class IrmaoMiau {
         // =========================
         // IDLE NORMAL EM PÉ
         // =========================
-
         mudarEstadoIdle(
                 EstadoIdle.EM_PE,
                 agora
@@ -386,10 +455,8 @@ public abstract class IrmaoMiau {
             long agora
     ) {
 
-        if (
-                estadoIdle
-                == novoEstado
-        ) {
+        if (estadoIdle
+                == novoEstado) {
 
             return;
         }
@@ -400,68 +467,56 @@ public abstract class IrmaoMiau {
 
         indiceSequenciaIdle = 0;
 
-        proximaTrocaIdle =
-                agora + TEMPO_POSE_IDLE;
+        proximaTrocaIdle
+                = agora + TEMPO_POSE_IDLE;
     }
 
     private void atualizarPoseIdle(
             long agora
     ) {
 
-        if (
-                estadoIdle
-                == EstadoIdle.NENHUM
-        ) {
+        if (estadoIdle
+                == EstadoIdle.NENHUM) {
 
             poseIdle = 0;
 
             return;
         }
 
-        if (
-                agora
-                < proximaTrocaIdle
-        ) {
+        if (agora
+                < proximaTrocaIdle) {
 
             return;
         }
 
-        int[] sequencia =
-                getSequenciaIdleAtual();
+        int[] sequencia
+                = getSequenciaIdleAtual();
 
         indiceSequenciaIdle++;
 
-        if (
-                indiceSequenciaIdle
-                >= sequencia.length
-        ) {
+        if (indiceSequenciaIdle
+                >= sequencia.length) {
 
             indiceSequenciaIdle = 0;
         }
 
-        poseIdle =
-                sequencia[
-                        indiceSequenciaIdle
-                ];
+        poseIdle
+                = sequencia[indiceSequenciaIdle];
 
-        proximaTrocaIdle =
-                agora + TEMPO_POSE_IDLE;
+        proximaTrocaIdle
+                = agora + TEMPO_POSE_IDLE;
     }
 
     private int[] getSequenciaIdleAtual() {
 
-        if (
-                estadoIdle
-                == EstadoIdle.AGACHADO
-        ) {
+        if (estadoIdle
+                == EstadoIdle.AGACHADO) {
 
             return SEQUENCIA_IDLE_AGACHADO;
         }
 
-        if (
-                estadoIdle
-                == EstadoIdle.TAUNT
-        ) {
+        if (estadoIdle
+                == EstadoIdle.TAUNT) {
 
             return SEQUENCIA_IDLE_TAUNT;
         }
@@ -472,80 +527,68 @@ public abstract class IrmaoMiau {
     // =============================
     // PISCAR
     // =============================
-
     private void atualizarPiscar() {
 
-        long agora =
-                System.currentTimeMillis();
+        long agora
+                = System.currentTimeMillis();
 
-        if (
-                !piscando
-                && agora >= proximoPiscar
-        ) {
+        if (!piscando
+                && agora >= proximoPiscar) {
 
             piscando = true;
 
             // Olho fechado por 120 ms
-            fimDoPiscar =
-                    agora + 120;
+            fimDoPiscar
+                    = agora + 120;
         }
 
-        if (
-                piscando
-                && agora >= fimDoPiscar
-        ) {
+        if (piscando
+                && agora >= fimDoPiscar) {
 
             piscando = false;
 
-            proximoPiscar =
-                    agora + 2000;
+            proximoPiscar
+                    = agora + 2000;
         }
     }
 
     // =============================
     // MOVIMENTO VERTICAL
     // =============================
-
     public void moverVertical(
             int quantidade
     ) {
 
-        int yMinimo =
-                yLinha1;
+        int yMinimo
+                = yLinha1;
 
-        int yMaximo =
-                yLinha1
+        int yMaximo
+                = yLinha1
                 + (TOTAL_LINHAS - 1)
                 * ESPACO_ENTRE_LINHAS;
 
         yBase += quantidade;
 
         // Não deixa passar da Linha 1
-        if (
-                yBase
-                < yMinimo
-        ) {
+        if (yBase
+                < yMinimo) {
 
             yBase = yMinimo;
         }
 
         // Não deixa passar da Linha 5
-        if (
-                yBase
-                > yMaximo
-        ) {
+        if (yBase
+                > yMaximo) {
 
             yBase = yMaximo;
         }
 
         // Descobre qual das 5 linhas
         // está mais próxima da posição atual
-        linhaAtual =
-                (int) Math.round(
-                        (double) (
-                                yBase
-                                - yLinha1
-                        )
+        linhaAtual
+                = (int) Math.round(
+                        (double) (yBase
+                        - yLinha1)
                         / ESPACO_ENTRE_LINHAS
                 );
     }
@@ -553,7 +596,6 @@ public abstract class IrmaoMiau {
     // =============================
     // MOVIMENTO HORIZONTAL
     // =============================
-
     public void moverX(
             int quantidade
     ) {
@@ -564,12 +606,9 @@ public abstract class IrmaoMiau {
     // =============================
     // LINHAS
     // =============================
-
     public void subirLinha() {
 
-        if (
-                linhaAtual > 0
-        ) {
+        if (linhaAtual > 0) {
 
             linhaAtual--;
 
@@ -579,10 +618,8 @@ public abstract class IrmaoMiau {
 
     public void descerLinha() {
 
-        if (
-                linhaAtual
-                < TOTAL_LINHAS - 1
-        ) {
+        if (linhaAtual
+                < TOTAL_LINHAS - 1) {
 
             linhaAtual++;
 
@@ -592,8 +629,8 @@ public abstract class IrmaoMiau {
 
     private void atualizarPosicaoLinha() {
 
-        yBase =
-                yLinha1
+        yBase
+                = yLinha1
                 + linhaAtual
                 * ESPACO_ENTRE_LINHAS;
     }
@@ -601,53 +638,179 @@ public abstract class IrmaoMiau {
     // =============================
     // PULO
     // =============================
-
     public void pular() {
 
-        if (
-                !pulando
-                && !agachado
-        ) {
+    if (
+            pulando
+            || agachado
+            || condicionamentoAtual <= 0
+    ) {
 
-            /*
-             * Pular também conta como atividade,
-             * portanto cancela o TAUNT.
-             */
-            ultimaAtividade =
-                    System.currentTimeMillis();
-
-            pulando = true;
-
-            alturaPulo = 1;
-
-            velocidadePulo = 10;
-        }
+        return;
     }
+
+    /*
+     * Sem fôlego suficiente para
+     * o pulo alto, ele tenta apenas
+     * o pulo curto.
+     */
+    if (
+            folegoAtual
+            < CUSTO_PULO_ALTO
+    ) {
+
+        pularCurto();
+
+        return;
+    }
+
+    ultimaAtividade =
+            System.currentTimeMillis();
+
+    gastarEnergia(
+            CUSTO_PULO_ALTO
+    );
+
+    pulando = true;
+
+    alturaPulo = 1;
+
+    velocidadePulo = 10;
+}
+
+    // =============================
+    // CORRER
+    // =============================
+    public void setCorrendo(
+        boolean correndo
+) {
+
+    this.correndo =
+            correndo
+            && !pulando
+            && !agachado
+            && !isSemFolego()
+            && condicionamentoAtual > 0;
+}
+
+    public boolean isCorrendo() {
+
+        return correndo;
+    }
+
+    // =============================
+    // PULO CURTO
+    // =============================
+    public void pularCurto() {
+
+    if (
+            pulando
+            || agachado
+            || condicionamentoAtual <= 0
+    ) {
+
+        return;
+    }
+
+    ultimaAtividade =
+            System.currentTimeMillis();
+
+    pulando = true;
+
+    alturaPulo = 1;
+
+    if (
+            folegoAtual
+            >= CUSTO_PULO_CURTO
+    ) {
+
+        gastarEnergia(
+                CUSTO_PULO_CURTO
+        );
+
+        velocidadePulo = 6.5;
+
+    } else {
+
+        /*
+         * Pulinho cansado.
+         *
+         * Ele ainda consegue sair um pouco
+         * do chão, mas não possui explosão.
+         */
+        velocidadePulo = 4.5;
+
+        gastarCondicionamento(
+                0.25
+        );
+    }
+}
 
     // =============================
     // ANIMAÇÃO DE CAMINHADA
     // =============================
-
     protected int getOscilacaoPasso() {
 
         if (!andando) {
-
             return 0;
         }
 
-        return (int) (
-                Math.sin(
-                        faseAnimacao
-                )
-                * 10
-                * escala
-        );
+        double amplitude
+                = correndo
+                        ? 15
+                        : 10;
+
+        return (int) (Math.sin(
+                faseAnimacao
+        )
+                * amplitude
+                * escala);
+    }
+
+    //Velocidade
+    public double getVelocidadeBase() {
+
+    double velocidadeNormal =
+            3.2
+            + (
+                    atributos.getVelocidade()
+                    / 100.0
+            ) * 1.6;
+
+    if (isSemFolego()) {
+
+        return velocidadeNormal
+                * VELOCIDADE_CANSADO;
+    }
+
+    return velocidadeNormal;
+}
+    public double getVelocidadeCorrida() {
+
+    if (isSemFolego()) {
+
+        /*
+         * Sem fôlego não existe corrida.
+         *
+         * Retornamos apenas a velocidade
+         * já reduzida do personagem.
+         */
+        return getVelocidadeBase();
+    }
+
+    return getVelocidadeBase()
+            * 1.70;
+}
+
+    public double getVelocidadeAgachado() {
+
+        return getVelocidadeBase()
+                * 0.25;
     }
 
     // =============================
     // INFORMAÇÕES DO IDLE
     // =============================
-
     protected int getPoseIdle() {
 
         return poseIdle;
@@ -686,7 +849,6 @@ public abstract class IrmaoMiau {
      *
      * Agora ele suporta cinco poses.
      */
-
     protected int getOscilacaoIdle() {
 
         switch (poseIdle) {
@@ -724,7 +886,6 @@ public abstract class IrmaoMiau {
     // =============================
     // DESLOCAMENTOS PARA AS POSES
     // =============================
-
     protected int getIdleX(
             int amplitude
     ) {
@@ -806,7 +967,6 @@ public abstract class IrmaoMiau {
     // =============================
     // POSIÇÃO VISUAL
     // =============================
-
     protected int getYVisual() {
 
         int deslocamentoAgachado = 0;
@@ -819,15 +979,15 @@ public abstract class IrmaoMiau {
              * Agora cada Miau pode sobrescrever
              * getProfundidadeAgachamento().
              */
-            deslocamentoAgachado =
-                    (int) Math.round(
+            deslocamentoAgachado
+                    = (int) Math.round(
                             getProfundidadeAgachamento()
                             * escala
                     );
         }
 
-        int deslocamentoIdle =
-                getDeslocamentoVerticalIdle();
+        int deslocamentoIdle
+                = getDeslocamentoVerticalIdle();
 
         return y
                 + deslocamentoAgachado
@@ -839,11 +999,8 @@ public abstract class IrmaoMiau {
         // =========================
         // IDLE EM PÉ
         // =========================
-
-        if (
-                estadoIdle
-                == EstadoIdle.EM_PE
-        ) {
+        if (estadoIdle
+                == EstadoIdle.EM_PE) {
 
             switch (poseIdle) {
 
@@ -875,11 +1032,8 @@ public abstract class IrmaoMiau {
         // =========================
         // IDLE AGACHADO
         // =========================
-
-        if (
-                estadoIdle
-                == EstadoIdle.AGACHADO
-        ) {
+        if (estadoIdle
+                == EstadoIdle.AGACHADO) {
 
             switch (poseIdle) {
 
@@ -906,11 +1060,8 @@ public abstract class IrmaoMiau {
         // =========================
         // TAUNT
         // =========================
-
-        if (
-                estadoIdle
-                == EstadoIdle.TAUNT
-        ) {
+        if (estadoIdle
+                == EstadoIdle.TAUNT) {
 
             switch (poseIdle) {
 
@@ -935,7 +1086,6 @@ public abstract class IrmaoMiau {
     // =============================
     // AGACHAMENTO
     // =============================
-
     protected double getProfundidadeAgachamento() {
 
         return 18;
@@ -945,10 +1095,8 @@ public abstract class IrmaoMiau {
 
         if (agachado) {
 
-            return (int) (
-                    getFlexaoPernasAgachado()
-                    * escala
-            );
+            return (int) (getFlexaoPernasAgachado()
+                    * escala);
         }
 
         return 0;
@@ -962,7 +1110,6 @@ public abstract class IrmaoMiau {
     // =============================
     // ESTADOS
     // =============================
-
     public boolean isAgachado() {
 
         return agachado;
@@ -981,7 +1128,6 @@ public abstract class IrmaoMiau {
     // =============================
     // DESENHO BASE
     // =============================
-
     protected void prepararDesenho(
             Graphics2D g2
     ) {
@@ -996,19 +1142,16 @@ public abstract class IrmaoMiau {
             Graphics2D g2
     ) {
 
-        int yCabeca =
-                getYVisual();
+        int yCabeca
+                = getYVisual();
 
-        int cabeca =
-                (int) (
-                        70
-                        * escala
-                );
+        int cabeca
+                = (int) (70
+                * escala);
 
         // =========================
         // CABEÇA
         // =========================
-
         g2.setColor(
                 corPelo
         );
@@ -1023,9 +1166,8 @@ public abstract class IrmaoMiau {
         // =========================
         // ORELHAS
         // =========================
-
-        Polygon esquerda =
-                new Polygon();
+        Polygon esquerda
+                = new Polygon();
 
         esquerda.addPoint(
                 x + (int) (8 * escala),
@@ -1042,8 +1184,8 @@ public abstract class IrmaoMiau {
                 yCabeca + (int) (8 * escala)
         );
 
-        Polygon direita =
-                new Polygon();
+        Polygon direita
+                = new Polygon();
 
         direita.addPoint(
                 x + (int) (43 * escala),
@@ -1071,18 +1213,15 @@ public abstract class IrmaoMiau {
         // =========================
         // OLHOS
         // =========================
-
         g2.setColor(
                 corRosto
         );
 
         if (!piscando) {
 
-            int olho =
-                    (int) (
-                            6
-                            * escala
-                    );
+            int olho
+                    = (int) (6
+                    * escala);
 
             g2.fillOval(
                     x + (int) (22 * escala),
@@ -1102,10 +1241,8 @@ public abstract class IrmaoMiau {
 
             g2.setStroke(
                     new BasicStroke(
-                            (float) (
-                                    2
-                                    * escala
-                            )
+                            (float) (2
+                            * escala)
                     )
             );
 
@@ -1127,7 +1264,6 @@ public abstract class IrmaoMiau {
         // =========================
         // NARIZ
         // =========================
-
         g2.setColor(
                 new Color(
                         220,
@@ -1136,8 +1272,8 @@ public abstract class IrmaoMiau {
                 )
         );
 
-        Polygon nariz =
-                new Polygon();
+        Polygon nariz
+                = new Polygon();
 
         nariz.addPoint(
                 x + (int) (33 * escala),
@@ -1161,24 +1297,19 @@ public abstract class IrmaoMiau {
         // =========================
         // BOCA
         // =========================
-
         g2.setColor(
                 corRosto
         );
 
-        int bocaX =
-                x
-                + (int) (
-                        36
-                        * escala
-                );
+        int bocaX
+                = x
+                + (int) (36
+                * escala);
 
-        int bocaY =
-                yCabeca
-                + (int) (
-                        48
-                        * escala
-                );
+        int bocaY
+                = yCabeca
+                + (int) (48
+                * escala);
 
         g2.drawLine(
                 bocaX,
@@ -1227,7 +1358,6 @@ public abstract class IrmaoMiau {
     // =============================
     // GETTERS
     // =============================
-
     public String getNome() {
 
         return nome;
@@ -1247,4 +1377,96 @@ public abstract class IrmaoMiau {
 
         return y;
     }
+
+    //fólego
+    public double getPercentualFolego() {
+
+        return folegoAtual
+                / atributos.getFolego();
+    }
+
+    public double getPercentualCondicionamento() {
+
+        return condicionamentoAtual
+                / atributos.getCondicionamento();
+    }
+
+//consumo
+    private void gastarEnergia(
+        double quantidade
+) {
+
+    if (quantidade <= 0) {
+        return;
+    }
+
+    folegoAtual -= quantidade;
+
+    if (folegoAtual < 0) {
+
+        folegoAtual = 0;
+    }
+}
+    
+    private void gastarCondicionamento(
+        double quantidade
+) {
+
+    if (quantidade <= 0) {
+        return;
+    }
+
+    condicionamentoAtual -= quantidade;
+
+    if (condicionamentoAtual < 0) {
+
+        condicionamentoAtual = 0;
+    }
+}
+
+    private void recuperarFolego() {
+
+        if (correndo || pulando) {
+            return;
+        }
+
+        double taxa
+                = 0.015
+                + atributos.getRecuperacao()
+                * 0.00035;
+
+        folegoAtual += taxa;
+
+        if (folegoAtual
+                > atributos.getFolego()) {
+
+            folegoAtual
+                    = atributos.getFolego();
+        }
+    }
+
+    public boolean isSemCondicionamento() {
+
+        return condicionamentoAtual <= 0;
+    }
+
+    public AtributosLutador getAtributos() {
+
+        return atributos;
+    }
+
+    public double getFolegoAtual() {
+
+        return folegoAtual;
+    }
+
+    public double getCondicionamentoAtual() {
+
+        return condicionamentoAtual;
+    }
+public boolean isSemFolego() {
+
+    return folegoAtual
+            <= LIMITE_FOLEGO_ZERO;
+}
 }

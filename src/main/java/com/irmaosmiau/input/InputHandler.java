@@ -12,7 +12,6 @@ public class InputHandler {
     // =============================
     // MIAU BRANCO
     // =============================
-
     private boolean esquerda;
     private boolean direita;
     private boolean cima;
@@ -21,10 +20,12 @@ public class InputHandler {
     private boolean pular;
     private boolean agachar;
 
+    private boolean correr;
+    private boolean pularCurto;
+
     // =============================
     // MIAU PRETO
     // =============================
-
     private boolean pretoEsquerda;
     private boolean pretoDireita;
     private boolean pretoCima;
@@ -32,6 +33,9 @@ public class InputHandler {
 
     private boolean pretoPular;
     private boolean pretoAgachar;
+
+    private boolean pretoCorrer;
+    private boolean pretoPularCurto;
 
     public InputHandler(JComponent componente) {
 
@@ -44,7 +48,6 @@ public class InputHandler {
         // =========================
         // CONTROLES DO MIAU BRANCO
         // =========================
-
         mapearTecla(
                 inputMap,
                 actionMap,
@@ -99,10 +102,27 @@ public class InputHandler {
                 () -> agachar = false
         );
 
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "Z",
+        "correr",
+        () -> correr = true,
+        () -> correr = false
+);
+
+mapearTecla(
+        inputMap,
+        actionMap,
+        "V",
+        "pularCurto",
+        () -> pularCurto = true,
+        () -> pularCurto = false
+);
+        
         // =========================
         // CONTROLES DO MIAU PRETO
         // =========================
-
         mapearTecla(
                 inputMap,
                 actionMap,
@@ -156,6 +176,25 @@ public class InputHandler {
                 () -> pretoAgachar = true,
                 () -> pretoAgachar = false
         );
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "K",
+        "pretoCorrer",
+        () -> pretoCorrer = true,
+        () -> pretoCorrer = false
+);
+
+mapearTecla(
+        inputMap,
+        actionMap,
+        "B",
+        "pretoPularCurto",
+        () -> pretoPularCurto = true,
+        () -> pretoPularCurto = false
+);
+        
     }
 
     private void mapearTecla(
@@ -188,35 +227,34 @@ public class InputHandler {
                 pressionada,
                 new AbstractAction() {
 
-                    @Override
-                    public void actionPerformed(
-                            ActionEvent e
-                    ) {
+            @Override
+            public void actionPerformed(
+                    ActionEvent e
+            ) {
 
-                        aoPressionar.run();
-                    }
-                }
+                aoPressionar.run();
+            }
+        }
         );
 
         actionMap.put(
                 solta,
                 new AbstractAction() {
 
-                    @Override
-                    public void actionPerformed(
-                            ActionEvent e
-                    ) {
+            @Override
+            public void actionPerformed(
+                    ActionEvent e
+            ) {
 
-                        aoSoltar.run();
-                    }
-                }
+                aoSoltar.run();
+            }
+        }
         );
     }
 
     // =============================
     // GETTERS - MIAU BRANCO
     // =============================
-
     public boolean isEsquerda() {
         return esquerda;
     }
@@ -240,11 +278,19 @@ public class InputHandler {
     public boolean isAgachar() {
         return agachar;
     }
+    
+    public boolean isCorrer() {
+    return correr;
+}
+
+public boolean isPularCurto() {
+    return pularCurto;
+}
+
 
     // =============================
     // GETTERS - MIAU PRETO
     // =============================
-
     public boolean isPretoEsquerda() {
         return pretoEsquerda;
     }
@@ -268,4 +314,11 @@ public class InputHandler {
     public boolean isPretoAgachar() {
         return pretoAgachar;
     }
+    public boolean isPretoCorrer() {
+    return pretoCorrer;
+}
+
+public boolean isPretoPularCurto() {
+    return pretoPularCurto;
+}
 }
