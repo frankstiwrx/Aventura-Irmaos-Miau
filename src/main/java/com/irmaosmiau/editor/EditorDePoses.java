@@ -344,6 +344,24 @@ public class EditorDePoses extends JFrame {
     private ControleNumerico cJoelDirX, cJoelDirY, cPeDirX, cPeDirY;
     private JCheckBox chkViradoDireita;
 
+    // --- GUIAS / ARRASTE DIRETO NO CANVAS ---
+    private boolean arrasteRigAtivo = true;
+    private JToggleButton btnArrasteRig;
+
+    // --- PRÉ-VISUALIZAÇÃO DA ANIMAÇÃO ---
+    private JButton btnPlayAnimacao;
+    private JSpinner spinIntervaloAnimacao;
+    private boolean previewAnimacaoAtivo = false;
+    private PoseSalva poseAntesPreview = null;
+    private int indiceQuadroAntesPreview = 0;
+    private int indicePreviewAnimacao = -1;
+
+    private final Timer timerPreviewAnimacao =
+            new Timer(
+                    230,
+                    e -> avancarPreviewAnimacao()
+            );
+
     // --- HISTÓRICO DESFAZER / REFAZER ---
     private static final int LIMITE_HISTORICO = 100;
     private JButton btnDesfazer;
@@ -362,6 +380,113 @@ public class EditorDePoses extends JFrame {
                     e -> finalizarGrupoHistorico()
             );
 
+    private JPanel criarCabecalhoComReset(
+            String titulo,
+            Runnable acaoReset
+    ) {
+
+        JPanel linha =
+                new JPanel(
+                        new BorderLayout(
+                                6,
+                                0
+                        )
+                );
+
+        linha.add(
+                new JLabel(titulo),
+                BorderLayout.CENTER
+        );
+
+        JButton btnZerar =
+                new JButton("↺ Zerar");
+
+        btnZerar.setMargin(
+                new Insets(
+                        2,
+                        8,
+                        2,
+                        8
+                )
+        );
+
+        btnZerar.addActionListener(
+                e -> zerarSetor(acaoReset)
+        );
+
+        linha.add(
+                btnZerar,
+                BorderLayout.EAST
+        );
+
+        return linha;
+    }
+
+    private void zerarSetor(
+            Runnable acaoReset
+    ) {
+
+        if (alvoAtual == null) {
+            return;
+        }
+
+        pararPreviewAnimacao(true);
+
+        registrarEdicaoDiscreta();
+
+        acaoReset.run();
+
+        carregarUIComDadosDoAlvo();
+    }
+
+    private void zerarPoseInteira() {
+
+        zerarSetor(() -> {
+
+            // Rotação global.
+            alvoAtual.rotGlobal = 0;
+
+            // Cintura / root.
+            alvoAtual.offCinturaX = 0;
+            alvoAtual.offCinturaY = 0;
+            alvoAtual.rotCintura = 0;
+
+            // Tronco.
+            alvoAtual.offPeitoX = 0;
+            alvoAtual.offPeitoY = 0;
+            alvoAtual.rotPeito = 0;
+
+            // Cabeça / pescoço.
+            alvoAtual.rotCabeca = 0;
+            alvoAtual.offCabX = 0;
+            alvoAtual.offCabY = 0;
+
+            // Braço esquerdo.
+            alvoAtual.offCotEsqX = 0;
+            alvoAtual.offCotEsqY = 0;
+            alvoAtual.offMaoEsqX = 0;
+            alvoAtual.offMaoEsqY = 0;
+
+            // Braço direito.
+            alvoAtual.offCotDirX = 0;
+            alvoAtual.offCotDirY = 0;
+            alvoAtual.offMaoDirX = 0;
+            alvoAtual.offMaoDirY = 0;
+
+            // Perna esquerda.
+            alvoAtual.offJoelEsqX = 0;
+            alvoAtual.offJoelEsqY = 0;
+            alvoAtual.offPeEsqX = 0;
+            alvoAtual.offPeEsqY = 0;
+
+            // Perna direita.
+            alvoAtual.offJoelDirX = 0;
+            alvoAtual.offJoelDirY = 0;
+            alvoAtual.offPeDirX = 0;
+            alvoAtual.offPeDirY = 0;
+        });
+    }
+
     public EditorDePoses() {
         setTitle("MiauStudio Ultimate - Rig de Cintura, Tronco & Animação");
         setSize(1450, 950);
@@ -370,6 +495,7 @@ public class EditorDePoses extends JFrame {
         setLayout(new BorderLayout());
 
         timerAgruparHistorico.setRepeats(false);
+        timerPreviewAnimacao.setRepeats(true);
 
         // 1. INICIALIZAR CENA (Posições X reais e Linha baseadas no GamePanel)
         cena.add(new DadosPersonagem("Branco", new IrmaoMiauBranco(0, 0, 0.7), 220, 2, 0.7, true));
@@ -394,6 +520,31 @@ public class EditorDePoses extends JFrame {
         btnRefazer = new JButton("↷ Refazer");
         btnRefazer.addActionListener(e -> refazer());
         painelTop.add(btnRefazer);
+
+        painelTop.add(new JSeparator(SwingConstants.VERTICAL));
+
+        btnArrasteRig = new JToggleButton("● Arraste: ON", true);
+        btnArrasteRig.setToolTipText(
+                "Mostra/oculta os pontos do rig e ativa/desativa o arraste direto."
+        );
+        btnArrasteRig.addActionListener(e -> {
+
+            arrasteRigAtivo =
+                    btnArrasteRig.isSelected();
+
+            btnArrasteRig.setText(
+                    arrasteRigAtivo
+                            ? "● Arraste: ON"
+                            : "○ Arraste: OFF"
+            );
+
+            if (!arrasteRigAtivo) {
+                painelDesenho.cancelarInteracaoRig();
+            }
+
+            painelDesenho.repaint();
+        });
+        painelTop.add(btnArrasteRig);
 
         painelTop.add(new JSeparator(SwingConstants.VERTICAL));
         painelTop.add(new JLabel("Novo Lutador (Classe):"));
@@ -433,6 +584,19 @@ public class EditorDePoses extends JFrame {
         });
         pControles.add(chkViradoDireita);
 
+        JButton btnZerarPoseInteira =
+                new JButton("↺ Zerar pose inteira");
+
+        btnZerarPoseInteira.setToolTipText(
+                "Zera rotações e offsets do rig, preservando posição, linha, escala e orientação."
+        );
+
+        btnZerarPoseInteira.addActionListener(
+                e -> zerarPoseInteira()
+        );
+
+        pControles.add(btnZerarPoseInteira);
+
         // --- CONTROLES DE POSIÇÃO NO CENÁRIO ---
         pControles.add(new JLabel("--- POSIÇÃO NO CENÁRIO ---"));
         cCenaX = new ControleNumerico(pControles, "Cena X: ", -500, 1500, 220, v -> alvoAtual.cenaX = v);
@@ -441,7 +605,16 @@ public class EditorDePoses extends JFrame {
         cEscala = new ControleNumerico(pControles, "Escala (x10): ", 2, 30, 7, v -> alvoAtual.escala = v / 10.0);
         cRotGlobal = new ControleNumerico(pControles, "ROT. GERAL: ", -180, 180, 0, v -> alvoAtual.rotGlobal = v);
 
-        pControles.add(new JLabel("--- EIXO CENTRAL / CINTURA ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- EIXO CENTRAL / CINTURA ---",
+                        () -> {
+                            alvoAtual.offCinturaX = 0;
+                            alvoAtual.offCinturaY = 0;
+                            alvoAtual.rotCintura = 0;
+                        }
+                )
+        );
         cCinturaX = new ControleNumerico(pControles, "Raiz X: ", -200, 200, 0, v -> alvoAtual.offCinturaX = v);
         cCinturaY = new ControleNumerico(pControles, "Raiz Y: ", -200, 200, 0, v -> alvoAtual.offCinturaY = v);
         cRotCintura = new ControleNumerico(pControles, "Rot. cintura: ", -180, 180, 0, v -> alvoAtual.rotCintura = v);
@@ -449,7 +622,16 @@ public class EditorDePoses extends JFrame {
 
         // --- TRONCO SUPERIOR ---
         // O tronco dobra usando a própria cintura como pivô.
-        pControles.add(new JLabel("--- TRONCO SUPERIOR ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- TRONCO SUPERIOR ---",
+                        () -> {
+                            alvoAtual.offPeitoX = 0;
+                            alvoAtual.offPeitoY = 0;
+                            alvoAtual.rotPeito = 0;
+                        }
+                )
+        );
         cPeitoX = new ControleNumerico(
                 pControles,
                 "Tronco X: ",
@@ -475,30 +657,79 @@ public class EditorDePoses extends JFrame {
                 v -> alvoAtual.rotPeito = v
         );
         
-        pControles.add(new JLabel("--- CABEÇA ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- CABEÇA / PESCOÇO ---",
+                        () -> {
+                            alvoAtual.rotCabeca = 0;
+                            alvoAtual.offCabX = 0;
+                            alvoAtual.offCabY = 0;
+                        }
+                )
+        );
         cCabX = new ControleNumerico(pControles, "Off X: ", -100, 100, 0, v -> alvoAtual.offCabX = v);
         cCabY = new ControleNumerico(pControles, "Off Y: ", -100, 100, 0, v -> alvoAtual.offCabY = v);
         cRotCabeca = new ControleNumerico(pControles, "Rotação: ", -180, 180, 0, v -> alvoAtual.rotCabeca = v);
 
-        pControles.add(new JLabel("--- BRAÇO ESQUERDO ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- BRAÇO ESQUERDO ---",
+                        () -> {
+                            alvoAtual.offCotEsqX = 0;
+                            alvoAtual.offCotEsqY = 0;
+                            alvoAtual.offMaoEsqX = 0;
+                            alvoAtual.offMaoEsqY = 0;
+                        }
+                )
+        );
         cCotEsqX = new ControleNumerico(pControles, "Cot X: ", -150, 150, 0, v -> alvoAtual.offCotEsqX = v);
         cCotEsqY = new ControleNumerico(pControles, "Cot Y: ", -150, 150, 0, v -> alvoAtual.offCotEsqY = v);
         cMaoEsqX = new ControleNumerico(pControles, "Mão X: ", -150, 150, 0, v -> alvoAtual.offMaoEsqX = v);
         cMaoEsqY = new ControleNumerico(pControles, "Mão Y: ", -150, 150, 0, v -> alvoAtual.offMaoEsqY = v);
 
-        pControles.add(new JLabel("--- BRAÇO DIREITO ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- BRAÇO DIREITO ---",
+                        () -> {
+                            alvoAtual.offCotDirX = 0;
+                            alvoAtual.offCotDirY = 0;
+                            alvoAtual.offMaoDirX = 0;
+                            alvoAtual.offMaoDirY = 0;
+                        }
+                )
+        );
         cCotDirX = new ControleNumerico(pControles, "Cot X: ", -150, 150, 0, v -> alvoAtual.offCotDirX = v);
         cCotDirY = new ControleNumerico(pControles, "Cot Y: ", -150, 150, 0, v -> alvoAtual.offCotDirY = v);
         cMaoDirX = new ControleNumerico(pControles, "Mão X: ", -150, 150, 0, v -> alvoAtual.offMaoDirX = v);
         cMaoDirY = new ControleNumerico(pControles, "Mão Y: ", -150, 150, 0, v -> alvoAtual.offMaoDirY = v);
 
-        pControles.add(new JLabel("--- PERNA ESQUERDA ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- PERNA ESQUERDA ---",
+                        () -> {
+                            alvoAtual.offJoelEsqX = 0;
+                            alvoAtual.offJoelEsqY = 0;
+                            alvoAtual.offPeEsqX = 0;
+                            alvoAtual.offPeEsqY = 0;
+                        }
+                )
+        );
         cJoelEsqX = new ControleNumerico(pControles, "Joel X: ", -150, 150, 0, v -> alvoAtual.offJoelEsqX = v);
         cJoelEsqY = new ControleNumerico(pControles, "Joel Y: ", -150, 150, 0, v -> alvoAtual.offJoelEsqY = v);
         cPeEsqX = new ControleNumerico(pControles, "Pé X: ", -150, 150, 0, v -> alvoAtual.offPeEsqX = v);
         cPeEsqY = new ControleNumerico(pControles, "Pé Y: ", -150, 150, 0, v -> alvoAtual.offPeEsqY = v);
 
-        pControles.add(new JLabel("--- PERNA DIREITA ---"));
+        pControles.add(
+                criarCabecalhoComReset(
+                        "--- PERNA DIREITA ---",
+                        () -> {
+                            alvoAtual.offJoelDirX = 0;
+                            alvoAtual.offJoelDirY = 0;
+                            alvoAtual.offPeDirX = 0;
+                            alvoAtual.offPeDirY = 0;
+                        }
+                )
+        );
         cJoelDirX = new ControleNumerico(pControles, "Joel X: ", -150, 150, 0, v -> alvoAtual.offJoelDirX = v);
         cJoelDirY = new ControleNumerico(pControles, "Joel Y: ", -150, 150, 0, v -> alvoAtual.offJoelDirY = v);
         cPeDirX = new ControleNumerico(pControles, "Pé X: ", -150, 150, 0, v -> alvoAtual.offPeDirX = v);
@@ -548,6 +779,56 @@ public class EditorDePoses extends JFrame {
         linhaAnimacao.add(btnGerarAnimacao);
         pFerramentas.add(linhaAnimacao);
 
+        JPanel linhaPreview =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.LEFT,
+                                4,
+                                0
+                        )
+                );
+
+        btnPlayAnimacao =
+                new JButton("▶ Play");
+
+        btnPlayAnimacao.setToolTipText(
+                "Pré-visualiza os quadros salvos sem alterar sua pose de trabalho."
+        );
+
+        btnPlayAnimacao.addActionListener(
+                e -> alternarPreviewAnimacao()
+        );
+
+        spinIntervaloAnimacao =
+                new JSpinner(
+                        new SpinnerNumberModel(
+                                230,
+                                50,
+                                2000,
+                                10
+                        )
+                );
+
+        spinIntervaloAnimacao.setPreferredSize(
+                new Dimension(
+                        75,
+                        24
+                )
+        );
+
+        spinIntervaloAnimacao.addChangeListener(
+                e -> timerPreviewAnimacao.setDelay(
+                        (int) spinIntervaloAnimacao.getValue()
+                )
+        );
+
+        linhaPreview.add(btnPlayAnimacao);
+        linhaPreview.add(new JLabel("Intervalo:"));
+        linhaPreview.add(spinIntervaloAnimacao);
+        linhaPreview.add(new JLabel("ms / quadro"));
+
+        pFerramentas.add(linhaPreview);
+
         JButton btnAplicarCodigo = new JButton("Ler Código Colado ⭯");
         btnAplicarCodigo.setBackground(new Color(60, 180, 80));
         btnAplicarCodigo.setForeground(Color.WHITE);
@@ -592,6 +873,7 @@ public class EditorDePoses extends JFrame {
 
     private void selecionarAlvo(int index) {
         if (index >= 0 && index < cena.size()) {
+            pararPreviewAnimacao(true);
             finalizarGrupoHistorico();
             alvoAtual = cena.get(index);
             carregarUIComDadosDoAlvo();
@@ -637,6 +919,10 @@ public class EditorDePoses extends JFrame {
     // =============================
 
     private void registrarInicioDeEdicao() {
+
+        if (previewAnimacaoAtivo) {
+            pararPreviewAnimacao(true);
+        }
 
         if (atualizandoUI || alvoAtual == null) {
             return;
@@ -701,6 +987,7 @@ public class EditorDePoses extends JFrame {
 
     private void desfazer() {
 
+        pararPreviewAnimacao(true);
         finalizarGrupoHistorico();
 
         if (alvoAtual == null
@@ -723,6 +1010,7 @@ public class EditorDePoses extends JFrame {
 
     private void refazer() {
 
+        pararPreviewAnimacao(true);
         finalizarGrupoHistorico();
 
         if (alvoAtual == null
@@ -892,7 +1180,162 @@ public class EditorDePoses extends JFrame {
 
     // --- SISTEMA DE ANIMAÇÃO COM 5 QUADROS ---
 
+    private void alternarPreviewAnimacao() {
+
+        if (previewAnimacaoAtivo) {
+            pararPreviewAnimacao(true);
+        } else {
+            iniciarPreviewAnimacao();
+        }
+    }
+
+    private void iniciarPreviewAnimacao() {
+
+        if (alvoAtual == null) {
+            return;
+        }
+
+        int quadrosSalvos = 0;
+
+        for (PoseSalva pose : alvoAtual.quadrosAnimacao) {
+            if (pose != null) {
+                quadrosSalvos++;
+            }
+        }
+
+        if (quadrosSalvos < 2) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Salve pelo menos 2 quadros para pré-visualizar a animação.",
+                    "Pré-visualização",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            return;
+        }
+
+        finalizarGrupoHistorico();
+
+        poseAntesPreview =
+                new PoseSalva(alvoAtual);
+
+        indiceQuadroAntesPreview =
+                comboQuadroAnimacao.getSelectedIndex();
+
+        indicePreviewAnimacao = -1;
+        previewAnimacaoAtivo = true;
+
+        btnPlayAnimacao.setText("■ Parar");
+
+        timerPreviewAnimacao.setDelay(
+                (int) spinIntervaloAnimacao.getValue()
+        );
+
+        /*
+         * Mostra imediatamente o primeiro quadro disponível;
+         * não precisamos esperar o primeiro disparo do Timer.
+         */
+        avancarPreviewAnimacao();
+
+        timerPreviewAnimacao.start();
+
+        painelDesenho.cancelarInteracaoRig();
+    }
+
+    private void avancarPreviewAnimacao() {
+
+        if (!previewAnimacaoAtivo
+                || alvoAtual == null) {
+
+            return;
+        }
+
+        /*
+         * Procura o próximo quadro salvo.
+         * Assim também conseguimos pré-visualizar animações
+         * ainda incompletas durante a criação.
+         */
+        for (int tentativa = 1;
+                tentativa <= 5;
+                tentativa++) {
+
+            int proximo =
+                    (indicePreviewAnimacao + tentativa)
+                    % 5;
+
+            PoseSalva pose =
+                    alvoAtual.quadrosAnimacao[
+                            proximo
+                    ];
+
+            if (pose == null) {
+                continue;
+            }
+
+            indicePreviewAnimacao =
+                    proximo;
+
+            pose.aplicarEm(alvoAtual);
+
+            comboQuadroAnimacao.setSelectedIndex(
+                    proximo
+            );
+
+            painelDesenho.repaint();
+
+            return;
+        }
+    }
+
+    private void pararPreviewAnimacao(
+            boolean restaurarPose
+    ) {
+
+        if (!previewAnimacaoAtivo) {
+            return;
+        }
+
+        timerPreviewAnimacao.stop();
+
+        previewAnimacaoAtivo = false;
+
+        if (restaurarPose
+                && poseAntesPreview != null
+                && alvoAtual != null) {
+
+            poseAntesPreview.aplicarEm(
+                    alvoAtual
+            );
+        }
+
+        poseAntesPreview = null;
+        indicePreviewAnimacao = -1;
+
+        if (btnPlayAnimacao != null) {
+            btnPlayAnimacao.setText("▶ Play");
+        }
+
+        if (comboQuadroAnimacao != null
+                && indiceQuadroAntesPreview >= 0
+                && indiceQuadroAntesPreview < 5) {
+
+            comboQuadroAnimacao.setSelectedIndex(
+                    indiceQuadroAntesPreview
+            );
+        }
+
+        if (alvoAtual != null) {
+            carregarUIComDadosDoAlvo();
+        } else {
+            painelDesenho.repaint();
+        }
+    }
+
     private void salvarQuadroAtual() {
+
+        pararPreviewAnimacao(true);
+
         int indice = comboQuadroAnimacao.getSelectedIndex();
 
         if (indice < 0 || indice >= 5) {
@@ -910,6 +1353,9 @@ public class EditorDePoses extends JFrame {
     }
 
     private void carregarQuadroSelecionado() {
+
+        pararPreviewAnimacao(true);
+
         int indice = comboQuadroAnimacao.getSelectedIndex();
 
         if (indice < 0 || indice >= 5) {
@@ -1176,6 +1622,12 @@ public class EditorDePoses extends JFrame {
                 @Override
                 public void mousePressed(MouseEvent e) {
 
+                    if (!arrasteRigAtivo
+                            || previewAnimacaoAtivo) {
+
+                        return;
+                    }
+
                     PontoRig encontrado =
                             encontrarPontoRig(
                                     e.getPoint(),
@@ -1199,7 +1651,9 @@ public class EditorDePoses extends JFrame {
                 @Override
                 public void mouseDragged(MouseEvent e) {
 
-                    if (pontoArrastado == null) {
+                    if (!arrasteRigAtivo
+                            || previewAnimacaoAtivo
+                            || pontoArrastado == null) {
                         return;
                     }
 
@@ -1220,6 +1674,16 @@ public class EditorDePoses extends JFrame {
 
                 @Override
                 public void mouseMoved(MouseEvent e) {
+
+                    if (!arrasteRigAtivo
+                            || previewAnimacaoAtivo) {
+
+                        pontoSobMouse = null;
+                        setCursor(Cursor.getDefaultCursor());
+                        repaint();
+
+                        return;
+                    }
 
                     pontoSobMouse =
                             encontrarPontoRig(
@@ -1249,7 +1713,33 @@ public class EditorDePoses extends JFrame {
             addMouseMotionListener(mouseRig);
         }
 
+        private void cancelarInteracaoRig() {
+
+            pontoArrastado = null;
+            pontoSobMouse = null;
+
+            handlesRig.clear();
+
+            finalizarGrupoHistorico();
+
+            setCursor(
+                    Cursor.getDefaultCursor()
+            );
+
+            repaint();
+        }
+
         private void atualizarCursorRig(Point pontoMouse) {
+
+            if (!arrasteRigAtivo
+                    || previewAnimacaoAtivo) {
+
+                setCursor(
+                        Cursor.getDefaultCursor()
+                );
+
+                return;
+            }
 
             if (pontoArrastado != null) {
 
@@ -1288,6 +1778,12 @@ public class EditorDePoses extends JFrame {
                 Point2D pontoMouse,
                 double raioClique
         ) {
+
+            if (!arrasteRigAtivo
+                    || previewAnimacaoAtivo) {
+
+                return null;
+            }
 
             PontoRig melhor = null;
             double menorDistancia = raioClique;
@@ -1513,6 +2009,12 @@ public class EditorDePoses extends JFrame {
                 Graphics2D contexto
         ) {
 
+            if (!arrasteRigAtivo
+                    || previewAnimacaoAtivo) {
+
+                return;
+            }
+
             AffineTransform localParaTela =
                     obterTransformCanvas(
                             contexto
@@ -1550,6 +2052,12 @@ public class EditorDePoses extends JFrame {
         private void desenharHandlesRig(
                 Graphics2D g2
         ) {
+
+            if (!arrasteRigAtivo
+                    || previewAnimacaoAtivo) {
+
+                return;
+            }
 
             int raioNormal = 6;
             int raioAtivo = 8;
@@ -2134,7 +2642,9 @@ public class EditorDePoses extends JFrame {
             // =================================================
             // MARCADORES DO RIG
             // =================================================
-            if (pd == alvoAtual) {
+            if (pd == alvoAtual
+                    && arrasteRigAtivo
+                    && !previewAnimacaoAtivo) {
 
                 int raio =
                         Math.max(
@@ -2195,7 +2705,9 @@ public class EditorDePoses extends JFrame {
             gPeito.dispose();
 
             // Setinha vermelha indicando o alvo atual.
-            if (pd == alvoAtual) {
+            if (pd == alvoAtual
+                    && arrasteRigAtivo
+                    && !previewAnimacaoAtivo) {
                 g2d.setColor(Color.RED);
                 g2d.fillPolygon(
                         new int[]{
