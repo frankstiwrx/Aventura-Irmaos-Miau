@@ -6,6 +6,8 @@ import com.irmaosmiau.entities.IrmaoMiauPreto;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
@@ -14,7 +16,9 @@ import java.awt.geom.Point2D;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +58,13 @@ public class EditorDePoses extends JFrame {
 
         // Cada personagem mantém seus próprios 5 quadros.
         PoseSalva[] quadrosAnimacao = new PoseSalva[5];
+
+        /*
+         * Histórico independente de edição.
+         * Branco e Preto possuem seus próprios Ctrl+Z / Ctrl+Y.
+         */
+        Deque<PoseSalva> historicoDesfazer = new ArrayDeque<>();
+        Deque<PoseSalva> historicoRefazer = new ArrayDeque<>();
 
         public DadosPersonagem(String nome, IrmaoMiau instancia, int cenaX, int linhaAtual, double escala, boolean viradoDireita) {
             this.nome = nome;
@@ -105,6 +116,7 @@ public class EditorDePoses extends JFrame {
             // Sincronização Slider -> Spinner -> Ação
             slider.addChangeListener(e -> {
                 if (!atualizandoUI) {
+                    registrarInicioDeEdicao();
                     spinner.setValue(slider.getValue());
                     acao.accept(slider.getValue());
                     atualizarCodigoGerado();
@@ -115,6 +127,7 @@ public class EditorDePoses extends JFrame {
             // Sincronização Spinner -> Slider -> Ação
             spinner.addChangeListener(e -> {
                 if (!atualizandoUI) {
+                    registrarInicioDeEdicao();
                     int val = (int) spinner.getValue();
                     slider.setValue(val);
                     acao.accept(val);
@@ -331,12 +344,32 @@ public class EditorDePoses extends JFrame {
     private ControleNumerico cJoelDirX, cJoelDirY, cPeDirX, cPeDirY;
     private JCheckBox chkViradoDireita;
 
+    // --- HISTÓRICO DESFAZER / REFAZER ---
+    private static final int LIMITE_HISTORICO = 100;
+    private JButton btnDesfazer;
+    private JButton btnRefazer;
+
+    /*
+     * Várias mudanças muito próximas (por exemplo, arrastar um slider)
+     * contam como uma única edição no Ctrl+Z.
+     */
+    private boolean agrupandoHistorico = false;
+    private DadosPersonagem personagemHistoricoAtual = null;
+
+    private final Timer timerAgruparHistorico =
+            new Timer(
+                    400,
+                    e -> finalizarGrupoHistorico()
+            );
+
     public EditorDePoses() {
         setTitle("MiauStudio Ultimate - Rig de Cintura, Tronco & Animação");
         setSize(1450, 950);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
+        timerAgruparHistorico.setRepeats(false);
 
         // 1. INICIALIZAR CENA (Posições X reais e Linha baseadas no GamePanel)
         cena.add(new DadosPersonagem("Branco", new IrmaoMiauBranco(0, 0, 0.7), 220, 2, 0.7, true));
@@ -351,6 +384,16 @@ public class EditorDePoses extends JFrame {
         sZoomCena = new JSlider(5, 30, 10);
         sZoomCena.addChangeListener(e -> { zoomGlobalCena = sZoomCena.getValue() / 10.0; painelDesenho.repaint(); });
         painelTop.add(sZoomCena);
+
+        painelTop.add(new JSeparator(SwingConstants.VERTICAL));
+
+        btnDesfazer = new JButton("↶ Desfazer");
+        btnDesfazer.addActionListener(e -> desfazer());
+        painelTop.add(btnDesfazer);
+
+        btnRefazer = new JButton("↷ Refazer");
+        btnRefazer.addActionListener(e -> refazer());
+        painelTop.add(btnRefazer);
 
         painelTop.add(new JSeparator(SwingConstants.VERTICAL));
         painelTop.add(new JLabel("Novo Lutador (Classe):"));
@@ -381,7 +424,12 @@ public class EditorDePoses extends JFrame {
 
         chkViradoDireita = new JCheckBox("Virado para a Direita");
         chkViradoDireita.addActionListener(e -> {
-            if (!atualizandoUI) { alvoAtual.viradoDireita = chkViradoDireita.isSelected(); painelDesenho.repaint(); }
+            if (!atualizandoUI) {
+                registrarInicioDeEdicao();
+                alvoAtual.viradoDireita = chkViradoDireita.isSelected();
+                atualizarCodigoGerado();
+                painelDesenho.repaint();
+            }
         });
         pControles.add(chkViradoDireita);
 
@@ -511,6 +559,8 @@ public class EditorDePoses extends JFrame {
         painelDireito.add(pCodigo, BorderLayout.SOUTH);
         add(painelDireito, BorderLayout.EAST);
 
+        configurarAtalhosHistorico();
+
         atualizandoUI = false;
         carregarUIComDadosDoAlvo();
     }
@@ -542,6 +592,7 @@ public class EditorDePoses extends JFrame {
 
     private void selecionarAlvo(int index) {
         if (index >= 0 && index < cena.size()) {
+            finalizarGrupoHistorico();
             alvoAtual = cena.get(index);
             carregarUIComDadosDoAlvo();
         }
@@ -577,7 +628,231 @@ public class EditorDePoses extends JFrame {
         atualizandoUI = false;
         atualizarCodigoGerado();
         atualizarStatusQuadros();
+        atualizarBotoesHistorico();
         painelDesenho.repaint();
+    }
+
+    // =============================
+    // HISTÓRICO: DESFAZER / REFAZER
+    // =============================
+
+    private void registrarInicioDeEdicao() {
+
+        if (atualizandoUI || alvoAtual == null) {
+            return;
+        }
+
+        /*
+         * O primeiro evento de uma edição guarda o estado anterior.
+         * Eventos seguintes, enquanto o usuário continua arrastando/
+         * mexendo no controle, pertencem ao mesmo passo do histórico.
+         */
+        if (!agrupandoHistorico
+                || personagemHistoricoAtual != alvoAtual) {
+
+            adicionarAoHistorico(
+                    alvoAtual.historicoDesfazer,
+                    new PoseSalva(alvoAtual)
+            );
+
+            alvoAtual.historicoRefazer.clear();
+
+            agrupandoHistorico = true;
+            personagemHistoricoAtual = alvoAtual;
+
+            atualizarBotoesHistorico();
+        }
+
+        timerAgruparHistorico.restart();
+    }
+
+    private void registrarEdicaoDiscreta() {
+
+        finalizarGrupoHistorico();
+        registrarInicioDeEdicao();
+        finalizarGrupoHistorico();
+    }
+
+    private void continuarGrupoHistorico() {
+
+        if (agrupandoHistorico) {
+            timerAgruparHistorico.restart();
+        }
+    }
+
+    private void finalizarGrupoHistorico() {
+
+        timerAgruparHistorico.stop();
+        agrupandoHistorico = false;
+        personagemHistoricoAtual = null;
+    }
+
+    private void adicionarAoHistorico(
+            Deque<PoseSalva> historico,
+            PoseSalva pose
+    ) {
+
+        historico.push(pose);
+
+        while (historico.size() > LIMITE_HISTORICO) {
+            historico.removeLast();
+        }
+    }
+
+    private void desfazer() {
+
+        finalizarGrupoHistorico();
+
+        if (alvoAtual == null
+                || alvoAtual.historicoDesfazer.isEmpty()) {
+            return;
+        }
+
+        adicionarAoHistorico(
+                alvoAtual.historicoRefazer,
+                new PoseSalva(alvoAtual)
+        );
+
+        PoseSalva estadoAnterior =
+                alvoAtual.historicoDesfazer.pop();
+
+        estadoAnterior.aplicarEm(alvoAtual);
+
+        carregarUIComDadosDoAlvo();
+    }
+
+    private void refazer() {
+
+        finalizarGrupoHistorico();
+
+        if (alvoAtual == null
+                || alvoAtual.historicoRefazer.isEmpty()) {
+            return;
+        }
+
+        adicionarAoHistorico(
+                alvoAtual.historicoDesfazer,
+                new PoseSalva(alvoAtual)
+        );
+
+        PoseSalva estadoSeguinte =
+                alvoAtual.historicoRefazer.pop();
+
+        estadoSeguinte.aplicarEm(alvoAtual);
+
+        carregarUIComDadosDoAlvo();
+    }
+
+    private void atualizarBotoesHistorico() {
+
+        if (btnDesfazer == null || btnRefazer == null) {
+            return;
+        }
+
+        boolean podeDesfazer =
+                alvoAtual != null
+                && !alvoAtual.historicoDesfazer.isEmpty();
+
+        boolean podeRefazer =
+                alvoAtual != null
+                && !alvoAtual.historicoRefazer.isEmpty();
+
+        btnDesfazer.setEnabled(podeDesfazer);
+        btnRefazer.setEnabled(podeRefazer);
+
+        String nomeAlvo =
+                alvoAtual == null
+                ? "personagem"
+                : alvoAtual.nome;
+
+        int qtdDesfazer =
+                alvoAtual == null
+                ? 0
+                : alvoAtual.historicoDesfazer.size();
+
+        int qtdRefazer =
+                alvoAtual == null
+                ? 0
+                : alvoAtual.historicoRefazer.size();
+
+        btnDesfazer.setToolTipText(
+                "Ctrl+Z — desfazer no "
+                + nomeAlvo
+                + " (" + qtdDesfazer + ")"
+        );
+
+        btnRefazer.setToolTipText(
+                "Ctrl+Y / Ctrl+Shift+Z — refazer no "
+                + nomeAlvo
+                + " (" + qtdRefazer + ")"
+        );
+    }
+
+    private void configurarAtalhosHistorico() {
+
+        int mascaraAtalho =
+                Toolkit.getDefaultToolkit()
+                        .getMenuShortcutKeyMaskEx();
+
+        JRootPane raiz =
+                getRootPane();
+
+        InputMap inputMap =
+                raiz.getInputMap(
+                        JComponent.WHEN_IN_FOCUSED_WINDOW
+                );
+
+        ActionMap actionMap =
+                raiz.getActionMap();
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_Z,
+                        mascaraAtalho
+                ),
+                "miauDesfazer"
+        );
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_Y,
+                        mascaraAtalho
+                ),
+                "miauRefazer"
+        );
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_Z,
+                        mascaraAtalho
+                        | InputEvent.SHIFT_DOWN_MASK
+                ),
+                "miauRefazer"
+        );
+
+        actionMap.put(
+                "miauDesfazer",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+                        desfazer();
+                    }
+                }
+        );
+
+        actionMap.put(
+                "miauRefazer",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+                        refazer();
+                    }
+                }
+        );
     }
 
     private void atualizarCodigoGerado() {
@@ -652,6 +927,8 @@ public class EditorDePoses extends JFrame {
             );
             return;
         }
+
+        registrarEdicaoDiscreta();
 
         pose.aplicarEm(alvoAtual);
         carregarUIComDadosDoAlvo();
@@ -770,6 +1047,8 @@ public class EditorDePoses extends JFrame {
     private void aplicarCodigoAoVisual() {
         String code = txtCodigoGerado.getText();
         try {
+            registrarEdicaoDiscreta();
+
             // Lendo o comentário de cabeçalho
             alvoAtual.rotGlobal = extrairValorInteiro(code, "ROTAÇÃO:\\s*(-?\\d+)");
             alvoAtual.rotCabeca = extrairValorInteiro(code, "R\\. CABEÇA:\\s*(-?\\d+)");
@@ -905,6 +1184,8 @@ public class EditorDePoses extends JFrame {
 
                     if (encontrado != null) {
 
+                        registrarInicioDeEdicao();
+
                         pontoArrastado = encontrado;
 
                         setCursor(
@@ -922,6 +1203,7 @@ public class EditorDePoses extends JFrame {
                         return;
                     }
 
+                    continuarGrupoHistorico();
                     arrastarPontoRig(e);
                 }
 
@@ -929,6 +1211,7 @@ public class EditorDePoses extends JFrame {
                 public void mouseReleased(MouseEvent e) {
 
                     pontoArrastado = null;
+                    finalizarGrupoHistorico();
 
                     atualizarCursorRig(
                             e.getPoint()
