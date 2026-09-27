@@ -8,6 +8,29 @@ import java.awt.RenderingHints;
 
 public abstract class IrmaoMiau {
 
+    // =============================================================
+    // MAPA RÁPIDO DA CLASSE
+    // =============================================================
+    /*
+     * Esta é a classe-base dos Irmãos Miau. Para localizar rápido:
+     *
+     * RIG / PIVÔS            -> cintura e peito
+     * ESTADOS                -> movimento e estado corporal
+     * ROLAMENTO              -> início, atualização e direção
+     * SPRAWL                 -> início e atualização
+     * GAME LOOP              -> atualizar(...)
+     * MOVIMENTO              -> moverX / moverVertical / velocidades
+     * CHÃO                   -> deitar / levantar
+     * PULO                   -> pulo alto e curto
+     * ENERGIA                -> fôlego e condicionamento
+     * IDLE / PISCAR          -> comportamento visual parado
+     * DESENHO BASE           -> cabeça, patas e preparação gráfica
+     * GETTERS / ESTADOS      -> informações usadas por outras classes
+     *
+     * Regra de manutenção: mecânica fica aqui; desenho específico e
+     * dados das animações ficam em IrmaoMiauBranco/IrmaoMiauPreto.
+     */
+
     protected int x;
     protected int y;
 
@@ -127,11 +150,6 @@ private static final double VELOCIDADE_ROLAMENTO = 7.0;
 
     private static final double CUSTO_PULO_ALTO = 8.0;
     private static final double CUSTO_PULO_CURTO = 3.5;
-
-    private static final double VELOCIDADE_CANSADO = 0.50;
-
-    private static final double CUSTO_MOVIMENTO_CANSADO = 0.025;
-
     private static final double LIMITE_FOLEGO_ZERO = 0.05;
 
     // =============================
@@ -435,7 +453,9 @@ public void iniciarSprawl() {
 
     private long fimDoPiscar = 0;
 
-    // recuperar condicionamento
+    // =============================
+    // ENERGIA - RECUPERAÇÃO LEVE
+    // =============================
     private void recuperarCondicionamentoLeve() {
 
         /*
@@ -1333,7 +1353,9 @@ public void alternarDeitado() {
                 * escala);
     }
 
-    //Velocidade
+    // =============================
+    // VELOCIDADES DE MOVIMENTO
+    // =============================
     public double getVelocidadeBase() {
 
     double velocidade =
@@ -2082,7 +2104,9 @@ protected boolean isRolamentoParaTras() {
     return !isRolamentoParaFrente();
 }
 
-    //fólego
+    // =============================
+    // ENERGIA - CONSULTAS
+    // =============================
     public double getPercentualFolego() {
 
         return folegoAtual
@@ -2095,7 +2119,9 @@ protected boolean isRolamentoParaTras() {
                 / atributos.getCondicionamento();
     }
 
-//consumo
+// =============================
+    // ENERGIA - CONSUMO E RECUPERAÇÃO
+    // =============================
     private void gastarEnergia(
             double quantidade
     ) {
@@ -2161,7 +2187,7 @@ private void recuperarFolegoRespirando() {
 
     /*
      * Respirar recupera cerca de
-     * quatro vezes mais rápido que
+     * quinze vezes mais rápido que
      * simplesmente ficar parado.
      */
     double taxa =

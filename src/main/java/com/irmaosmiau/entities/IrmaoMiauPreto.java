@@ -7,6 +7,26 @@ import java.awt.Polygon;
 
 public class IrmaoMiauPreto extends IrmaoMiau {
 
+    // =============================================================
+    // MAPA RÁPIDO DO PERSONAGEM
+    // =============================================================
+    /*
+     * Ordem lógica para manutenção:
+     *
+     * 1. CONFIGURAÇÃO / ATRIBUTOS
+     * 2. DADOS DAS ANIMAÇÕES
+     * 3. TAUNT
+     * 4. ROLAMENTO
+     * 5. SPRAWL
+     * 6. MOVIMENTO NO CHÃO
+     * 7. RENDERER DE POSES
+     * 8. DESENHO EM PÉ
+     * 9. DESENHO PRINCIPAL
+     * 10. AJUSTES ESPECÍFICOS DO PERSONAGEM
+     *
+     * As animações exportadas usam sempre o mesmo formato de 30 valores.
+     */
+
     public IrmaoMiauPreto(int x, int y, double escala) {
 
         super(
@@ -32,9 +52,9 @@ public class IrmaoMiauPreto extends IrmaoMiau {
     }
 
     // =============================================================
-// SPRAWL - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+// ANIMAÇÃO - SPRAWL (MIAUSTUDIO)
 // =============================================================
-private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
+private static final int[][] SPRAWL_MIAUSTUDIO = {
     {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, -11, 0, 0, 3, -7, -6, 3, 0, -6, 9, -10, 26, 0, 10, -4},
     {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 61, -1, 54, 14, 3, -7, 9, -7, 21, -4, 24, -11, 17, -9, 10, -11},
     {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 93, -30, 0, 0, 84, 3, 67, -24, -3, -35, -5, -73, 40, 16, 71, 42, 22, -26, 26, -18},
@@ -43,9 +63,9 @@ private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
 };
 
     // =============================================================
-    // TAUNT - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+    // ANIMAÇÃO - TAUNT (MIAUSTUDIO)
     // =============================================================
-    private static final int[][] TAUNTPRETO_MIAUSTUDIO = {
+    private static final int[][] TAUNT_MIAUSTUDIO = {
         {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -19, 30, -7, -4, -34, 13, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 1
         {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -34, 33, -1, 1, -37, 27, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 2
         {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, -14, -10, 14, -17, -13, -53, 6, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 3
@@ -57,16 +77,16 @@ private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
      * Ida e volta para evitar um corte seco
      * do Quadro 5 diretamente para o Quadro 1.
      */
-    private static final int[] SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO = {
+    private static final int[] SEQUENCIA_TAUNT_MIAUSTUDIO = {
         0, 1, 2, 3, 4, 3, 2, 1
     };
 
-    private static final long TEMPO_QUADRO_TAUNT_PRETO_MS = 230L;
+    private static final long TEMPO_QUADRO_TAUNT_MS = 230L;
 
-    private boolean tauntPretoMiauStudioEstavaAtivo = false;
-    private long inicioTauntPretoMiauStudio = 0L;
+    private boolean tauntMiauStudioEstavaAtivo = false;
+    private long inicioTauntMiauStudio = 0L;
 
-    private int getIndiceQuadroTauntPretoMiauStudio(
+    private int getIndiceQuadroTauntMiauStudio(
             boolean tauntAtivo
     ) {
 
@@ -74,37 +94,37 @@ private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
 
         if (!tauntAtivo) {
 
-            tauntPretoMiauStudioEstavaAtivo = false;
-            inicioTauntPretoMiauStudio = 0L;
+            tauntMiauStudioEstavaAtivo = false;
+            inicioTauntMiauStudio = 0L;
 
             return 0;
         }
 
-        if (!tauntPretoMiauStudioEstavaAtivo) {
+        if (!tauntMiauStudioEstavaAtivo) {
 
-            tauntPretoMiauStudioEstavaAtivo = true;
-            inicioTauntPretoMiauStudio = agora;
+            tauntMiauStudioEstavaAtivo = true;
+            inicioTauntMiauStudio = agora;
         }
 
         long tempoDecorrido =
-                agora - inicioTauntPretoMiauStudio;
+                agora - inicioTauntMiauStudio;
 
         int indiceSequencia =
                 (int) (
                         tempoDecorrido
-                        / TEMPO_QUADRO_TAUNT_PRETO_MS
+                        / TEMPO_QUADRO_TAUNT_MS
                 )
-                % SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO.length;
+                % SEQUENCIA_TAUNT_MIAUSTUDIO.length;
 
-        return SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO[
+        return SEQUENCIA_TAUNT_MIAUSTUDIO[
                 indiceSequencia
         ];
     }
 
     // =============================================================
-    // ROLAMENTO - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+    // ANIMAÇÃO - ROLAMENTO (MIAUSTUDIO)
     // =============================================================
-    private static final int[][] ROLAMENTOPRETO_MIAUSTUDIO = {
+    private static final int[][] ROLAMENTO_MIAUSTUDIO = {
         {500, 2, 7, 0, 0, 0, 63, 0, 0, 0, 0, -33, 0, 0, 29, -22, 27, -49, 13, -48, 9, -69, 14, -16, 38, -35, 4, -24, 10, -53}, // Quadro 1
         {500, 2, 7, 0, 0, 0, 63, 0, 25, 0, 0, 15, 0, 19, 29, -22, 27, -49, -11, -32, -20, -43, 15, -38, 34, -56, -2, -40, -1, -62}, // Quadro 2
         {500, 2, 7, 0, 0, 0, 0, 0, 25, 0, -180, 15, 0, 19, 29, -22, 27, -49, -11, -32, -20, -43, 15, -38, 34, -56, -2, -40, -1, -62}, // Quadro 3
@@ -127,7 +147,8 @@ private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
 ) {
 
     int[] poseInterpolada =
-            interpolarSprawlMiauStudio(
+            interpolarAnimacaoMiauStudio(
+                    SPRAWL_MIAUSTUDIO,
                     getProgressoSprawl()
             );
 
@@ -136,81 +157,6 @@ private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
             poseInterpolada,
             40
     );
-}
-    private int[] interpolarSprawlMiauStudio(
-        double progresso
-) {
-
-    double limitado =
-            Math.max(
-                    0.0,
-                    Math.min(
-                            1.0,
-                            progresso
-                    )
-            );
-
-    double posicao =
-            limitado
-            * (SPRAWL_PRETO_MIAUSTUDIO.length - 1);
-
-    int quadroA =
-            (int) Math.floor(posicao);
-
-    int quadroB =
-            Math.min(
-                    quadroA + 1,
-                    SPRAWL_PRETO_MIAUSTUDIO.length - 1
-            );
-
-    double t =
-            posicao - quadroA;
-
-    int[] a =
-            SPRAWL_PRETO_MIAUSTUDIO[quadroA];
-
-    int[] b =
-            SPRAWL_PRETO_MIAUSTUDIO[quadroB];
-
-    int[] resultado =
-            new int[a.length];
-
-    for (int i = 0;
-            i < resultado.length;
-            i++) {
-
-        if (i <= 3) {
-
-            resultado[i] = a[i];
-
-            continue;
-        }
-
-        if (i == A_ROT_CINTURA
-                || i == A_ROT_TRONCO
-                || i == A_ROT_GLOBAL
-                || i == A_ROT_CABECA) {
-
-            resultado[i] =
-                    (int) Math.round(
-                            interpolarAngulo(
-                                    a[i],
-                                    b[i],
-                                    t
-                            )
-                    );
-
-        } else {
-
-            resultado[i] =
-                    (int) Math.round(
-                            a[i]
-                            + (b[i] - a[i]) * t
-                    );
-        }
-    }
-
-    return resultado;
 }
     
     private void desenharRolamento(
@@ -234,7 +180,8 @@ if (isRolamentoParaTras()) {
 }
 
 int[] poseInterpolada =
-        interpolarRolamentoMiauStudio(
+        interpolarAnimacaoMiauStudio(
+                ROLAMENTO_MIAUSTUDIO,
                 progressoVisual
         );
 
@@ -249,87 +196,69 @@ int[] poseInterpolada =
                 60
         );
     }
-
-    private int[] interpolarRolamentoMiauStudio(
+    // =============================================================
+    // INTERPOLAÇÃO COMUM DAS ANIMAÇÕES MIAUSTUDIO
+    // =============================================================
+    /*
+     * Recebe qualquer animação de poses no formato de 30 valores e
+     * calcula uma pose intermediária entre seus quadros-chave.
+     *
+     * Metadados (0 a 3) permanecem fixos; rotações usam o menor
+     * caminho angular; os demais valores usam interpolação linear.
+     */
+    private int[] interpolarAnimacaoMiauStudio(
+            int[][] animacao,
             double progresso
     ) {
 
-        double limitado =
-                Math.max(
-                        0.0,
-                        Math.min(
-                                1.0,
-                                progresso
-                        )
-                );
+        double limitado = Math.max(
+                0.0,
+                Math.min(1.0, progresso)
+        );
 
         double posicao =
-                limitado
-                * (ROLAMENTOPRETO_MIAUSTUDIO.length - 1);
+                limitado * (animacao.length - 1);
 
         int quadroA =
                 (int) Math.floor(posicao);
 
-        int quadroB =
-                Math.min(
-                        quadroA + 1,
-                        ROLAMENTOPRETO_MIAUSTUDIO.length - 1
-                );
+        int quadroB = Math.min(
+                quadroA + 1,
+                animacao.length - 1
+        );
 
-        double t =
-                posicao - quadroA;
+        double t = posicao - quadroA;
 
-        int[] a =
-                ROLAMENTOPRETO_MIAUSTUDIO[quadroA];
-
-        int[] b =
-                ROLAMENTOPRETO_MIAUSTUDIO[quadroB];
-
-        int[] resultado =
-                new int[a.length];
+        int[] a = animacao[quadroA];
+        int[] b = animacao[quadroB];
+        int[] resultado = new int[a.length];
 
         for (int i = 0; i < resultado.length; i++) {
 
-            /*
-             * cenaX, linha, escala e orientação são metadados
-             * do editor. Mantemos o valor do primeiro quadro,
-             * pois o renderer do jogo não usa esses campos.
-             */
+            // cenaX, linha, escala e orientação são metadados.
             if (i <= 3) {
                 resultado[i] = a[i];
                 continue;
             }
 
-            /*
-             * Rotações usam o menor caminho angular.
-             *
-             * Exemplo importante do Preto:
-             * -180° -> 88° continua o giro por -92°,
-             * em vez de voltar 268° no sentido contrário.
-             */
-            if (
-                    i == A_ROT_CINTURA
+            if (i == A_ROT_CINTURA
                     || i == A_ROT_TRONCO
                     || i == A_ROT_GLOBAL
-                    || i == A_ROT_CABECA
-            ) {
+                    || i == A_ROT_CABECA) {
 
-                resultado[i] =
-                        (int) Math.round(
-                                interpolarAngulo(
-                                        a[i],
-                                        b[i],
-                                        t
-                                )
-                        );
+                resultado[i] = (int) Math.round(
+                        interpolarAngulo(
+                                a[i],
+                                b[i],
+                                t
+                        )
+                );
 
             } else {
 
-                resultado[i] =
-                        (int) Math.round(
-                                a[i]
-                                + (b[i] - a[i]) * t
-                        );
+                resultado[i] = (int) Math.round(
+                        a[i] + (b[i] - a[i]) * t
+                );
             }
         }
 
@@ -350,900 +279,10 @@ int[] poseInterpolada =
                 + diferenca * t;
     }
 
-private void desenharRolamentoAntigo(
-        Graphics2D g2
-) {
-
-    double progresso =
-            getProgressoRolamento();
-
-    if (progresso < 0.12) {
-
-        desenharEntradaRolamento(
-                g2,
-                progresso / 0.12
-        );
-
-    } else if (progresso < 0.28) {
-
-        desenharMergulhoRolamento(
-                g2,
-                (progresso - 0.12) / 0.16
-        );
-
-    } else if (progresso < 0.68) {
-
-        desenharGiroRolamento(
-                g2,
-                (progresso - 0.28) / 0.40
-        );
-
-    } else if (progresso < 0.86) {
-
-        desenharSaidaRolamento(
-                g2,
-                (progresso - 0.68) / 0.18
-        );
-
-    } else {
-
-        desenharLevantandoRolamento(
-                g2,
-                (progresso - 0.86) / 0.14
-        );
-    }
-}
-    private void desenharEntradaRolamento(
-        Graphics2D g2,
-        double fase
-) {
-
-    Graphics2D copia =
-            (Graphics2D) g2.create();
-
-    prepararDesenho(copia);
-
-    double centroX =
-            x + 37 * escala;
-
-    double centroY =
-            y + (82 + 18 * fase) * escala;
-
-    /*
-     * O Preto já inclina bastante
-     * durante a preparação.
-     */
-    double inclinacao =
-            fase * 0.42;
-
-    double aumento =
-            1.0 + fase * 0.08;
-
-    copia.translate(
-            centroX,
-            centroY
-    );
-
-    copia.rotate(
-            inclinacao
-    );
-
-    copia.scale(
-            aumento,
-            aumento
-    );
-
-    copia.translate(
-            -centroX,
-            -centroY
-    );
-
-    // =========================
-    // CORPO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    int largura =
-            (int) Math.round(
-                    (65 + fase * 10)
-                    * escala
-            );
-
-    int altura =
-            (int) Math.round(
-                    (100 - fase * 38)
-                    * escala
-            );
-
-    copia.fillRoundRect(
-            (int) Math.round(
-                    centroX - largura / 2.0
-            ),
-            (int) Math.round(
-                    centroY - altura / 2.0
-            ),
-            largura,
-            altura,
-            (int) Math.round(24 * escala),
-            (int) Math.round(24 * escala)
-    );
-
-    // =========================
-    // CABEÇA
-    // =========================
-
-    copia.setColor(
-            corPelo
-    );
-
-    int cabeca =
-            (int) Math.round(
-                    55 * escala
-            );
-
-    /*
-     * A cabeça começa a avançar,
-     * preparando o mergulho.
-     */
-    int cabecaX =
-            (int) Math.round(
-                    centroX
-                    - cabeca / 2.0
-                    - fase * 14 * escala
-            );
-
-    int cabecaY =
-            (int) Math.round(
-                    centroY
-                    - 73 * escala
-                    + fase * 34 * escala
-            );
-
-    copia.fillOval(
-            cabecaX,
-            cabecaY,
-            cabeca,
-            cabeca
-    );
-
-    // =========================
-    // BRAÇO DE APOIO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    copia.setStroke(
-            new BasicStroke(
-                    (float) Math.max(
-                            2,
-                            12 * escala
-                    ),
-                    BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND
-            )
-    );
-
-    copia.drawLine(
-            (int) (centroX - 18 * escala),
-            (int) (centroY - 5 * escala),
-            (int) (
-                    centroX
-                    - (28 + 18 * fase) * escala
-            ),
-            (int) (
-                    centroY
-                    + (22 + 18 * fase) * escala
-            )
-    );
-
-    /*
-     * O outro braço recolhe.
-     */
-    copia.drawLine(
-            (int) (centroX + 17 * escala),
-            (int) (centroY),
-            (int) (
-                    centroX
-                    + (25 - 14 * fase) * escala
-            ),
-            (int) (
-                    centroY
-                    + 28 * escala
-            )
-    );
-
-    // =========================
-    // PERNAS
-    // =========================
-
-    copia.setStroke(
-            new BasicStroke(
-                    (float) Math.max(
-                            2,
-                            14 * escala
-                    ),
-                    BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND
-            )
-    );
-
-    copia.drawLine(
-            (int) (centroX - 15 * escala),
-            (int) (centroY + 35 * escala),
-            (int) (
-                    centroX
-                    - (31 + fase * 8) * escala
-            ),
-            (int) (
-                    centroY
-                    + (63 - fase * 15) * escala
-            )
-    );
-
-    copia.drawLine(
-            (int) (centroX + 15 * escala),
-            (int) (centroY + 35 * escala),
-            (int) (
-                    centroX
-                    + (36 + fase * 10) * escala
-            ),
-            (int) (
-                    centroY
-                    + (60 - fase * 18) * escala
-            )
-    );
-
-    copia.dispose();
-}
-    
-    private void desenharMergulhoRolamento(
-        Graphics2D g2,
-        double fase
-) {
-
-    Graphics2D copia =
-            (Graphics2D) g2.create();
-
-    prepararDesenho(copia);
-
-    double centroX =
-            x + 37 * escala;
-
-    double centroY =
-            y + (96 + 5 * fase) * escala;
-
-    /*
-     * Rotação forte durante o mergulho.
-     */
-    double angulo =
-            0.42
-            + fase * 1.12;
-
-    double aumento =
-            1.08
-            + fase * 0.12;
-
-    copia.translate(
-            centroX,
-            centroY
-    );
-
-    copia.rotate(
-            angulo
-    );
-
-    copia.scale(
-            aumento,
-            aumento
-    );
-
-    copia.translate(
-            -centroX,
-            -centroY
-    );
-
-    // =========================
-    // CORPO ALONGADO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    int largura =
-            (int) Math.round(
-                    (82 - fase * 9)
-                    * escala
-            );
-
-    int altura =
-            (int) Math.round(
-                    (58 + fase * 4)
-                    * escala
-            );
-
-    copia.fillRoundRect(
-            (int) Math.round(
-                    centroX
-                    - largura / 2.0
-            ),
-            (int) Math.round(
-                    centroY
-                    - altura / 2.0
-            ),
-            largura,
-            altura,
-            (int) Math.round(28 * escala),
-            (int) Math.round(28 * escala)
-    );
-
-    /*
-     * Aqui a cabeça já desapareceu:
-     * ela está recolhida.
-     */
-
-    // =========================
-    // PATA DE APOIO
-    // =========================
-
-    copia.setColor(
-            corPelo
-    );
-
-    copia.fillOval(
-            (int) Math.round(
-                    centroX
-                    - (43 - fase * 8)
-                    * escala
-            ),
-            (int) Math.round(
-                    centroY
-                    + 10 * escala
-            ),
-            (int) Math.round(
-                    28 * escala
-            ),
-            (int) Math.round(
-                    18 * escala
-            )
-    );
-
-    // =========================
-    // PERNA TRASEIRA RECOLHENDO
-    // =========================
-
-    copia.fillOval(
-            (int) Math.round(
-                    centroX
-                    + (17 - fase * 7)
-                    * escala
-            ),
-            (int) Math.round(
-                    centroY
-                    + (15 - fase * 5)
-                    * escala
-            ),
-            (int) Math.round(
-                    29 * escala
-            ),
-            (int) Math.round(
-                    19 * escala
-            )
-    );
-
-    copia.dispose();
-}
-    
-    private void desenharGiroRolamento(
-        Graphics2D g2,
-        double fase
-) {
-
-    Graphics2D copia =
-            (Graphics2D) g2.create();
-
-    prepararDesenho(copia);
-
-    double centroX =
-            x + 37 * escala;
-
-    double centroY =
-            y + 195 * escala;
-
-    /*
-     * Preto continua grande durante
-     * a cambalhota, mas ligeiramente
-     * menos redondo que o Branco.
-     */
-    double aumento =
-            1.18
-            + Math.sin(
-                    fase * Math.PI
-            ) * 0.07;
-
-    /*
-     * Uma volta completa no miolo.
-     */
-    double angulo =
-            fase
-            * Math.PI
-            * 2.0;
-
-    copia.translate(
-            centroX,
-            centroY
-    );
-
-    copia.rotate(
-            angulo
-    );
-
-    copia.scale(
-            aumento,
-            aumento
-    );
-
-    copia.translate(
-            -centroX,
-            -centroY
-    );
-
-    // =========================
-    // CORPO ENROLADO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    int largura =
-            (int) Math.round(
-                    78 * escala
-            );
-
-    int altura =
-            (int) Math.round(
-                    57 * escala
-            );
-
-    copia.fillRoundRect(
-            (int) Math.round(
-                    centroX
-                    - largura / 2.0
-            ),
-            (int) Math.round(
-                    centroY
-                    - altura / 2.0
-            ),
-            largura,
-            altura,
-            (int) Math.round(
-                    31 * escala
-            ),
-            (int) Math.round(
-                    31 * escala
-            )
-    );
-
-    /*
-     * Não desenhamos cabeça separada.
-     */
-
-    // =========================
-    // PATAS
-    // =========================
-
-    copia.setColor(
-            corPelo
-    );
-
-    /*
-     * Uma pata mais próxima do centro.
-     */
-    copia.fillOval(
-            (int) Math.round(
-                    centroX
-                    - 34 * escala
-            ),
-            (int) Math.round(
-                    centroY
-                    + 5 * escala
-            ),
-            (int) Math.round(
-                    23 * escala
-            ),
-            (int) Math.round(
-                    17 * escala
-            )
-    );
-
-    /*
-     * Outra mais projetada.
-     */
-    copia.fillOval(
-            (int) Math.round(
-                    centroX
-                    + 12 * escala
-            ),
-            (int) Math.round(
-                    centroY
-                    + 8 * escala
-            ),
-            (int) Math.round(
-                    29 * escala
-            ),
-            (int) Math.round(
-                    18 * escala
-            )
-    );
-
-    copia.dispose();
-}
-    
-    private void desenharSaidaRolamento(
-        Graphics2D g2,
-        double fase
-) {
-
-    Graphics2D copia =
-            (Graphics2D) g2.create();
-
-    prepararDesenho(copia);
-
-    double centroX =
-            x + 37 * escala;
-
-    double centroY =
-            y + (100 - 7 * fase) * escala;
-
-    double angulo =
-            1.45
-            - fase * 1.15;
-
-    double aumento =
-            1.20
-            - fase * 0.10;
-
-    copia.translate(
-            centroX,
-            centroY
-    );
-
-    copia.rotate(
-            angulo
-    );
-
-    copia.scale(
-            aumento,
-            aumento
-    );
-
-    copia.translate(
-            -centroX,
-            -centroY
-    );
-
-    // =========================
-    // CORPO ABRINDO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    int largura =
-            (int) Math.round(
-                    (78 - fase * 12)
-                    * escala
-            );
-
-    int altura =
-            (int) Math.round(
-                    (58 + fase * 35)
-                    * escala
-            );
-
-    copia.fillRoundRect(
-            (int) Math.round(
-                    centroX
-                    - largura / 2.0
-            ),
-            (int) Math.round(
-                    centroY
-                    - altura / 2.0
-            ),
-            largura,
-            altura,
-            (int) Math.round(
-                    26 * escala
-            ),
-            (int) Math.round(
-                    26 * escala
-            )
-    );
-
-    // =========================
-    // PERNA DE SAÍDA
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    copia.setStroke(
-            new BasicStroke(
-                    (float) Math.max(
-                            2,
-                            13 * escala
-                    ),
-                    BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND
-            )
-    );
-
-    /*
-     * Uma perna já procura o chão.
-     */
-    copia.drawLine(
-            (int) (centroX + 10 * escala),
-            (int) (centroY + 18 * escala),
-            (int) (
-                    centroX
-                    + (25 + 22 * fase)
-                    * escala
-            ),
-            (int) (
-                    centroY
-                    + (25 + 35 * fase)
-                    * escala
-            )
-    );
-
-    // PATA
-    copia.setColor(
-            corPelo
-    );
-
-    copia.fillOval(
-            (int) (
-                    centroX
-                    + (32 + 17 * fase)
-                    * escala
-            ),
-            (int) (
-                    centroY
-                    + (42 + 18 * fase)
-                    * escala
-            ),
-            (int) (28 * escala),
-            (int) (18 * escala)
-    );
-
-    /*
-     * A cabeça só começa a reaparecer
-     * na segunda metade.
-     */
-    if (fase > 0.50) {
-
-        double aparicao =
-                (fase - 0.50) / 0.50;
-
-        int cabeca =
-                (int) Math.round(
-                        55
-                        * escala
-                        * aparicao
-                );
-
-        copia.setColor(
-                corPelo
-        );
-
-        copia.fillOval(
-                (int) Math.round(
-                        centroX
-                        - cabeca / 2.0
-                        - 10 * escala
-                ),
-                (int) Math.round(
-                        centroY
-                        - 52
-                        * escala
-                        * aparicao
-                ),
-                cabeca,
-                cabeca
-        );
-    }
-
-    copia.dispose();
-}
-    
-    private void desenharLevantandoRolamento(
-        Graphics2D g2,
-        double fase
-) {
-
-    Graphics2D copia =
-            (Graphics2D) g2.create();
-
-    prepararDesenho(copia);
-
-    double centroX =
-            x + 37 * escala;
-
-    double centroY =
-            y + (96 - 16 * fase)
-            * escala;
-
-    double aumento =
-            1.10
-            - fase * 0.10;
-
-    double inclinacao =
-            0.30
-            * (1.0 - fase);
-
-    copia.translate(
-            centroX,
-            centroY
-    );
-
-    copia.rotate(
-            inclinacao
-    );
-
-    copia.scale(
-            aumento,
-            aumento
-    );
-
-    copia.translate(
-            -centroX,
-            -centroY
-    );
-
-    // =========================
-    // CORPO
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    int largura =
-            (int) Math.round(
-                    (65 + fase * 10)
-                    * escala
-            );
-
-    int altura =
-            (int) Math.round(
-                    (92 + fase * 8)
-                    * escala
-            );
-
-    copia.fillRoundRect(
-            (int) Math.round(
-                    centroX
-                    - largura / 2.0
-            ),
-            (int) Math.round(
-                    centroY
-                    - altura / 2.0
-            ),
-            largura,
-            altura,
-            (int) Math.round(23 * escala),
-            (int) Math.round(23 * escala)
-    );
-
-    // =========================
-    // CABEÇA
-    // =========================
-
-    copia.setColor(
-            corPelo
-    );
-
-    int cabeca =
-            (int) Math.round(
-                    55 * escala
-            );
-
-    copia.fillOval(
-            (int) Math.round(
-                    centroX
-                    - cabeca / 2.0
-            ),
-            (int) Math.round(
-                    centroY
-                    - 72 * escala
-                    + 12
-                    * escala
-                    * (1.0 - fase)
-            ),
-            cabeca,
-            cabeca
-    );
-
-    // =========================
-    // PERNAS
-    // =========================
-
-    copia.setColor(
-            corKimono
-    );
-
-    copia.setStroke(
-            new BasicStroke(
-                    (float) Math.max(
-                            2,
-                            14 * escala
-                    ),
-                    BasicStroke.CAP_ROUND,
-                    BasicStroke.JOIN_ROUND
-            )
-    );
-
-    /*
-     * Preto termina com uma base
-     * um pouco mais aberta.
-     */
-    double abertura =
-            19 + fase * 20;
-
-    copia.drawLine(
-            (int) (
-                    centroX
-                    - 12 * escala
-            ),
-            (int) (
-                    centroY
-                    + 35 * escala
-            ),
-            (int) (
-                    centroX
-                    - abertura * escala
-            ),
-            (int) (
-                    centroY
-                    + 68 * escala
-            )
-    );
-
-    copia.drawLine(
-            (int) (
-                    centroX
-                    + 12 * escala
-            ),
-            (int) (
-                    centroY
-                    + 35 * escala
-            ),
-            (int) (
-                    centroX
-                    + abertura * escala
-            ),
-            (int) (
-                    centroY
-                    + 68 * escala
-            )
-    );
-
-    copia.dispose();
-}
-    
-    
     // =============================================================
-    // ARRASTAR NO CHÃO - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+    // ANIMAÇÃO - MOVIMENTO NO CHÃO (MIAUSTUDIO)
     // =============================================================
-    private static final int[][] ARRASTANDO_MIAUSTUDIO = {
+    private static final int[][] MOVIMENTO_CHAO_MIAUSTUDIO = {
         {500, 2, 7, 0, 0, 0, 91, 0, 0, 0, 0, -66, 0, 0, 23, -35, -23, -107, -18, -42, -32, -106, 11, 7, 32, 2, 5, -3, 0, 0},
         {500, 2, 7, 0, 0, 0, 91, 0, 0, 0, 0, -71, 0, 0, 1, -33, -21, -109, -5, -45, -32, -106, 10, 10, 32, 2, 10, -2, 0, 0},
         {500, 2, 7, 0, 0, 0, 91, 0, 0, 0, 0, 0, 0, 0, 16, -32, -21, -109, -18, -42, -32, -106, 1, 3, 32, 2, -6, 0, 0, 0},
@@ -1284,52 +323,52 @@ private void desenharRolamentoAntigo(
      * Como o deslocamento real continua sendo feito pelo GamePanel,
      * aqui cuidamos somente da pose visual.
      */
-    private static final int[] SEQUENCIA_ARRASTANDO_MIAUSTUDIO = {
+    private static final int[] SEQUENCIA_MOVIMENTO_CHAO_MIAUSTUDIO = {
         0, 1, 2, 3, 4, 3, 2, 1
     };
 
-    private static final long TEMPO_QUADRO_ARRASTANDO_MS = 150L;
+    private static final long TEMPO_QUADRO_MOVIMENTO_CHAO_MS = 150L;
 
-    private boolean arrastandoMiauStudioEstavaAtivo = false;
-    private long inicioArrastandoMiauStudio = 0L;
+    private boolean movimentoChaoMiauStudioEstavaAtivo = false;
+    private long inicioMovimentoChaoMiauStudio = 0L;
 
-    private int getIndiceQuadroArrastandoMiauStudio() {
+    private int getIndiceQuadroMovimentoChaoMiauStudio() {
 
         long agora = System.currentTimeMillis();
 
-        if (!arrastandoMiauStudioEstavaAtivo) {
-            arrastandoMiauStudioEstavaAtivo = true;
-            inicioArrastandoMiauStudio = agora;
+        if (!movimentoChaoMiauStudioEstavaAtivo) {
+            movimentoChaoMiauStudioEstavaAtivo = true;
+            inicioMovimentoChaoMiauStudio = agora;
         }
 
         long tempoDecorrido =
-                agora - inicioArrastandoMiauStudio;
+                agora - inicioMovimentoChaoMiauStudio;
 
         int indiceSequencia =
                 (int) (
                         tempoDecorrido
-                        / TEMPO_QUADRO_ARRASTANDO_MS
+                        / TEMPO_QUADRO_MOVIMENTO_CHAO_MS
                 )
-                % SEQUENCIA_ARRASTANDO_MIAUSTUDIO.length;
+                % SEQUENCIA_MOVIMENTO_CHAO_MIAUSTUDIO.length;
 
-        return SEQUENCIA_ARRASTANDO_MIAUSTUDIO[
+        return SEQUENCIA_MOVIMENTO_CHAO_MIAUSTUDIO[
                 indiceSequencia
         ];
     }
 
-    private void resetarAnimacaoArrastandoMiauStudio() {
-        arrastandoMiauStudioEstavaAtivo = false;
-        inicioArrastandoMiauStudio = 0L;
+    private void resetarAnimacaoMovimentoChaoMiauStudio() {
+        movimentoChaoMiauStudioEstavaAtivo = false;
+        inicioMovimentoChaoMiauStudio = 0L;
     }
 
 
-    private void desenharArrastandoMiauStudio(
+    private void desenharMovimentoChaoMiauStudio(
             Graphics2D g2
     ) {
 
         desenharPoseChaoMiauStudio(
                 g2,
-                getIndiceQuadroArrastandoMiauStudio()
+                getIndiceQuadroMovimentoChaoMiauStudio()
         );
     }
 
@@ -1348,7 +387,7 @@ private void desenharRolamentoAntigo(
 
         desenharPoseMiauStudio(
                 g2,
-                ARRASTANDO_MIAUSTUDIO[indiceQuadro],
+                MOVIMENTO_CHAO_MIAUSTUDIO[indiceQuadro],
                 40
         );
     }
@@ -1356,9 +395,9 @@ private void desenharRolamentoAntigo(
     /*
      * Renderer comum das poses criadas no MiauStudio.
      *
-     * É usado tanto pelo rastejo quanto pelo novo rolamento.
+     * É usado pelas animações de chão, rolamento, sprawl e demais poses.
      * O parâmetro deslocamentoVisualY permite que a animação
-     * de chão continue 40 px mais baixa sem afetar o rolamento.
+     * de chão use seu deslocamento vertical sem alterar a posição real.
      */
     private void desenharPoseMiauStudio(
             Graphics2D g2,
@@ -1903,23 +942,23 @@ private void desenharRolamentoAntigo(
 private void desenharDeitado(Graphics2D g2) {
 
     /*
-     * Agora PARADO e ARRASTANDO usam o mesmo rig e a mesma
+     * Agora PARADO e MOVENDO NO CHÃO usam o mesmo rig e a mesma
      * origem criada no MiauStudio.
      *
      * Antes:
      * parado      -> personagem normal girado 90°
-     * arrastando  -> pose nova do MiauStudio
+     * movendo      -> pose nova do MiauStudio
      *
      * Como eram dois sistemas de coordenadas diferentes,
      * o personagem "teleportava" ao começar a se mover.
      *
      * Agora:
      * parado      -> Quadro 1 do MiauStudio
-     * arrastando  -> Q1, Q2, Q3, Q4, Q5...
+     * movendo      -> Q1, Q2, Q3, Q4, Q5...
      */
     if (isAndando()) {
 
-        desenharArrastandoMiauStudio(g2);
+        desenharMovimentoChaoMiauStudio(g2);
 
         return;
     }
@@ -1927,10 +966,10 @@ private void desenharDeitado(Graphics2D g2) {
     /*
      * Enquanto está parado, mantemos o Quadro 1 congelado.
      * Também resetamos o relógio da animação. Assim, quando
-     * ele voltar a se arrastar, a animação começa exatamente
+     * ele voltar a se mover no chão, a animação começa exatamente
      * desta mesma pose.
      */
-    resetarAnimacaoArrastandoMiauStudio();
+    resetarAnimacaoMovimentoChaoMiauStudio();
 
     desenharPoseChaoMiauStudio(
             g2,
@@ -2482,7 +1521,7 @@ private void desenharEmPe(
                 && !isDeitado();
 
         int indiceQuadroTaunt =
-                getIndiceQuadroTauntPretoMiauStudio(
+                getIndiceQuadroTauntMiauStudio(
                         tauntVisualAtivo
                 );
 
@@ -2520,7 +1559,7 @@ private void desenharEmPe(
 
             desenharPoseMiauStudio(
                     g2,
-                    TAUNTPRETO_MIAUSTUDIO[
+                    TAUNT_MIAUSTUDIO[
                             indiceQuadroTaunt
                     ],
                     0
