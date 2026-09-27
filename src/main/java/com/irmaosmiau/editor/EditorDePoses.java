@@ -6,11 +6,18 @@ import com.irmaosmiau.entities.IrmaoMiauPreto;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +39,13 @@ public class EditorDePoses extends JFrame {
         Color corPelo = Color.BLACK;
 
         int rotGlobal = 0, rotCabeca = 0;
+
+        // Novo root do rig.
+        int offCinturaX = 0, offCinturaY = 0, rotCintura = 0;
+
+        // Tronco superior articulado.
+        int offPeitoX = 0, offPeitoY = 0, rotPeito = 0;
+
         int offCabX = 0, offCabY = 0;
         int offCotEsqX = 0, offCotEsqY = 0, offMaoEsqX = 0, offMaoEsqY = 0;
         int offCotDirX = 0, offCotDirY = 0, offMaoDirX = 0, offMaoDirY = 0;
@@ -133,6 +147,15 @@ public class EditorDePoses extends JFrame {
         boolean viradoDireita;
 
         int rotGlobal;
+
+        int offCinturaX;
+        int offCinturaY;
+        int rotCintura;
+
+        int offPeitoX;
+        int offPeitoY;
+        int rotPeito;
+
         int rotCabeca;
         int offCabX;
         int offCabY;
@@ -164,6 +187,15 @@ public class EditorDePoses extends JFrame {
             viradoDireita = pd.viradoDireita;
 
             rotGlobal = pd.rotGlobal;
+
+            offCinturaX = pd.offCinturaX;
+            offCinturaY = pd.offCinturaY;
+            rotCintura = pd.rotCintura;
+
+            offPeitoX = pd.offPeitoX;
+            offPeitoY = pd.offPeitoY;
+            rotPeito = pd.rotPeito;
+
             rotCabeca = pd.rotCabeca;
             offCabX = pd.offCabX;
             offCabY = pd.offCabY;
@@ -196,6 +228,15 @@ public class EditorDePoses extends JFrame {
             pd.viradoDireita = viradoDireita;
 
             pd.rotGlobal = rotGlobal;
+
+            pd.offCinturaX = offCinturaX;
+            pd.offCinturaY = offCinturaY;
+            pd.rotCintura = rotCintura;
+
+            pd.offPeitoX = offPeitoX;
+            pd.offPeitoY = offPeitoY;
+            pd.rotPeito = rotPeito;
+
             pd.rotCabeca = rotCabeca;
             pd.offCabX = offCabX;
             pd.offCabY = offCabY;
@@ -223,11 +264,17 @@ public class EditorDePoses extends JFrame {
 
         String paraLinhaJava() {
             return String.format(
-                "{%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d}",
+                "{%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d}",
                 cenaX,
                 linhaAtual,
                 escalaX10,
                 viradoDireita ? 1 : 0,
+                offCinturaX,
+                offCinturaY,
+                rotCintura,
+                offPeitoX,
+                offPeitoY,
+                rotPeito,
                 rotGlobal,
                 rotCabeca,
                 offCabX,
@@ -252,6 +299,7 @@ public class EditorDePoses extends JFrame {
         }
     }
 
+
     // --- VARIÁVEIS SEGURAS DE INTERFACE ---
     private List<DadosPersonagem> cena = new ArrayList<>();
     private DadosPersonagem alvoAtual;
@@ -274,6 +322,8 @@ public class EditorDePoses extends JFrame {
     
     // Nossos novos controles unificados
     private ControleNumerico cCenaX, cLinha, cEscala, cRotGlobal;
+    private ControleNumerico cCinturaX, cCinturaY, cRotCintura;
+    private ControleNumerico cPeitoX, cPeitoY, cRotPeito;
     private ControleNumerico cRotCabeca, cCabX, cCabY;
     private ControleNumerico cCotEsqX, cCotEsqY, cMaoEsqX, cMaoEsqY;
     private ControleNumerico cCotDirX, cCotDirY, cMaoDirX, cMaoDirY;
@@ -282,7 +332,7 @@ public class EditorDePoses extends JFrame {
     private JCheckBox chkViradoDireita;
 
     public EditorDePoses() {
-        setTitle("MiauStudio Ultimate - Manual Input, Câmera & Reverse Engineering");
+        setTitle("MiauStudio Ultimate - Rig de Cintura, Tronco & Animação");
         setSize(1450, 950);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -342,6 +392,40 @@ public class EditorDePoses extends JFrame {
         
         cEscala = new ControleNumerico(pControles, "Escala (x10): ", 2, 30, 7, v -> alvoAtual.escala = v / 10.0);
         cRotGlobal = new ControleNumerico(pControles, "ROT. GERAL: ", -180, 180, 0, v -> alvoAtual.rotGlobal = v);
+
+        pControles.add(new JLabel("--- EIXO CENTRAL / CINTURA ---"));
+        cCinturaX = new ControleNumerico(pControles, "Raiz X: ", -200, 200, 0, v -> alvoAtual.offCinturaX = v);
+        cCinturaY = new ControleNumerico(pControles, "Raiz Y: ", -200, 200, 0, v -> alvoAtual.offCinturaY = v);
+        cRotCintura = new ControleNumerico(pControles, "Rot. cintura: ", -180, 180, 0, v -> alvoAtual.rotCintura = v);
+
+
+        // --- TRONCO SUPERIOR ---
+        // O tronco dobra usando a própria cintura como pivô.
+        pControles.add(new JLabel("--- TRONCO SUPERIOR ---"));
+        cPeitoX = new ControleNumerico(
+                pControles,
+                "Tronco X: ",
+                -150,
+                150,
+                0,
+                v -> alvoAtual.offPeitoX = v
+        );
+        cPeitoY = new ControleNumerico(
+                pControles,
+                "Tronco Y: ",
+                -150,
+                150,
+                0,
+                v -> alvoAtual.offPeitoY = v
+        );
+        cRotPeito = new ControleNumerico(
+                pControles,
+                "Rot. tronco: ",
+                -180,
+                180,
+                0,
+                v -> alvoAtual.rotPeito = v
+        );
         
         pControles.add(new JLabel("--- CABEÇA ---"));
         cCabX = new ControleNumerico(pControles, "Off X: ", -100, 100, 0, v -> alvoAtual.offCabX = v);
@@ -471,6 +555,14 @@ public class EditorDePoses extends JFrame {
         cLinha.setValue(alvoAtual.linhaAtual);
         cEscala.setValue((int)(alvoAtual.escala * 10));
         cRotGlobal.setValue(alvoAtual.rotGlobal);
+
+        cCinturaX.setValue(alvoAtual.offCinturaX);
+        cCinturaY.setValue(alvoAtual.offCinturaY);
+        cRotCintura.setValue(alvoAtual.rotCintura);
+
+        cPeitoX.setValue(alvoAtual.offPeitoX);
+        cPeitoY.setValue(alvoAtual.offPeitoY);
+        cRotPeito.setValue(alvoAtual.rotPeito);
         
         cCabX.setValue(alvoAtual.offCabX); cCabY.setValue(alvoAtual.offCabY); cRotCabeca.setValue(alvoAtual.rotCabeca);
         cCotEsqX.setValue(alvoAtual.offCotEsqX); cCotEsqY.setValue(alvoAtual.offCotEsqY);
@@ -491,7 +583,9 @@ public class EditorDePoses extends JFrame {
     private void atualizarCodigoGerado() {
         if (atualizandoUI) return;
         String codigo = String.format(
-            "// ROTAÇÃO: %d | R. CABEÇA: %d | OFFSET CAB. X: %d | Y: %d\n\n" +
+            "// ROTAÇÃO: %d | R. CABEÇA: %d | OFFSET CAB. X: %d | Y: %d\n" +
+            "// CINTURA X: %d | CINTURA Y: %d | ROT. CINTURA: %d\n" +
+            "// TRONCO X: %d | TRONCO Y: %d | ROT. TRONCO: %d\n\n" +
             "cotoveloEsquerdoX += (int)(%d * escala);\n" +
             "cotoveloEsquerdoY += (int)(%d * escala);\n" +
             "maoEsquerdaX += (int)(%d * escala);\n" +
@@ -509,6 +603,8 @@ public class EditorDePoses extends JFrame {
             "peDireitoX += (int)(%d * escala);\n" +
             "peDireitoY += (int)(%d * escala);\n",
             alvoAtual.rotGlobal, alvoAtual.rotCabeca, alvoAtual.offCabX, alvoAtual.offCabY,
+            alvoAtual.offCinturaX, alvoAtual.offCinturaY, alvoAtual.rotCintura,
+            alvoAtual.offPeitoX, alvoAtual.offPeitoY, alvoAtual.rotPeito,
             alvoAtual.offCotEsqX, alvoAtual.offCotEsqY, alvoAtual.offMaoEsqX, alvoAtual.offMaoEsqY,
             alvoAtual.offCotDirX, alvoAtual.offCotDirY, alvoAtual.offMaoDirX, alvoAtual.offMaoDirY,
             alvoAtual.offJoelEsqX, alvoAtual.offJoelEsqY, alvoAtual.offPeEsqX, alvoAtual.offPeEsqY,
@@ -613,6 +709,8 @@ public class EditorDePoses extends JFrame {
         codigo.append(" *\n");
         codigo.append(" * ORDEM DOS VALORES:\n");
         codigo.append(" * cenaX, linha, escalaX10, viradoDireita(1/0),\n");
+        codigo.append(" * cinturaX, cinturaY, rotCintura,\n");
+        codigo.append(" * troncoX, troncoY, rotTronco,\n");
         codigo.append(" * rotGlobal, rotCabeca, cabX, cabY,\n");
         codigo.append(" * cotEsqX, cotEsqY, maoEsqX, maoEsqY,\n");
         codigo.append(" * cotDirX, cotDirY, maoDirX, maoDirY,\n");
@@ -676,7 +774,17 @@ public class EditorDePoses extends JFrame {
             alvoAtual.rotGlobal = extrairValorInteiro(code, "ROTAÇÃO:\\s*(-?\\d+)");
             alvoAtual.rotCabeca = extrairValorInteiro(code, "R\\. CABEÇA:\\s*(-?\\d+)");
             alvoAtual.offCabX = extrairValorInteiro(code, "OFFSET CAB\\. X:\\s*(-?\\d+)");
-            alvoAtual.offCabY = extrairValorInteiro(code, "Y:\\s*(-?\\d+)");
+            alvoAtual.offCabY = extrairValorInteiro(code, "OFFSET CAB\\. X:\\s*-?\\d+\\s*\\|\\s*Y:\\s*(-?\\d+)");
+
+            // Novo root da cintura. Em códigos antigos esses valores simplesmente ficam em 0.
+            alvoAtual.offCinturaX = extrairValorInteiro(code, "CINTURA X:\\s*(-?\\d+)");
+            alvoAtual.offCinturaY = extrairValorInteiro(code, "CINTURA Y:\\s*(-?\\d+)");
+            alvoAtual.rotCintura = extrairValorInteiro(code, "ROT\\. CINTURA:\\s*(-?\\d+)");
+
+            // Tronco superior. Também aceita o formato antigo chamado PEITO.
+            alvoAtual.offPeitoX = extrairValorInteiro(code, "(?:TRONCO|PEITO) X:\\s*(-?\\d+)");
+            alvoAtual.offPeitoY = extrairValorInteiro(code, "(?:TRONCO|PEITO) Y:\\s*(-?\\d+)");
+            alvoAtual.rotPeito = extrairValorInteiro(code, "ROT\\. (?:TRONCO|PEITO):\\s*(-?\\d+)");
 
             // Lendo os membros usando Regex
             alvoAtual.offCotEsqX = extrairMembro(code, "cotoveloEsquerdoX");
@@ -719,11 +827,535 @@ public class EditorDePoses extends JFrame {
 
     // --- RENDERIZAÇÃO E PROFUNDIDADE ---
     private class CanvasPanel extends JPanel {
+
+        /*
+         * Primeira versão do rig direto no canvas:
+         * mãos, cotovelos, joelhos e pés podem ser arrastados.
+         */
+        private enum PontoRig {
+            COTOVELO_ESQUERDO("Cotovelo E"),
+            MAO_ESQUERDA("Mão E"),
+            COTOVELO_DIREITO("Cotovelo D"),
+            MAO_DIREITA("Mão D"),
+            JOELHO_ESQUERDO("Joelho E"),
+            PE_ESQUERDO("Pé E"),
+            JOELHO_DIREITO("Joelho D"),
+            PE_DIREITO("Pé D");
+
+            private final String rotulo;
+
+            PontoRig(String rotulo) {
+                this.rotulo = rotulo;
+            }
+
+            public String getRotulo() {
+                return rotulo;
+            }
+        }
+
+        private class HandleRig {
+            PontoRig tipo;
+            Point2D.Double pontoTela;
+            Point2D.Double baseLocal;
+            AffineTransform localParaTela;
+
+            HandleRig(
+                    PontoRig tipo,
+                    Point2D.Double pontoTela,
+                    Point2D.Double baseLocal,
+                    AffineTransform localParaTela
+            ) {
+                this.tipo = tipo;
+                this.pontoTela = pontoTela;
+                this.baseLocal = baseLocal;
+                this.localParaTela = localParaTela;
+            }
+        }
+
+        private final Map<PontoRig, HandleRig> handlesRig =
+                new EnumMap<>(PontoRig.class);
+
+        private PontoRig pontoArrastado = null;
+        private PontoRig pontoSobMouse = null;
+
+        /*
+         * Guarda o transform original do Graphics do JPanel.
+         * Assim convertemos as transformações do Java2D para
+         * coordenadas lógicas do mouse, inclusive com zoom.
+         */
+        private AffineTransform transformBaseGraphics =
+                new AffineTransform();
+
+        public CanvasPanel() {
+
+            setToolTipText(
+                    "Arraste mãos, cotovelos, joelhos e pés diretamente no Miau."
+            );
+
+            MouseAdapter mouseRig = new MouseAdapter() {
+
+                @Override
+                public void mousePressed(MouseEvent e) {
+
+                    PontoRig encontrado =
+                            encontrarPontoRig(
+                                    e.getPoint(),
+                                    14.0
+                            );
+
+                    if (encontrado != null) {
+
+                        pontoArrastado = encontrado;
+
+                        setCursor(
+                                Cursor.getPredefinedCursor(
+                                        Cursor.MOVE_CURSOR
+                                )
+                        );
+                    }
+                }
+
+                @Override
+                public void mouseDragged(MouseEvent e) {
+
+                    if (pontoArrastado == null) {
+                        return;
+                    }
+
+                    arrastarPontoRig(e);
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+
+                    pontoArrastado = null;
+
+                    atualizarCursorRig(
+                            e.getPoint()
+                    );
+                }
+
+                @Override
+                public void mouseMoved(MouseEvent e) {
+
+                    pontoSobMouse =
+                            encontrarPontoRig(
+                                    e.getPoint(),
+                                    14.0
+                            );
+
+                    atualizarCursorRig(
+                            e.getPoint()
+                    );
+
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+
+                    if (pontoArrastado == null) {
+                        pontoSobMouse = null;
+                        setCursor(Cursor.getDefaultCursor());
+                        repaint();
+                    }
+                }
+            };
+
+            addMouseListener(mouseRig);
+            addMouseMotionListener(mouseRig);
+        }
+
+        private void atualizarCursorRig(Point pontoMouse) {
+
+            if (pontoArrastado != null) {
+
+                setCursor(
+                        Cursor.getPredefinedCursor(
+                                Cursor.MOVE_CURSOR
+                        )
+                );
+
+                return;
+            }
+
+            PontoRig encontrado =
+                    encontrarPontoRig(
+                            pontoMouse,
+                            14.0
+                    );
+
+            if (encontrado != null) {
+
+                setCursor(
+                        Cursor.getPredefinedCursor(
+                                Cursor.HAND_CURSOR
+                        )
+                );
+
+            } else {
+
+                setCursor(
+                        Cursor.getDefaultCursor()
+                );
+            }
+        }
+
+        private PontoRig encontrarPontoRig(
+                Point2D pontoMouse,
+                double raioClique
+        ) {
+
+            PontoRig melhor = null;
+            double menorDistancia = raioClique;
+
+            for (HandleRig handle : handlesRig.values()) {
+
+                double distancia =
+                        handle.pontoTela.distance(
+                                pontoMouse
+                        );
+
+                if (distancia <= menorDistancia) {
+
+                    menorDistancia = distancia;
+                    melhor = handle.tipo;
+                }
+            }
+
+            return melhor;
+        }
+
+        private void arrastarPontoRig(MouseEvent e) {
+
+            HandleRig handle =
+                    handlesRig.get(
+                            pontoArrastado
+                    );
+
+            if (handle == null
+                    || alvoAtual == null) {
+
+                return;
+            }
+
+            try {
+
+                AffineTransform telaParaLocal =
+                        handle.localParaTela
+                                .createInverse();
+
+                Point2D pontoLocal =
+                        telaParaLocal.transform(
+                                e.getPoint(),
+                                null
+                        );
+
+                int novoOffsetX =
+                        (int) Math.round(
+                                (
+                                        pontoLocal.getX()
+                                        - handle.baseLocal.x
+                                )
+                                / alvoAtual.escala
+                        );
+
+                int novoOffsetY =
+                        (int) Math.round(
+                                (
+                                        pontoLocal.getY()
+                                        - handle.baseLocal.y
+                                )
+                                / alvoAtual.escala
+                        );
+
+                aplicarOffsetDoPonto(
+                        pontoArrastado,
+                        novoOffsetX,
+                        novoOffsetY
+                );
+
+            } catch (NoninvertibleTransformException ex) {
+
+                // Se alguma transformação ficar inválida,
+                // apenas ignoramos aquele frame do arraste.
+            }
+        }
+
+        private int limitarOffsetMembro(int valor) {
+
+            return Math.max(
+                    -150,
+                    Math.min(
+                            150,
+                            valor
+                    )
+            );
+        }
+
+        private void aplicarOffsetDoPonto(
+                PontoRig ponto,
+                int offsetX,
+                int offsetY
+        ) {
+
+            int xLimitado =
+                    limitarOffsetMembro(
+                            offsetX
+                    );
+
+            int yLimitado =
+                    limitarOffsetMembro(
+                            offsetY
+                    );
+
+            ControleNumerico controleX;
+            ControleNumerico controleY;
+
+            switch (ponto) {
+
+                case COTOVELO_ESQUERDO:
+                    alvoAtual.offCotEsqX = xLimitado;
+                    alvoAtual.offCotEsqY = yLimitado;
+                    controleX = cCotEsqX;
+                    controleY = cCotEsqY;
+                    break;
+
+                case MAO_ESQUERDA:
+                    alvoAtual.offMaoEsqX = xLimitado;
+                    alvoAtual.offMaoEsqY = yLimitado;
+                    controleX = cMaoEsqX;
+                    controleY = cMaoEsqY;
+                    break;
+
+                case COTOVELO_DIREITO:
+                    alvoAtual.offCotDirX = xLimitado;
+                    alvoAtual.offCotDirY = yLimitado;
+                    controleX = cCotDirX;
+                    controleY = cCotDirY;
+                    break;
+
+                case MAO_DIREITA:
+                    alvoAtual.offMaoDirX = xLimitado;
+                    alvoAtual.offMaoDirY = yLimitado;
+                    controleX = cMaoDirX;
+                    controleY = cMaoDirY;
+                    break;
+
+                case JOELHO_ESQUERDO:
+                    alvoAtual.offJoelEsqX = xLimitado;
+                    alvoAtual.offJoelEsqY = yLimitado;
+                    controleX = cJoelEsqX;
+                    controleY = cJoelEsqY;
+                    break;
+
+                case PE_ESQUERDO:
+                    alvoAtual.offPeEsqX = xLimitado;
+                    alvoAtual.offPeEsqY = yLimitado;
+                    controleX = cPeEsqX;
+                    controleY = cPeEsqY;
+                    break;
+
+                case JOELHO_DIREITO:
+                    alvoAtual.offJoelDirX = xLimitado;
+                    alvoAtual.offJoelDirY = yLimitado;
+                    controleX = cJoelDirX;
+                    controleY = cJoelDirY;
+                    break;
+
+                case PE_DIREITO:
+                    alvoAtual.offPeDirX = xLimitado;
+                    alvoAtual.offPeDirY = yLimitado;
+                    controleX = cPeDirX;
+                    controleY = cPeDirY;
+                    break;
+
+                default:
+                    return;
+            }
+
+            /*
+             * O modelo já foi atualizado.
+             * Agora sincronizamos sliders/spinners sem
+             * disparar novamente os listeners deles.
+             */
+            boolean estadoAnterior =
+                    atualizandoUI;
+
+            atualizandoUI = true;
+
+            controleX.setValue(
+                    xLimitado
+            );
+
+            controleY.setValue(
+                    yLimitado
+            );
+
+            atualizandoUI =
+                    estadoAnterior;
+
+            atualizarCodigoGerado();
+            repaint();
+        }
+
+        private AffineTransform obterTransformCanvas(
+                Graphics2D contexto
+        ) {
+
+            try {
+
+                AffineTransform inversaBase =
+                        transformBaseGraphics
+                                .createInverse();
+
+                inversaBase.concatenate(
+                        contexto.getTransform()
+                );
+
+                return inversaBase;
+
+            } catch (NoninvertibleTransformException ex) {
+
+                return new AffineTransform();
+            }
+        }
+
+        private void registrarHandle(
+                PontoRig tipo,
+                double atualX,
+                double atualY,
+                double baseX,
+                double baseY,
+                Graphics2D contexto
+        ) {
+
+            AffineTransform localParaTela =
+                    obterTransformCanvas(
+                            contexto
+                    );
+
+            Point2D pontoTelaGenerico =
+                    localParaTela.transform(
+                            new Point2D.Double(
+                                    atualX,
+                                    atualY
+                            ),
+                            null
+                    );
+
+            Point2D.Double pontoTela =
+                    new Point2D.Double(
+                            pontoTelaGenerico.getX(),
+                            pontoTelaGenerico.getY()
+                    );
+
+            handlesRig.put(
+                    tipo,
+                    new HandleRig(
+                            tipo,
+                            pontoTela,
+                            new Point2D.Double(
+                                    baseX,
+                                    baseY
+                            ),
+                            localParaTela
+                    )
+            );
+        }
+
+        private void desenharHandlesRig(
+                Graphics2D g2
+        ) {
+
+            int raioNormal = 6;
+            int raioAtivo = 8;
+
+            g2.setStroke(
+                    new BasicStroke(2.0f)
+            );
+
+            for (HandleRig handle : handlesRig.values()) {
+
+                boolean ativo =
+                        handle.tipo == pontoArrastado
+                        || handle.tipo == pontoSobMouse;
+
+                int raio =
+                        ativo
+                                ? raioAtivo
+                                : raioNormal;
+
+                int px =
+                        (int) Math.round(
+                                handle.pontoTela.x
+                        );
+
+                int py =
+                        (int) Math.round(
+                                handle.pontoTela.y
+                        );
+
+                if (ativo) {
+
+                    g2.setColor(
+                            new Color(
+                                    255,
+                                    120,
+                                    30
+                            )
+                    );
+
+                } else {
+
+                    g2.setColor(
+                            new Color(
+                                    0,
+                                    220,
+                                    255
+                            )
+                    );
+                }
+
+                g2.fillOval(
+                        px - raio,
+                        py - raio,
+                        raio * 2,
+                        raio * 2
+                );
+
+                g2.setColor(Color.BLACK);
+
+                g2.drawOval(
+                        px - raio,
+                        py - raio,
+                        raio * 2,
+                        raio * 2
+                );
+
+                if (ativo) {
+
+                    g2.drawString(
+                            handle.tipo.getRotulo(),
+                            px + raio + 5,
+                            py - raio - 3
+                    );
+                }
+            }
+        }
+
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
             Graphics2D gBase = (Graphics2D) g;
             gBase.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            transformBaseGraphics =
+                    new AffineTransform(
+                            gBase.getTransform()
+                    );
+
+            handlesRig.clear();
 
             Graphics2D gCamera = (Graphics2D) gBase.create();
             double centroViewX = getWidth() / 2.0;
@@ -744,20 +1376,25 @@ public class EditorDePoses extends JFrame {
             for (DadosPersonagem pd : ordemRender) {
                 desenharPersonagemEditor(gCamera, pd);
             }
+
             gCamera.dispose();
+
+            /*
+             * Os handles são desenhados por cima de toda a cena
+             * e mantêm tamanho constante mesmo com zoom.
+             */
+            desenharHandlesRig(gBase);
         }
 
         private void desenharPersonagemEditor(Graphics2D gCamera, DadosPersonagem pd) {
             Graphics2D g2d = (Graphics2D) gCamera.create();
             double s = pd.escala;
-            
-            // X amarrado ao controle horizontal
+
             double posX = pd.cenaX;
-            // Y amarrado à matemática da linha (Grama começa em 300, base do Y fica em torno de 150 a 250)
-            double espacamentoLinha = 25.0; // Distância visual entre cada linha
+            double espacamentoLinha = 25.0;
             double posY = 150 + (pd.linhaAtual * espacamentoLinha);
 
-            // Espelhamento
+            // Espelhamento do personagem inteiro.
             if (!pd.viradoDireita) {
                 double eixoCentral = posX + 35 * s;
                 g2d.translate(eixoCentral, 0);
@@ -765,70 +1402,128 @@ public class EditorDePoses extends JFrame {
                 g2d.translate(-eixoCentral, 0);
             }
 
+            // Rotação global antiga.
             double pivotX = posX + 35 * s;
             double pivotY = posY + 120 * s;
-            g2d.translate(pivotX, pivotY);
-            g2d.rotate(Math.toRadians(pd.rotGlobal));
-            g2d.translate(-pivotX, -pivotY);
+            g2d.rotate(
+                    Math.toRadians(pd.rotGlobal),
+                    pivotX,
+                    pivotY
+            );
 
-// Cabeça (Reflection)
-            Graphics2D gCabeca = (Graphics2D) g2d.create();
-            
-            // 1. CORREÇÃO: Movemos a origem da cabeça para a posição real do boneco na cena
-            gCabeca.translate(posX, posY);
-            
-            // 2. Aplicamos os offsets dos sliders manuais
-            gCabeca.translate(pd.offCabX * s, pd.offCabY * s);
-            
-            // 3. CORREÇÃO: Como a origem já andou, o pivot de rotação passa a ser relativo (removemos o posX e posY da conta)
-            double pivotCabX = 35 * s;
-            double pivotCabY = 53 * s;
-            gCabeca.rotate(Math.toRadians(pd.rotCabeca), pivotCabX, pivotCabY);
-            
-            try {
-                Method metodoCabeca = null;
-                Class<?> clazz = pd.instancia.getClass();
-                while (clazz != null && metodoCabeca == null) {
-                    try { metodoCabeca = clazz.getDeclaredMethod("desenharCabeca", Graphics2D.class); } 
-                    catch (Exception ex) { clazz = clazz.getSuperclass(); }
-                }
-                if (metodoCabeca != null) {
-                    metodoCabeca.setAccessible(true);
-                    metodoCabeca.invoke(pd.instancia, gCabeca); 
-                }
-            } catch (Exception ex) {}
-            gCabeca.dispose();
+            // =================================================
+            // ROOT DO RIG: CINTURA
+            // =================================================
+            double eixoCinturaBaseX =
+                    posX
+                    + pd.instancia.getEixoCinturaLocalX()
+                    * s;
 
- // Descobre se é o Miau Preto para aplicar a geometria correta
+            double eixoCinturaBaseY =
+                    posY
+                    + pd.instancia.getEixoCinturaLocalY()
+                    * s;
+
+            g2d.translate(
+                    pd.offCinturaX * s,
+                    pd.offCinturaY * s
+            );
+
+            g2d.rotate(
+                    Math.toRadians(pd.rotCintura),
+                    eixoCinturaBaseX,
+                    eixoCinturaBaseY
+            );
+
             boolean isPreto = pd.nome.contains("Preto");
 
-            // CORPO E FAIXA
-            int corpoY = (int)(posY + 70 * s);
-            Polygon corpo = new Polygon();
-            
+            // =================================================
+            // GEOMETRIA BASE
+            // =================================================
+            int corpoY = (int) (posY + 70 * s);
+
+            int topoEsqX;
+            int topoDirX;
+            int fundoEsqX;
+            int fundoDirX;
+            int alturaCorpo;
+            int faixaX;
+            int faixaY;
+            int faixaLargura;
+            int faixaAltura;
+
             if (isPreto) {
-                corpo.addPoint((int)(posX - 4*s), corpoY);
-                corpo.addPoint((int)(posX + 78*s), corpoY);
-                corpo.addPoint((int)(posX + 61*s), (int)(corpoY + 100*s));
-                corpo.addPoint((int)(posX + 10*s), (int)(corpoY + 100*s));
-                
-                g2d.setColor(pd.corKimono);
-                g2d.fillPolygon(corpo);
-                g2d.setColor(new Color(55, 55, 220));
-                g2d.fillRect((int)(posX - 6*s), (int)(corpoY + 80*s), (int)(90*s), (int)(12*s));
+                topoEsqX = (int) (posX - 4 * s);
+                topoDirX = (int) (posX + 78 * s);
+                fundoEsqX = (int) (posX + 10 * s);
+                fundoDirX = (int) (posX + 61 * s);
+                alturaCorpo = (int) (100 * s);
+
+                faixaX = (int) (posX - 6 * s);
+                faixaY = (int) (corpoY + 80 * s);
+                faixaLargura = (int) (90 * s);
+                faixaAltura = (int) (12 * s);
             } else {
-                corpo.addPoint((int)(posX - 10*s), corpoY);
-                corpo.addPoint((int)(posX + 82*s), corpoY);
-                corpo.addPoint((int)(posX + 64*s), (int)(corpoY + 105*s));
-                corpo.addPoint((int)(posX + 8*s), (int)(corpoY + 105*s));
-                
-                g2d.setColor(pd.corKimono);
-                g2d.fillPolygon(corpo);
-                g2d.setColor(new Color(55, 55, 220));
-                g2d.fillRect((int)(posX - 8*s), (int)(corpoY + 82*s), (int)(96*s), (int)(12*s));
+                topoEsqX = (int) (posX - 10 * s);
+                topoDirX = (int) (posX + 82 * s);
+                fundoEsqX = (int) (posX + 8 * s);
+                fundoDirX = (int) (posX + 64 * s);
+                alturaCorpo = (int) (105 * s);
+
+                faixaX = (int) (posX - 8 * s);
+                faixaY = (int) (corpoY + 82 * s);
+                faixaLargura = (int) (96 * s);
+                faixaAltura = (int) (12 * s);
             }
 
-            // BASES DE JUNTAS ESPECÍFICAS POR PERSONAGEM
+            int corpoFimY = corpoY + alturaCorpo;
+
+            /*
+             * A faixa funciona como uma pequena zona de sobreposição.
+             * Isso esconde a emenda entre tronco superior e pelve
+             * quando o peito começa a dobrar.
+             */
+            int divisaoY = faixaY + faixaAltura / 2;
+
+            double tDivisao =
+                    (double) (divisaoY - corpoY)
+                    / Math.max(1, alturaCorpo);
+
+            int divisaoEsqX =
+                    (int) Math.round(
+                            topoEsqX
+                            + (fundoEsqX - topoEsqX)
+                            * tDivisao
+                    );
+
+            int divisaoDirX =
+                    (int) Math.round(
+                            topoDirX
+                            + (fundoDirX - topoDirX)
+                            * tDivisao
+                    );
+
+            double tFaixa =
+                    (double) (faixaY - corpoY)
+                    / Math.max(1, alturaCorpo);
+
+            int faixaEsqCorpoX =
+                    (int) Math.round(
+                            topoEsqX
+                            + (fundoEsqX - topoEsqX)
+                            * tFaixa
+                    );
+
+            int faixaDirCorpoX =
+                    (int) Math.round(
+                            topoDirX
+                            + (fundoDirX - topoDirX)
+                            * tFaixa
+                    );
+
+            // =================================================
+            // BASES DE JUNTAS
+            // =================================================
             int ombroEsqX, ombroEsqY, baseCotEsqX, baseCotEsqY, baseMaoEsqX, baseMaoEsqY;
             int ombroDirX, ombroDirY, baseCotDirX, baseCotDirY, baseMaoDirX, baseMaoDirY;
             int quadEsqX, quadEsqY, baseJoelEsqX, baseJoelEsqY, basePeEsqX, basePeEsqY;
@@ -868,7 +1563,6 @@ public class EditorDePoses extends JFrame {
                 basePeDirX = (int)(posX + 82*s); basePeDirY = (int)(corpoY + 171*s);
             }
 
-            // JUNTAS REAIS = BASE ORIGINAL + OFFSETS DOS SLIDERS
             int cotEsqX = (int)(baseCotEsqX + pd.offCotEsqX*s);
             int cotEsqY = (int)(baseCotEsqY + pd.offCotEsqY*s);
             int maoEsqX = (int)(baseMaoEsqX + pd.offMaoEsqX*s);
@@ -889,28 +1583,352 @@ public class EditorDePoses extends JFrame {
             int peDirX = (int)(basePeDirX + pd.offPeDirX*s);
             int peDirY = (int)(basePeDirY + pd.offPeDirY*s);
 
-            // DESENHANDO AS LINHAS
-            g2d.setStroke(new BasicStroke((float) (18 * s), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            if (pd == alvoAtual) {
+
+                registrarHandle(
+                        PontoRig.JOELHO_ESQUERDO,
+                        joelEsqX,
+                        joelEsqY,
+                        baseJoelEsqX,
+                        baseJoelEsqY,
+                        g2d
+                );
+
+                registrarHandle(
+                        PontoRig.PE_ESQUERDO,
+                        peEsqX,
+                        peEsqY,
+                        basePeEsqX,
+                        basePeEsqY,
+                        g2d
+                );
+
+                registrarHandle(
+                        PontoRig.JOELHO_DIREITO,
+                        joelDirX,
+                        joelDirY,
+                        baseJoelDirX,
+                        baseJoelDirY,
+                        g2d
+                );
+
+                registrarHandle(
+                        PontoRig.PE_DIREITO,
+                        peDirX,
+                        peDirY,
+                        basePeDirX,
+                        basePeDirY,
+                        g2d
+                );
+            }
+
+            // =================================================
+            // PARTE INFERIOR: PELVE + PERNAS
+            // =================================================
+            Polygon pelve = new Polygon();
+            pelve.addPoint(faixaEsqCorpoX, faixaY);
+            pelve.addPoint(faixaDirCorpoX, faixaY);
+            pelve.addPoint(fundoDirX, corpoFimY);
+            pelve.addPoint(fundoEsqX, corpoFimY);
+
             g2d.setColor(pd.corKimono);
-            g2d.drawLine(ombroEsqX, ombroEsqY, cotEsqX, cotEsqY); g2d.drawLine(cotEsqX, cotEsqY, maoEsqX, maoEsqY);
-            g2d.drawLine(ombroDirX, ombroDirY, cotDirX, cotDirY); g2d.drawLine(cotDirX, cotDirY, maoDirX, maoDirY);
-            g2d.drawLine(quadEsqX, quadEsqY, joelEsqX, joelEsqY); g2d.drawLine(joelEsqX, joelEsqY, peEsqX, peEsqY);
-            g2d.drawLine(quadDirX, quadDirY, joelDirX, joelDirY); g2d.drawLine(joelDirX, joelDirY, peDirX, peDirY);
+            g2d.fillPolygon(pelve);
 
-            // DESENHANDO AS PATAS
+            g2d.setStroke(
+                    new BasicStroke(
+                            (float) (18 * s),
+                            BasicStroke.CAP_ROUND,
+                            BasicStroke.JOIN_ROUND
+                    )
+            );
+
+            g2d.drawLine(quadEsqX, quadEsqY, joelEsqX, joelEsqY);
+            g2d.drawLine(joelEsqX, joelEsqY, peEsqX, peEsqY);
+            g2d.drawLine(quadDirX, quadDirY, joelDirX, joelDirY);
+            g2d.drawLine(joelDirX, joelDirY, peDirX, peDirY);
+
             g2d.setColor(pd.corPelo);
-            int lMao = (int)(20*s), aMao = (int)(18*s), lPe = (int)(25*s), aPe = (int)(17*s);
-            g2d.fillOval(maoEsqX - lMao/2, maoEsqY - aMao/2, lMao, aMao);
-            g2d.fillOval(maoDirX - lMao/2, maoDirY - aMao/2, lMao, aMao);
-            g2d.fillOval(peEsqX - lPe/2, peEsqY - aPe/2, lPe, aPe);
-            g2d.fillOval(peDirX - lPe/2, peDirY - aPe/2, lPe, aPe);
+            int lPe = (int)(25*s);
+            int aPe = (int)(17*s);
 
-            // Setinha vermelha indicando o alvo atual
+            g2d.fillOval(
+                    peEsqX - lPe/2,
+                    peEsqY - aPe/2,
+                    lPe,
+                    aPe
+            );
+
+            g2d.fillOval(
+                    peDirX - lPe/2,
+                    peDirY - aPe/2,
+                    lPe,
+                    aPe
+            );
+
+            // A faixa fica na parte inferior e cobre a emenda.
+            g2d.setColor(new Color(55, 55, 220));
+            g2d.fillRect(
+                    faixaX,
+                    faixaY,
+                    faixaLargura,
+                    faixaAltura
+            );
+
+            // =================================================
+            // TRONCO SUPERIOR ARTICULADO
+            // =================================================
+            Graphics2D gPeito =
+                    (Graphics2D) g2d.create();
+
+            /*
+             * O tronco superior não possui outro pivô separado.
+             * Ele dobra em torno da própria cintura.
+             */
+            double eixoTroncoX =
+                    eixoCinturaBaseX;
+
+            double eixoTroncoY =
+                    eixoCinturaBaseY;
+
+            gPeito.translate(
+                    pd.offPeitoX * s,
+                    pd.offPeitoY * s
+            );
+
+            gPeito.rotate(
+                    Math.toRadians(pd.rotPeito),
+                    eixoTroncoX,
+                    eixoTroncoY
+            );
+
+            if (pd == alvoAtual) {
+
+                registrarHandle(
+                        PontoRig.COTOVELO_ESQUERDO,
+                        cotEsqX,
+                        cotEsqY,
+                        baseCotEsqX,
+                        baseCotEsqY,
+                        gPeito
+                );
+
+                registrarHandle(
+                        PontoRig.MAO_ESQUERDA,
+                        maoEsqX,
+                        maoEsqY,
+                        baseMaoEsqX,
+                        baseMaoEsqY,
+                        gPeito
+                );
+
+                registrarHandle(
+                        PontoRig.COTOVELO_DIREITO,
+                        cotDirX,
+                        cotDirY,
+                        baseCotDirX,
+                        baseCotDirY,
+                        gPeito
+                );
+
+                registrarHandle(
+                        PontoRig.MAO_DIREITA,
+                        maoDirX,
+                        maoDirY,
+                        baseMaoDirX,
+                        baseMaoDirY,
+                        gPeito
+                );
+            }
+
+            // Tronco superior.
+            Polygon troncoSuperior = new Polygon();
+            troncoSuperior.addPoint(topoEsqX, corpoY);
+            troncoSuperior.addPoint(topoDirX, corpoY);
+            troncoSuperior.addPoint(divisaoDirX, divisaoY);
+            troncoSuperior.addPoint(divisaoEsqX, divisaoY);
+
+            gPeito.setColor(pd.corKimono);
+            gPeito.fillPolygon(troncoSuperior);
+
+            // Braços acompanham o peito.
+            gPeito.setStroke(
+                    new BasicStroke(
+                            (float) (18 * s),
+                            BasicStroke.CAP_ROUND,
+                            BasicStroke.JOIN_ROUND
+                    )
+            );
+
+            gPeito.drawLine(ombroEsqX, ombroEsqY, cotEsqX, cotEsqY);
+            gPeito.drawLine(cotEsqX, cotEsqY, maoEsqX, maoEsqY);
+            gPeito.drawLine(ombroDirX, ombroDirY, cotDirX, cotDirY);
+            gPeito.drawLine(cotDirX, cotDirY, maoDirX, maoDirY);
+
+            // Mãos acompanham o peito.
+            gPeito.setColor(pd.corPelo);
+
+            int lMao = (int)(20*s);
+            int aMao = (int)(18*s);
+
+            gPeito.fillOval(
+                    maoEsqX - lMao/2,
+                    maoEsqY - aMao/2,
+                    lMao,
+                    aMao
+            );
+
+            gPeito.fillOval(
+                    maoDirX - lMao/2,
+                    maoDirY - aMao/2,
+                    lMao,
+                    aMao
+            );
+
+            // Cabeça também herda a rotação do peito.
+            Graphics2D gCabeca =
+                    (Graphics2D) gPeito.create();
+
+            /*
+             * A cabeça não pode herdar o stroke grosso dos braços.
+             * Sem isso, as linhas da boca ficam enormes.
+             */
+            gCabeca.setStroke(
+                    new BasicStroke(
+                            (float) Math.max(1.0, 1.5 * s),
+                            BasicStroke.CAP_ROUND,
+                            BasicStroke.JOIN_ROUND
+                    )
+            );
+
+            gCabeca.translate(posX, posY);
+
+            gCabeca.translate(
+                    pd.offCabX * s,
+                    pd.offCabY * s
+            );
+
+            double pivotCabX = 35 * s;
+            double pivotCabY = 53 * s;
+
+            gCabeca.rotate(
+                    Math.toRadians(pd.rotCabeca),
+                    pivotCabX,
+                    pivotCabY
+            );
+
+            try {
+                Method metodoCabeca = null;
+                Class<?> clazz = pd.instancia.getClass();
+
+                while (clazz != null
+                        && metodoCabeca == null) {
+
+                    try {
+                        metodoCabeca =
+                                clazz.getDeclaredMethod(
+                                        "desenharCabeca",
+                                        Graphics2D.class
+                                );
+                    } catch (Exception ex) {
+                        clazz = clazz.getSuperclass();
+                    }
+                }
+
+                if (metodoCabeca != null) {
+                    metodoCabeca.setAccessible(true);
+                    metodoCabeca.invoke(
+                            pd.instancia,
+                            gCabeca
+                    );
+                }
+
+            } catch (Exception ex) {
+                // Editor: falha de reflection não deve derrubar a janela.
+            }
+
+            gCabeca.dispose();
+
+            // =================================================
+            // MARCADORES DO RIG
+            // =================================================
+            if (pd == alvoAtual) {
+
+                int raio =
+                        Math.max(
+                                5,
+                                (int) Math.round(7 * s)
+                        );
+
+                // Cintura/root.
+                g2d.setColor(
+                        new Color(255, 0, 180)
+                );
+
+                g2d.setStroke(
+                        new BasicStroke(2.0f)
+                );
+
+                int cinturaX =
+                        (int) Math.round(
+                                eixoCinturaBaseX
+                        );
+
+                int cinturaY =
+                        (int) Math.round(
+                                eixoCinturaBaseY
+                        );
+
+                g2d.drawOval(
+                        cinturaX - raio,
+                        cinturaY - raio,
+                        raio * 2,
+                        raio * 2
+                );
+
+                g2d.drawLine(
+                        cinturaX - raio * 2,
+                        cinturaY,
+                        cinturaX + raio * 2,
+                        cinturaY
+                );
+
+                g2d.drawLine(
+                        cinturaX,
+                        cinturaY - raio * 2,
+                        cinturaX,
+                        cinturaY + raio * 2
+                );
+
+                g2d.drawString(
+                        "CINTURA",
+                        cinturaX + raio + 4,
+                        cinturaY - raio - 2
+                );
+
+                // O tronco usa o mesmo pivô da cintura.
+                // Por isso desenhamos somente o marcador da CINTURA.
+            }
+
+            gPeito.dispose();
+
+            // Setinha vermelha indicando o alvo atual.
             if (pd == alvoAtual) {
                 g2d.setColor(Color.RED);
-                g2d.fillPolygon(new int[]{(int)(posX+25*s), (int)(posX+45*s), (int)(posX+35*s)},
-                                new int[]{(int)(posY-10*s), (int)(posY-10*s), (int)(posY+5*s)}, 3);
+                g2d.fillPolygon(
+                        new int[]{
+                            (int)(posX + 25*s),
+                            (int)(posX + 45*s),
+                            (int)(posX + 35*s)
+                        },
+                        new int[]{
+                            (int)(posY - 10*s),
+                            (int)(posY - 10*s),
+                            (int)(posY + 5*s)
+                        },
+                        3
+                );
             }
+
             g2d.dispose();
         }
     }

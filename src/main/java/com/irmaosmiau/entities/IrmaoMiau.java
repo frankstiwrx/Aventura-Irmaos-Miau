@@ -13,6 +13,80 @@ public abstract class IrmaoMiau {
 
     protected double escala;
 
+    // =============================
+    // EIXO CENTRAL DA CINTURA
+    // =============================
+    /*
+     * A cintura é o novo "root" do rig.
+     *
+     * As animações antigas continuam usando o sistema atual.
+     * As próximas podem usar este ponto como referência
+     * para translação e rotação do corpo inteiro.
+     *
+     * Estes valores são locais (antes da escala).
+     * Um futuro personagem com proporções diferentes pode
+     * sobrescrever estes métodos.
+     */
+    public double getEixoCinturaLocalX() {
+
+        return 36.0;
+    }
+
+    public double getEixoCinturaLocalY() {
+
+        return 157.0;
+    }
+
+    public double getEixoCinturaX() {
+
+        return x
+                + getEixoCinturaLocalX()
+                * escala;
+    }
+
+    public double getEixoCinturaY() {
+
+        return getYVisual()
+                + getEixoCinturaLocalY()
+                * escala;
+    }
+
+    // =============================
+    // EIXO DO PEITO / TRONCO SUPERIOR
+    // =============================
+    /*
+     * Este é o segundo pivô do rig.
+     *
+     * A cintura continua sendo o root geral.
+     * O peito permite dobrar somente o tronco superior,
+     * levando junto cabeça e braços.
+     *
+     * As pernas continuam ligadas à parte inferior.
+     */
+    public double getEixoPeitoLocalX() {
+
+        return 36.0;
+    }
+
+    public double getEixoPeitoLocalY() {
+
+        return 150.0;
+    }
+
+    public double getEixoPeitoX() {
+
+        return x
+                + getEixoPeitoLocalX()
+                * escala;
+    }
+
+    public double getEixoPeitoY() {
+
+        return getYVisual()
+                + getEixoPeitoLocalY()
+                * escala;
+    }
+
     protected Color corPelo;
     protected Color corKimono;
     protected Color corRosto;
