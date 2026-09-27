@@ -111,6 +111,10 @@ private boolean rolando = false;
 
 private Direcao direcaoRolamento = null;
 
+private boolean viradoParaDireita = true;
+
+private boolean viradoParaDireitaNoInicioRolamento = true;
+
 private int framesRolamento = 0;
 
 private static final int DURACAO_ROLAMENTO = 22;
@@ -233,14 +237,24 @@ private EstadoCorporal estadoCorporal =
 faseRespiracao = 0;
     
     gastarEnergia(
-            CUSTO_ROLAMENTO
-    );
+        CUSTO_ROLAMENTO
+);
 
-    direcaoRolamento = direcao;
+/*
+ * Guardamos para que lado o Miau estava olhando
+ * NO MOMENTO em que iniciou o rolamento.
+ *
+ * Assim, mesmo se os dois cruzarem de posição
+ * durante a animação, ela não muda no meio.
+ */
+viradoParaDireitaNoInicioRolamento =
+        viradoParaDireita;
 
-    framesRolamento = 0;
+direcaoRolamento = direcao;
 
-    rolando = true;
+framesRolamento = 0;
+
+rolando = true;
 }
     
     // =============================
@@ -1871,6 +1885,71 @@ public void alternarDeitado() {
     public boolean isRolando() {
 
     return rolando;
+}
+    
+    public void setViradoParaDireita(
+        boolean viradoParaDireita
+) {
+
+    this.viradoParaDireita =
+            viradoParaDireita;
+}
+
+/*
+ * Retorna true quando o rolamento está indo
+ * para a frente do personagem.
+ *
+ * CIMA e BAIXO sozinhos não contam como
+ * frente nem trás.
+ */
+protected boolean isRolamentoParaFrente() {
+
+    if (direcaoRolamento == null) {
+        return false;
+    }
+
+    boolean indoParaDireita =
+            direcaoRolamento == Direcao.DIREITA
+            || direcaoRolamento == Direcao.CIMA_DIREITA
+            || direcaoRolamento == Direcao.BAIXO_DIREITA;
+
+    boolean indoParaEsquerda =
+            direcaoRolamento == Direcao.ESQUERDA
+            || direcaoRolamento == Direcao.CIMA_ESQUERDA
+            || direcaoRolamento == Direcao.BAIXO_ESQUERDA;
+
+    if (viradoParaDireitaNoInicioRolamento) {
+
+        return indoParaDireita;
+
+    } else {
+
+        return indoParaEsquerda;
+    }
+}
+
+/*
+ * Mesma lógica, mas para trás.
+ */
+protected boolean isRolamentoParaTras() {
+
+    if (direcaoRolamento == null) {
+        return false;
+    }
+
+    boolean possuiMovimentoHorizontal =
+            direcaoRolamento == Direcao.DIREITA
+            || direcaoRolamento == Direcao.ESQUERDA
+            || direcaoRolamento == Direcao.CIMA_DIREITA
+            || direcaoRolamento == Direcao.CIMA_ESQUERDA
+            || direcaoRolamento == Direcao.BAIXO_DIREITA
+            || direcaoRolamento == Direcao.BAIXO_ESQUERDA;
+
+    if (!possuiMovimentoHorizontal) {
+        return false;
+    }
+
+    return !isRolamentoParaFrente();
 }
 
     //fólego

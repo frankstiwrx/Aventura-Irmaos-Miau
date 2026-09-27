@@ -1001,7 +1001,13 @@ if (input.isPretoDeitar()
             brancoViradoDireita = false;
             pretoViradoDireita = true;
         }
+jogadorBranco.setViradoParaDireita(
+        brancoViradoDireita
+);
 
+jogadorPreto.setViradoParaDireita(
+        pretoViradoDireita
+);
         /*
          * Se os dois estiverem exatamente
          * no mesmo X, mantemos a direção

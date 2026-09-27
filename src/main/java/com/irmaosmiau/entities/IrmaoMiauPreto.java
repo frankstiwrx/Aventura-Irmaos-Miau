@@ -31,7 +31,224 @@ public class IrmaoMiauPreto extends IrmaoMiau {
         );
     }
 
-private void desenharRolamento(
+
+    // =============================================================
+    // TAUNT - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+    // =============================================================
+    private static final int[][] TAUNTPRETO_MIAUSTUDIO = {
+        {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -19, 30, -7, -4, -34, 13, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 1
+        {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -34, 33, -1, 1, -37, 27, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 2
+        {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, -14, -10, 14, -17, -13, -53, 6, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 3
+        {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, -14, 10, -1, -17, -13, -59, -6, 4, -3, 14, 0, -4, -3, -17, 0}, // Quadro 4
+        {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, -6, 0, 0, 3, -16, -31, 7, -7, -11, -33, 1, 4, -3, 14, 0, -4, -3, -17, 0} // Quadro 5
+    };
+
+    /*
+     * Ida e volta para evitar um corte seco
+     * do Quadro 5 diretamente para o Quadro 1.
+     */
+    private static final int[] SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO = {
+        0, 1, 2, 3, 4, 3, 2, 1
+    };
+
+    private static final long TEMPO_QUADRO_TAUNT_PRETO_MS = 230L;
+
+    private boolean tauntPretoMiauStudioEstavaAtivo = false;
+    private long inicioTauntPretoMiauStudio = 0L;
+
+    private int getIndiceQuadroTauntPretoMiauStudio(
+            boolean tauntAtivo
+    ) {
+
+        long agora = System.currentTimeMillis();
+
+        if (!tauntAtivo) {
+
+            tauntPretoMiauStudioEstavaAtivo = false;
+            inicioTauntPretoMiauStudio = 0L;
+
+            return 0;
+        }
+
+        if (!tauntPretoMiauStudioEstavaAtivo) {
+
+            tauntPretoMiauStudioEstavaAtivo = true;
+            inicioTauntPretoMiauStudio = agora;
+        }
+
+        long tempoDecorrido =
+                agora - inicioTauntPretoMiauStudio;
+
+        int indiceSequencia =
+                (int) (
+                        tempoDecorrido
+                        / TEMPO_QUADRO_TAUNT_PRETO_MS
+                )
+                % SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO.length;
+
+        return SEQUENCIA_TAUNT_PRETO_MIAUSTUDIO[
+                indiceSequencia
+        ];
+    }
+
+    // =============================================================
+    // ROLAMENTO - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+    // =============================================================
+    private static final int[][] ROLAMENTOPRETO_MIAUSTUDIO = {
+        {500, 2, 7, 0, 0, 0, 63, 0, 0, 0, 0, -33, 0, 0, 29, -22, 27, -49, 13, -48, 9, -69, 14, -16, 38, -35, 4, -24, 10, -53}, // Quadro 1
+        {500, 2, 7, 0, 0, 0, 63, 0, 25, 0, 0, 15, 0, 19, 29, -22, 27, -49, -11, -32, -20, -43, 15, -38, 34, -56, -2, -40, -1, -62}, // Quadro 2
+        {500, 2, 7, 0, 0, 0, 0, 0, 25, 0, -180, 15, 0, 19, 29, -22, 27, -49, -11, -32, -20, -43, 15, -38, 34, -56, -2, -40, -1, -62}, // Quadro 3
+        {500, 2, 7, 0, 0, 0, 0, 0, 25, 0, 88, -53, 0, 19, 29, -22, 27, -49, -11, -32, -20, -43, 15, -38, 34, -56, -2, -40, -1, -62}, // Quadro 4
+        {500, 2, 7, 0, 5, 12, 24, 0, 18, 0, 0, -37, 0, 0, 0, 0, -51, 36, 9, -12, 13, -2, 15, 7, 35, -4, 11, -4, 26, -18} // Quadro 5
+    };
+
+    /*
+     * O rolamento continua durando exatamente o mesmo tempo
+     * definido pela classe IrmaoMiau. Aqui apenas trocamos
+     * o desenho antigo pelos cinco quadros do MiauStudio.
+     *
+     * Entre uma pose-chave e outra fazemos interpolação para
+     * aproveitar os 22 frames do rolamento e evitar aparência
+     * de slideshow.
+     */
+    private void desenharRolamento(
+            Graphics2D g2
+    ) {
+
+double progressoVisual =
+        getProgressoRolamento();
+
+/*
+ * O rolamento do Preto está natural indo
+ * para frente.
+ *
+ * Quando ele rola para trás, invertemos
+ * a timeline.
+ */
+if (isRolamentoParaTras()) {
+
+    progressoVisual =
+            1.0 - progressoVisual;
+}
+
+int[] poseInterpolada =
+        interpolarRolamentoMiauStudio(
+                progressoVisual
+        );
+
+        /*
+         * O X/Y absoluto exportado pelo editor NÃO é usado.
+         * A posição real continua sendo a posição do personagem
+         * no jogo. Assim o rolamento não teleporta.
+         */
+        desenharPoseMiauStudio(
+                g2,
+                poseInterpolada,
+                60
+        );
+    }
+
+    private int[] interpolarRolamentoMiauStudio(
+            double progresso
+    ) {
+
+        double limitado =
+                Math.max(
+                        0.0,
+                        Math.min(
+                                1.0,
+                                progresso
+                        )
+                );
+
+        double posicao =
+                limitado
+                * (ROLAMENTOPRETO_MIAUSTUDIO.length - 1);
+
+        int quadroA =
+                (int) Math.floor(posicao);
+
+        int quadroB =
+                Math.min(
+                        quadroA + 1,
+                        ROLAMENTOPRETO_MIAUSTUDIO.length - 1
+                );
+
+        double t =
+                posicao - quadroA;
+
+        int[] a =
+                ROLAMENTOPRETO_MIAUSTUDIO[quadroA];
+
+        int[] b =
+                ROLAMENTOPRETO_MIAUSTUDIO[quadroB];
+
+        int[] resultado =
+                new int[a.length];
+
+        for (int i = 0; i < resultado.length; i++) {
+
+            /*
+             * cenaX, linha, escala e orientação são metadados
+             * do editor. Mantemos o valor do primeiro quadro,
+             * pois o renderer do jogo não usa esses campos.
+             */
+            if (i <= 3) {
+                resultado[i] = a[i];
+                continue;
+            }
+
+            /*
+             * Rotações usam o menor caminho angular.
+             *
+             * Exemplo importante do Preto:
+             * -180° -> 88° continua o giro por -92°,
+             * em vez de voltar 268° no sentido contrário.
+             */
+            if (
+                    i == A_ROT_CINTURA
+                    || i == A_ROT_TRONCO
+                    || i == A_ROT_GLOBAL
+                    || i == A_ROT_CABECA
+            ) {
+
+                resultado[i] =
+                        (int) Math.round(
+                                interpolarAngulo(
+                                        a[i],
+                                        b[i],
+                                        t
+                                )
+                        );
+
+            } else {
+
+                resultado[i] =
+                        (int) Math.round(
+                                a[i]
+                                + (b[i] - a[i]) * t
+                        );
+            }
+        }
+
+        return resultado;
+    }
+
+    private double interpolarAngulo(
+            double inicio,
+            double fim,
+            double t
+    ) {
+
+        double diferenca =
+                ((fim - inicio + 540.0) % 360.0)
+                - 180.0;
+
+        return inicio
+                + diferenca * t;
+    }
+
+private void desenharRolamentoAntigo(
         Graphics2D g2
 ) {
 
@@ -1027,29 +1244,38 @@ private void desenharRolamento(
             int indiceQuadro
     ) {
 
+        desenharPoseMiauStudio(
+                g2,
+                ARRASTANDO_MIAUSTUDIO[indiceQuadro],
+                40
+        );
+    }
+
+    /*
+     * Renderer comum das poses criadas no MiauStudio.
+     *
+     * É usado tanto pelo rastejo quanto pelo novo rolamento.
+     * O parâmetro deslocamentoVisualY permite que a animação
+     * de chão continue 40 px mais baixa sem afetar o rolamento.
+     */
+    private void desenharPoseMiauStudio(
+            Graphics2D g2,
+            int[] quadro,
+            double deslocamentoVisualY
+    ) {
+
         prepararDesenho(g2);
 
-        int[] quadro =
-                ARRASTANDO_MIAUSTUDIO[
-                        indiceQuadro
-                ];
+        Graphics2D raiz =
+                (Graphics2D) g2.create();
 
-Graphics2D raiz =
-        (Graphics2D) g2.create();
+        raiz.translate(
+                0,
+                deslocamentoVisualY
+        );
 
-/*
- * Deslocamento visual de todo o personagem
- * quando está no chão.
- */
-double deslocamentoChaoY = 40;
-
-raiz.translate(
-        0,
-        deslocamentoChaoY
-);
-
-double posX = x;
-double posY = getYVisual();
+        double posX = x;
+        double posY = getYVisual();
 
         // Rotação global do formato do MiauStudio.
         double pivotGlobalX =
@@ -2141,27 +2367,67 @@ private void desenharEmPe(
     @Override
     public void desenhar(Graphics2D g2) {
 
-    prepararDesenho(g2);
+        prepararDesenho(g2);
 
-    if (isRolando()) {
+        /*
+         * O novo taunt do MiauStudio só assume o desenho
+         * quando o Preto está realmente no estado de taunt
+         * e não está executando uma ação prioritária.
+         */
+        boolean tauntVisualAtivo =
+                isTaunt()
+                && !isRolando()
+                && !isDeitado();
 
-        desenharRolamento(g2);
+        int indiceQuadroTaunt =
+                getIndiceQuadroTauntPretoMiauStudio(
+                        tauntVisualAtivo
+                );
 
-        return;
+        // =========================
+        // ROLAMENTO
+        // =========================
+        if (isRolando()) {
+
+            desenharRolamento(g2);
+
+            return;
+        }
+
+        // =========================
+        // CHÃO
+        // =========================
+        if (isDeitado()) {
+
+            desenharDeitado(g2);
+
+            return;
+        }
+
+        // =========================
+        // TAUNT MIAUSTUDIO
+        // =========================
+        if (tauntVisualAtivo) {
+
+            desenharPoseMiauStudio(
+                    g2,
+                    TAUNTPRETO_MIAUSTUDIO[
+                            indiceQuadroTaunt
+                    ],
+                    0
+            );
+
+            return;
+        }
+
+        // =========================
+        // PERSONAGEM NORMAL
+        // =========================
+        desenharEmPe(
+                g2,
+                false
+        );
     }
-
-    if (isDeitado()) {
-
-        desenharDeitado(g2);
-
-        return;
-    }
-
-    desenharEmPe(
-            g2,
-            false
-    );
-}
 
     @Override
     protected double getProfundidadeAgachamento() {
