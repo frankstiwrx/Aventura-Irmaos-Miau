@@ -339,13 +339,21 @@ public class GamePanel extends JPanel {
     private String mensagemFim = "";
 
     // =============================
+// SPRAWL
+// =============================
+    private boolean sprawlAnterior = false;
+
+    private boolean sprawlBrancoAnterior = false;
+    private boolean sprawlPretoAnterior = false;
+
+    // =============================
 // DEITAR / LEVANTAR
 // =============================
-private boolean deitarAnterior = false;
+    private boolean deitarAnterior = false;
 
-private boolean deitarBrancoAnterior = false;
-private boolean deitarPretoAnterior = false;
-    
+    private boolean deitarBrancoAnterior = false;
+    private boolean deitarPretoAnterior = false;
+
     // =============================
     // ORIENTAÇÃO
     // =============================
@@ -502,15 +510,15 @@ private boolean deitarPretoAnterior = false;
 
         boolean agachando
                 = input.isAgachar();
-        
+
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-if (input.isDeitar()
-        && !deitarAnterior) {
+        if (input.isDeitar()
+                && !deitarAnterior) {
 
-    jogadorPrincipal.alternarDeitado();
-}
+            jogadorPrincipal.alternarDeitado();
+        }
 
         // =========================
         // RESPIRAÇÃO
@@ -551,6 +559,15 @@ if (input.isDeitar()
             jogadorPrincipal.iniciarRolamento(
                     direcao
             );
+        }
+
+        // =========================
+// SPRAWL
+// =========================
+        if (input.isSprawl()
+                && !sprawlAnterior) {
+
+            jogadorPrincipal.iniciarSprawl();
         }
 
         // =========================
@@ -604,9 +621,12 @@ if (input.isDeitar()
 
         rolamentoAnterior
                 = input.isRolar();
-        
+
         deitarAnterior
-        = input.isDeitar();
+                = input.isDeitar();
+
+        sprawlAnterior
+                = input.isSprawl();
 
     }
 
@@ -621,12 +641,12 @@ if (input.isDeitar()
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-if (input.isDeitar()
-        && !deitarBrancoAnterior) {
+        if (input.isDeitar()
+                && !deitarBrancoAnterior) {
 
-    jogadorBranco.alternarDeitado();
-}
-        
+            jogadorBranco.alternarDeitado();
+        }
+
         // =========================
         // RESPIRAÇÃO
         // =========================
@@ -666,6 +686,15 @@ if (input.isDeitar()
             jogadorBranco.iniciarRolamento(
                     direcao
             );
+        }
+
+        // =========================
+// SPRAWL
+// =========================
+        if (input.isSprawl()
+                && !sprawlBrancoAnterior) {
+
+            jogadorBranco.iniciarSprawl();
         }
 
         // =========================
@@ -718,13 +747,12 @@ if (input.isDeitar()
                 = input.isPularCurto();
         rolamentoBrancoAnterior
                 = input.isRolar();
-    deitarBrancoAnterior
-        = input.isDeitar();
-    
+        deitarBrancoAnterior
+                = input.isDeitar();
+        sprawlBrancoAnterior
+                = input.isSprawl();
+
     }
-    
-    
-    
 
     // =====================================================
     // MIAU PRETO
@@ -737,11 +765,11 @@ if (input.isDeitar()
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-if (input.isPretoDeitar()
-        && !deitarPretoAnterior) {
+        if (input.isPretoDeitar()
+                && !deitarPretoAnterior) {
 
-    jogadorPreto.alternarDeitado();
-}
+            jogadorPreto.alternarDeitado();
+        }
         // =========================
         // RESPIRAÇÃO
         // =========================
@@ -781,6 +809,15 @@ if (input.isPretoDeitar()
             jogadorPreto.iniciarRolamento(
                     direcao
             );
+        }
+
+        // =========================
+// SPRAWL
+// =========================
+        if (input.isPretoSprawl()
+                && !sprawlPretoAnterior) {
+
+            jogadorPreto.iniciarSprawl();
         }
 
         // =========================
@@ -834,9 +871,11 @@ if (input.isPretoDeitar()
 
         rolamentoPretoAnterior
                 = input.isPretoRolar();
-    
+
         deitarPretoAnterior
-        = input.isPretoDeitar();
+                = input.isPretoDeitar();
+        sprawlPretoAnterior
+                = input.isPretoSprawl();
     }
 
     // =====================================================
@@ -901,7 +940,8 @@ if (input.isPretoDeitar()
  * Durante o rolamento, o personagem
  * possui movimento próprio.
          */
-        if (personagem.isRolando()) {
+        if (personagem.isRolando()
+                || personagem.isFazendoSprawl()) {
             return;
         }
         double velocidadeAtual;
@@ -1001,13 +1041,13 @@ if (input.isPretoDeitar()
             brancoViradoDireita = false;
             pretoViradoDireita = true;
         }
-jogadorBranco.setViradoParaDireita(
-        brancoViradoDireita
-);
+        jogadorBranco.setViradoParaDireita(
+                brancoViradoDireita
+        );
 
-jogadorPreto.setViradoParaDireita(
-        pretoViradoDireita
-);
+        jogadorPreto.setViradoParaDireita(
+                pretoViradoDireita
+        );
         /*
          * Se os dois estiverem exatamente
          * no mesmo X, mantemos a direção

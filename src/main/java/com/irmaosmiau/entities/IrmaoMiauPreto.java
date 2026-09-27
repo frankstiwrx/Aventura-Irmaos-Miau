@@ -31,6 +31,16 @@ public class IrmaoMiauPreto extends IrmaoMiau {
         );
     }
 
+    // =============================================================
+// SPRAWL - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+// =============================================================
+private static final int[][] SPRAWL_PRETO_MIAUSTUDIO = {
+    {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 24, -11, 0, 0, 3, -7, -6, 3, 0, -6, 9, -10, 26, 0, 10, -4},
+    {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 21, 0, 0, 0, 61, -1, 54, 14, 3, -7, 9, -7, 21, -4, 24, -11, 17, -9, 10, -11},
+    {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 93, -30, 0, 0, 84, 3, 67, -24, -3, -35, -5, -73, 40, 16, 71, 42, 22, -26, 26, -18},
+    {500, 2, 7, 0, 0, 0, 0, 0, -3, -27, 88, 0, 0, 0, 56, 1, 55, -16, -44, -30, -5, -73, 62, 11, 111, -26, 22, -26, 44, -66},
+    {500, 2, 7, 0, 0, 0, 0, 0, 0, 0, 49, -34, 0, 0, -8, 15, 6, 4, 0, -15, 11, -24, 32, 17, 67, 12, 18, -7, 41, -24}
+};
 
     // =============================================================
     // TAUNT - ANIMAÇÃO CRIADA NO MIAUSTUDIO
@@ -111,6 +121,98 @@ public class IrmaoMiauPreto extends IrmaoMiau {
      * aproveitar os 22 frames do rolamento e evitar aparência
      * de slideshow.
      */
+    
+    private void desenharSprawl(
+        Graphics2D g2
+) {
+
+    int[] poseInterpolada =
+            interpolarSprawlMiauStudio(
+                    getProgressoSprawl()
+            );
+
+    desenharPoseMiauStudio(
+            g2,
+            poseInterpolada,
+            40
+    );
+}
+    private int[] interpolarSprawlMiauStudio(
+        double progresso
+) {
+
+    double limitado =
+            Math.max(
+                    0.0,
+                    Math.min(
+                            1.0,
+                            progresso
+                    )
+            );
+
+    double posicao =
+            limitado
+            * (SPRAWL_PRETO_MIAUSTUDIO.length - 1);
+
+    int quadroA =
+            (int) Math.floor(posicao);
+
+    int quadroB =
+            Math.min(
+                    quadroA + 1,
+                    SPRAWL_PRETO_MIAUSTUDIO.length - 1
+            );
+
+    double t =
+            posicao - quadroA;
+
+    int[] a =
+            SPRAWL_PRETO_MIAUSTUDIO[quadroA];
+
+    int[] b =
+            SPRAWL_PRETO_MIAUSTUDIO[quadroB];
+
+    int[] resultado =
+            new int[a.length];
+
+    for (int i = 0;
+            i < resultado.length;
+            i++) {
+
+        if (i <= 3) {
+
+            resultado[i] = a[i];
+
+            continue;
+        }
+
+        if (i == A_ROT_CINTURA
+                || i == A_ROT_TRONCO
+                || i == A_ROT_GLOBAL
+                || i == A_ROT_CABECA) {
+
+            resultado[i] =
+                    (int) Math.round(
+                            interpolarAngulo(
+                                    a[i],
+                                    b[i],
+                                    t
+                            )
+                    );
+
+        } else {
+
+            resultado[i] =
+                    (int) Math.round(
+                            a[i]
+                            + (b[i] - a[i]) * t
+                    );
+        }
+    }
+
+    return resultado;
+}
+    
     private void desenharRolamento(
             Graphics2D g2
     ) {
@@ -2394,6 +2496,13 @@ private void desenharEmPe(
             return;
         }
 
+        if (isFazendoSprawl()) {
+
+    desenharSprawl(g2);
+
+    return;
+}
+        
         // =========================
         // CHÃO
         // =========================

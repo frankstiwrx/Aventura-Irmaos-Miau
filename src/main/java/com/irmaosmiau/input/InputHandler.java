@@ -26,6 +26,9 @@ public class InputHandler {
     private boolean rolar;
 
     private boolean deitar;
+    
+private boolean sprawl = false;
+
 
     // =============================
     // MIAU PRETO
@@ -45,6 +48,8 @@ public class InputHandler {
     
     private boolean pretoDeitar;
 
+    private boolean pretoSprawl = false;
+    
     public InputHandler(JComponent componente) {
 
         InputMap inputMap = componente.getInputMap(
@@ -81,6 +86,15 @@ public class InputHandler {
         "deitar",
         () -> deitar = true,
         () -> deitar = false
+);
+        
+        mapearTecla(
+        inputMap,
+        actionMap,
+        "G",
+        "sprawl",
+        () -> sprawl = true,
+        () -> sprawl = false
 );
 
         mapearTecla(
@@ -182,6 +196,15 @@ mapearTecla(
         "pretoDeitar",
         () -> pretoDeitar = true,
         () -> pretoDeitar = false
+);
+
+mapearTecla(
+        inputMap,
+        actionMap,
+        "I",
+        "pretoSprawl",
+        () -> pretoSprawl = true,
+        () -> pretoSprawl = false
 );
         mapearTecla(
                 inputMap,
@@ -361,6 +384,11 @@ public boolean isDeitar() {
     return deitar;
 }
 
+public boolean isSprawl() {
+
+    return sprawl;
+}
+
     // =============================
     // GETTERS - MIAU PRETO
     // =============================
@@ -408,6 +436,11 @@ public boolean isPretoRolar() {
 public boolean isPretoDeitar() {
 
     return pretoDeitar;
+}
+
+public boolean isPretoSprawl() {
+
+    return pretoSprawl;
 }
 
 }

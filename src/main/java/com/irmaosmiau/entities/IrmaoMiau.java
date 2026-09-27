@@ -148,6 +148,23 @@ private static final double VELOCIDADE_ROLAMENTO = 7.0;
 
     private int yBase;
 
+    
+    // =============================
+// SPRAWL
+// =============================
+
+private boolean fazendoSprawl = false;
+
+private int framesSprawl = 0;
+
+/*
+ * O jogo roda aproximadamente a 60 FPS.
+ * 26 frames ≈ 0,42 segundo.
+ */
+private static final int DURACAO_SPRAWL = 26;
+
+private static final double CUSTO_SPRAWL = 4.0;
+    
     // =============================
 // ESTADO CORPORAL
 // =============================
@@ -202,7 +219,7 @@ private EstadoCorporal estadoCorporal =
      * Não pode iniciar outro enquanto
      * já está rolando.
      */
-    if (rolando) {
+    if (rolando || fazendoSprawl) {
         return;
     }
 
@@ -255,6 +272,59 @@ direcaoRolamento = direcao;
 framesRolamento = 0;
 
 rolando = true;
+}
+    
+    // =============================
+// SISTEMA DE SPRAWL
+// =============================
+
+public void iniciarSprawl() {
+
+    /*
+     * Não inicia outro sprawl enquanto
+     * já estiver executando um.
+     */
+    if (fazendoSprawl) {
+        return;
+    }
+
+    /*
+     * Não pode fazer sprawl durante
+     * outras ações incompatíveis.
+     */
+    if (pulando
+            || rolando
+            || isDeitado()) {
+
+        return;
+    }
+
+    /*
+     * Precisa ter fôlego suficiente.
+     */
+    if (folegoAtual < CUSTO_SPRAWL) {
+        return;
+    }
+
+    /*
+     * Sprawl interrompe outras ações.
+     */
+    correndo = false;
+    respirando = false;
+    agachado = false;
+
+    faseRespiracao = 0;
+
+    ultimaAtividade =
+            System.currentTimeMillis();
+
+    gastarEnergia(
+            CUSTO_SPRAWL
+    );
+
+    framesSprawl = 0;
+
+    fazendoSprawl = true;
 }
     
     // =============================
@@ -496,6 +566,25 @@ rolando = true;
      *
      * Precisamos sincronizar a posição
      * visual antes de sair do atualizar().
+     */
+    y = yBase;
+
+    atualizarPiscar();
+
+    return;
+}
+        if (fazendoSprawl) {
+
+    andando = false;
+    agachado = false;
+    correndo = false;
+    respirando = false;
+
+    atualizarSprawl();
+
+    /*
+     * Sprawl não muda de linha nem
+     * desloca o personagem sozinho.
      */
     y = yBase;
 
@@ -1003,6 +1092,27 @@ if (
     framesRolamento = 0;
 }
     
+    private void atualizarSprawl() {
+
+    if (!fazendoSprawl) {
+        return;
+    }
+
+    framesSprawl++;
+
+    if (framesSprawl >= DURACAO_SPRAWL) {
+
+        finalizarSprawl();
+    }
+}
+
+private void finalizarSprawl() {
+
+    fazendoSprawl = false;
+
+    framesSprawl = 0;
+}
+    
     // =============================
 // DEITAR / LEVANTAR
 // =============================
@@ -1013,7 +1123,7 @@ public void alternarDeitado() {
      * Não pode mudar de estado corporal
      * durante ações temporárias.
      */
-    if (pulando || rolando) {
+    if (pulando || rolando || fazendoSprawl) {
         return;
     }
 
@@ -1089,6 +1199,7 @@ public void alternarDeitado() {
         || agachado
         || respirando
         || rolando
+                || fazendoSprawl
                 || isDeitado()
         || condicionamentoAtual <= 0) {
 
@@ -1162,6 +1273,7 @@ public void alternarDeitado() {
                 || agachado
                 || respirando
                 || rolando
+                || fazendoSprawl
                 || isDeitado()
                 || condicionamentoAtual <= 0) {
 
@@ -1886,6 +1998,24 @@ public void alternarDeitado() {
 
     return rolando;
 }
+    public boolean isFazendoSprawl() {
+
+    return fazendoSprawl;
+}
+
+protected double getProgressoSprawl() {
+
+    if (!fazendoSprawl) {
+        return 0.0;
+    }
+
+    return Math.min(
+            1.0,
+            (double) framesSprawl
+            / DURACAO_SPRAWL
+    );
+}
+    
     
     public void setViradoParaDireita(
         boolean viradoParaDireita

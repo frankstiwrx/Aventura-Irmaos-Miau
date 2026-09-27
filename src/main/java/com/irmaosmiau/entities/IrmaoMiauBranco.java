@@ -206,6 +206,106 @@ public class IrmaoMiauBranco extends IrmaoMiau {
      * aproveitar os 22 frames do rolamento e evitar aparência
      * de slideshow.
      */
+    private void desenharSprawl(
+        Graphics2D g2
+) {
+
+    int[] poseInterpolada =
+            interpolarSprawlMiauStudio(
+                    getProgressoSprawl()
+            );
+
+    desenharPoseMiauStudio(
+            g2,
+            poseInterpolada,
+            40
+    );
+}
+    
+    private int[] interpolarSprawlMiauStudio(
+        double progresso
+) {
+
+    double limitado =
+            Math.max(
+                    0.0,
+                    Math.min(
+                            1.0,
+                            progresso
+                    )
+            );
+
+    double posicao =
+            limitado
+            * (SPRAWL_MIAUSTUDIO.length - 1);
+
+    int quadroA =
+            (int) Math.floor(posicao);
+
+    int quadroB =
+            Math.min(
+                    quadroA + 1,
+                    SPRAWL_MIAUSTUDIO.length - 1
+            );
+
+    double t =
+            posicao - quadroA;
+
+    int[] a =
+            SPRAWL_MIAUSTUDIO[quadroA];
+
+    int[] b =
+            SPRAWL_MIAUSTUDIO[quadroB];
+
+    int[] resultado =
+            new int[a.length];
+
+    for (int i = 0;
+            i < resultado.length;
+            i++) {
+
+        /*
+         * Metadados do MiauStudio:
+         * cenaX, linha, escala e orientação.
+         */
+        if (i <= 3) {
+
+            resultado[i] = a[i];
+
+            continue;
+        }
+
+        /*
+         * Rotações precisam usar interpolação angular,
+         * igual ao rolamento.
+         */
+        if (i == A_ROT_CINTURA
+                || i == A_ROT_TRONCO
+                || i == A_ROT_GLOBAL
+                || i == A_ROT_CABECA) {
+
+            resultado[i] =
+                    (int) Math.round(
+                            interpolarAngulo(
+                                    a[i],
+                                    b[i],
+                                    t
+                            )
+                    );
+
+        } else {
+
+            resultado[i] =
+                    (int) Math.round(
+                            a[i]
+                            + (b[i] - a[i]) * t
+                    );
+        }
+    }
+
+    return resultado;
+}
+    
     private void desenharRolamento(
             Graphics2D g2
     ) {
@@ -1074,6 +1174,16 @@ int[] poseInterpolada =
         {216, 2, 7, 1, 0, -1, 90, 0, 0, 0, 0, -58, 8, -3, -1, -31, 9, -83, 6, -26, -26, -53, 14, 6, 31, -10, -3, 2, -17, -4},
         {216, 2, 7, 1, 0, -1, 90, 0, 0, 0, 0, -30, 8, -1, 30, -48, 4, -98, -13, -37, -29, -83, 10, -13, 21, -7, -6, -1, -29, -6}
     };
+    // =============================================================
+// SPRAWL - ANIMAÇÃO CRIADA NO MIAUSTUDIO
+// =============================================================
+private static final int[][] SPRAWL_MIAUSTUDIO = {
+    {220, 2, 7, 1, 0, 0, 0, 0, 20, 0, 0, 0, 0, 0, 0, 0, 21, -3, 10, -4, 14, 16, -10, -3, -3, 2, -7, -5, -23, 5},
+    {220, 2, 7, 1, 0, 0, 0, 0, 20, 0, 15, -12, 0, 0, 19, 4, 37, 6, 1, 11, 1, 34, -26, -9, -37, -19, -30, -9, -70, -14},
+    {220, 2, 7, 1, 0, 0, 0, 0, 26, 0, 87, -12, 0, 0, 53, -29, 74, -93, -13, -30, -18, -60, 10, -11, 13, 18, -21, -4, -48, 19},
+    {220, 2, 7, 1, 0, 0, 0, 5, 26, -19, 42, -12, 0, 0, 56, 11, 87, 14, -14, -4, -9, 21, 10, -11, -4, 14, -21, -4, -68, 24},
+    {220, 2, 7, 1, 0, 0, 0, 5, 26, -19, 31, -12, 0, 0, 7, 8, -27, 18, -5, 11, -26, 51, 19, 14, 41, 15, 0, -3, 2, 1}
+};
 
     // Índices do formato exportado pelo MiauStudio.
     private static final int A_CINTURA_X = 4;
@@ -2311,6 +2421,12 @@ int[] poseInterpolada =
 
             return;
         }
+        if (isFazendoSprawl()) {
+
+    desenharSprawl(g2);
+
+    return;
+}
 
         if (isDeitado()) {
 
