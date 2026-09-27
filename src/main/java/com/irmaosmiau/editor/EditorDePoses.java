@@ -829,6 +829,63 @@ public class EditorDePoses extends JFrame {
 
         pFerramentas.add(linhaPreview);
 
+        // =====================================================
+        // ESPELHAMENTO / CÓPIA ENTRE BRANCO E PRETO
+        // =====================================================
+        JPanel linhaEspelhamento =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.LEFT,
+                                4,
+                                0
+                        )
+                );
+
+        JButton btnEspelharPoseAtual =
+                new JButton("↔ Espelhar pose atual");
+
+        btnEspelharPoseAtual.setToolTipText(
+                "Espelha visualmente a pose atual invertendo a orientação do personagem."
+        );
+
+        btnEspelharPoseAtual.addActionListener(
+                e -> espelharPoseAtual()
+        );
+
+        JButton btnBrancoParaPreto =
+                new JButton("Branco → Preto (5 quadros)");
+
+        btnBrancoParaPreto.setToolTipText(
+                "Copia os quadros salvos do Branco para o Preto e gera a versão espelhada."
+        );
+
+        btnBrancoParaPreto.addActionListener(
+                e -> copiarAnimacaoEspelhadaEntrePadroes(
+                        IrmaoMiauBranco.class,
+                        IrmaoMiauPreto.class
+                )
+        );
+
+        JButton btnPretoParaBranco =
+                new JButton("Preto → Branco (5 quadros)");
+
+        btnPretoParaBranco.setToolTipText(
+                "Copia os quadros salvos do Preto para o Branco e gera a versão espelhada."
+        );
+
+        btnPretoParaBranco.addActionListener(
+                e -> copiarAnimacaoEspelhadaEntrePadroes(
+                        IrmaoMiauPreto.class,
+                        IrmaoMiauBranco.class
+                )
+        );
+
+        linhaEspelhamento.add(btnEspelharPoseAtual);
+        linhaEspelhamento.add(btnBrancoParaPreto);
+        linhaEspelhamento.add(btnPretoParaBranco);
+
+        pFerramentas.add(linhaEspelhamento);
+
         JButton btnAplicarCodigo = new JButton("Ler Código Colado ⭯");
         btnAplicarCodigo.setBackground(new Color(60, 180, 80));
         btnAplicarCodigo.setForeground(Color.WHITE);
@@ -1175,6 +1232,316 @@ public class EditorDePoses extends JFrame {
         );
         txtCodigoGerado.setText(codigo);
         txtCodigoGerado.setCaretPosition(0);
+    }
+
+
+    // =====================================================
+    // ESPELHAMENTO / CÓPIA DE ANIMAÇÕES ENTRE PERSONAGENS
+    // =====================================================
+
+    /*
+     * O renderer do MiauStudio já espelha o personagem inteiro
+     * quando viradoDireita muda. Por isso, para obter a imagem
+     * especular correta, NÃO precisamos inverter cada X nem trocar
+     * braço/perna manualmente. Fazer as duas coisas causaria uma
+     * dupla inversão em vários pontos do rig.
+     */
+    private void espelharPoseAtual() {
+
+        pararPreviewAnimacao(true);
+
+        if (alvoAtual == null) {
+            return;
+        }
+
+        registrarEdicaoDiscreta();
+
+        alvoAtual.viradoDireita =
+                !alvoAtual.viradoDireita;
+
+        carregarUIComDadosDoAlvo();
+    }
+
+    private DadosPersonagem encontrarPersonagemPadrao(
+            Class<? extends IrmaoMiau> tipo
+    ) {
+
+        for (DadosPersonagem pd : cena) {
+
+            if (tipo.isInstance(pd.instancia)) {
+                return pd;
+            }
+        }
+
+        return null;
+    }
+
+    private PoseSalva criarPoseEspelhadaParaDestino(
+            PoseSalva origem,
+            DadosPersonagem destino
+    ) {
+
+        if (origem == null || destino == null) {
+            return null;
+        }
+
+        /*
+         * Começamos com os metadados atuais do personagem de destino.
+         * Assim o Preto continua em X=500 e o Branco em X=220, por
+         * exemplo, em vez de "teletransportar" para o X da origem.
+         */
+        PoseSalva resultado =
+                new PoseSalva(destino);
+
+        resultado.cenaX =
+                destino.cenaX;
+
+        resultado.linhaAtual =
+                destino.linhaAtual;
+
+        resultado.escalaX10 =
+                (int) Math.round(
+                        destino.escala * 10.0
+                );
+
+        /*
+         * A inversão da orientação é o espelhamento propriamente dito.
+         * Todos os offsets/rotações abaixo permanecem iguais porque o
+         * Canvas já aplica scale(-1, 1) ao personagem inteiro.
+         */
+        resultado.viradoDireita =
+                !origem.viradoDireita;
+
+        resultado.rotGlobal =
+                origem.rotGlobal;
+
+        resultado.offCinturaX =
+                origem.offCinturaX;
+        resultado.offCinturaY =
+                origem.offCinturaY;
+        resultado.rotCintura =
+                origem.rotCintura;
+
+        resultado.offPeitoX =
+                origem.offPeitoX;
+        resultado.offPeitoY =
+                origem.offPeitoY;
+        resultado.rotPeito =
+                origem.rotPeito;
+
+        resultado.rotCabeca =
+                origem.rotCabeca;
+        resultado.offCabX =
+                origem.offCabX;
+        resultado.offCabY =
+                origem.offCabY;
+
+        resultado.offCotEsqX =
+                origem.offCotEsqX;
+        resultado.offCotEsqY =
+                origem.offCotEsqY;
+        resultado.offMaoEsqX =
+                origem.offMaoEsqX;
+        resultado.offMaoEsqY =
+                origem.offMaoEsqY;
+
+        resultado.offCotDirX =
+                origem.offCotDirX;
+        resultado.offCotDirY =
+                origem.offCotDirY;
+        resultado.offMaoDirX =
+                origem.offMaoDirX;
+        resultado.offMaoDirY =
+                origem.offMaoDirY;
+
+        resultado.offJoelEsqX =
+                origem.offJoelEsqX;
+        resultado.offJoelEsqY =
+                origem.offJoelEsqY;
+        resultado.offPeEsqX =
+                origem.offPeEsqX;
+        resultado.offPeEsqY =
+                origem.offPeEsqY;
+
+        resultado.offJoelDirX =
+                origem.offJoelDirX;
+        resultado.offJoelDirY =
+                origem.offJoelDirY;
+        resultado.offPeDirX =
+                origem.offPeDirX;
+        resultado.offPeDirY =
+                origem.offPeDirY;
+
+        return resultado;
+    }
+
+    private void copiarAnimacaoEspelhadaEntrePadroes(
+            Class<? extends IrmaoMiau> tipoOrigem,
+            Class<? extends IrmaoMiau> tipoDestino
+    ) {
+
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        DadosPersonagem origem =
+                encontrarPersonagemPadrao(
+                        tipoOrigem
+                );
+
+        DadosPersonagem destino =
+                encontrarPersonagemPadrao(
+                        tipoDestino
+                );
+
+        if (origem == null || destino == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não encontrei os dois personagens padrão na cena.",
+                    "Espelhamento",
+                    JOptionPane.WARNING_MESSAGE
+            );
+
+            return;
+        }
+
+        int quantidadeOrigem = 0;
+
+        for (PoseSalva pose : origem.quadrosAnimacao) {
+            if (pose != null) {
+                quantidadeOrigem++;
+            }
+        }
+
+        if (quantidadeOrigem == 0) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "O personagem "
+                    + origem.nome
+                    + " ainda não possui nenhum quadro salvo.",
+                    "Espelhamento",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            return;
+        }
+
+        boolean destinoTemQuadros = false;
+
+        for (PoseSalva pose : destino.quadrosAnimacao) {
+            if (pose != null) {
+                destinoTemQuadros = true;
+                break;
+            }
+        }
+
+        if (destinoTemQuadros) {
+
+            int escolha =
+                    JOptionPane.showConfirmDialog(
+                            this,
+                            "Os quadros salvos do "
+                            + destino.nome
+                            + " serão substituídos pela animação espelhada do "
+                            + origem.nome
+                            + ".\n\nDeseja continuar?",
+                            "Substituir animação",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                    );
+
+            if (escolha != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        for (int i = 0;
+                i < destino.quadrosAnimacao.length;
+                i++) {
+
+            PoseSalva poseOrigem =
+                    origem.quadrosAnimacao[i];
+
+            destino.quadrosAnimacao[i] =
+                    poseOrigem == null
+                    ? null
+                    : criarPoseEspelhadaParaDestino(
+                            poseOrigem,
+                            destino
+                    );
+        }
+
+        /*
+         * Para a cópia ficar visível imediatamente, exibimos o primeiro
+         * quadro disponível no personagem de destino.
+         */
+        int primeiroQuadro = -1;
+
+        for (int i = 0;
+                i < destino.quadrosAnimacao.length;
+                i++) {
+
+            if (destino.quadrosAnimacao[i] != null) {
+                primeiroQuadro = i;
+                break;
+            }
+        }
+
+        if (primeiroQuadro >= 0) {
+
+            adicionarAoHistorico(
+                    destino.historicoDesfazer,
+                    new PoseSalva(destino)
+            );
+
+            destino.historicoRefazer.clear();
+
+            destino.quadrosAnimacao[
+                    primeiroQuadro
+            ].aplicarEm(destino);
+        }
+
+        int indiceDestino =
+                cena.indexOf(destino);
+
+        if (indiceDestino >= 0) {
+
+            comboAlvo.setSelectedIndex(
+                    indiceDestino
+            );
+
+            /*
+             * O listener do combo já chama selecionarAlvo(). O bloco
+             * abaixo também cobre o caso de o destino já estar selecionado.
+             */
+            if (alvoAtual != destino) {
+                selecionarAlvo(indiceDestino);
+            } else {
+                carregarUIComDadosDoAlvo();
+            }
+        }
+
+        if (primeiroQuadro >= 0) {
+            comboQuadroAnimacao.setSelectedIndex(
+                    primeiroQuadro
+            );
+        }
+
+        atualizarStatusQuadros();
+        gerarCodigoAnimacaoParcial();
+
+        JOptionPane.showMessageDialog(
+                this,
+                quantidadeOrigem
+                + " quadro(s) copiado(s) de "
+                + origem.nome
+                + " para "
+                + destino.nome
+                + " com espelhamento.",
+                "Animação espelhada",
+                JOptionPane.INFORMATION_MESSAGE
+        );
     }
 
 
