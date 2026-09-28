@@ -1,11 +1,11 @@
 package com.irmaosmiau.game;
 
+import com.irmaosmiau.entities.Direcao;
 import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.entities.IrmaoMiauBranco;
 import com.irmaosmiau.entities.IrmaoMiauPreto;
 import com.irmaosmiau.entities.TipoPersonagem;
 import com.irmaosmiau.input.InputHandler;
-import com.irmaosmiau.entities.Direcao;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -21,14 +21,46 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
+/**
+ * Painel principal da gameplay.
+ *
+ * Responsabilidades desta classe:
+ * - criar os personagens conforme o modo escolhido;
+ * - ler o estado do InputHandler;
+ * - atualizar movimento e ações dos Miaus;
+ * - controlar pausa e fim de jogo;
+ * - desenhar cenário, personagens e HUD.
+ *
+ * MAPA RÁPIDO DO ARQUIVO
+ * 1. Configuração geral
+ * 2. Personagens e modo de jogo
+ * 3. Estado de entrada / ações por clique
+ * 4. Pausa, fim de jogo e orientação
+ * 5. Construtor
+ * 6. Game loop
+ * 7. Atualização dos personagens
+ * 8. Movimento e direção
+ * 9. Pausa e fim de jogo
+ * 10. Renderização
+ * 11. HUD
+ */
 public class GamePanel extends JPanel {
 
+    // =====================================================
+    // 1. CONFIGURAÇÃO GERAL
+    // =====================================================
     public static final int LARGURA = 800;
     public static final int ALTURA = 450;
 
     private static final int TOPO_GRAMA = 300;
+    private static final int INTERVALO_GAME_LOOP_MS = 16;
 
     private static final double ESCALA_PERSONAGEM = 0.7;
+
+    private static final int Y_INICIAL_PERSONAGEM = 150;
+    private static final int X_JOGADOR_INDIVIDUAL = 350;
+    private static final int X_BRANCO_DUO = 220;
+    private static final int X_PRETO_DUO = 500;
 
     private final InputHandler input;
     private final Timer gameLoop;
@@ -37,337 +69,66 @@ public class GamePanel extends JPanel {
     private final Runnable aoTrocarPersonagem;
     private final Runnable aoTentarNovamente;
 
-    private final int velocidade = 4;
-
-    // =============================
-    // MODO DE JOGO
-    // =============================
+    // =====================================================
+    // 2. PERSONAGENS E MODO DE JOGO
+    // =====================================================
     private final boolean modoDoisMiaus;
 
-    // Usado quando apenas um personagem
-    // foi selecionado.
+    // Usado quando apenas um personagem foi selecionado.
     private final IrmaoMiau jogadorPrincipal;
 
     // Usados no modo "OS DOIS MIAUS".
     private final IrmaoMiau jogadorBranco;
     private final IrmaoMiau jogadorPreto;
 
-    private void verificarFimDeJogo() {
-
-        if (modoDoisMiaus) {
-
-            boolean brancoFim
-                    = jogadorBranco.isSemCondicionamento();
-
-            boolean pretoFim
-                    = jogadorPreto.isSemCondicionamento();
-
-            if (brancoFim && pretoFim) {
-
-                fimDeJogo = true;
-                mensagemFim
-                        = "OS DOIS MIAUS NÃO CONSEGUEM MAIS LUTAR";
-
-            } else if (brancoFim) {
-
-                fimDeJogo = true;
-                mensagemFim
-                        = "MIAU BRANCO NÃO CONSEGUE MAIS LUTAR";
-
-            } else if (pretoFim) {
-
-                fimDeJogo = true;
-                mensagemFim
-                        = "MIAU PRETO NÃO CONSEGUE MAIS LUTAR";
-            }
-
-        } else if (jogadorPrincipal
-                .isSemCondicionamento()) {
-
-            fimDeJogo = true;
-
-            mensagemFim
-                    = jogadorPrincipal.getNome()
-                    + " NÃO CONSEGUE MAIS LUTAR";
-        }
-
-        if (fimDeJogo) {
-
-            atualizarMenuFim();
-
-            menuFim.setVisible(true);
-
-            setComponentZOrder(
-                    menuFim,
-                    0
-            );
-
-            repaint();
-        }
-    }
-
-    // Atualizaer menu fim
-    private void atualizarMenuFim() {
-
-        for (java.awt.Component componente
-                : menuFim.getComponents()) {
-
-            if (componente instanceof javax.swing.JLabel) {
-
-                javax.swing.JLabel label
-                        = (javax.swing.JLabel) componente;
-
-                if ("motivoFim".equals(
-                        label.getName()
-                )) {
-
-                    label.setText(
-                            mensagemFim
-                    );
-
-                    break;
-                }
-            }
-        }
-    }
-
-    //Menu de fim
-    private void criarMenuFim() {
-
-        menuFim = new JPanel(
-                new GridBagLayout()
-        );
-
-        menuFim.setBackground(
-                new Color(
-                        230,
-                        230,
-                        230
-                )
-        );
-
-        menuFim.setBounds(
-                220,
-                90,
-                360,
-                285
-        );
-
-        GridBagConstraints gbc
-                = new GridBagConstraints();
-
-        gbc.gridx = 0;
-        gbc.fill
-                = GridBagConstraints.HORIZONTAL;
-
-        gbc.insets
-                = new Insets(
-                        8,
-                        25,
-                        8,
-                        25
-                );
-
-        // =========================
-        // TÍTULO
-        // =========================
-        javax.swing.JLabel titulo
-                = new javax.swing.JLabel(
-                        "FIM",
-                        javax.swing.SwingConstants.CENTER
-                );
-
-        titulo.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        32
-                )
-        );
-
-        gbc.gridy = 0;
-
-        menuFim.add(
-                titulo,
-                gbc
-        );
-
-        // =========================
-        // MOTIVO
-        // =========================
-        javax.swing.JLabel motivo
-                = new javax.swing.JLabel(
-                        "",
-                        javax.swing.SwingConstants.CENTER
-                );
-
-        motivo.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        12
-                )
-        );
-
-        /*
-     * Guardamos a referência dentro
-     * do próprio painel para atualizar
-     * depois quando alguém perder.
-         */
-        motivo.setName("motivoFim");
-
-        gbc.gridy = 1;
-
-        menuFim.add(
-                motivo,
-                gbc
-        );
-
-        // =========================
-        // BOTÕES
-        // =========================
-        JButton tentarNovamente
-                = new JButton(
-                        "TENTAR NOVAMENTE"
-                );
-
-        JButton selecionarPersonagens
-                = new JButton(
-                        "SELECIONAR PERSONAGENS"
-                );
-
-        JButton menuPrincipal
-                = new JButton(
-                        "MENU PRINCIPAL"
-                );
-
-        Font fonteBotao
-                = new Font(
-                        "Arial",
-                        Font.BOLD,
-                        15
-                );
-
-        tentarNovamente.setFont(
-                fonteBotao
-        );
-
-        selecionarPersonagens.setFont(
-                fonteBotao
-        );
-
-        menuPrincipal.setFont(
-                fonteBotao
-        );
-
-        tentarNovamente.addActionListener(
-                e -> {
-
-                    gameLoop.stop();
-
-                    aoTentarNovamente.run();
-                }
-        );
-
-        selecionarPersonagens.addActionListener(
-                e -> {
-
-                    gameLoop.stop();
-
-                    aoTrocarPersonagem.run();
-                }
-        );
-
-        menuPrincipal.addActionListener(
-                e -> {
-
-                    gameLoop.stop();
-
-                    aoVoltarMenu.run();
-                }
-        );
-
-        gbc.gridy = 2;
-
-        menuFim.add(
-                tentarNovamente,
-                gbc
-        );
-
-        gbc.gridy = 3;
-
-        menuFim.add(
-                selecionarPersonagens,
-                gbc
-        );
-
-        gbc.gridy = 4;
-
-        menuFim.add(
-                menuPrincipal,
-                gbc
-        );
-
-        menuFim.setVisible(false);
-
-        add(menuFim);
-    }
-
-    // =============================
-    // PULOS
-    // =============================
-    private boolean puloAnterior = false;
-
-    private boolean puloBrancoAnterior = false;
-    private boolean puloPretoAnterior = false;
-
-    private boolean puloCurtoAnterior = false;
-
-    private boolean puloCurtoBrancoAnterior = false;
-    private boolean puloCurtoPretoAnterior = false;
-
-    // =============================
-// ROLAMENTO
-// =============================
-    private boolean rolamentoAnterior = false;
-
-    private boolean rolamentoBrancoAnterior = false;
-    private boolean rolamentoPretoAnterior = false;
-
-    private boolean fimDeJogo = false;
-
-    private String mensagemFim = "";
-
-    // =============================
-// SPRAWL
-// =============================
-    private boolean sprawlAnterior = false;
-
-    private boolean sprawlBrancoAnterior = false;
-    private boolean sprawlPretoAnterior = false;
-
-    // =============================
-// DEITAR / LEVANTAR
-// =============================
-    private boolean deitarAnterior = false;
-
-    private boolean deitarBrancoAnterior = false;
-    private boolean deitarPretoAnterior = false;
-
-    // =============================
-    // ORIENTAÇÃO
-    // =============================
+    // =====================================================
+    // 3. ESTADO DE ENTRADA / AÇÕES DE UM ÚNICO DISPARO
+    // =====================================================
+    /*
+     * Pulo, rolamento, sprawl e deitar são ações disparadas
+     * apenas na transição solta -> pressionada. Esses campos
+     * guardam o estado da tecla no frame anterior.
+     */
+
+    // Jogador individual / controles do Branco.
+    private boolean puloAnterior;
+    private boolean puloCurtoAnterior;
+    private boolean rolamentoAnterior;
+    private boolean sprawlAnterior;
+    private boolean deitarAnterior;
+
+    // Branco no modo de dois jogadores.
+    private boolean puloBrancoAnterior;
+    private boolean puloCurtoBrancoAnterior;
+    private boolean rolamentoBrancoAnterior;
+    private boolean sprawlBrancoAnterior;
+    private boolean deitarBrancoAnterior;
+
+    // Preto no modo de dois jogadores.
+    private boolean puloPretoAnterior;
+    private boolean puloCurtoPretoAnterior;
+    private boolean rolamentoPretoAnterior;
+    private boolean sprawlPretoAnterior;
+    private boolean deitarPretoAnterior;
+
+    // =====================================================
+    // 4. ORIENTAÇÃO, PAUSA E FIM DE JOGO
+    // =====================================================
     private boolean brancoViradoDireita = true;
     private boolean pretoViradoDireita = false;
 
-    // =============================
-    // PAUSA
-    // =============================
-    private boolean pausado = false;
-
+    private boolean pausado;
     private JPanel menuPausa;
+
+    private boolean fimDeJogo;
+    private String mensagemFim = "";
     private JPanel menuFim;
 
+
+
+    // =====================================================
+    // 5. CONSTRUTOR
+    // =====================================================
     public GamePanel(
             TipoPersonagem tipo,
             Runnable aoVoltarMenu,
@@ -410,15 +171,15 @@ public class GamePanel extends JPanel {
 
             jogadorBranco
                     = new IrmaoMiauBranco(
-                            220,
-                            150,
+                            X_BRANCO_DUO,
+                            Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
                     );
 
             jogadorPreto
                     = new IrmaoMiauPreto(
-                            500,
-                            150,
+                            X_PRETO_DUO,
+                            Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
                     );
 
@@ -431,8 +192,8 @@ public class GamePanel extends JPanel {
 
                 jogadorPrincipal
                         = new IrmaoMiauBranco(
-                                350,
-                                150,
+                                X_JOGADOR_INDIVIDUAL,
+                                Y_INICIAL_PERSONAGEM,
                                 ESCALA_PERSONAGEM
                         );
 
@@ -440,8 +201,8 @@ public class GamePanel extends JPanel {
 
                 jogadorPrincipal
                         = new IrmaoMiauPreto(
-                                350,
-                                150,
+                                X_JOGADOR_INDIVIDUAL,
+                                Y_INICIAL_PERSONAGEM,
                                 ESCALA_PERSONAGEM
                         );
             }
@@ -465,7 +226,7 @@ public class GamePanel extends JPanel {
         // =========================
         gameLoop
                 = new Timer(
-                        16,
+                        INTERVALO_GAME_LOOP_MS,
                         e -> atualizar()
                 );
 
@@ -473,7 +234,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // ATUALIZAÇÃO
+    // 6. GAME LOOP
     // =====================================================
     private void atualizar() {
 
@@ -504,7 +265,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // JOGADOR INDIVIDUAL
+    // 7. ATUALIZAÇÃO - JOGADOR INDIVIDUAL
     // =====================================================
     private void atualizarJogadorPrincipal() {
 
@@ -631,7 +392,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // MIAU BRANCO
+    // 7. ATUALIZAÇÃO - MIAU BRANCO
     // =====================================================
     private void atualizarMiauBranco() {
 
@@ -755,7 +516,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // MIAU PRETO
+    // 7. ATUALIZAÇÃO - MIAU PRETO
     // =====================================================
     private void atualizarMiauPreto() {
 
@@ -879,8 +640,8 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-// DIREÇÃO DO ROLAMENTO
-// =====================================================
+    // 8. DIREÇÃO DAS AÇÕES
+    // =====================================================
     private Direcao obterDirecao(
             boolean esquerda,
             boolean direita,
@@ -922,10 +683,10 @@ public class GamePanel extends JPanel {
 
         return null;
     }
-    // =====================================================
-    // MOVIMENTO GENÉRICO
-    // =====================================================
 
+    // =====================================================
+    // 8. MOVIMENTO GENÉRICO
+    // =====================================================
     private void moverPersonagem(
             IrmaoMiau personagem,
             boolean esquerda,
@@ -1025,7 +786,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // OS DOIS SEMPRE OLHAM UM PARA O OUTRO
+    // 8. ORIENTAÇÃO DOS DOIS MIAUS
     // =====================================================
     private void atualizarOrientacaoDosMiaus() {
 
@@ -1060,7 +821,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // MENU DE PAUSA
+    // 9. MENU DE PAUSA
     // =====================================================
     private void criarMenuPausa() {
 
@@ -1241,6 +1002,268 @@ public class GamePanel extends JPanel {
         repaint();
     }
 
+    // =====================================================
+    // 9. FIM DE JOGO
+    // =====================================================
+    private void criarMenuFim() {
+
+        menuFim = new JPanel(
+                new GridBagLayout()
+        );
+
+        menuFim.setBackground(
+                new Color(
+                        230,
+                        230,
+                        230
+                )
+        );
+
+        menuFim.setBounds(
+                220,
+                90,
+                360,
+                285
+        );
+
+        GridBagConstraints gbc
+                = new GridBagConstraints();
+
+        gbc.gridx = 0;
+        gbc.fill
+                = GridBagConstraints.HORIZONTAL;
+
+        gbc.insets
+                = new Insets(
+                        8,
+                        25,
+                        8,
+                        25
+                );
+
+        // =========================
+        // TÍTULO
+        // =========================
+        javax.swing.JLabel titulo
+                = new javax.swing.JLabel(
+                        "FIM",
+                        javax.swing.SwingConstants.CENTER
+                );
+
+        titulo.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        32
+                )
+        );
+
+        gbc.gridy = 0;
+
+        menuFim.add(
+                titulo,
+                gbc
+        );
+
+        // =========================
+        // MOTIVO
+        // =========================
+        javax.swing.JLabel motivo
+                = new javax.swing.JLabel(
+                        "",
+                        javax.swing.SwingConstants.CENTER
+                );
+
+        motivo.setFont(
+                new Font(
+                        "Arial",
+                        Font.BOLD,
+                        12
+                )
+        );
+
+        /*
+         * Guardamos a referência dentro
+         * do próprio painel para atualizar
+         * depois quando alguém perder.
+         */
+        motivo.setName("motivoFim");
+
+        gbc.gridy = 1;
+
+        menuFim.add(
+                motivo,
+                gbc
+        );
+
+        // =========================
+        // BOTÕES
+        // =========================
+        JButton tentarNovamente
+                = new JButton(
+                        "TENTAR NOVAMENTE"
+                );
+
+        JButton selecionarPersonagens
+                = new JButton(
+                        "SELECIONAR PERSONAGENS"
+                );
+
+        JButton menuPrincipal
+                = new JButton(
+                        "MENU PRINCIPAL"
+                );
+
+        Font fonteBotao
+                = new Font(
+                        "Arial",
+                        Font.BOLD,
+                        15
+                );
+
+        tentarNovamente.setFont(
+                fonteBotao
+        );
+
+        selecionarPersonagens.setFont(
+                fonteBotao
+        );
+
+        menuPrincipal.setFont(
+                fonteBotao
+        );
+
+        tentarNovamente.addActionListener(
+                e -> {
+
+                    gameLoop.stop();
+
+                    aoTentarNovamente.run();
+                }
+        );
+
+        selecionarPersonagens.addActionListener(
+                e -> {
+
+                    gameLoop.stop();
+
+                    aoTrocarPersonagem.run();
+                }
+        );
+
+        menuPrincipal.addActionListener(
+                e -> {
+
+                    gameLoop.stop();
+
+                    aoVoltarMenu.run();
+                }
+        );
+
+        gbc.gridy = 2;
+
+        menuFim.add(
+                tentarNovamente,
+                gbc
+        );
+
+        gbc.gridy = 3;
+
+        menuFim.add(
+                selecionarPersonagens,
+                gbc
+        );
+
+        gbc.gridy = 4;
+
+        menuFim.add(
+                menuPrincipal,
+                gbc
+        );
+
+        menuFim.setVisible(false);
+
+        add(menuFim);
+    }
+
+    private void verificarFimDeJogo() {
+
+        if (modoDoisMiaus) {
+
+            boolean brancoFim
+                    = jogadorBranco.isSemCondicionamento();
+
+            boolean pretoFim
+                    = jogadorPreto.isSemCondicionamento();
+
+            if (brancoFim && pretoFim) {
+
+                fimDeJogo = true;
+                mensagemFim
+                        = "OS DOIS MIAUS NÃO CONSEGUEM MAIS LUTAR";
+
+            } else if (brancoFim) {
+
+                fimDeJogo = true;
+                mensagemFim
+                        = "MIAU BRANCO NÃO CONSEGUE MAIS LUTAR";
+
+            } else if (pretoFim) {
+
+                fimDeJogo = true;
+                mensagemFim
+                        = "MIAU PRETO NÃO CONSEGUE MAIS LUTAR";
+            }
+
+        } else if (jogadorPrincipal
+                .isSemCondicionamento()) {
+
+            fimDeJogo = true;
+
+            mensagemFim
+                    = jogadorPrincipal.getNome()
+                    + " NÃO CONSEGUE MAIS LUTAR";
+        }
+
+        if (fimDeJogo) {
+
+            atualizarMenuFim();
+
+            menuFim.setVisible(true);
+
+            setComponentZOrder(
+                    menuFim,
+                    0
+            );
+
+            repaint();
+        }
+    }
+
+    private void atualizarMenuFim() {
+
+        for (java.awt.Component componente
+                : menuFim.getComponents()) {
+
+            if (componente instanceof javax.swing.JLabel) {
+
+                javax.swing.JLabel label
+                        = (javax.swing.JLabel) componente;
+
+                if ("motivoFim".equals(
+                        label.getName()
+                )) {
+
+                    label.setText(
+                            mensagemFim
+                    );
+
+                    break;
+                }
+            }
+        }
+    }
+
     private void desenharFimDeJogo(
             Graphics2D g2
     ) {
@@ -1262,80 +1285,9 @@ public class GamePanel extends JPanel {
         );
     }
 
-    /*
-    private void desenharFimDeJogo(
-            Graphics2D g2
-    ) {
-
-        // Fundo escurecido
-        g2.setColor(
-                new Color(
-                        0,
-                        0,
-                        0,
-                        150
-                )
-        );
-
-        g2.fillRect(
-                0,
-                0,
-                LARGURA,
-                ALTURA
-        );
-
-        // FIM
-        g2.setColor(Color.WHITE);
-
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        52
-                )
-        );
-
-        String fim = "FIM";
-
-        FontMetrics fm
-                = g2.getFontMetrics();
-
-        int fimX
-                = (LARGURA
-                - fm.stringWidth(fim)) / 2;
-
-        g2.drawString(
-                fim,
-                fimX,
-                190
-        );
-
-        // Motivo
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        16
-                )
-        );
-
-        fm = g2.getFontMetrics();
-
-        int mensagemX
-                = (LARGURA
-                - fm.stringWidth(mensagemFim)) / 2;
-
-        g2.drawString(
-                mensagemFim,
-                mensagemX,
-                225
-        );
-    }
-     */
     // =====================================================
-    // DESENHO
+    // 10. RENDERIZAÇÃO PRINCIPAL
     // =====================================================
-    @Override
     protected void paintComponent(
             Graphics g
     ) {
@@ -1418,7 +1370,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // ESPELHAMENTO DO PERSONAGEM
+    // 10. ESPELHAMENTO / ORIENTAÇÃO VISUAL
     // =====================================================
     private void desenharPersonagemOrientado(
             Graphics2D g2,
@@ -1468,7 +1420,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // HUD INDIVIDUAL
+    // 11. HUD INDIVIDUAL
     // =====================================================
     private void desenharHudIndividual(
             Graphics2D g2
@@ -1550,7 +1502,7 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // HUD - DOIS MIAUS
+    // 11. HUD - DOIS MIAUS
     // =====================================================
     private void desenharHudDoisMiaus(
             Graphics2D g2
@@ -1760,6 +1712,9 @@ public class GamePanel extends JPanel {
         );
     }
 
+    // =====================================================
+    // 11. UTILITÁRIOS DO HUD
+    // =====================================================
     private void desenharTextoDireita(
             Graphics2D g2,
             String texto,
