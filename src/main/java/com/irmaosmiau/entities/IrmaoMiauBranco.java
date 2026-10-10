@@ -39,13 +39,13 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                 "Irmão Miau Branco",
                 "Jiu-Jitsu",
                 new AtributosLutador(
-                        35, // condicionamento
+                        35, // 35 condicionamento
                         25, // 25 fôlego 
                         42, // força
-                        22, // velocidade
+                        22, // 22 velocidade
                         25, // agilidade
                         25, // técnica
-                        22, // recuperação
+                        22, // 22 recuperação
                         72 // peso
                 )
         );

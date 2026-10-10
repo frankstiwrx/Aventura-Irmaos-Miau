@@ -312,6 +312,36 @@ public class EditorDePoses extends JFrame {
         }
     }
 
+    // =====================================================
+    // QUADRO CONJUNTO: DUAS POSES NO MESMO INSTANTE
+    // =====================================================
+    /*
+     * No modo de animação conjunta, um "quadro" não pertence
+     * apenas a um personagem: ele guarda a pose do Branco e
+     * a pose do Preto no mesmo instante da interação.
+     *
+     * Mantemos esse armazenamento separado dos quadros
+     * individuais para não sobrescrever animações já criadas.
+     */
+    private class QuadroConjunto {
+        PoseSalva poseBranco;
+        PoseSalva posePreto;
+
+        QuadroConjunto(
+                PoseSalva poseBranco,
+                PoseSalva posePreto
+        ) {
+            this.poseBranco = poseBranco;
+            this.posePreto = posePreto;
+        }
+
+        boolean estaCompleto() {
+            return poseBranco != null
+                    && posePreto != null;
+        }
+    }
+
+
 
     // --- VARIÁVEIS SEGURAS DE INTERFACE ---
     private List<DadosPersonagem> cena = new ArrayList<>();
@@ -321,6 +351,41 @@ public class EditorDePoses extends JFrame {
     private JComboBox<String> comboAlvo = new JComboBox<>();
     private JTextArea txtCodigoGerado = new JTextArea(10, 20);
     private JTextArea txtAnimacaoGerada = new JTextArea(12, 20);
+
+    // --- MODO DE ANIMAÇÃO: INDIVIDUAL OU CONJUNTA ---
+    private enum ModoAnimacao {
+        INDIVIDUAL,
+        CONJUNTA
+    }
+
+    private ModoAnimacao modoAnimacao = ModoAnimacao.INDIVIDUAL;
+
+    private final JComboBox<String> comboModoAnimacao =
+            new JComboBox<>(
+                    new String[]{
+                        "Individual",
+                        "Conjunta"
+                    }
+            );
+
+    private final JLabel lblAplicadorConjunto =
+            new JLabel("Aplicador:");
+
+    private final JComboBox<String> comboAplicadorConjunto =
+            new JComboBox<>(
+                    new String[]{
+                        "Branco",
+                        "Preto"
+                    }
+            );
+
+    /*
+     * Os cinco quadros conjuntos são separados dos quadros individuais.
+     * Assim podemos criar uma interação sem destruir animações que já
+     * estavam salvas em Branco.quadrosAnimacao / Preto.quadrosAnimacao.
+     */
+    private final QuadroConjunto[] quadrosConjuntos =
+            new QuadroConjunto[5];
 
     private JTextField txtNomeAnimacao = new JTextField("nova_animacao", 14);
     private JComboBox<String> comboQuadroAnimacao = new JComboBox<>(
@@ -352,7 +417,15 @@ public class EditorDePoses extends JFrame {
     private JButton btnPlayAnimacao;
     private JSpinner spinIntervaloAnimacao;
     private boolean previewAnimacaoAtivo = false;
+    private boolean previewEraConjunto = false;
+
+    // Backup da pose de trabalho no preview individual.
     private PoseSalva poseAntesPreview = null;
+
+    // Backups das duas poses de trabalho no preview conjunto.
+    private PoseSalva poseBrancoAntesPreviewConjunto = null;
+    private PoseSalva posePretoAntesPreviewConjunto = null;
+
     private int indiceQuadroAntesPreview = 0;
     private int indicePreviewAnimacao = -1;
 
@@ -485,6 +558,58 @@ public class EditorDePoses extends JFrame {
             alvoAtual.offPeDirX = 0;
             alvoAtual.offPeDirY = 0;
         });
+    }
+
+
+    // =====================================================
+    // MODO DE ANIMAÇÃO
+    // =====================================================
+
+    private boolean isModoConjunto() {
+        return modoAnimacao
+                == ModoAnimacao.CONJUNTA;
+    }
+
+    private DadosPersonagem getBrancoPadrao() {
+        return encontrarPersonagemPadrao(
+                IrmaoMiauBranco.class
+        );
+    }
+
+    private DadosPersonagem getPretoPadrao() {
+        return encontrarPersonagemPadrao(
+                IrmaoMiauPreto.class
+        );
+    }
+
+    private void atualizarModoAnimacaoSelecionado() {
+
+        /*
+         * Se o usuário trocar de modo durante um preview, primeiro
+         * restauramos a pose de trabalho que existia antes do Play.
+         */
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        modoAnimacao =
+                comboModoAnimacao.getSelectedIndex() == 1
+                ? ModoAnimacao.CONJUNTA
+                : ModoAnimacao.INDIVIDUAL;
+
+        boolean conjunto =
+                isModoConjunto();
+
+        lblAplicadorConjunto.setEnabled(
+                conjunto
+        );
+
+        comboAplicadorConjunto.setEnabled(
+                conjunto
+        );
+
+        atualizarStatusQuadros();
+        gerarCodigoAnimacaoParcial();
+        painelDesenho.repaint();
     }
 
     public EditorDePoses() {
@@ -748,13 +873,71 @@ public class EditorDePoses extends JFrame {
 
         JTabbedPane abasCodigo = new JTabbedPane();
         abasCodigo.addTab("Pose atual", new JScrollPane(txtCodigoGerado));
-        abasCodigo.addTab("Animação - 5 quadros", new JScrollPane(txtAnimacaoGerada));
+        abasCodigo.addTab("Animação", new JScrollPane(txtAnimacaoGerada));
 
         JPanel pCodigo = new JPanel(new BorderLayout());
         pCodigo.setBorder(BorderFactory.createTitledBorder("Pose / Animação"));
         pCodigo.add(abasCodigo, BorderLayout.CENTER);
 
         JPanel pFerramentas = new JPanel(new GridLayout(0, 1, 4, 4));
+
+        // =====================================================
+        // MODO DE ANIMAÇÃO
+        // =====================================================
+        JPanel linhaModo =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.LEFT,
+                                4,
+                                0
+                        )
+                );
+
+        linhaModo.add(
+                new JLabel("Modo:")
+        );
+
+        comboModoAnimacao.setToolTipText(
+                "Individual edita uma animação de um personagem. "
+                + "Conjunta salva e reproduz Branco e Preto no mesmo quadro."
+        );
+
+        comboModoAnimacao.addActionListener(
+                e -> atualizarModoAnimacaoSelecionado()
+        );
+
+        linhaModo.add(
+                comboModoAnimacao
+        );
+
+        lblAplicadorConjunto.setEnabled(false);
+        comboAplicadorConjunto.setEnabled(false);
+
+        comboAplicadorConjunto.setToolTipText(
+                "Define quem é o aplicador no código exportado da animação conjunta."
+        );
+
+        comboAplicadorConjunto.addActionListener(
+                e -> {
+                    if (!atualizandoUI
+                            && isModoConjunto()) {
+
+                        gerarCodigoAnimacaoParcial();
+                    }
+                }
+        );
+
+        linhaModo.add(
+                lblAplicadorConjunto
+        );
+
+        linhaModo.add(
+                comboAplicadorConjunto
+        );
+
+        pFerramentas.add(
+                linhaModo
+        );
 
         JPanel linhaNome = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         linhaNome.add(new JLabel("Nome:"));
@@ -1545,7 +1728,10 @@ public class EditorDePoses extends JFrame {
     }
 
 
-    // --- SISTEMA DE ANIMAÇÃO COM 5 QUADROS ---
+    // =====================================================
+    // SISTEMA DE ANIMAÇÃO - 5 QUADROS
+    // INDIVIDUAL + CONJUNTA
+    // =====================================================
 
     private void alternarPreviewAnimacao() {
 
@@ -1562,30 +1748,93 @@ public class EditorDePoses extends JFrame {
             return;
         }
 
+        previewEraConjunto =
+                isModoConjunto();
+
         int quadrosSalvos = 0;
 
-        for (PoseSalva pose : alvoAtual.quadrosAnimacao) {
-            if (pose != null) {
-                quadrosSalvos++;
+        if (previewEraConjunto) {
+
+            DadosPersonagem branco =
+                    getBrancoPadrao();
+
+            DadosPersonagem preto =
+                    getPretoPadrao();
+
+            if (branco == null || preto == null) {
+
+                previewEraConjunto = false;
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "O modo conjunto precisa dos personagens Branco e Preto na cena.",
+                        "Pré-visualização conjunta",
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                return;
             }
-        }
 
-        if (quadrosSalvos < 2) {
+            for (QuadroConjunto quadro : quadrosConjuntos) {
 
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Salve pelo menos 2 quadros para pré-visualizar a animação.",
-                    "Pré-visualização",
-                    JOptionPane.INFORMATION_MESSAGE
-            );
+                if (quadro != null
+                        && quadro.estaCompleto()) {
 
-            return;
+                    quadrosSalvos++;
+                }
+            }
+
+            if (quadrosSalvos < 2) {
+
+                previewEraConjunto = false;
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Salve pelo menos 2 quadros conjuntos para pré-visualizar a interação.",
+                        "Pré-visualização conjunta",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                return;
+            }
+
+            /*
+             * O Play conjunto é somente uma visualização.
+             * Guardamos as duas poses de trabalho para restaurá-las
+             * exatamente quando o usuário apertar Parar.
+             */
+            poseBrancoAntesPreviewConjunto =
+                    new PoseSalva(branco);
+
+            posePretoAntesPreviewConjunto =
+                    new PoseSalva(preto);
+
+        } else {
+
+            for (PoseSalva pose : alvoAtual.quadrosAnimacao) {
+
+                if (pose != null) {
+                    quadrosSalvos++;
+                }
+            }
+
+            if (quadrosSalvos < 2) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Salve pelo menos 2 quadros para pré-visualizar a animação.",
+                        "Pré-visualização",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                return;
+            }
+
+            poseAntesPreview =
+                    new PoseSalva(alvoAtual);
         }
 
         finalizarGrupoHistorico();
-
-        poseAntesPreview =
-                new PoseSalva(alvoAtual);
 
         indiceQuadroAntesPreview =
                 comboQuadroAnimacao.getSelectedIndex();
@@ -1593,7 +1842,11 @@ public class EditorDePoses extends JFrame {
         indicePreviewAnimacao = -1;
         previewAnimacaoAtivo = true;
 
-        btnPlayAnimacao.setText("■ Parar");
+        btnPlayAnimacao.setText(
+                previewEraConjunto
+                ? "■ Parar conjunto"
+                : "■ Parar"
+        );
 
         timerPreviewAnimacao.setDelay(
                 (int) spinIntervaloAnimacao.getValue()
@@ -1607,6 +1860,10 @@ public class EditorDePoses extends JFrame {
 
         timerPreviewAnimacao.start();
 
+        /*
+         * Durante o Play os dois personagens podem estar se movendo.
+         * Por isso o rig direto é bloqueado até o preview terminar.
+         */
         painelDesenho.cancelarInteracaoRig();
     }
 
@@ -1618,10 +1875,67 @@ public class EditorDePoses extends JFrame {
             return;
         }
 
+        if (previewEraConjunto) {
+
+            DadosPersonagem branco =
+                    getBrancoPadrao();
+
+            DadosPersonagem preto =
+                    getPretoPadrao();
+
+            if (branco == null || preto == null) {
+                pararPreviewAnimacao(true);
+                return;
+            }
+
+            /*
+             * Branco e Preto sempre avançam para o MESMO índice.
+             * Esse é o princípio central da animação conjunta:
+             * Q1+Q1, Q2+Q2, Q3+Q3...
+             */
+            for (int tentativa = 1;
+                    tentativa <= 5;
+                    tentativa++) {
+
+                int proximo =
+                        (indicePreviewAnimacao + tentativa)
+                        % 5;
+
+                QuadroConjunto quadro =
+                        quadrosConjuntos[proximo];
+
+                if (quadro == null
+                        || !quadro.estaCompleto()) {
+
+                    continue;
+                }
+
+                indicePreviewAnimacao =
+                        proximo;
+
+                quadro.poseBranco.aplicarEm(
+                        branco
+                );
+
+                quadro.posePreto.aplicarEm(
+                        preto
+                );
+
+                comboQuadroAnimacao.setSelectedIndex(
+                        proximo
+                );
+
+                painelDesenho.repaint();
+
+                return;
+            }
+
+            return;
+        }
+
         /*
-         * Procura o próximo quadro salvo.
-         * Assim também conseguimos pré-visualizar animações
-         * ainda incompletas durante a criação.
+         * Preview individual: procura o próximo quadro salvo.
+         * Também permite testar animações ainda incompletas.
          */
         for (int tentativa = 1;
                 tentativa <= 5;
@@ -1643,7 +1957,9 @@ public class EditorDePoses extends JFrame {
             indicePreviewAnimacao =
                     proximo;
 
-            pose.aplicarEm(alvoAtual);
+            pose.aplicarEm(
+                    alvoAtual
+            );
 
             comboQuadroAnimacao.setSelectedIndex(
                     proximo
@@ -1667,17 +1983,47 @@ public class EditorDePoses extends JFrame {
 
         previewAnimacaoAtivo = false;
 
-        if (restaurarPose
-                && poseAntesPreview != null
-                && alvoAtual != null) {
+        if (restaurarPose) {
 
-            poseAntesPreview.aplicarEm(
-                    alvoAtual
-            );
+            if (previewEraConjunto) {
+
+                DadosPersonagem branco =
+                        getBrancoPadrao();
+
+                DadosPersonagem preto =
+                        getPretoPadrao();
+
+                if (branco != null
+                        && poseBrancoAntesPreviewConjunto != null) {
+
+                    poseBrancoAntesPreviewConjunto.aplicarEm(
+                            branco
+                    );
+                }
+
+                if (preto != null
+                        && posePretoAntesPreviewConjunto != null) {
+
+                    posePretoAntesPreviewConjunto.aplicarEm(
+                            preto
+                    );
+                }
+
+            } else if (poseAntesPreview != null
+                    && alvoAtual != null) {
+
+                poseAntesPreview.aplicarEm(
+                        alvoAtual
+                );
+            }
         }
 
         poseAntesPreview = null;
+        poseBrancoAntesPreviewConjunto = null;
+        posePretoAntesPreviewConjunto = null;
+
         indicePreviewAnimacao = -1;
+        previewEraConjunto = false;
 
         if (btnPlayAnimacao != null) {
             btnPlayAnimacao.setText("▶ Play");
@@ -1703,19 +2049,57 @@ public class EditorDePoses extends JFrame {
 
         pararPreviewAnimacao(true);
 
-        int indice = comboQuadroAnimacao.getSelectedIndex();
+        int indice =
+                comboQuadroAnimacao.getSelectedIndex();
 
         if (indice < 0 || indice >= 5) {
             return;
         }
 
-        alvoAtual.quadrosAnimacao[indice] = new PoseSalva(alvoAtual);
+        if (isModoConjunto()) {
+
+            DadosPersonagem branco =
+                    getBrancoPadrao();
+
+            DadosPersonagem preto =
+                    getPretoPadrao();
+
+            if (branco == null || preto == null) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "O modo conjunto precisa dos personagens Branco e Preto na cena.",
+                        "MiauStudio",
+                        JOptionPane.WARNING_MESSAGE
+                );
+
+                return;
+            }
+
+            /*
+             * O botão Salvar quadro captura os DOIS personagens
+             * exatamente como estão no canvas naquele instante.
+             */
+            quadrosConjuntos[indice] =
+                    new QuadroConjunto(
+                            new PoseSalva(branco),
+                            new PoseSalva(preto)
+                    );
+
+        } else {
+
+            alvoAtual.quadrosAnimacao[indice] =
+                    new PoseSalva(alvoAtual);
+        }
+
         atualizarStatusQuadros();
         gerarCodigoAnimacaoParcial();
 
         // Depois de salvar, já avança para o próximo quadro.
         if (indice < 4) {
-            comboQuadroAnimacao.setSelectedIndex(indice + 1);
+            comboQuadroAnimacao.setSelectedIndex(
+                    indice + 1
+            );
         }
     }
 
@@ -1723,89 +2107,240 @@ public class EditorDePoses extends JFrame {
 
         pararPreviewAnimacao(true);
 
-        int indice = comboQuadroAnimacao.getSelectedIndex();
+        int indice =
+                comboQuadroAnimacao.getSelectedIndex();
 
         if (indice < 0 || indice >= 5) {
             return;
         }
 
-        PoseSalva pose = alvoAtual.quadrosAnimacao[indice];
+        if (isModoConjunto()) {
+
+            QuadroConjunto quadro =
+                    quadrosConjuntos[indice];
+
+            if (quadro == null
+                    || !quadro.estaCompleto()) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Esse quadro conjunto ainda não foi salvo.",
+                        "MiauStudio",
+                        JOptionPane.INFORMATION_MESSAGE
+                );
+
+                return;
+            }
+
+            DadosPersonagem branco =
+                    getBrancoPadrao();
+
+            DadosPersonagem preto =
+                    getPretoPadrao();
+
+            if (branco == null || preto == null) {
+                return;
+            }
+
+            /*
+             * O histórico continua sendo independente por personagem.
+             * Carregar um quadro conjunto registra o estado anterior
+             * nos dois históricos para não perder trabalho.
+             */
+            finalizarGrupoHistorico();
+
+            adicionarAoHistorico(
+                    branco.historicoDesfazer,
+                    new PoseSalva(branco)
+            );
+
+            branco.historicoRefazer.clear();
+
+            adicionarAoHistorico(
+                    preto.historicoDesfazer,
+                    new PoseSalva(preto)
+            );
+
+            preto.historicoRefazer.clear();
+
+            quadro.poseBranco.aplicarEm(
+                    branco
+            );
+
+            quadro.posePreto.aplicarEm(
+                    preto
+            );
+
+            carregarUIComDadosDoAlvo();
+
+            return;
+        }
+
+        PoseSalva pose =
+                alvoAtual.quadrosAnimacao[indice];
 
         if (pose == null) {
+
             JOptionPane.showMessageDialog(
                     this,
                     "Esse quadro ainda não foi salvo.",
                     "MiauStudio",
                     JOptionPane.INFORMATION_MESSAGE
             );
+
             return;
         }
 
         registrarEdicaoDiscreta();
 
-        pose.aplicarEm(alvoAtual);
+        pose.aplicarEm(
+                alvoAtual
+        );
+
         carregarUIComDadosDoAlvo();
     }
 
     private void atualizarStatusQuadros() {
+
         if (alvoAtual == null) {
             return;
         }
 
-        StringBuilder status = new StringBuilder("Quadros: ");
+        StringBuilder status =
+                new StringBuilder(
+                        isModoConjunto()
+                        ? "Conjuntos: "
+                        : "Quadros: "
+                );
 
         for (int i = 0; i < 5; i++) {
-            status.append(alvoAtual.quadrosAnimacao[i] != null ? "●" : "○");
+
+            boolean salvo;
+
+            if (isModoConjunto()) {
+
+                QuadroConjunto quadro =
+                        quadrosConjuntos[i];
+
+                salvo =
+                        quadro != null
+                        && quadro.estaCompleto();
+
+            } else {
+
+                salvo =
+                        alvoAtual.quadrosAnimacao[i]
+                        != null;
+            }
+
+            status.append(
+                    salvo ? "●" : "○"
+            );
 
             if (i < 4) {
                 status.append(" ");
             }
         }
 
-        lblStatusQuadros.setText(status.toString());
+        lblStatusQuadros.setText(
+                status.toString()
+        );
     }
 
     private void gerarCodigoAnimacao() {
-        for (int i = 0; i < 5; i++) {
-            if (alvoAtual.quadrosAnimacao[i] == null) {
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Falta salvar o Quadro " + (i + 1) + ".",
-                        "Animação incompleta",
-                        JOptionPane.WARNING_MESSAGE
-                );
-                return;
+
+        if (isModoConjunto()) {
+
+            for (int i = 0; i < 5; i++) {
+
+                QuadroConjunto quadro =
+                        quadrosConjuntos[i];
+
+                if (quadro == null
+                        || !quadro.estaCompleto()) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Falta salvar o Quadro conjunto "
+                            + (i + 1)
+                            + ".",
+                            "Animação conjunta incompleta",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+
+                    return;
+                }
+            }
+
+        } else {
+
+            for (int i = 0; i < 5; i++) {
+
+                if (alvoAtual.quadrosAnimacao[i] == null) {
+
+                    JOptionPane.showMessageDialog(
+                            this,
+                            "Falta salvar o Quadro "
+                            + (i + 1)
+                            + ".",
+                            "Animação incompleta",
+                            JOptionPane.WARNING_MESSAGE
+                    );
+
+                    return;
+                }
             }
         }
 
-        txtAnimacaoGerada.setText(montarCodigoAnimacao(false));
+        txtAnimacaoGerada.setText(
+                montarCodigoAnimacao(false)
+        );
+
         txtAnimacaoGerada.setCaretPosition(0);
     }
 
     private void gerarCodigoAnimacaoParcial() {
-        txtAnimacaoGerada.setText(montarCodigoAnimacao(true));
+
+        txtAnimacaoGerada.setText(
+                montarCodigoAnimacao(true)
+        );
+
         txtAnimacaoGerada.setCaretPosition(0);
     }
 
-    private String montarCodigoAnimacao(boolean permitirIncompleta) {
-        String nome = normalizarNomeAnimacao(txtNomeAnimacao.getText());
+    private String montarCodigoAnimacao(
+            boolean permitirIncompleta
+    ) {
 
-        StringBuilder codigo = new StringBuilder();
+        if (isModoConjunto()) {
+
+            return montarCodigoAnimacaoConjunta(
+                    permitirIncompleta
+            );
+        }
+
+        return montarCodigoAnimacaoIndividual(
+                permitirIncompleta
+        );
+    }
+
+    private String montarCodigoAnimacaoIndividual(
+            boolean permitirIncompleta
+    ) {
+
+        String nome =
+                normalizarNomeAnimacao(
+                        txtNomeAnimacao.getText()
+                );
+
+        StringBuilder codigo =
+                new StringBuilder();
 
         codigo.append("/*\n");
-        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO DE 5 QUADROS\n");
+        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO INDIVIDUAL DE 5 QUADROS\n");
         codigo.append(" * Nome: ").append(nome).append("\n");
         codigo.append(" * Personagem: ").append(alvoAtual.nome).append("\n");
-        codigo.append(" *\n");
-        codigo.append(" * ORDEM DOS VALORES:\n");
-        codigo.append(" * cenaX, linha, escalaX10, viradoDireita(1/0),\n");
-        codigo.append(" * cinturaX, cinturaY, rotCintura,\n");
-        codigo.append(" * troncoX, troncoY, rotTronco,\n");
-        codigo.append(" * rotGlobal, rotCabeca, cabX, cabY,\n");
-        codigo.append(" * cotEsqX, cotEsqY, maoEsqX, maoEsqY,\n");
-        codigo.append(" * cotDirX, cotDirY, maoDirX, maoDirY,\n");
-        codigo.append(" * joelEsqX, joelEsqY, peEsqX, peEsqY,\n");
-        codigo.append(" * joelDirX, joelDirY, peDirX, peDirY\n");
+        adicionarCabecalhoFormatoMiauStudio(codigo);
         codigo.append(" */\n");
 
         codigo.append("private static final int[][] ")
@@ -1813,14 +2348,25 @@ public class EditorDePoses extends JFrame {
               .append(" = {\n");
 
         for (int i = 0; i < 5; i++) {
-            PoseSalva pose = alvoAtual.quadrosAnimacao[i];
+
+            PoseSalva pose =
+                    alvoAtual.quadrosAnimacao[i];
 
             codigo.append("    ");
 
             if (pose == null) {
-                codigo.append(permitirIncompleta ? "null" : "{}");
+
+                codigo.append(
+                        permitirIncompleta
+                        ? "null"
+                        : "{}"
+                );
+
             } else {
-                codigo.append(pose.paraLinhaJava());
+
+                codigo.append(
+                        pose.paraLinhaJava()
+                );
             }
 
             if (i < 4) {
@@ -1835,6 +2381,155 @@ public class EditorDePoses extends JFrame {
         codigo.append("};\n");
 
         return codigo.toString();
+    }
+
+    private String montarCodigoAnimacaoConjunta(
+            boolean permitirIncompleta
+    ) {
+
+        String nome =
+                normalizarNomeAnimacao(
+                        txtNomeAnimacao.getText()
+                );
+
+        boolean brancoAplicador =
+                comboAplicadorConjunto.getSelectedIndex()
+                != 1;
+
+        String nomeAplicador =
+                brancoAplicador
+                ? "Branco"
+                : "Preto";
+
+        String nomeReceptor =
+                brancoAplicador
+                ? "Preto"
+                : "Branco";
+
+        StringBuilder codigo =
+                new StringBuilder();
+
+        codigo.append("/*\n");
+        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO CONJUNTA DE 5 QUADROS\n");
+        codigo.append(" * Nome: ").append(nome).append("\n");
+        codigo.append(" * Aplicador: ").append(nomeAplicador).append("\n");
+        codigo.append(" * Receptor: ").append(nomeReceptor).append("\n");
+        codigo.append(" *\n");
+        codigo.append(" * IMPORTANTE:\n");
+        codigo.append(" * O Quadro N do APLICADOR e o Quadro N do RECEPTOR\n");
+        codigo.append(" * acontecem no mesmo instante da interação.\n");
+        adicionarCabecalhoFormatoMiauStudio(codigo);
+        codigo.append(" */\n\n");
+
+        adicionarArrayConjuntoAoCodigo(
+                codigo,
+                nome + "_APLICADOR",
+                true,
+                brancoAplicador,
+                permitirIncompleta,
+                nomeAplicador
+        );
+
+        codigo.append("\n");
+
+        adicionarArrayConjuntoAoCodigo(
+                codigo,
+                nome + "_RECEPTOR",
+                false,
+                brancoAplicador,
+                permitirIncompleta,
+                nomeReceptor
+        );
+
+        return codigo.toString();
+    }
+
+    private void adicionarArrayConjuntoAoCodigo(
+            StringBuilder codigo,
+            String nomeArray,
+            boolean aplicador,
+            boolean brancoAplicador,
+            boolean permitirIncompleta,
+            String nomePersonagem
+    ) {
+
+        codigo.append("// ")
+              .append(
+                      aplicador
+                      ? "APLICADOR"
+                      : "RECEPTOR"
+              )
+              .append(": ")
+              .append(nomePersonagem)
+              .append("\n");
+
+        codigo.append("private static final int[][] ")
+              .append(nomeArray)
+              .append(" = {\n");
+
+        for (int i = 0; i < 5; i++) {
+
+            QuadroConjunto quadro =
+                    quadrosConjuntos[i];
+
+            PoseSalva pose = null;
+
+            if (quadro != null) {
+
+                boolean usarBranco =
+                        aplicador
+                        ? brancoAplicador
+                        : !brancoAplicador;
+
+                pose =
+                        usarBranco
+                        ? quadro.poseBranco
+                        : quadro.posePreto;
+            }
+
+            codigo.append("    ");
+
+            if (pose == null) {
+
+                codigo.append(
+                        permitirIncompleta
+                        ? "null"
+                        : "{}"
+                );
+
+            } else {
+
+                codigo.append(
+                        pose.paraLinhaJava()
+                );
+            }
+
+            if (i < 4) {
+                codigo.append(",");
+            }
+
+            codigo.append(" // Quadro ")
+                  .append(i + 1)
+                  .append("\n");
+        }
+
+        codigo.append("};\n");
+    }
+
+    private void adicionarCabecalhoFormatoMiauStudio(
+            StringBuilder codigo
+    ) {
+
+        codigo.append(" *\n");
+        codigo.append(" * ORDEM DOS VALORES:\n");
+        codigo.append(" * cenaX, linha, escalaX10, viradoDireita(1/0),\n");
+        codigo.append(" * cinturaX, cinturaY, rotCintura,\n");
+        codigo.append(" * troncoX, troncoY, rotTronco,\n");
+        codigo.append(" * rotGlobal, rotCabeca, cabX, cabY,\n");
+        codigo.append(" * cotEsqX, cotEsqY, maoEsqX, maoEsqY,\n");
+        codigo.append(" * cotDirX, cotDirY, maoDirX, maoDirY,\n");
+        codigo.append(" * joelEsqX, joelEsqY, peEsqX, peEsqY,\n");
+        codigo.append(" * joelDirX, joelDirY, peDirX, peDirY\n");
     }
 
     private String normalizarNomeAnimacao(String nomeOriginal) {
