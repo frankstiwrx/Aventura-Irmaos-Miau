@@ -18,6 +18,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
@@ -27,6 +28,24 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class EditorDePoses extends JFrame {
+
+    private static final int LINHA_MINIMA = 0;
+    private static final int LINHA_MAXIMA = 4;
+    private static final double Y_BASE_CENA = 150.0;
+    private static final double ESPACAMENTO_LINHAS = 25.0;
+    private static final int LIMITE_ARRASTE_CINTURA_Y = 12;
+
+    // =====================================================
+    // CONFIGURAÇÃO DA TIMELINE
+    // =====================================================
+    /*
+     * Toda animação começa com 5 quadros porque esse continua sendo
+     * nosso fluxo mais rápido de modelagem. A partir daqui, porém,
+     * a quantidade deixa de ser uma regra fixa do MiauStudio.
+     */
+    private static final int QUADROS_INICIAIS = 5;
+    private static final int MIN_QUADROS = 1;
+    private static final int MAX_QUADROS = 60;
 
     // --- ESTRUTURA DE DADOS POR PERSONAGEM ---
     private class DadosPersonagem {
@@ -56,8 +75,13 @@ public class EditorDePoses extends JFrame {
         int offJoelEsqX = 0, offJoelEsqY = 0, offPeEsqX = 0, offPeEsqY = 0;
         int offJoelDirX = 0, offJoelDirY = 0, offPeDirX = 0, offPeDirY = 0;
 
-        // Cada personagem mantém seus próprios 5 quadros.
-        PoseSalva[] quadrosAnimacao = new PoseSalva[5];
+        /*
+         * Cada personagem mantém sua própria timeline individual.
+         * Ela começa com 5 quadros, mas pode crescer ou encolher
+         * independentemente das outras animações.
+         */
+        PoseSalva[] quadrosAnimacao =
+                new PoseSalva[QUADROS_INICIAIS];
 
         /*
          * Histórico independente de edição.
@@ -380,18 +404,16 @@ public class EditorDePoses extends JFrame {
             );
 
     /*
-     * Os cinco quadros conjuntos são separados dos quadros individuais.
-     * Assim podemos criar uma interação sem destruir animações que já
-     * estavam salvas em Branco.quadrosAnimacao / Preto.quadrosAnimacao.
+     * A timeline conjunta também é independente das timelines individuais.
+     * Ela começa com 5 quadros, mas pode ter qualquer quantidade dentro
+     * dos limites definidos acima.
      */
-    private final QuadroConjunto[] quadrosConjuntos =
-            new QuadroConjunto[5];
+    private QuadroConjunto[] quadrosConjuntos =
+            new QuadroConjunto[QUADROS_INICIAIS];
 
     private JTextField txtNomeAnimacao = new JTextField("nova_animacao", 14);
-    private JComboBox<String> comboQuadroAnimacao = new JComboBox<>(
-            new String[]{"Quadro 1", "Quadro 2", "Quadro 3", "Quadro 4", "Quadro 5"}
-    );
-    private JLabel lblStatusQuadros = new JLabel("Quadros: ○ ○ ○ ○ ○");
+    private JComboBox<String> comboQuadroAnimacao = new JComboBox<>();
+    private JLabel lblStatusQuadros = new JLabel("Quadros:");
 
     private CanvasPanel painelDesenho = new CanvasPanel();
     
@@ -582,6 +604,202 @@ public class EditorDePoses extends JFrame {
         );
     }
 
+    // =====================================================
+    // TIMELINE DINÂMICA
+    // =====================================================
+
+    private int getQuantidadeQuadrosAtiva() {
+
+        if (isModoConjunto()) {
+            return quadrosConjuntos.length;
+        }
+
+        if (alvoAtual != null) {
+            return alvoAtual.quadrosAnimacao.length;
+        }
+
+        return QUADROS_INICIAIS;
+    }
+
+    /*
+     * Reconstrói o seletor sem perder o quadro selecionado quando
+     * possível. Isso é chamado ao trocar de personagem, de modo ou
+     * quando a timeline cresce/encolhe.
+     */
+    private void atualizarComboQuadros() {
+
+        int quantidade =
+                Math.max(
+                        MIN_QUADROS,
+                        getQuantidadeQuadrosAtiva()
+                );
+
+        int indiceAnterior =
+                comboQuadroAnimacao.getSelectedIndex();
+
+        boolean estadoAnterior =
+                atualizandoUI;
+
+        atualizandoUI = true;
+
+        comboQuadroAnimacao.removeAllItems();
+
+        for (int i = 0; i < quantidade; i++) {
+            comboQuadroAnimacao.addItem(
+                    "Quadro " + (i + 1)
+            );
+        }
+
+        int novoIndice =
+                indiceAnterior < 0
+                ? 0
+                : Math.min(
+                        indiceAnterior,
+                        quantidade - 1
+                );
+
+        comboQuadroAnimacao.setSelectedIndex(
+                novoIndice
+        );
+
+        atualizandoUI =
+                estadoAnterior;
+    }
+
+    private void adicionarQuadroAnimacao() {
+
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        int quantidadeAtual =
+                getQuantidadeQuadrosAtiva();
+
+        if (quantidadeAtual >= MAX_QUADROS) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "A timeline já atingiu o limite de "
+                    + MAX_QUADROS
+                    + " quadros.",
+                    "MiauStudio",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            return;
+        }
+
+        if (isModoConjunto()) {
+
+            quadrosConjuntos =
+                    Arrays.copyOf(
+                            quadrosConjuntos,
+                            quantidadeAtual + 1
+                    );
+
+        } else if (alvoAtual != null) {
+
+            alvoAtual.quadrosAnimacao =
+                    Arrays.copyOf(
+                            alvoAtual.quadrosAnimacao,
+                            quantidadeAtual + 1
+                    );
+        }
+
+        atualizarComboQuadros();
+
+        comboQuadroAnimacao.setSelectedIndex(
+                quantidadeAtual
+        );
+
+        atualizarStatusQuadros();
+        gerarCodigoAnimacaoParcial();
+    }
+
+    /*
+     * Para não deslocar silenciosamente Q2 -> Q1, Q3 -> Q2 etc.,
+     * a primeira versão remove somente o ÚLTIMO quadro da timeline.
+     * Se ele já tiver conteúdo, pedimos confirmação.
+     */
+    private void removerQuadroAnimacao() {
+
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        int quantidadeAtual =
+                getQuantidadeQuadrosAtiva();
+
+        if (quantidadeAtual <= MIN_QUADROS) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "A animação precisa manter pelo menos "
+                    + MIN_QUADROS
+                    + " quadro.",
+                    "MiauStudio",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+            return;
+        }
+
+        int ultimoIndice =
+                quantidadeAtual - 1;
+
+        boolean ultimoTemConteudo;
+
+        if (isModoConjunto()) {
+
+            ultimoTemConteudo =
+                    quadrosConjuntos[ultimoIndice]
+                    != null;
+
+        } else {
+
+            ultimoTemConteudo =
+                    alvoAtual != null
+                    && alvoAtual.quadrosAnimacao[ultimoIndice]
+                    != null;
+        }
+
+        if (ultimoTemConteudo) {
+
+            int escolha =
+                    JOptionPane.showConfirmDialog(
+                            this,
+                            "O último quadro já possui uma pose salva.\n"
+                            + "Deseja removê-lo mesmo assim?",
+                            "Remover último quadro",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                    );
+
+            if (escolha != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
+        if (isModoConjunto()) {
+
+            quadrosConjuntos =
+                    Arrays.copyOf(
+                            quadrosConjuntos,
+                            quantidadeAtual - 1
+                    );
+
+        } else if (alvoAtual != null) {
+
+            alvoAtual.quadrosAnimacao =
+                    Arrays.copyOf(
+                            alvoAtual.quadrosAnimacao,
+                            quantidadeAtual - 1
+                    );
+        }
+
+        atualizarComboQuadros();
+        atualizarStatusQuadros();
+        gerarCodigoAnimacaoParcial();
+    }
+
     private void atualizarModoAnimacaoSelecionado() {
 
         /*
@@ -607,6 +825,7 @@ public class EditorDePoses extends JFrame {
                 conjunto
         );
 
+        atualizarComboQuadros();
         atualizarStatusQuadros();
         gerarCodigoAnimacaoParcial();
         painelDesenho.repaint();
@@ -954,11 +1173,35 @@ public class EditorDePoses extends JFrame {
         JButton btnCarregarQuadro = new JButton("Carregar quadro");
         btnCarregarQuadro.addActionListener(e -> carregarQuadroSelecionado());
 
-        JButton btnGerarAnimacao = new JButton("Gerar código dos 5 quadros");
+        JButton btnGerarAnimacao = new JButton("Gerar código");
         btnGerarAnimacao.addActionListener(e -> gerarCodigoAnimacao());
+
+        JButton btnAdicionarQuadro =
+                new JButton("+ Quadro");
+
+        btnAdicionarQuadro.setToolTipText(
+                "Adiciona um novo quadro vazio ao fim da timeline atual."
+        );
+
+        btnAdicionarQuadro.addActionListener(
+                e -> adicionarQuadroAnimacao()
+        );
+
+        JButton btnRemoverQuadro =
+                new JButton("- Quadro");
+
+        btnRemoverQuadro.setToolTipText(
+                "Remove o último quadro da timeline atual."
+        );
+
+        btnRemoverQuadro.addActionListener(
+                e -> removerQuadroAnimacao()
+        );
 
         linhaAnimacao.add(btnSalvarQuadro);
         linhaAnimacao.add(btnCarregarQuadro);
+        linhaAnimacao.add(btnAdicionarQuadro);
+        linhaAnimacao.add(btnRemoverQuadro);
         linhaAnimacao.add(btnGerarAnimacao);
         pFerramentas.add(linhaAnimacao);
 
@@ -1036,7 +1279,7 @@ public class EditorDePoses extends JFrame {
         );
 
         JButton btnBrancoParaPreto =
-                new JButton("Branco → Preto (5 quadros)");
+                new JButton("Branco → Preto");
 
         btnBrancoParaPreto.setToolTipText(
                 "Copia os quadros salvos do Branco para o Preto e gera a versão espelhada."
@@ -1050,7 +1293,7 @@ public class EditorDePoses extends JFrame {
         );
 
         JButton btnPretoParaBranco =
-                new JButton("Preto → Branco (5 quadros)");
+                new JButton("Preto → Branco");
 
         btnPretoParaBranco.setToolTipText(
                 "Copia os quadros salvos do Preto para o Branco e gera a versão espelhada."
@@ -1083,6 +1326,7 @@ public class EditorDePoses extends JFrame {
         configurarAtalhosHistorico();
 
         atualizandoUI = false;
+        atualizarComboQuadros();
         carregarUIComDadosDoAlvo();
     }
 
@@ -1116,6 +1360,7 @@ public class EditorDePoses extends JFrame {
             pararPreviewAnimacao(true);
             finalizarGrupoHistorico();
             alvoAtual = cena.get(index);
+            atualizarComboQuadros();
             carregarUIComDadosDoAlvo();
         }
     }
@@ -1639,8 +1884,18 @@ public class EditorDePoses extends JFrame {
             }
         }
 
+        /*
+         * A animação espelhada recebe a MESMA quantidade de quadros
+         * da origem. Assim copiar uma animação de 9 quadros não a
+         * comprime de volta para cinco.
+         */
+        destino.quadrosAnimacao =
+                new PoseSalva[
+                        origem.quadrosAnimacao.length
+                ];
+
         for (int i = 0;
-                i < destino.quadrosAnimacao.length;
+                i < origem.quadrosAnimacao.length;
                 i++) {
 
             PoseSalva poseOrigem =
@@ -1729,7 +1984,7 @@ public class EditorDePoses extends JFrame {
 
 
     // =====================================================
-    // SISTEMA DE ANIMAÇÃO - 5 QUADROS
+    // SISTEMA DE ANIMAÇÃO - TIMELINE VARIÁVEL
     // INDIVIDUAL + CONJUNTA
     // =====================================================
 
@@ -1893,13 +2148,16 @@ public class EditorDePoses extends JFrame {
              * Esse é o princípio central da animação conjunta:
              * Q1+Q1, Q2+Q2, Q3+Q3...
              */
+            int quantidadeQuadros =
+                    quadrosConjuntos.length;
+
             for (int tentativa = 1;
-                    tentativa <= 5;
+                    tentativa <= quantidadeQuadros;
                     tentativa++) {
 
                 int proximo =
                         (indicePreviewAnimacao + tentativa)
-                        % 5;
+                        % quantidadeQuadros;
 
                 QuadroConjunto quadro =
                         quadrosConjuntos[proximo];
@@ -1937,13 +2195,16 @@ public class EditorDePoses extends JFrame {
          * Preview individual: procura o próximo quadro salvo.
          * Também permite testar animações ainda incompletas.
          */
+        int quantidadeQuadros =
+                alvoAtual.quadrosAnimacao.length;
+
         for (int tentativa = 1;
-                tentativa <= 5;
+                tentativa <= quantidadeQuadros;
                 tentativa++) {
 
             int proximo =
                     (indicePreviewAnimacao + tentativa)
-                    % 5;
+                    % quantidadeQuadros;
 
             PoseSalva pose =
                     alvoAtual.quadrosAnimacao[
@@ -2029,9 +2290,12 @@ public class EditorDePoses extends JFrame {
             btnPlayAnimacao.setText("▶ Play");
         }
 
+        int quantidadeAtual =
+                getQuantidadeQuadrosAtiva();
+
         if (comboQuadroAnimacao != null
                 && indiceQuadroAntesPreview >= 0
-                && indiceQuadroAntesPreview < 5) {
+                && indiceQuadroAntesPreview < quantidadeAtual) {
 
             comboQuadroAnimacao.setSelectedIndex(
                     indiceQuadroAntesPreview
@@ -2052,7 +2316,10 @@ public class EditorDePoses extends JFrame {
         int indice =
                 comboQuadroAnimacao.getSelectedIndex();
 
-        if (indice < 0 || indice >= 5) {
+        int quantidadeQuadros =
+                getQuantidadeQuadrosAtiva();
+
+        if (indice < 0 || indice >= quantidadeQuadros) {
             return;
         }
 
@@ -2096,7 +2363,7 @@ public class EditorDePoses extends JFrame {
         gerarCodigoAnimacaoParcial();
 
         // Depois de salvar, já avança para o próximo quadro.
-        if (indice < 4) {
+        if (indice < quantidadeQuadros - 1) {
             comboQuadroAnimacao.setSelectedIndex(
                     indice + 1
             );
@@ -2110,7 +2377,10 @@ public class EditorDePoses extends JFrame {
         int indice =
                 comboQuadroAnimacao.getSelectedIndex();
 
-        if (indice < 0 || indice >= 5) {
+        int quantidadeQuadros =
+                getQuantidadeQuadrosAtiva();
+
+        if (indice < 0 || indice >= quantidadeQuadros) {
             return;
         }
 
@@ -2213,7 +2483,14 @@ public class EditorDePoses extends JFrame {
                         : "Quadros: "
                 );
 
-        for (int i = 0; i < 5; i++) {
+        int quantidadeQuadros =
+                getQuantidadeQuadrosAtiva();
+
+        status.append("(")
+              .append(quantidadeQuadros)
+              .append("): ");
+
+        for (int i = 0; i < quantidadeQuadros; i++) {
 
             boolean salvo;
 
@@ -2237,7 +2514,7 @@ public class EditorDePoses extends JFrame {
                     salvo ? "●" : "○"
             );
 
-            if (i < 4) {
+            if (i < quantidadeQuadros - 1) {
                 status.append(" ");
             }
         }
@@ -2251,7 +2528,9 @@ public class EditorDePoses extends JFrame {
 
         if (isModoConjunto()) {
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0;
+                    i < quadrosConjuntos.length;
+                    i++) {
 
                 QuadroConjunto quadro =
                         quadrosConjuntos[i];
@@ -2274,7 +2553,9 @@ public class EditorDePoses extends JFrame {
 
         } else {
 
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0;
+                    i < alvoAtual.quadrosAnimacao.length;
+                    i++) {
 
                 if (alvoAtual.quadrosAnimacao[i] == null) {
 
@@ -2337,7 +2618,9 @@ public class EditorDePoses extends JFrame {
                 new StringBuilder();
 
         codigo.append("/*\n");
-        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO INDIVIDUAL DE 5 QUADROS\n");
+        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO INDIVIDUAL DE ")
+              .append(alvoAtual.quadrosAnimacao.length)
+              .append(" QUADROS\n");
         codigo.append(" * Nome: ").append(nome).append("\n");
         codigo.append(" * Personagem: ").append(alvoAtual.nome).append("\n");
         adicionarCabecalhoFormatoMiauStudio(codigo);
@@ -2347,7 +2630,9 @@ public class EditorDePoses extends JFrame {
               .append(nome)
               .append(" = {\n");
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;
+                i < alvoAtual.quadrosAnimacao.length;
+                i++) {
 
             PoseSalva pose =
                     alvoAtual.quadrosAnimacao[i];
@@ -2369,7 +2654,7 @@ public class EditorDePoses extends JFrame {
                 );
             }
 
-            if (i < 4) {
+            if (i < alvoAtual.quadrosAnimacao.length - 1) {
                 codigo.append(",");
             }
 
@@ -2410,7 +2695,9 @@ public class EditorDePoses extends JFrame {
                 new StringBuilder();
 
         codigo.append("/*\n");
-        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO CONJUNTA DE 5 QUADROS\n");
+        codigo.append(" * MIAUSTUDIO - ANIMAÇÃO CONJUNTA DE ")
+              .append(quadrosConjuntos.length)
+              .append(" QUADROS\n");
         codigo.append(" * Nome: ").append(nome).append("\n");
         codigo.append(" * Aplicador: ").append(nomeAplicador).append("\n");
         codigo.append(" * Receptor: ").append(nomeReceptor).append("\n");
@@ -2467,7 +2754,9 @@ public class EditorDePoses extends JFrame {
               .append(nomeArray)
               .append(" = {\n");
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0;
+                i < quadrosConjuntos.length;
+                i++) {
 
             QuadroConjunto quadro =
                     quadrosConjuntos[i];
@@ -2504,7 +2793,7 @@ public class EditorDePoses extends JFrame {
                 );
             }
 
-            if (i < 4) {
+            if (i < quadrosConjuntos.length - 1) {
                 codigo.append(",");
             }
 
@@ -2616,10 +2905,24 @@ public class EditorDePoses extends JFrame {
     private class CanvasPanel extends JPanel {
 
         /*
-         * Primeira versão do rig direto no canvas:
-         * mãos, cotovelos, joelhos e pés podem ser arrastados.
+         * Pontos manipuláveis diretamente no canvas.
+         *
+         * POSICAO_CENA move o personagem como um todo: X é contínuo e Y
+         * sempre encaixa em uma das cinco linhas oficiais da arena.
+         *
+         * CABECA desloca somente a cabeça. Os dois handles ROT_CABECA_*
+         * giram a cabeça ao redor do próprio pivô.
+         *
+         * CINTURA continua sendo um ajuste LOCAL do rig; seu arraste
+         * vertical é propositalmente curto para não virar um segundo
+         * controle de linha da arena.
          */
         private enum PontoRig {
+            POSICAO_CENA("Posição"),
+            CABECA("Cabeça"),
+            ROT_CABECA_ESQUERDA("Girar cabeça"),
+            ROT_CABECA_DIREITA("Girar cabeça"),
+            CINTURA("Cintura"),
             COTOVELO_ESQUERDO("Cotovelo E"),
             MAO_ESQUERDA("Mão E"),
             COTOVELO_DIREITO("Cotovelo D"),
@@ -2676,7 +2979,7 @@ public class EditorDePoses extends JFrame {
         public CanvasPanel() {
 
             setToolTipText(
-                    "Arraste mãos, cotovelos, joelhos e pés diretamente no Miau."
+                    "Arraste posição, cabeça, cintura, mãos, cotovelos, joelhos e pés diretamente no Miau."
             );
 
             MouseAdapter mouseRig = new MouseAdapter() {
@@ -2892,6 +3195,27 @@ public class EditorDePoses extends JFrame {
                                 null
                         );
 
+                if (pontoArrastado == PontoRig.POSICAO_CENA) {
+
+                    aplicarPosicaoCenaPeloMouse(
+                            pontoLocal
+                    );
+
+                    return;
+                }
+
+                if (pontoArrastado == PontoRig.ROT_CABECA_ESQUERDA
+                        || pontoArrastado == PontoRig.ROT_CABECA_DIREITA) {
+
+                    aplicarRotacaoCabecaPeloMouse(
+                            pontoArrastado,
+                            handle,
+                            pontoLocal
+                    );
+
+                    return;
+                }
+
                 int novoOffsetX =
                         (int) Math.round(
                                 (
@@ -2923,12 +3247,163 @@ public class EditorDePoses extends JFrame {
             }
         }
 
-        private int limitarOffsetMembro(int valor) {
+        private void aplicarPosicaoCenaPeloMouse(
+                Point2D pontoLocal
+        ) {
+
+            if (alvoAtual == null) {
+                return;
+            }
+
+            /*
+             * O handle fica centralizado acima do personagem. Portanto,
+             * convertemos a posição do mouse de volta para a âncora cenaX.
+             * O deslocamento vertical NÃO é livre: ele escolhe a linha mais
+             * próxima e mantém o personagem sempre em 0..4.
+             */
+            double deslocamentoHandleX =
+                    35.0 * alvoAtual.escala;
+
+            double deslocamentoHandleY =
+                    55.0 * alvoAtual.escala;
+
+            int novoCenaX =
+                    (int) Math.round(
+                            pontoLocal.getX()
+                            - deslocamentoHandleX
+                    );
+
+            double yBasePersonagem =
+                    pontoLocal.getY()
+                    + deslocamentoHandleY;
+
+            int novaLinha =
+                    (int) Math.round(
+                            (yBasePersonagem - Y_BASE_CENA)
+                            / ESPACAMENTO_LINHAS
+                    );
+
+            novoCenaX =
+                    limitarOffset(
+                            novoCenaX,
+                            -500,
+                            1500
+                    );
+
+            novaLinha =
+                    limitarOffset(
+                            novaLinha,
+                            LINHA_MINIMA,
+                            LINHA_MAXIMA
+                    );
+
+            alvoAtual.cenaX = novoCenaX;
+            alvoAtual.linhaAtual = novaLinha;
+
+            boolean estadoAnterior = atualizandoUI;
+            atualizandoUI = true;
+
+            cCenaX.setValue(novoCenaX);
+            cLinha.setValue(novaLinha);
+
+            atualizandoUI = estadoAnterior;
+
+            atualizarCodigoGerado();
+            repaint();
+        }
+
+        private void aplicarRotacaoCabecaPeloMouse(
+                PontoRig ponto,
+                HandleRig handle,
+                Point2D pontoLocal
+        ) {
+
+            if (alvoAtual == null || handle == null) {
+                return;
+            }
+
+            double dx =
+                    pontoLocal.getX()
+                    - handle.baseLocal.x;
+
+            double dy =
+                    pontoLocal.getY()
+                    - handle.baseLocal.y;
+
+            if (Math.abs(dx) < 0.001
+                    && Math.abs(dy) < 0.001) {
+                return;
+            }
+
+            double anguloMouse =
+                    Math.toDegrees(
+                            Math.atan2(dy, dx)
+                    );
+
+            /*
+             * As duas bolinhas nascem ao lado da seta, acima da cabeça.
+             * Cada uma possui um vetor-base diferente em relação ao pivô.
+             * A rotação é a diferença entre o ângulo atual do mouse e esse
+             * vetor-base, então ambas manipulam o mesmo rotCabeca.
+             */
+            double baseDx =
+                    (ponto == PontoRig.ROT_CABECA_ESQUERDA
+                            ? -18.0
+                            : 18.0)
+                    * alvoAtual.escala;
+
+            double baseDy =
+                    -58.0
+                    * alvoAtual.escala;
+
+            double anguloBase =
+                    Math.toDegrees(
+                            Math.atan2(
+                                    baseDy,
+                                    baseDx
+                            )
+                    );
+
+            double angulo =
+                    anguloMouse
+                    - anguloBase;
+
+            while (angulo > 180.0) {
+                angulo -= 360.0;
+            }
+
+            while (angulo < -180.0) {
+                angulo += 360.0;
+            }
+
+            int novaRotacao =
+                    limitarOffset(
+                            (int) Math.round(angulo),
+                            -180,
+                            180
+                    );
+
+            alvoAtual.rotCabeca = novaRotacao;
+
+            boolean estadoAnterior = atualizandoUI;
+            atualizandoUI = true;
+            cRotCabeca.setValue(novaRotacao);
+            atualizandoUI = estadoAnterior;
+
+            atualizarCodigoGerado();
+            repaint();
+        }
+
+        private int limitarOffset(
+                int valor,
+                int minimo,
+                int maximo
+        ) {
 
             return Math.max(
-                    -150,
+                    minimo,
                     Math.min(
-                            150,
+                            maximo,
                             valor
                     )
             );
@@ -2940,20 +3415,89 @@ public class EditorDePoses extends JFrame {
                 int offsetY
         ) {
 
+            int minimo;
+            int maximo;
+
+            /*
+             * Respeitamos exatamente os mesmos limites dos controles
+             * numéricos existentes na lateral. Assim o arraste nunca cria
+             * um valor que o slider/spinner não conseguiria representar.
+             */
+            switch (ponto) {
+
+                case POSICAO_CENA:
+                case ROT_CABECA_ESQUERDA:
+                case ROT_CABECA_DIREITA:
+                    return;
+
+                case CABECA:
+                    minimo = -100;
+                    maximo = 100;
+                    break;
+
+                case CINTURA:
+                    minimo = -200;
+                    maximo = 200;
+                    break;
+
+                default:
+                    minimo = -150;
+                    maximo = 150;
+                    break;
+            }
+
             int xLimitado =
-                    limitarOffsetMembro(
-                            offsetX
+                    limitarOffset(
+                            offsetX,
+                            minimo,
+                            maximo
                     );
 
-            int yLimitado =
-                    limitarOffsetMembro(
-                            offsetY
-                    );
+            int yLimitado;
+
+            if (ponto == PontoRig.CINTURA) {
+
+                /*
+                 * A cintura é um ajuste LOCAL de pose. No arraste direto,
+                 * limitamos Y a menos de meia linha (25 px) para que ela não
+                 * seja confundida com o deslocamento do personagem entre
+                 * Linha 0..4. Movimentação de arena usa POSICAO_CENA.
+                 */
+                yLimitado =
+                        limitarOffset(
+                                offsetY,
+                                -LIMITE_ARRASTE_CINTURA_Y,
+                                LIMITE_ARRASTE_CINTURA_Y
+                        );
+
+            } else {
+
+                yLimitado =
+                        limitarOffset(
+                                offsetY,
+                                minimo,
+                                maximo
+                        );
+            }
 
             ControleNumerico controleX;
             ControleNumerico controleY;
 
             switch (ponto) {
+
+                case CABECA:
+                    alvoAtual.offCabX = xLimitado;
+                    alvoAtual.offCabY = yLimitado;
+                    controleX = cCabX;
+                    controleY = cCabY;
+                    break;
+
+                case CINTURA:
+                    alvoAtual.offCinturaX = xLimitado;
+                    alvoAtual.offCinturaY = yLimitado;
+                    controleX = cCinturaX;
+                    controleY = cCinturaY;
+                    break;
 
                 case COTOVELO_ESQUERDO:
                     alvoAtual.offCotEsqX = xLimitado;
@@ -3149,6 +3693,162 @@ public class EditorDePoses extends JFrame {
                                 handle.pontoTela.y
                         );
 
+                if (handle.tipo == PontoRig.POSICAO_CENA) {
+
+                    g2.setColor(
+                            ativo
+                                    ? new Color(255, 120, 30)
+                                    : new Color(30, 180, 80)
+                    );
+
+                    int raioPosicao = ativo ? 9 : 7;
+
+                    g2.fillOval(
+                            px - raioPosicao,
+                            py - raioPosicao,
+                            raioPosicao * 2,
+                            raioPosicao * 2
+                    );
+
+                    g2.setColor(Color.BLACK);
+                    g2.drawOval(
+                            px - raioPosicao,
+                            py - raioPosicao,
+                            raioPosicao * 2,
+                            raioPosicao * 2
+                    );
+
+                    g2.drawString(
+                            "POSIÇÃO",
+                            px + raioPosicao + 5,
+                            py - raioPosicao - 2
+                    );
+
+                    continue;
+                }
+
+                if (handle.tipo == PontoRig.ROT_CABECA_ESQUERDA
+                        || handle.tipo == PontoRig.ROT_CABECA_DIREITA) {
+
+                    g2.setColor(
+                            ativo
+                                    ? new Color(255, 120, 30)
+                                    : new Color(255, 210, 40)
+                    );
+
+                    int raioRotacao = ativo ? 7 : 5;
+
+                    g2.fillOval(
+                            px - raioRotacao,
+                            py - raioRotacao,
+                            raioRotacao * 2,
+                            raioRotacao * 2
+                    );
+
+                    g2.setColor(Color.BLACK);
+                    g2.drawOval(
+                            px - raioRotacao,
+                            py - raioRotacao,
+                            raioRotacao * 2,
+                            raioRotacao * 2
+                    );
+
+                    if (ativo) {
+                        g2.drawString(
+                                "GIRAR",
+                                px + raioRotacao + 5,
+                                py - raioRotacao - 2
+                        );
+                    }
+
+                    continue;
+                }
+
+                if (handle.tipo == PontoRig.CABECA) {
+
+                    /*
+                     * A seta vermelha continua sendo o handle de translação
+                     * da cabeça. As duas bolinhas amarelas cuidam da rotação.
+                     */
+                    g2.setColor(
+                            ativo
+                                    ? new Color(255, 120, 30)
+                                    : Color.RED
+                    );
+
+                    int largura = ativo ? 11 : 9;
+                    int altura = ativo ? 12 : 10;
+
+                    g2.fillPolygon(
+                            new int[]{
+                                px - largura,
+                                px + largura,
+                                px
+                            },
+                            new int[]{
+                                py - altura,
+                                py - altura,
+                                py + altura
+                            },
+                            3
+                    );
+
+                    if (ativo) {
+                        g2.setColor(Color.BLACK);
+                        g2.drawString(
+                                handle.tipo.getRotulo(),
+                                px + largura + 6,
+                                py - altura
+                        );
+                    }
+
+                    continue;
+                }
+
+                if (handle.tipo == PontoRig.CINTURA) {
+
+                    /*
+                     * Mantemos o visual clássico do pivô da cintura, agora
+                     * transformado em um handle arrastável.
+                     */
+                    g2.setColor(
+                            ativo
+                                    ? new Color(255, 120, 30)
+                                    : new Color(255, 0, 180)
+                    );
+
+                    int raioCintura = ativo ? 9 : 7;
+
+                    g2.drawOval(
+                            px - raioCintura,
+                            py - raioCintura,
+                            raioCintura * 2,
+                            raioCintura * 2
+                    );
+
+                    g2.drawLine(
+                            px - raioCintura * 2,
+                            py,
+                            px + raioCintura * 2,
+                            py
+                    );
+
+                    g2.drawLine(
+                            px,
+                            py - raioCintura * 2,
+                            px,
+                            py + raioCintura * 2
+                    );
+
+                    g2.drawString(
+                            "CINTURA",
+                            px + raioCintura + 5,
+                            py - raioCintura - 2
+                    );
+
+                    continue;
+                }
+
                 if (ativo) {
 
                     g2.setColor(
@@ -3244,8 +3944,32 @@ public class EditorDePoses extends JFrame {
             double s = pd.escala;
 
             double posX = pd.cenaX;
-            double espacamentoLinha = 25.0;
-            double posY = 150 + (pd.linhaAtual * espacamentoLinha);
+            double posY =
+                    Y_BASE_CENA
+                    + (pd.linhaAtual * ESPACAMENTO_LINHAS);
+
+            if (pd == alvoAtual) {
+
+                /*
+                 * Handle de POSIÇÃO DA CENA. Ele é registrado antes de
+                 * espelhamento/rotações do rig porque controla o personagem
+                 * inteiro, não uma parte da pose.
+                 */
+                double handlePosicaoX =
+                        posX + 35 * s;
+
+                double handlePosicaoY =
+                        posY - 55 * s;
+
+                registrarHandle(
+                        PontoRig.POSICAO_CENA,
+                        handlePosicaoX,
+                        handlePosicaoY,
+                        handlePosicaoX,
+                        handlePosicaoY,
+                        g2d
+                );
+            }
 
             // Espelhamento do personagem inteiro.
             if (!pd.viradoDireita) {
@@ -3276,6 +4000,24 @@ public class EditorDePoses extends JFrame {
                     posY
                     + pd.instancia.getEixoCinturaLocalY()
                     * s;
+
+            if (pd == alvoAtual) {
+
+                /*
+                 * A cintura é registrada ANTES da transformação do próprio
+                 * root. O arraste continua editando offCinturaX/Y, mas Y é
+                 * curto e local; mudança entre linhas pertence ao handle
+                 * POSIÇÃO acima do personagem.
+                 */
+                registrarHandle(
+                        PontoRig.CINTURA,
+                        eixoCinturaBaseX + pd.offCinturaX * s,
+                        eixoCinturaBaseY + pd.offCinturaY * s,
+                        eixoCinturaBaseX,
+                        eixoCinturaBaseY,
+                        g2d
+                );
+            }
 
             g2d.translate(
                     pd.offCinturaX * s,
@@ -3556,6 +4298,97 @@ public class EditorDePoses extends JFrame {
 
             if (pd == alvoAtual) {
 
+                /*
+                 * A seta da cabeça vive no espaço do tronco superior, mas
+                 * representa apenas os offsets próprios da cabeça. Por isso
+                 * ela acompanha cintura/tronco naturalmente e o arraste altera
+                 * somente offCabX/offCabY.
+                 */
+                double baseHandleCabecaX =
+                        posX + 35 * s;
+
+                double baseHandleCabecaY =
+                        posY - 5 * s;
+
+                registrarHandle(
+                        PontoRig.CABECA,
+                        baseHandleCabecaX + pd.offCabX * s,
+                        baseHandleCabecaY + pd.offCabY * s,
+                        baseHandleCabecaX,
+                        baseHandleCabecaY,
+                        gPeito
+                );
+
+                /*
+                 * Duas bolinhas laterais acompanham a rotação real da cabeça.
+                 * Arrastar qualquer uma delas ao redor do pivô atualiza
+                 * rotCabeca sem precisar recorrer ao slider lateral.
+                 */
+                double pivotRotCabecaX =
+                        posX
+                        + pd.offCabX * s
+                        + 35 * s;
+
+                double pivotRotCabecaY =
+                        posY
+                        + pd.offCabY * s
+                        + 53 * s;
+
+                double anguloCabecaRad =
+                        Math.toRadians(
+                                pd.rotCabeca
+                        );
+
+                double cosCabeca =
+                        Math.cos(anguloCabecaRad);
+
+                double sinCabeca =
+                        Math.sin(anguloCabecaRad);
+
+                /*
+                 * Em rotação zero, as bolinhas ficam literalmente uma de
+                 * cada lado da seta vermelha. Quando a cabeça gira, elas
+                 * acompanham o arco ao redor do pivô.
+                 */
+                double baseRotEsqX = -18 * s;
+                double baseRotEsqY = -58 * s;
+                double baseRotDirX = 18 * s;
+                double baseRotDirY = -58 * s;
+
+                double rotEsqX =
+                        baseRotEsqX * cosCabeca
+                        - baseRotEsqY * sinCabeca;
+
+                double rotEsqY =
+                        baseRotEsqX * sinCabeca
+                        + baseRotEsqY * cosCabeca;
+
+                double rotDirX =
+                        baseRotDirX * cosCabeca
+                        - baseRotDirY * sinCabeca;
+
+                double rotDirY =
+                        baseRotDirX * sinCabeca
+                        + baseRotDirY * cosCabeca;
+
+                registrarHandle(
+                        PontoRig.ROT_CABECA_ESQUERDA,
+                        pivotRotCabecaX + rotEsqX,
+                        pivotRotCabecaY + rotEsqY,
+                        pivotRotCabecaX,
+                        pivotRotCabecaY,
+                        gPeito
+                );
+
+                registrarHandle(
+                        PontoRig.ROT_CABECA_DIREITA,
+                        pivotRotCabecaX + rotDirX,
+                        pivotRotCabecaY + rotDirY,
+                        pivotRotCabecaX,
+                        pivotRotCabecaY,
+                        gPeito
+                );
+
                 registrarHandle(
                         PontoRig.COTOVELO_ESQUERDO,
                         cotEsqX,
@@ -3701,91 +4534,13 @@ public class EditorDePoses extends JFrame {
 
             gCabeca.dispose();
 
-            // =================================================
-            // MARCADORES DO RIG
-            // =================================================
-            if (pd == alvoAtual
-                    && arrasteRigAtivo
-                    && !previewAnimacaoAtivo) {
-
-                int raio =
-                        Math.max(
-                                5,
-                                (int) Math.round(7 * s)
-                        );
-
-                // Cintura/root.
-                g2d.setColor(
-                        new Color(255, 0, 180)
-                );
-
-                g2d.setStroke(
-                        new BasicStroke(2.0f)
-                );
-
-                int cinturaX =
-                        (int) Math.round(
-                                eixoCinturaBaseX
-                        );
-
-                int cinturaY =
-                        (int) Math.round(
-                                eixoCinturaBaseY
-                        );
-
-                g2d.drawOval(
-                        cinturaX - raio,
-                        cinturaY - raio,
-                        raio * 2,
-                        raio * 2
-                );
-
-                g2d.drawLine(
-                        cinturaX - raio * 2,
-                        cinturaY,
-                        cinturaX + raio * 2,
-                        cinturaY
-                );
-
-                g2d.drawLine(
-                        cinturaX,
-                        cinturaY - raio * 2,
-                        cinturaX,
-                        cinturaY + raio * 2
-                );
-
-                g2d.drawString(
-                        "CINTURA",
-                        cinturaX + raio + 4,
-                        cinturaY - raio - 2
-                );
-
-                // O tronco usa o mesmo pivô da cintura.
-                // Por isso desenhamos somente o marcador da CINTURA.
-            }
+            /*
+             * Cabeça, cintura e extremidades são desenhadas como handles
+             * em coordenadas de tela por desenharHandlesRig(). Isso mantém
+             * o tamanho dos controles constante mesmo quando a câmera usa zoom.
+             */
 
             gPeito.dispose();
-
-            // Setinha vermelha indicando o alvo atual.
-            if (pd == alvoAtual
-                    && arrasteRigAtivo
-                    && !previewAnimacaoAtivo) {
-                g2d.setColor(Color.RED);
-                g2d.fillPolygon(
-                        new int[]{
-                            (int)(posX + 25*s),
-                            (int)(posX + 45*s),
-                            (int)(posX + 35*s)
-                        },
-                        new int[]{
-                            (int)(posY - 10*s),
-                            (int)(posY - 10*s),
-                            (int)(posY + 5*s)
-                        },
-                        3
-                );
-            }
-
             g2d.dispose();
         }
     }
