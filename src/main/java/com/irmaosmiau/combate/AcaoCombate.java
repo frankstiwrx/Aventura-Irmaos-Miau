@@ -13,8 +13,18 @@ public final class AcaoCombate {
     private final String nome;
     private final CategoriaAcao categoria;
 
+    /*
+     * Alcance em unidades locais do rig do ATACANTE.
+     *
+     * Exemplo: com escala 0.7, alcance 80 representa aproximadamente
+     * 56 pixels de distancia entre os eixos de cintura.
+     *
+     * Isso evita transformar "55 pixels" numa regra eterna do combate.
+     */
     private final double alcanceHorizontal;
+
     private final int diferencaMaximaLinhas;
+    private final boolean exigeFrenteParaOponente;
     private final double custoFolego;
     private final double dificuldade;
 
@@ -29,6 +39,7 @@ public final class AcaoCombate {
             CategoriaAcao categoria,
             double alcanceHorizontal,
             int diferencaMaximaLinhas,
+            boolean exigeFrenteParaOponente,
             double custoFolego,
             double dificuldade,
             double pesoTecnica,
@@ -75,6 +86,7 @@ public final class AcaoCombate {
         this.categoria = categoria;
         this.alcanceHorizontal = alcanceHorizontal;
         this.diferencaMaximaLinhas = diferencaMaximaLinhas;
+        this.exigeFrenteParaOponente = exigeFrenteParaOponente;
         this.custoFolego = custoFolego;
         this.dificuldade = dificuldade;
         this.pesoTecnica = pesoTecnica;
@@ -109,6 +121,10 @@ public final class AcaoCombate {
 
     public int getDiferencaMaximaLinhas() {
         return diferencaMaximaLinhas;
+    }
+
+    public boolean isExigeFrenteParaOponente() {
+        return exigeFrenteParaOponente;
     }
 
     public double getCustoFolego() {

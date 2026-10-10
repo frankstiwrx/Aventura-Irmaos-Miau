@@ -6,8 +6,8 @@ import com.irmaosmiau.entities.IrmaoMiau;
  * Coordenador das regras compartilhadas entre dois lutadores.
  *
  * Nesta primeira versao o sistema apenas consulta o contexto e valida
- * requisitos basicos da AcaoCombate. Ele ainda nao consome energia, nao
- * aplica efeitos, nao toca animacao e nao usa probabilidade.
+ * requisitos espaciais e basicos da AcaoCombate. Ele ainda nao consome
+ * energia, nao aplica efeitos, nao toca animacao e nao usa probabilidade.
  */
 public final class SistemaCombate {
 
@@ -157,6 +157,20 @@ public final class SistemaCombate {
                 <= acao.getDiferencaMaximaLinhas();
     }
 
+    public boolean atendeOrientacaoDaAcao(
+            AcaoCombate acao,
+            ContextoCombate contexto
+    ) {
+
+        validarAcaoEContexto(acao, contexto);
+
+        if (!acao.isExigeFrenteParaOponente()) {
+            return true;
+        }
+
+        return contexto.isAtacanteDeFrenteParaDefensor();
+    }
+
     public boolean temFolegoSuficiente(
             AcaoCombate acao,
             ContextoCombate contexto
@@ -194,6 +208,7 @@ public final class SistemaCombate {
 
         return estaNoAlcanceHorizontal(acao, contexto)
                 && estaDentroDaDiferencaDeLinhas(acao, contexto)
+                && atendeOrientacaoDaAcao(acao, contexto)
                 && temFolegoSuficiente(acao, contexto);
     }
 

@@ -278,12 +278,12 @@ public class GamePanel extends JPanel {
             atualizarMiauPreto();
 
             /*
-             * Primeiro os personagens terminam suas atualizacoes do frame.
-             * Depois o motor tira a fotografia compartilhada da luta.
+             * A orientacao precisa refletir a posicao DESTE frame antes de
+             * o motor espacial fotografar quem esta de frente para quem.
              */
-            sistemaCombate.atualizar();
-
             atualizarOrientacaoDosMiaus();
+
+            sistemaCombate.atualizar();
 
         } else {
 
@@ -1488,18 +1488,40 @@ public class GamePanel extends JPanel {
 
         g2.drawString(
                 "COMBATE: ATIVO",
-                300,
-                55
+                270,
+                45
         );
 
         g2.drawString(
                 String.format(
-                        "DIST X: %.1f | LINHAS: %d",
-                        contexto.getDistanciaHorizontal(),
-                        contexto.getDiferencaLinhas()
+                        "DIST: %.1f px / %.1f u",
+                        contexto.getDistanciaHorizontalPixels(),
+                        contexto.getDistanciaHorizontalCombate()
                 ),
-                300,
-                72
+                270,
+                62
+        );
+
+        g2.drawString(
+                "LINHAS: "
+                + contexto.getDiferencaLinhas()
+                + " | POS: "
+                + contexto.getRelacaoHorizontal(),
+                270,
+                79
+        );
+
+        g2.drawString(
+                "FRENTE A->B: "
+                + (contexto.isAtacanteDeFrenteParaDefensor()
+                        ? "SIM"
+                        : "NAO")
+                + " | B->A: "
+                + (contexto.isDefensorDeFrenteParaAtacante()
+                        ? "SIM"
+                        : "NAO"),
+                270,
+                96
         );
 
         g2.drawString(
@@ -1507,8 +1529,8 @@ public class GamePanel extends JPanel {
                 + (pegadaDisponivel
                         ? "DISPONIVEL"
                         : "INDISPONIVEL"),
-                300,
-                89
+                270,
+                113
         );
     }
 

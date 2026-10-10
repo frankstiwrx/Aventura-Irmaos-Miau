@@ -1991,6 +1991,26 @@ public void alternarDeitado() {
 
         return y;
     }
+
+    /**
+     * Escala visual/fisica usada pelo rig deste personagem.
+     *
+     * O motor espacial usa este valor para converter distancias da tela
+     * para unidades locais do atacante. Assim o alcance de uma tecnica
+     * nao fica preso a uma quantidade fixa de pixels.
+     */
+    public double getEscala() {
+
+        return escala;
+    }
+
+    /**
+     * Informa para qual lado o personagem esta olhando no mundo do jogo.
+     */
+    public boolean isViradoParaDireita() {
+
+        return viradoParaDireita;
+    }
     
     protected double getProgressoRolamento() {
 

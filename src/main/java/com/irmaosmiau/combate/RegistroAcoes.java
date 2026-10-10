@@ -28,8 +28,10 @@ public final class RegistroAcoes {
                         "pegada_1",
                         "Pegada 1",
                         CategoriaAcao.PEGADA,
-                        55.0,
+                        /* alcance em unidades locais do atacante */
+                        80.0,
                         1,
+                        true,
                         3.0,
                         20.0,
                         0.50,

@@ -11,18 +11,36 @@ import com.irmaosmiau.entities.IrmaoMiau;
  */
 public final class ContextoCombate {
 
+    private static final double ESCALA_MINIMA_SEGURA = 0.0001;
+
     private final IrmaoMiau atacante;
     private final IrmaoMiau defensor;
 
     private final double centroAtacanteX;
     private final double centroDefensorX;
-    private final double distanciaHorizontal;
+
+    /* Distancia real na tela, util para debug/render. */
+    private final double distanciaHorizontalPixels;
+
+    /*
+     * Distancia normalizada pela escala do atacante.
+     * Esta e a medida que as acoes usam para alcance.
+     */
+    private final double distanciaHorizontalCombate;
+
+    private final double escalaAtacante;
+    private final double escalaDefensor;
 
     private final int linhaAtacante;
     private final int linhaDefensor;
     private final int diferencaLinhas;
 
-    private final boolean atacanteAEsquerda;
+    private final RelacaoHorizontal relacaoHorizontal;
+
+    private final boolean atacanteViradoParaDireita;
+    private final boolean defensorViradoParaDireita;
+    private final boolean atacanteDeFrenteParaDefensor;
+    private final boolean defensorDeFrenteParaAtacante;
 
     private final boolean atacanteAgachado;
     private final boolean atacantePulando;
@@ -65,15 +83,25 @@ public final class ContextoCombate {
         this.defensor = defensor;
 
         /*
-         * A cintura/root e o nosso ponto fisico de referencia.
-         * Isso funciona melhor que usar apenas o X bruto do desenho e ja
-         * permite personagens futuros com proporcoes diferentes.
+         * A cintura/root e o ponto fisico de referencia dos personagens.
          */
         this.centroAtacanteX = atacante.getEixoCinturaX();
         this.centroDefensorX = defensor.getEixoCinturaX();
-        this.distanciaHorizontal = Math.abs(
+
+        this.escalaAtacante = atacante.getEscala();
+        this.escalaDefensor = defensor.getEscala();
+
+        this.distanciaHorizontalPixels = Math.abs(
                 centroDefensorX - centroAtacanteX
         );
+
+        double escalaSeguraAtacante = Math.max(
+                ESCALA_MINIMA_SEGURA,
+                Math.abs(escalaAtacante)
+        );
+
+        this.distanciaHorizontalCombate =
+                distanciaHorizontalPixels / escalaSeguraAtacante;
 
         this.linhaAtacante = atacante.getLinhaAtual();
         this.linhaDefensor = defensor.getLinhaAtual();
@@ -81,8 +109,25 @@ public final class ContextoCombate {
                 linhaDefensor - linhaAtacante
         );
 
-        this.atacanteAEsquerda =
-                centroAtacanteX < centroDefensorX;
+        this.relacaoHorizontal = calcularRelacaoHorizontal(
+                centroAtacanteX,
+                centroDefensorX
+        );
+
+        this.atacanteViradoParaDireita = atacante.isViradoParaDireita();
+        this.defensorViradoParaDireita = defensor.isViradoParaDireita();
+
+        this.atacanteDeFrenteParaDefensor = calcularDeFrente(
+                centroAtacanteX,
+                centroDefensorX,
+                atacanteViradoParaDireita
+        );
+
+        this.defensorDeFrenteParaAtacante = calcularDeFrente(
+                centroDefensorX,
+                centroAtacanteX,
+                defensorViradoParaDireita
+        );
 
         this.atacanteAgachado = atacante.isAgachado();
         this.atacantePulando = atacante.isPulando();
@@ -105,6 +150,53 @@ public final class ContextoCombate {
         this.atributosDefensor = defensor.getAtributos();
     }
 
+    private static RelacaoHorizontal calcularRelacaoHorizontal(
+            double centroAtacanteX,
+            double centroDefensorX
+    ) {
+
+        int comparacao = Double.compare(
+                centroAtacanteX,
+                centroDefensorX
+        );
+
+        if (comparacao < 0) {
+            return RelacaoHorizontal.ATACANTE_A_ESQUERDA;
+        }
+
+        if (comparacao > 0) {
+            return RelacaoHorizontal.ATACANTE_A_DIREITA;
+        }
+
+        return RelacaoHorizontal.MESMO_EIXO;
+    }
+
+    private static boolean calcularDeFrente(
+            double centroPersonagemX,
+            double centroOponenteX,
+            boolean viradoParaDireita
+    ) {
+
+        if (Double.compare(
+                centroPersonagemX,
+                centroOponenteX
+        ) == 0) {
+
+            /*
+             * No mesmo eixo horizontal nao existe um "lado errado".
+             * Isso evita uma tecnica ficar indisponivel exatamente no
+             * instante em que os centros se cruzam.
+             */
+            return true;
+        }
+
+        if (centroOponenteX > centroPersonagemX) {
+            return viradoParaDireita;
+        }
+
+        return !viradoParaDireita;
+    }
+
     public IrmaoMiau getAtacante() {
         return atacante;
     }
@@ -121,8 +213,29 @@ public final class ContextoCombate {
         return centroDefensorX;
     }
 
+    /**
+     * Distancia usada pelas regras de alcance da luta.
+     *
+     * Mantemos este nome curto como alias da distancia normalizada.
+     */
     public double getDistanciaHorizontal() {
-        return distanciaHorizontal;
+        return distanciaHorizontalCombate;
+    }
+
+    public double getDistanciaHorizontalPixels() {
+        return distanciaHorizontalPixels;
+    }
+
+    public double getDistanciaHorizontalCombate() {
+        return distanciaHorizontalCombate;
+    }
+
+    public double getEscalaAtacante() {
+        return escalaAtacante;
+    }
+
+    public double getEscalaDefensor() {
+        return escalaDefensor;
     }
 
     public int getLinhaAtacante() {
@@ -137,16 +250,45 @@ public final class ContextoCombate {
         return diferencaLinhas;
     }
 
+    public RelacaoHorizontal getRelacaoHorizontal() {
+        return relacaoHorizontal;
+    }
+
     public boolean isAtacanteAEsquerda() {
-        return atacanteAEsquerda;
+        return relacaoHorizontal == RelacaoHorizontal.ATACANTE_A_ESQUERDA;
     }
 
     public boolean isAtacanteADireita() {
-        return centroAtacanteX > centroDefensorX;
+        return relacaoHorizontal == RelacaoHorizontal.ATACANTE_A_DIREITA;
+    }
+
+    public boolean isMesmoEixoHorizontal() {
+        return relacaoHorizontal == RelacaoHorizontal.MESMO_EIXO;
     }
 
     public boolean isMesmaLinha() {
         return diferencaLinhas == 0;
+    }
+
+    public boolean isAtacanteViradoParaDireita() {
+        return atacanteViradoParaDireita;
+    }
+
+    public boolean isDefensorViradoParaDireita() {
+        return defensorViradoParaDireita;
+    }
+
+    public boolean isAtacanteDeFrenteParaDefensor() {
+        return atacanteDeFrenteParaDefensor;
+    }
+
+    public boolean isDefensorDeFrenteParaAtacante() {
+        return defensorDeFrenteParaAtacante;
+    }
+
+    public boolean isFrenteAFrente() {
+        return atacanteDeFrenteParaDefensor
+                && defensorDeFrenteParaAtacante;
     }
 
     public boolean isAtacanteAgachado() {
