@@ -59,7 +59,7 @@ public class EditorDePoses extends JFrame {
      * transformar projetos antigos em arquivos impossíveis de abrir.
      */
     private static final String TIPO_PROJETO_JSON = "MIAUSTUDIO_PROJECT";
-    private static final int VERSAO_PROJETO_JSON = 1;
+    private static final int VERSAO_PROJETO_JSON = 2;
 
     // --- ESTRUTURA DE DADOS POR PERSONAGEM ---
     private class DadosPersonagem {
@@ -429,6 +429,32 @@ public class EditorDePoses extends JFrame {
     private QuadroConjunto[] quadrosConjuntos =
             new QuadroConjunto[QUADROS_INICIAIS];
 
+    // =====================================================
+    // REFERÊNCIA ESPACIAL DA ANIMAÇÃO CONJUNTA
+    // =====================================================
+    /*
+     * O centro da interação é uma âncora de AUTORIA. Os quadros conjuntos
+     * guardam cenaX/linha como offsets relativos a esse centro, nunca como
+     * coordenadas absolutas da arena. Assim a mesma técnica pode ser
+     * reproduzida em qualquer X/linha pelo futuro SistemaCombate.
+     */
+    private int centroInteracaoX = 360;
+    private int linhaInteracao = 2;
+
+    /*
+     * Compensação visual opcional que acompanha a animação como metadado.
+     * Ela não altera os quadros no editor; o renderer do jogo poderá usar
+     * estes valores para eliminar antigos ajustes manuais do tipo +40/+60.
+     */
+    private int offsetVisualAnimacaoX = 0;
+    private int offsetVisualAnimacaoY = 0;
+
+    private JSpinner spinCentroInteracaoX;
+    private JSpinner spinLinhaInteracao;
+    private JSpinner spinOffsetVisualX;
+    private JSpinner spinOffsetVisualY;
+    private JLabel lblReferenciaConjunta;
+
     // Arquivo associado ao projeto atual. Ctrl+S reutiliza este caminho.
     private File arquivoProjetoAtual = null;
 
@@ -623,6 +649,285 @@ public class EditorDePoses extends JFrame {
         return encontrarPersonagemPadrao(
                 IrmaoMiauPreto.class
         );
+    }
+
+    private PoseSalva criarPoseRelativaAoCentro(
+            DadosPersonagem pd
+    ) {
+
+        PoseSalva pose =
+                new PoseSalva(pd);
+
+        pose.cenaX =
+                pd.cenaX
+                - centroInteracaoX;
+
+        pose.linhaAtual =
+                pd.linhaAtual
+                - linhaInteracao;
+
+        return pose;
+    }
+
+    private void aplicarPoseRelativaAoCentro(
+            PoseSalva pose,
+            DadosPersonagem pd
+    ) {
+
+        if (pose == null || pd == null) {
+            return;
+        }
+
+        int offsetX = pose.cenaX;
+        int offsetLinha = pose.linhaAtual;
+
+        pose.aplicarEm(pd);
+
+        pd.cenaX =
+                centroInteracaoX
+                + offsetX;
+
+        pd.linhaAtual =
+                Math.max(
+                        LINHA_MINIMA,
+                        Math.min(
+                                LINHA_MAXIMA,
+                                linhaInteracao
+                                + offsetLinha
+                        )
+                );
+    }
+
+    private int[] obterLimitesXCentroInteracao() {
+
+        int minimo = -500;
+        int maximo = 1500;
+
+        DadosPersonagem branco = getBrancoPadrao();
+        DadosPersonagem preto = getPretoPadrao();
+
+        if (branco != null) {
+            int offset = branco.cenaX - centroInteracaoX;
+            minimo = Math.max(minimo, -500 - offset);
+            maximo = Math.min(maximo, 1500 - offset);
+        }
+
+        if (preto != null) {
+            int offset = preto.cenaX - centroInteracaoX;
+            minimo = Math.max(minimo, -500 - offset);
+            maximo = Math.min(maximo, 1500 - offset);
+        }
+
+        for (QuadroConjunto quadro : quadrosConjuntos) {
+
+            if (quadro == null) {
+                continue;
+            }
+
+            PoseSalva[] poses = {
+                quadro.poseBranco,
+                quadro.posePreto
+            };
+
+            for (PoseSalva pose : poses) {
+
+                if (pose == null) {
+                    continue;
+                }
+
+                int offset = pose.cenaX;
+                minimo = Math.max(minimo, -500 - offset);
+                maximo = Math.min(maximo, 1500 - offset);
+            }
+        }
+
+        if (minimo > maximo) {
+            minimo = centroInteracaoX;
+            maximo = centroInteracaoX;
+        }
+
+        return new int[]{minimo, maximo};
+    }
+
+    private int[] obterLimitesLinhaCentroInteracao() {
+
+        int minimo = LINHA_MINIMA;
+        int maximo = LINHA_MAXIMA;
+
+        DadosPersonagem branco = getBrancoPadrao();
+        DadosPersonagem preto = getPretoPadrao();
+
+        if (branco != null) {
+            int offset = branco.linhaAtual - linhaInteracao;
+            minimo = Math.max(minimo, LINHA_MINIMA - offset);
+            maximo = Math.min(maximo, LINHA_MAXIMA - offset);
+        }
+
+        if (preto != null) {
+            int offset = preto.linhaAtual - linhaInteracao;
+            minimo = Math.max(minimo, LINHA_MINIMA - offset);
+            maximo = Math.min(maximo, LINHA_MAXIMA - offset);
+        }
+
+        for (QuadroConjunto quadro : quadrosConjuntos) {
+
+            if (quadro == null) {
+                continue;
+            }
+
+            PoseSalva[] poses = {
+                quadro.poseBranco,
+                quadro.posePreto
+            };
+
+            for (PoseSalva pose : poses) {
+
+                if (pose == null) {
+                    continue;
+                }
+
+                int offset = pose.linhaAtual;
+                minimo = Math.max(minimo, LINHA_MINIMA - offset);
+                maximo = Math.min(maximo, LINHA_MAXIMA - offset);
+            }
+        }
+
+        if (minimo > maximo) {
+            minimo = linhaInteracao;
+            maximo = linhaInteracao;
+        }
+
+        return new int[]{minimo, maximo};
+    }
+
+    private void moverCentroInteracao(
+            int novoCentroX,
+            int novaLinha
+    ) {
+
+        DadosPersonagem branco = getBrancoPadrao();
+        DadosPersonagem preto = getPretoPadrao();
+
+        int[] limitesX =
+                obterLimitesXCentroInteracao();
+
+        int[] limitesLinha =
+                obterLimitesLinhaCentroInteracao();
+
+        novoCentroX =
+                Math.max(
+                        limitesX[0],
+                        Math.min(
+                                limitesX[1],
+                                novoCentroX
+                        )
+                );
+
+        novaLinha =
+                Math.max(
+                        limitesLinha[0],
+                        Math.min(
+                                limitesLinha[1],
+                                novaLinha
+                        )
+                );
+
+        int deltaX =
+                novoCentroX
+                - centroInteracaoX;
+
+        int deltaLinha =
+                novaLinha
+                - linhaInteracao;
+
+        centroInteracaoX = novoCentroX;
+        linhaInteracao = novaLinha;
+
+        if (branco != null) {
+            branco.cenaX += deltaX;
+            branco.linhaAtual += deltaLinha;
+        }
+
+        if (preto != null) {
+            preto.cenaX += deltaX;
+            preto.linhaAtual += deltaLinha;
+        }
+
+        atualizarControlesReferenciaConjunta();
+
+        if (alvoAtual != null) {
+            boolean estadoAnterior = atualizandoUI;
+            atualizandoUI = true;
+            cCenaX.setValue(alvoAtual.cenaX);
+            cLinha.setValue(alvoAtual.linhaAtual);
+            atualizandoUI = estadoAnterior;
+            atualizarCodigoGerado();
+        }
+
+        painelDesenho.repaint();
+    }
+
+    private void atualizarControlesReferenciaConjunta() {
+
+        if (spinCentroInteracaoX == null) {
+            return;
+        }
+
+        boolean estadoAnterior = atualizandoUI;
+        atualizandoUI = true;
+
+        spinCentroInteracaoX.setValue(
+                centroInteracaoX
+        );
+
+        spinLinhaInteracao.setValue(
+                linhaInteracao
+        );
+
+        spinOffsetVisualX.setValue(
+                offsetVisualAnimacaoX
+        );
+
+        spinOffsetVisualY.setValue(
+                offsetVisualAnimacaoY
+        );
+
+        boolean conjunto = isModoConjunto();
+
+        spinCentroInteracaoX.setEnabled(conjunto);
+        spinLinhaInteracao.setEnabled(conjunto);
+        spinOffsetVisualX.setEnabled(conjunto);
+        spinOffsetVisualY.setEnabled(conjunto);
+
+        if (lblReferenciaConjunta != null) {
+            lblReferenciaConjunta.setEnabled(conjunto);
+        }
+
+        atualizandoUI = estadoAnterior;
+    }
+
+    private void registrarHistoricoDosDoisPersonagens() {
+
+        DadosPersonagem branco = getBrancoPadrao();
+        DadosPersonagem preto = getPretoPadrao();
+
+        if (branco != null) {
+            adicionarAoHistorico(
+                    branco.historicoDesfazer,
+                    new PoseSalva(branco)
+            );
+            branco.historicoRefazer.clear();
+        }
+
+        if (preto != null) {
+            adicionarAoHistorico(
+                    preto.historicoDesfazer,
+                    new PoseSalva(preto)
+            );
+            preto.historicoRefazer.clear();
+        }
+
+        atualizarBotoesHistorico();
     }
 
     // =====================================================
@@ -846,6 +1151,7 @@ public class EditorDePoses extends JFrame {
                 conjunto
         );
 
+        atualizarControlesReferenciaConjunta();
         atualizarComboQuadros();
         atualizarStatusQuadros();
         gerarCodigoAnimacaoParcial();
@@ -1115,6 +1421,11 @@ public class EditorDePoses extends JFrame {
                 )
         );
 
+        projeto.put("centroInteracaoX", centroInteracaoX);
+        projeto.put("linhaInteracao", linhaInteracao);
+        projeto.put("offsetVisualAnimacaoX", offsetVisualAnimacaoX);
+        projeto.put("offsetVisualAnimacaoY", offsetVisualAnimacaoY);
+
         projeto.put(
                 "intervaloPreviewMs",
                 (int) spinIntervaloAnimacao.getValue()
@@ -1177,14 +1488,14 @@ public class EditorDePoses extends JFrame {
 
             item.put(
                     "branco",
-                    poseParaJson(
+                    poseConjuntaParaJson(
                             quadro.poseBranco
                     )
             );
 
             item.put(
                     "preto",
-                    poseParaJson(
+                    poseConjuntaParaJson(
                             quadro.posePreto
                     )
             );
@@ -1290,6 +1601,84 @@ public class EditorDePoses extends JFrame {
         return objeto;
     }
 
+    private Object poseConjuntaParaJson(
+            PoseSalva pose
+    ) {
+
+        if (pose == null) {
+            return null;
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> objeto =
+                (Map<String, Object>) poseParaJson(pose);
+
+        objeto.remove("cenaX");
+        objeto.remove("linhaAtual");
+
+        objeto.put(
+                "offsetCentroX",
+                pose.cenaX
+        );
+
+        objeto.put(
+                "offsetLinha",
+                pose.linhaAtual
+        );
+
+        return objeto;
+    }
+
+    private PoseSalva poseConjuntaDeJson(
+            Object valor
+    ) {
+
+        if (valor == null) {
+            return null;
+        }
+
+        Map<String, Object> objeto =
+                exigirObjeto(
+                        valor,
+                        "pose conjunta"
+                );
+
+        Map<String, Object> copia =
+                new LinkedHashMap<>(objeto);
+
+        int offsetCentroX =
+                obterInt(
+                        objeto,
+                        "offsetCentroX",
+                        obterInt(objeto, "cenaX", 0)
+                );
+
+        int offsetLinha =
+                obterInt(
+                        objeto,
+                        "offsetLinha",
+                        obterInt(objeto, "linhaAtual", 0)
+                );
+
+        copia.put("cenaX", offsetCentroX);
+
+        /*
+         * poseDeJson valida linha absoluta em 0..4. Para a animação
+         * conjunta, porém, offsetLinha pode ser negativo. Carregamos os
+         * demais campos normalmente e restauramos os dois valores relativos
+         * depois da validação genérica.
+         */
+        copia.put("linhaAtual", 0);
+
+        PoseSalva pose =
+                poseDeJson(copia);
+
+        pose.cenaX = offsetCentroX;
+        pose.linhaAtual = offsetLinha;
+
+        return pose;
+    }
+
     private void aplicarProjetoJson(
             Map<String, Object> projeto
     ) throws Exception {
@@ -1314,11 +1703,12 @@ public class EditorDePoses extends JFrame {
                         -1
                 );
 
-        if (versao != VERSAO_PROJETO_JSON) {
+        if (versao < 1
+                || versao > VERSAO_PROJETO_JSON) {
             throw new IllegalArgumentException(
                     "Versão de projeto não suportada: "
                     + versao
-                    + ". Esta versão do editor usa o formato "
+                    + ". Esta versão do editor aceita projetos 1 até "
                     + VERSAO_PROJETO_JSON
                     + "."
             );
@@ -1386,10 +1776,18 @@ public class EditorDePoses extends JFrame {
 
             novosConjuntos[i] =
                     new QuadroConjunto(
-                            poseDeJson(
+                            versao >= 2
+                            ? poseConjuntaDeJson(
+                                    quadroJson.get("branco")
+                            )
+                            : poseDeJson(
                                     quadroJson.get("branco")
                             ),
-                            poseDeJson(
+                            versao >= 2
+                            ? poseConjuntaDeJson(
+                                    quadroJson.get("preto")
+                            )
+                            : poseDeJson(
                                     quadroJson.get("preto")
                             )
                     );
@@ -1482,6 +1880,118 @@ public class EditorDePoses extends JFrame {
                         "Branco"
                 );
 
+        int novoCentroInteracaoX;
+        int novaLinhaInteracao;
+        int novoOffsetVisualX;
+        int novoOffsetVisualY;
+
+        if (versao >= 2) {
+
+            novoCentroInteracaoX =
+                    obterInt(
+                            projeto,
+                            "centroInteracaoX",
+                            360
+                    );
+
+            novaLinhaInteracao =
+                    Math.max(
+                            LINHA_MINIMA,
+                            Math.min(
+                                    LINHA_MAXIMA,
+                                    obterInt(
+                                            projeto,
+                                            "linhaInteracao",
+                                            2
+                                    )
+                            )
+                    );
+
+            novoOffsetVisualX =
+                    obterInt(
+                            projeto,
+                            "offsetVisualAnimacaoX",
+                            0
+                    );
+
+            novoOffsetVisualY =
+                    obterInt(
+                            projeto,
+                            "offsetVisualAnimacaoY",
+                            0
+                    );
+
+        } else {
+
+            /*
+             * Migração transparente do formato v1. Na versão antiga os
+             * quadros conjuntos guardavam X/linha absolutos. Escolhemos
+             * uma âncora a partir do primeiro quadro completo (ou dos
+             * estados atuais) e convertemos tudo para offsets relativos.
+             */
+            PoseSalva referenciaBranco = null;
+            PoseSalva referenciaPreto = null;
+
+            for (QuadroConjunto quadro : novosConjuntos) {
+                if (quadro != null && quadro.estaCompleto()) {
+                    referenciaBranco = quadro.poseBranco;
+                    referenciaPreto = quadro.posePreto;
+                    break;
+                }
+            }
+
+            if (referenciaBranco == null
+                    || referenciaPreto == null) {
+
+                for (DadosPersonagem pd : novaCena) {
+                    if (IrmaoMiauBranco.class.isInstance(pd.instancia)) {
+                        referenciaBranco = new PoseSalva(pd);
+                    }
+                    if (IrmaoMiauPreto.class.isInstance(pd.instancia)) {
+                        referenciaPreto = new PoseSalva(pd);
+                    }
+                }
+            }
+
+            int xBranco = referenciaBranco == null ? 220 : referenciaBranco.cenaX;
+            int xPreto = referenciaPreto == null ? 500 : referenciaPreto.cenaX;
+            int linhaBranco = referenciaBranco == null ? 2 : referenciaBranco.linhaAtual;
+            int linhaPreto = referenciaPreto == null ? 2 : referenciaPreto.linhaAtual;
+
+            novoCentroInteracaoX =
+                    (int) Math.round(
+                            (xBranco + xPreto) / 2.0
+                    );
+
+            novaLinhaInteracao =
+                    Math.max(
+                            LINHA_MINIMA,
+                            Math.min(
+                                    LINHA_MAXIMA,
+                                    (int) Math.round(
+                                            (linhaBranco + linhaPreto) / 2.0
+                                    )
+                            )
+                    );
+
+            for (QuadroConjunto quadro : novosConjuntos) {
+                if (quadro == null) {
+                    continue;
+                }
+                if (quadro.poseBranco != null) {
+                    quadro.poseBranco.cenaX -= novoCentroInteracaoX;
+                    quadro.poseBranco.linhaAtual -= novaLinhaInteracao;
+                }
+                if (quadro.posePreto != null) {
+                    quadro.posePreto.cenaX -= novoCentroInteracaoX;
+                    quadro.posePreto.linhaAtual -= novaLinhaInteracao;
+                }
+            }
+
+            novoOffsetVisualX = 0;
+            novoOffsetVisualY = 0;
+        }
+
         /*
          * Só depois de validar o arquivo inteiro substituímos o workspace.
          * Se o JSON estiver quebrado, o projeto que já estava aberto não
@@ -1495,6 +2005,10 @@ public class EditorDePoses extends JFrame {
         quadrosConjuntos = novosConjuntos;
         alvoAtual = cena.get(novoAlvo);
         modoAnimacao = novoModo;
+        centroInteracaoX = novoCentroInteracaoX;
+        linhaInteracao = novaLinhaInteracao;
+        offsetVisualAnimacaoX = novoOffsetVisualX;
+        offsetVisualAnimacaoY = novoOffsetVisualY;
 
         for (DadosPersonagem pd : cena) {
             pd.historicoDesfazer.clear();
@@ -1562,6 +2076,7 @@ public class EditorDePoses extends JFrame {
                 novoModo == ModoAnimacao.CONJUNTA
         );
 
+        atualizarControlesReferenciaConjunta();
         atualizarComboQuadros();
 
         int limiteQuadro =
@@ -2887,6 +3402,129 @@ public class EditorDePoses extends JFrame {
                 linhaModo
         );
 
+        // =====================================================
+        // REFERÊNCIA / OFFSET DA ANIMAÇÃO CONJUNTA
+        // =====================================================
+        JPanel linhaReferencia =
+                new JPanel(
+                        new FlowLayout(
+                                FlowLayout.LEFT,
+                                4,
+                                0
+                        )
+                );
+
+        lblReferenciaConjunta =
+                new JLabel("Centro interação:");
+
+        linhaReferencia.add(
+                lblReferenciaConjunta
+        );
+
+        spinCentroInteracaoX =
+                new JSpinner(
+                        new SpinnerNumberModel(
+                                centroInteracaoX,
+                                -500,
+                                1500,
+                                1
+                        )
+                );
+
+        spinCentroInteracaoX.setPreferredSize(
+                new Dimension(70, 24)
+        );
+
+        spinCentroInteracaoX.addChangeListener(e -> {
+            if (!atualizandoUI && isModoConjunto()) {
+                registrarHistoricoDosDoisPersonagens();
+                moverCentroInteracao(
+                        (int) spinCentroInteracaoX.getValue(),
+                        linhaInteracao
+                );
+                gerarCodigoAnimacaoParcial();
+            }
+        });
+
+        linhaReferencia.add(new JLabel("X:"));
+        linhaReferencia.add(spinCentroInteracaoX);
+
+        spinLinhaInteracao =
+                new JSpinner(
+                        new SpinnerNumberModel(
+                                linhaInteracao,
+                                LINHA_MINIMA,
+                                LINHA_MAXIMA,
+                                1
+                        )
+                );
+
+        spinLinhaInteracao.setPreferredSize(
+                new Dimension(48, 24)
+        );
+
+        spinLinhaInteracao.addChangeListener(e -> {
+            if (!atualizandoUI && isModoConjunto()) {
+                registrarHistoricoDosDoisPersonagens();
+                moverCentroInteracao(
+                        centroInteracaoX,
+                        (int) spinLinhaInteracao.getValue()
+                );
+                gerarCodigoAnimacaoParcial();
+            }
+        });
+
+        linhaReferencia.add(new JLabel("Linha:"));
+        linhaReferencia.add(spinLinhaInteracao);
+
+        linhaReferencia.add(
+                new JLabel("Offset jogo X/Y:")
+        );
+
+        spinOffsetVisualX =
+                new JSpinner(
+                        new SpinnerNumberModel(
+                                0,
+                                -300,
+                                300,
+                                1
+                        )
+                );
+
+        spinOffsetVisualY =
+                new JSpinner(
+                        new SpinnerNumberModel(
+                                0,
+                                -300,
+                                300,
+                                1
+                        )
+                );
+
+        spinOffsetVisualX.setPreferredSize(new Dimension(58, 24));
+        spinOffsetVisualY.setPreferredSize(new Dimension(58, 24));
+
+        spinOffsetVisualX.addChangeListener(e -> {
+            if (!atualizandoUI && isModoConjunto()) {
+                offsetVisualAnimacaoX =
+                        (int) spinOffsetVisualX.getValue();
+                gerarCodigoAnimacaoParcial();
+            }
+        });
+
+        spinOffsetVisualY.addChangeListener(e -> {
+            if (!atualizandoUI && isModoConjunto()) {
+                offsetVisualAnimacaoY =
+                        (int) spinOffsetVisualY.getValue();
+                gerarCodigoAnimacaoParcial();
+            }
+        });
+
+        linhaReferencia.add(spinOffsetVisualX);
+        linhaReferencia.add(spinOffsetVisualY);
+
+        pFerramentas.add(linhaReferencia);
+
         JPanel linhaNome = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
         linhaNome.add(new JLabel("Nome:"));
         linhaNome.add(txtNomeAnimacao);
@@ -3056,6 +3694,7 @@ public class EditorDePoses extends JFrame {
         configurarAtalhosProjeto();
 
         atualizandoUI = false;
+        atualizarControlesReferenciaConjunta();
         atualizarComboQuadros();
         carregarUIComDadosDoAlvo();
     }
@@ -3901,11 +4540,13 @@ public class EditorDePoses extends JFrame {
                 indicePreviewAnimacao =
                         proximo;
 
-                quadro.poseBranco.aplicarEm(
+                aplicarPoseRelativaAoCentro(
+                        quadro.poseBranco,
                         branco
                 );
 
-                quadro.posePreto.aplicarEm(
+                aplicarPoseRelativaAoCentro(
+                        quadro.posePreto,
                         preto
                 );
 
@@ -4079,8 +4720,8 @@ public class EditorDePoses extends JFrame {
              */
             quadrosConjuntos[indice] =
                     new QuadroConjunto(
-                            new PoseSalva(branco),
-                            new PoseSalva(preto)
+                            criarPoseRelativaAoCentro(branco),
+                            criarPoseRelativaAoCentro(preto)
                     );
 
         } else {
@@ -4163,11 +4804,13 @@ public class EditorDePoses extends JFrame {
 
             preto.historicoRefazer.clear();
 
-            quadro.poseBranco.aplicarEm(
+            aplicarPoseRelativaAoCentro(
+                    quadro.poseBranco,
                     branco
             );
 
-            quadro.posePreto.aplicarEm(
+            aplicarPoseRelativaAoCentro(
+                    quadro.posePreto,
                     preto
             );
 
@@ -4435,8 +5078,32 @@ public class EditorDePoses extends JFrame {
         codigo.append(" * IMPORTANTE:\n");
         codigo.append(" * O Quadro N do APLICADOR e o Quadro N do RECEPTOR\n");
         codigo.append(" * acontecem no mesmo instante da interação.\n");
-        adicionarCabecalhoFormatoMiauStudio(codigo);
+        codigo.append(" * cenaX/linha dos quadros abaixo são RELATIVOS ao centro\n");
+        codigo.append(" * definido em tempo de execução pelo SistemaCombate.\n");
+        codigo.append(" * Centro usado apenas na autoria: X=")
+              .append(centroInteracaoX)
+              .append(" | Linha=")
+              .append(linhaInteracao)
+              .append("\n");
+        codigo.append(" * Offset visual sugerido no jogo: X=")
+              .append(offsetVisualAnimacaoX)
+              .append(" | Y=")
+              .append(offsetVisualAnimacaoY)
+              .append("\n");
+        adicionarCabecalhoFormatoMiauStudioConjunto(codigo);
         codigo.append(" */\n\n");
+
+        codigo.append("private static final int ")
+              .append(nome)
+              .append("_OFFSET_VISUAL_X = ")
+              .append(offsetVisualAnimacaoX)
+              .append(";\n");
+
+        codigo.append("private static final int ")
+              .append(nome)
+              .append("_OFFSET_VISUAL_Y = ")
+              .append(offsetVisualAnimacaoY)
+              .append(";\n\n");
 
         adicionarArrayConjuntoAoCodigo(
                 codigo,
@@ -4533,6 +5200,22 @@ public class EditorDePoses extends JFrame {
         }
 
         codigo.append("};\n");
+    }
+
+    private void adicionarCabecalhoFormatoMiauStudioConjunto(
+            StringBuilder codigo
+    ) {
+
+        codigo.append(" *\n");
+        codigo.append(" * ORDEM DOS VALORES (CONJUNTO):\n");
+        codigo.append(" * offsetCentroX, offsetLinha, escalaX10, viradoDireita(1/0),\n");
+        codigo.append(" * cinturaX, cinturaY, rotCintura,\n");
+        codigo.append(" * troncoX, troncoY, rotTronco,\n");
+        codigo.append(" * rotGlobal, rotCabeca, cabX, cabY,\n");
+        codigo.append(" * cotEsqX, cotEsqY, maoEsqX, maoEsqY,\n");
+        codigo.append(" * cotDirX, cotDirY, maoDirX, maoDirY,\n");
+        codigo.append(" * joelEsqX, joelEsqY, peEsqX, peEsqY,\n");
+        codigo.append(" * joelDirX, joelDirY, peDirX, peDirY\n");
     }
 
     private void adicionarCabecalhoFormatoMiauStudio(
@@ -4648,6 +5331,7 @@ public class EditorDePoses extends JFrame {
          * controle de linha da arena.
          */
         private enum PontoRig {
+            INTERACAO("Interação"),
             POSICAO_CENA("Posição"),
             CABECA("Cabeça"),
             ROT_CABECA_ESQUERDA("Girar cabeça"),
@@ -4731,7 +5415,12 @@ public class EditorDePoses extends JFrame {
 
                     if (encontrado != null) {
 
-                        registrarInicioDeEdicao();
+                        if (encontrado == PontoRig.INTERACAO) {
+                            finalizarGrupoHistorico();
+                            registrarHistoricoDosDoisPersonagens();
+                        } else {
+                            registrarInicioDeEdicao();
+                        }
 
                         pontoArrastado = encontrado;
 
@@ -4925,6 +5614,15 @@ public class EditorDePoses extends JFrame {
                                 null
                         );
 
+                if (pontoArrastado == PontoRig.INTERACAO) {
+
+                    aplicarCentroInteracaoPeloMouse(
+                            pontoLocal
+                    );
+
+                    return;
+                }
+
                 if (pontoArrastado == PontoRig.POSICAO_CENA) {
 
                     aplicarPosicaoCenaPeloMouse(
@@ -4975,6 +5673,31 @@ public class EditorDePoses extends JFrame {
                 // Se alguma transformação ficar inválida,
                 // apenas ignoramos aquele frame do arraste.
             }
+        }
+
+        private void aplicarCentroInteracaoPeloMouse(
+                Point2D pontoLocal
+        ) {
+
+            if (!isModoConjunto()) {
+                return;
+            }
+
+            int novoX =
+                    (int) Math.round(
+                            pontoLocal.getX()
+                    );
+
+            int novaLinha =
+                    (int) Math.round(
+                            (pontoLocal.getY() - Y_BASE_CENA)
+                            / ESPACAMENTO_LINHAS
+                    );
+
+            moverCentroInteracao(
+                    novoX,
+                    novaLinha
+            );
         }
 
         private void aplicarPosicaoCenaPeloMouse(
@@ -5155,6 +5878,7 @@ public class EditorDePoses extends JFrame {
              */
             switch (ponto) {
 
+                case INTERACAO:
                 case POSICAO_CENA:
                 case ROT_CABECA_ESQUERDA:
                 case ROT_CABECA_DIREITA:
@@ -5423,6 +6147,45 @@ public class EditorDePoses extends JFrame {
                                 handle.pontoTela.y
                         );
 
+                if (handle.tipo == PontoRig.INTERACAO) {
+
+                    int raioInteracao =
+                            ativo ? 10 : 8;
+
+                    g2.setColor(
+                            ativo
+                            ? new Color(170, 70, 255)
+                            : new Color(135, 60, 220)
+                    );
+
+                    g2.fillOval(
+                            px - raioInteracao,
+                            py - raioInteracao,
+                            raioInteracao * 2,
+                            raioInteracao * 2
+                    );
+
+                    g2.setColor(Color.WHITE);
+                    g2.drawLine(px - 13, py, px + 13, py);
+                    g2.drawLine(px, py - 13, px, py + 13);
+
+                    g2.setColor(Color.BLACK);
+                    g2.drawOval(
+                            px - raioInteracao,
+                            py - raioInteracao,
+                            raioInteracao * 2,
+                            raioInteracao * 2
+                    );
+
+                    g2.drawString(
+                            "INTERAÇÃO",
+                            px + raioInteracao + 6,
+                            py - raioInteracao - 2
+                    );
+
+                    continue;
+                }
+
                 if (handle.tipo == PontoRig.POSICAO_CENA) {
 
                     g2.setColor(
@@ -5650,6 +6413,24 @@ public class EditorDePoses extends JFrame {
             // Chão (O Topo da Grama no GamePanel é Y=300)
             gCamera.setColor(new Color(80, 180, 80));
             gCamera.fillRect(-2000, 300, 5000, 2000); 
+
+            if (isModoConjunto()
+                    && arrasteRigAtivo
+                    && !previewAnimacaoAtivo) {
+
+                double centroY =
+                        Y_BASE_CENA
+                        + linhaInteracao * ESPACAMENTO_LINHAS;
+
+                registrarHandle(
+                        PontoRig.INTERACAO,
+                        centroInteracaoX,
+                        centroY,
+                        centroInteracaoX,
+                        centroY,
+                        gCamera
+                );
+            }
 
             // Para profundidade visual, desenhamos uma CÓPIA ordenada.
             // Assim a ordem do combo de personagens não muda silenciosamente.
