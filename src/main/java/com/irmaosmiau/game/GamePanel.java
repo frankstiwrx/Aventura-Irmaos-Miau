@@ -1,5 +1,7 @@
 package com.irmaosmiau.game;
 
+import com.irmaosmiau.combate.ContextoCombate;
+import com.irmaosmiau.combate.SistemaCombate;
 import com.irmaosmiau.entities.Direcao;
 import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.entities.IrmaoMiauBranco;
@@ -62,6 +64,12 @@ public class GamePanel extends JPanel {
     private static final int X_BRANCO_DUO = 220;
     private static final int X_PRETO_DUO = 500;
 
+    /*
+     * Temporario desta fase: deixa visivel que o motor esta observando
+     * a luta. Depois poderemos desligar sem remover a integracao.
+     */
+    private static final boolean DEBUG_COMBATE = true;
+
     private final InputHandler input;
     private final Timer gameLoop;
 
@@ -80,6 +88,12 @@ public class GamePanel extends JPanel {
     // Usados no modo "OS DOIS MIAUS".
     private final IrmaoMiau jogadorBranco;
     private final IrmaoMiau jogadorPreto;
+
+    /*
+     * O motor existe apenas quando ha dois lutadores na arena.
+     * No modo individual ele fica nulo por enquanto.
+     */
+    private final SistemaCombate sistemaCombate;
 
     // =====================================================
     // 3. ESTADO DE ENTRADA / AÇÕES DE UM ÚNICO DISPARO
@@ -209,6 +223,16 @@ public class GamePanel extends JPanel {
         }
 
         // =========================
+        // MOTOR DE COMBATE
+        // =========================
+        sistemaCombate = modoDoisMiaus
+                ? new SistemaCombate(
+                        jogadorBranco,
+                        jogadorPreto
+                )
+                : null;
+
+        // =========================
         // INPUT
         // =========================
         input
@@ -252,6 +276,12 @@ public class GamePanel extends JPanel {
 
             atualizarMiauBranco();
             atualizarMiauPreto();
+
+            /*
+             * Primeiro os personagens terminam suas atualizacoes do frame.
+             * Depois o motor tira a fotografia compartilhada da luta.
+             */
+            sistemaCombate.atualizar();
 
             atualizarOrientacaoDosMiaus();
 
@@ -1321,6 +1351,7 @@ public class GamePanel extends JPanel {
         if (modoDoisMiaus) {
 
             desenharHudDoisMiaus(g2);
+            desenharDebugCombate(g2);
 
             desenharPersonagemOrientado(
                     g2,
@@ -1417,6 +1448,68 @@ public class GamePanel extends JPanel {
         );
 
         copia.dispose();
+    }
+
+    // =====================================================
+    // DEBUG TEMPORARIO DO MOTOR DE COMBATE
+    // =====================================================
+    private void desenharDebugCombate(
+            Graphics2D g2
+    ) {
+
+        if (!DEBUG_COMBATE
+                || sistemaCombate == null) {
+
+            return;
+        }
+
+        ContextoCombate contexto
+                = sistemaCombate.getContextoAParaBAtual();
+
+        if (contexto == null) {
+            return;
+        }
+
+        boolean pegadaDisponivel
+                = sistemaCombate.podeTentarAcao(
+                        jogadorBranco,
+                        jogadorPreto,
+                        "pegada_1"
+                );
+
+        g2.setColor(Color.BLACK);
+        g2.setFont(
+                new Font(
+                        "Monospaced",
+                        Font.PLAIN,
+                        11
+                )
+        );
+
+        g2.drawString(
+                "COMBATE: ATIVO",
+                300,
+                55
+        );
+
+        g2.drawString(
+                String.format(
+                        "DIST X: %.1f | LINHAS: %d",
+                        contexto.getDistanciaHorizontal(),
+                        contexto.getDiferencaLinhas()
+                ),
+                300,
+                72
+        );
+
+        g2.drawString(
+                "PEGADA_1: "
+                + (pegadaDisponivel
+                        ? "DISPONIVEL"
+                        : "INDISPONIVEL"),
+                300,
+                89
+        );
     }
 
     // =====================================================

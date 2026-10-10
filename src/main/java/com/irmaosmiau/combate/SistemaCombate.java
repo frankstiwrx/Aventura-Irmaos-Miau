@@ -15,6 +15,17 @@ public final class SistemaCombate {
     private final IrmaoMiau lutadorB;
     private final RegistroAcoes registroAcoes;
 
+    /*
+     * Fotografias do frame mais recente. Elas servem para observacao,
+     * debug e futuras regras que precisem consultar o estado compartilhado
+     * da luta sem recalcular a mesma fotografia varias vezes no mesmo frame.
+     *
+     * Os metodos que avaliam uma tentativa de acao continuam livres para
+     * criar um ContextoCombate novo no instante exato da tentativa.
+     */
+    private ContextoCombate contextoAParaBAtual;
+    private ContextoCombate contextoBParaAAtual;
+
     public SistemaCombate(
             IrmaoMiau lutadorA,
             IrmaoMiau lutadorB
@@ -53,6 +64,8 @@ public final class SistemaCombate {
         this.lutadorA = lutadorA;
         this.lutadorB = lutadorB;
         this.registroAcoes = registroAcoes;
+
+        atualizar();
     }
 
     public IrmaoMiau getLutadorA() {
@@ -67,6 +80,33 @@ public final class SistemaCombate {
         return registroAcoes;
     }
 
+    /**
+     * Atualiza a fotografia compartilhada da luta para o frame atual.
+     *
+     * Nesta etapa o metodo apenas observa os dois personagens. Ele nao
+     * movimenta, nao gasta folego, nao aplica efeito e nao toca animacao.
+     */
+    public void atualizar() {
+
+        contextoAParaBAtual = new ContextoCombate(
+                lutadorA,
+                lutadorB
+        );
+
+        contextoBParaAAtual = new ContextoCombate(
+                lutadorB,
+                lutadorA
+        );
+    }
+
+    public ContextoCombate getContextoAParaBAtual() {
+        return contextoAParaBAtual;
+    }
+
+    public ContextoCombate getContextoBParaAAtual() {
+        return contextoBParaAAtual;
+    }
+
     public boolean possuiAcao(String idAcao) {
         return registroAcoes.contem(idAcao);
     }
@@ -78,8 +118,9 @@ public final class SistemaCombate {
     /**
      * Cria uma fotografia nova do instante atual.
      *
-     * Nao mantemos ContextoCombate em cache porque distancia, linha, folego e
-     * estados podem mudar a cada frame.
+     * Mesmo existindo uma fotografia do frame em atualizar(), uma tentativa
+     * de acao pode pedir um contexto novo para garantir que a avaliacao use
+     * exatamente o estado daquele instante.
      */
     public ContextoCombate criarContexto(
             IrmaoMiau atacante,
