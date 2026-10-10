@@ -12,6 +12,7 @@ public final class AcaoCombate {
     private final String id;
     private final String nome;
     private final CategoriaAcao categoria;
+    private final EstadoInteracaoCombate estadoInteracaoAoSucesso;
 
     /*
      * Alcance em unidades locais do rig do ATACANTE.
@@ -37,6 +38,7 @@ public final class AcaoCombate {
             String id,
             String nome,
             CategoriaAcao categoria,
+            EstadoInteracaoCombate estadoInteracaoAoSucesso,
             double alcanceHorizontal,
             int diferencaMaximaLinhas,
             boolean exigeFrenteParaOponente,
@@ -84,6 +86,7 @@ public final class AcaoCombate {
         this.id = id.trim().toLowerCase();
         this.nome = nome.trim();
         this.categoria = categoria;
+        this.estadoInteracaoAoSucesso = estadoInteracaoAoSucesso;
         this.alcanceHorizontal = alcanceHorizontal;
         this.diferencaMaximaLinhas = diferencaMaximaLinhas;
         this.exigeFrenteParaOponente = exigeFrenteParaOponente;
@@ -113,6 +116,14 @@ public final class AcaoCombate {
 
     public CategoriaAcao getCategoria() {
         return categoria;
+    }
+
+    /**
+     * Estado compartilhado que esta acao inicia quando tem sucesso.
+     * Pode ser nulo para acoes que produzem apenas efeitos instantaneos.
+     */
+    public EstadoInteracaoCombate getEstadoInteracaoAoSucesso() {
+        return estadoInteracaoAoSucesso;
     }
 
     public double getAlcanceHorizontal() {

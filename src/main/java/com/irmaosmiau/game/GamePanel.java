@@ -1,6 +1,8 @@
 package com.irmaosmiau.game;
 
 import com.irmaosmiau.combate.ContextoCombate;
+import com.irmaosmiau.combate.EstadoInteracaoCombate;
+import com.irmaosmiau.combate.ResultadoAcao;
 import com.irmaosmiau.combate.SistemaCombate;
 import com.irmaosmiau.entities.Direcao;
 import com.irmaosmiau.entities.IrmaoMiau;
@@ -117,6 +119,7 @@ public class GamePanel extends JPanel {
     private boolean rolamentoBrancoAnterior;
     private boolean sprawlBrancoAnterior;
     private boolean deitarBrancoAnterior;
+    private boolean pegada1BrancoAnterior;
 
     // Preto no modo de dois jogadores.
     private boolean puloPretoAnterior;
@@ -284,6 +287,7 @@ public class GamePanel extends JPanel {
             atualizarOrientacaoDosMiaus();
 
             sistemaCombate.atualizar();
+            atualizarEntradasCombate();
 
         } else {
 
@@ -667,6 +671,28 @@ public class GamePanel extends JPanel {
                 = input.isPretoDeitar();
         sprawlPretoAnterior
                 = input.isPretoSprawl();
+    }
+
+    // =====================================================
+    // 7.5 ENTRADAS DO MOTOR DE COMBATE
+    // =====================================================
+    private void atualizarEntradasCombate() {
+
+        boolean pegada1Branco
+                = input.isPegada1();
+
+        if (pegada1Branco
+                && !pegada1BrancoAnterior) {
+
+            sistemaCombate.tentarAcao(
+                    jogadorBranco,
+                    jogadorPreto,
+                    "pegada_1"
+            );
+        }
+
+        pegada1BrancoAnterior
+                = pegada1Branco;
     }
 
     // =====================================================
@@ -1470,12 +1496,23 @@ public class GamePanel extends JPanel {
             return;
         }
 
+        boolean pegadaAtiva
+                = sistemaCombate.getEstadoInteracao()
+                == EstadoInteracaoCombate.PEGADA_1;
+
         boolean pegadaDisponivel
-                = sistemaCombate.podeTentarAcao(
+                = !pegadaAtiva
+                && sistemaCombate.podeTentarAcao(
                         jogadorBranco,
                         jogadorPreto,
                         "pegada_1"
                 );
+
+        String estadoPegada = pegadaAtiva
+                ? "ATIVA"
+                : (pegadaDisponivel
+                        ? "DISPONIVEL"
+                        : "INDISPONIVEL");
 
         g2.setColor(Color.BLACK);
         g2.setFont(
@@ -1525,12 +1562,37 @@ public class GamePanel extends JPanel {
         );
 
         g2.drawString(
-                "PEGADA_1: "
-                + (pegadaDisponivel
-                        ? "DISPONIVEL"
-                        : "INDISPONIVEL"),
+                "PEGADA_1: " + estadoPegada,
                 270,
                 113
+        );
+
+        g2.drawString(
+                "INTERACAO: "
+                + sistemaCombate.getEstadoInteracao(),
+                270,
+                130
+        );
+
+        ResultadoAcao ultimoResultado
+                = sistemaCombate.getUltimoResultado();
+
+        String textoUltima = ultimoResultado == null
+                ? "-"
+                : String.valueOf(
+                        sistemaCombate.getUltimaAcaoId()
+                ) + " -> " + ultimoResultado;
+
+        g2.drawString(
+                "ULTIMA: " + textoUltima,
+                270,
+                147
+        );
+
+        g2.drawString(
+                "H = tentar PEGADA_1 (Branco)",
+                270,
+                164
         );
     }
 

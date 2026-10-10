@@ -33,6 +33,9 @@ public class InputHandler {
     private static final String TECLA_BRANCO_DEITAR = "F";
     private static final String TECLA_BRANCO_SPRAWL = "G";
 
+    /* Primeira entrada do motor de combate. */
+    private static final String TECLA_BRANCO_PEGADA_1 = "H";
+
     // =====================================================
     // 2. TECLAS - MIAU PRETO
     // =====================================================
@@ -66,6 +69,7 @@ public class InputHandler {
     private boolean rolar;
     private boolean deitar;
     private boolean sprawl;
+    private boolean pegada1;
 
     // =====================================================
     // 3. ESTADO ATUAL DOS CONTROLES - MIAU PRETO
@@ -165,6 +169,11 @@ public class InputHandler {
                 TECLA_BRANCO_SPRAWL, "brancoSprawl",
                 () -> sprawl = true,
                 () -> sprawl = false);
+
+        mapearTecla(inputMap, actionMap,
+                TECLA_BRANCO_PEGADA_1, "brancoPegada1",
+                () -> pegada1 = true,
+                () -> pegada1 = false);
     }
 
     private void configurarControlesPreto(
@@ -330,6 +339,10 @@ public class InputHandler {
 
     public boolean isSprawl() {
         return sprawl;
+    }
+
+    public boolean isPegada1() {
+        return pegada1;
     }
 
     // =====================================================

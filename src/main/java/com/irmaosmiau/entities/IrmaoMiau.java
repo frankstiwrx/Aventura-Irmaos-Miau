@@ -2142,6 +2142,34 @@ protected boolean isRolamentoParaTras() {
 // =============================
     // ENERGIA - CONSUMO E RECUPERAÇÃO
     // =============================
+    /**
+     * Interface publica e controlada para custos do motor de combate.
+     *
+     * Retorna false sem alterar o personagem quando nao ha folego
+     * suficiente. O motor nao precisa acessar campos internos nem duplicar
+     * a regra de limite minimo da energia.
+     */
+    public boolean consumirFolegoCombate(
+            double quantidade
+    ) {
+
+        if (quantidade < 0) {
+            throw new IllegalArgumentException(
+                    "O custo de folego nao pode ser negativo."
+            );
+        }
+
+        if (folegoAtual < quantidade) {
+            return false;
+        }
+
+        gastarEnergia(quantidade);
+
+        ultimaAtividade = System.currentTimeMillis();
+
+        return true;
+    }
+
     private void gastarEnergia(
             double quantidade
     ) {

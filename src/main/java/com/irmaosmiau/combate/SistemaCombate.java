@@ -5,9 +5,9 @@ import com.irmaosmiau.entities.IrmaoMiau;
 /**
  * Coordenador das regras compartilhadas entre dois lutadores.
  *
- * Nesta primeira versao o sistema apenas consulta o contexto e valida
- * requisitos espaciais e basicos da AcaoCombate. Ele ainda nao consome
- * energia, nao aplica efeitos, nao toca animacao e nao usa probabilidade.
+ * Nesta etapa o motor ja possui a primeira interacao persistente:
+ * PEGADA_1. O sistema continua separado de teclado, renderer e classes
+ * concretas de personagem.
  */
 public final class SistemaCombate {
 
@@ -15,16 +15,23 @@ public final class SistemaCombate {
     private final IrmaoMiau lutadorB;
     private final RegistroAcoes registroAcoes;
 
-    /*
-     * Fotografias do frame mais recente. Elas servem para observacao,
-     * debug e futuras regras que precisem consultar o estado compartilhado
-     * da luta sem recalcular a mesma fotografia varias vezes no mesmo frame.
-     *
-     * Os metodos que avaliam uma tentativa de acao continuam livres para
-     * criar um ContextoCombate novo no instante exato da tentativa.
-     */
     private ContextoCombate contextoAParaBAtual;
     private ContextoCombate contextoBParaAAtual;
+
+    // =====================================================
+    // INTERACAO COMPARTILHADA
+    // =====================================================
+    private EstadoInteracaoCombate estadoInteracao
+            = EstadoInteracaoCombate.LIVRE;
+
+    private IrmaoMiau aplicadorInteracao;
+    private IrmaoMiau receptorInteracao;
+    private String idAcaoInteracao;
+
+    // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
+    private ResultadoAcao ultimoResultado;
+    private String ultimaAcaoId;
+    private IrmaoMiau ultimoAtacante;
 
     public SistemaCombate(
             IrmaoMiau lutadorA,
@@ -81,10 +88,8 @@ public final class SistemaCombate {
     }
 
     /**
-     * Atualiza a fotografia compartilhada da luta para o frame atual.
-     *
-     * Nesta etapa o metodo apenas observa os dois personagens. Ele nao
-     * movimenta, nao gasta folego, nao aplica efeito e nao toca animacao.
+     * Atualiza a fotografia compartilhada da luta e verifica se uma
+     * interacao persistente ainda pode continuar espacialmente.
      */
     public void atualizar() {
 
@@ -97,6 +102,49 @@ public final class SistemaCombate {
                 lutadorB,
                 lutadorA
         );
+
+        atualizarManutencaoDaInteracao();
+    }
+
+    private void atualizarManutencaoDaInteracao() {
+
+        if (!estaEmInteracao()) {
+            return;
+        }
+
+        AcaoCombate acao = registroAcoes.buscar(
+                idAcaoInteracao
+        );
+
+        if (acao == null
+                || aplicadorInteracao == null
+                || receptorInteracao == null) {
+
+            encerrarInteracao();
+            return;
+        }
+
+        ContextoCombate contexto = criarContexto(
+                aplicadorInteracao,
+                receptorInteracao
+        );
+
+        /*
+         * Depois que a pegada foi conquistada, o custo de folego nao e
+         * reavaliado a cada frame. Para MANTER esta primeira interacao
+         * verificamos somente os requisitos espaciais/orientacao.
+         *
+         * Quando o sistema de disputa entrar, romper uma pegada deixara de
+         * depender apenas destes limites simples.
+         */
+        boolean aindaValida
+                = estaNoAlcanceHorizontal(acao, contexto)
+                && estaDentroDaDiferencaDeLinhas(acao, contexto)
+                && atendeOrientacaoDaAcao(acao, contexto);
+
+        if (!aindaValida) {
+            encerrarInteracao();
+        }
     }
 
     public ContextoCombate getContextoAParaBAtual() {
@@ -115,12 +163,52 @@ public final class SistemaCombate {
         return registroAcoes.buscar(idAcao);
     }
 
+    public EstadoInteracaoCombate getEstadoInteracao() {
+        return estadoInteracao;
+    }
+
+    public boolean estaEmInteracao() {
+        return estadoInteracao != EstadoInteracaoCombate.LIVRE;
+    }
+
+    public boolean estaEmPegada1() {
+        return estadoInteracao == EstadoInteracaoCombate.PEGADA_1;
+    }
+
+    public IrmaoMiau getAplicadorInteracao() {
+        return aplicadorInteracao;
+    }
+
+    public IrmaoMiau getReceptorInteracao() {
+        return receptorInteracao;
+    }
+
+    public String getIdAcaoInteracao() {
+        return idAcaoInteracao;
+    }
+
+    public ResultadoAcao getUltimoResultado() {
+        return ultimoResultado;
+    }
+
+    public String getUltimaAcaoId() {
+        return ultimaAcaoId;
+    }
+
+    public IrmaoMiau getUltimoAtacante() {
+        return ultimoAtacante;
+    }
+
+    public void encerrarInteracao() {
+
+        estadoInteracao = EstadoInteracaoCombate.LIVRE;
+        aplicadorInteracao = null;
+        receptorInteracao = null;
+        idAcaoInteracao = null;
+    }
+
     /**
      * Cria uma fotografia nova do instante atual.
-     *
-     * Mesmo existindo uma fotografia do frame em atualizar(), uma tentativa
-     * de acao pode pedir um contexto novo para garantir que a avaliacao use
-     * exatamente o estado daquele instante.
      */
     public ContextoCombate criarContexto(
             IrmaoMiau atacante,
@@ -183,11 +271,29 @@ public final class SistemaCombate {
     }
 
     /**
-     * Requisitos objetivos que ja existem nesta etapa do motor.
+     * Evita iniciar exatamente a mesma interacao outra vez enquanto ela
+     * ja esta ativa. Isso impede repetir a tecla e pagar o custo de novo.
+     */
+    private boolean acaoJaRepresentaInteracaoAtual(
+            AcaoCombate acao,
+            IrmaoMiau atacante,
+            IrmaoMiau defensor
+    ) {
+
+        EstadoInteracaoCombate estadoAoSucesso
+                = acao.getEstadoInteracaoAoSucesso();
+
+        return estadoAoSucesso != null
+                && estadoInteracao == estadoAoSucesso
+                && aplicadorInteracao == atacante
+                && receptorInteracao == defensor;
+    }
+
+    /**
+     * Requisitos objetivos que existem nesta fase.
      *
-     * Estados especificos de cada tecnica, posicoes de grappling, efeitos e
-     * defesa entram nas proximas fases. Nao bloqueamos "DEITADO" de forma
-     * generica aqui porque futuras acoes de chao precisam usar o mesmo motor.
+     * Estados corporais especificos por tecnica, disputa, defesa e efeitos
+     * mais ricos entram nas proximas fases.
      */
     public boolean podeTentarAcao(
             IrmaoMiau atacante,
@@ -201,7 +307,17 @@ public final class SistemaCombate {
             return false;
         }
 
-        ContextoCombate contexto = criarContexto(
+        validarParticipantes(atacante, defensor);
+
+        if (acaoJaRepresentaInteracaoAtual(
+                acao,
+                atacante,
+                defensor
+        )) {
+            return false;
+        }
+
+        ContextoCombate contexto = new ContextoCombate(
                 atacante,
                 defensor
         );
@@ -213,14 +329,16 @@ public final class SistemaCombate {
     }
 
     /**
-     * Scaffold da futura resolucao de combate.
+     * Primeira resolucao funcional de uma acao de combate.
      *
-     * Por enquanto:
+     * Nesta versao:
      * - requisitos invalidos -> INDISPONIVEL;
-     * - requisitos validos   -> SUCESSO.
+     * - requisitos validos   -> SUCESSO deterministico;
+     * - o custo de folego e pago uma unica vez;
+     * - se a acao define um estado compartilhado, ele e iniciado.
      *
-     * SUCESSO ainda nao provoca efeitos. O objetivo e validar o pipeline
-     * antes de introduzir RNG, atributos, defesa e animacoes.
+     * Atributos, defesa e aleatoriedade entram depois que esta estrada
+     * completa estiver validada no jogo.
      */
     public ResultadoAcao tentarAcao(
             IrmaoMiau atacante,
@@ -228,15 +346,67 @@ public final class SistemaCombate {
             String idAcao
     ) {
 
-        if (!podeTentarAcao(
-                atacante,
-                defensor,
-                idAcao
-        )) {
-            return ResultadoAcao.INDISPONIVEL;
+        validarParticipantes(atacante, defensor);
+
+        ultimaAcaoId = idAcao;
+        ultimoAtacante = atacante;
+
+        AcaoCombate acao = registroAcoes.buscar(idAcao);
+
+        if (acao == null
+                || !podeTentarAcao(
+                        atacante,
+                        defensor,
+                        idAcao
+                )) {
+
+            ultimoResultado = ResultadoAcao.INDISPONIVEL;
+            return ultimoResultado;
         }
 
-        return ResultadoAcao.SUCESSO;
+        if (!atacante.consumirFolegoCombate(
+                acao.getCustoFolego()
+        )) {
+
+            ultimoResultado = ResultadoAcao.INDISPONIVEL;
+            return ultimoResultado;
+        }
+
+        EstadoInteracaoCombate estadoAoSucesso
+                = acao.getEstadoInteracaoAoSucesso();
+
+        if (estadoAoSucesso != null) {
+            iniciarInteracao(
+                    estadoAoSucesso,
+                    atacante,
+                    defensor,
+                    acao.getId()
+            );
+        }
+
+        ultimoResultado = ResultadoAcao.SUCESSO;
+        return ultimoResultado;
+    }
+
+    private void iniciarInteracao(
+            EstadoInteracaoCombate novoEstado,
+            IrmaoMiau aplicador,
+            IrmaoMiau receptor,
+            String idAcao
+    ) {
+
+        if (novoEstado == null
+                || novoEstado == EstadoInteracaoCombate.LIVRE) {
+
+            throw new IllegalArgumentException(
+                    "Uma interacao ativa precisa de um estado diferente de LIVRE."
+            );
+        }
+
+        estadoInteracao = novoEstado;
+        aplicadorInteracao = aplicador;
+        receptorInteracao = receptor;
+        idAcaoInteracao = idAcao;
     }
 
     private void validarParticipantes(
@@ -256,11 +426,11 @@ public final class SistemaCombate {
             );
         }
 
-        boolean atacantePertenceAoCombate =
-                atacante == lutadorA || atacante == lutadorB;
+        boolean atacantePertenceAoCombate
+                = atacante == lutadorA || atacante == lutadorB;
 
-        boolean defensorPertenceAoCombate =
-                defensor == lutadorA || defensor == lutadorB;
+        boolean defensorPertenceAoCombate
+                = defensor == lutadorA || defensor == lutadorB;
 
         if (!atacantePertenceAoCombate
                 || !defensorPertenceAoCombate) {
