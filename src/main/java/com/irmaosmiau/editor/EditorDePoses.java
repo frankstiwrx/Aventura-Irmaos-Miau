@@ -16,6 +16,9 @@ import java.awt.geom.Point2D;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +26,7 @@ import java.util.Deque;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,6 +50,16 @@ public class EditorDePoses extends JFrame {
     private static final int QUADROS_INICIAIS = 5;
     private static final int MIN_QUADROS = 1;
     private static final int MAX_QUADROS = 60;
+
+    // =====================================================
+    // FORMATO DO PROJETO JSON
+    // =====================================================
+    /*
+     * O campo de versão permite evoluir o formato no futuro sem
+     * transformar projetos antigos em arquivos impossíveis de abrir.
+     */
+    private static final String TIPO_PROJETO_JSON = "MIAUSTUDIO_PROJECT";
+    private static final int VERSAO_PROJETO_JSON = 1;
 
     // --- ESTRUTURA DE DADOS POR PERSONAGEM ---
     private class DadosPersonagem {
@@ -216,6 +230,10 @@ public class EditorDePoses extends JFrame {
         int offJoelDirY;
         int offPeDirX;
         int offPeDirY;
+
+        /* Usado somente ao reconstruir uma pose vinda do JSON. */
+        PoseSalva() {
+        }
 
         PoseSalva(DadosPersonagem pd) {
             cenaX = pd.cenaX;
@@ -410,6 +428,9 @@ public class EditorDePoses extends JFrame {
      */
     private QuadroConjunto[] quadrosConjuntos =
             new QuadroConjunto[QUADROS_INICIAIS];
+
+    // Arquivo associado ao projeto atual. Ctrl+S reutiliza este caminho.
+    private File arquivoProjetoAtual = null;
 
     private JTextField txtNomeAnimacao = new JTextField("nova_animacao", 14);
     private JComboBox<String> comboQuadroAnimacao = new JComboBox<>();
@@ -831,8 +852,1689 @@ public class EditorDePoses extends JFrame {
         painelDesenho.repaint();
     }
 
+    // =====================================================
+    // PROJETO JSON - SALVAR / CARREGAR O WORKSPACE COMPLETO
+    // =====================================================
+    /*
+     * Um projeto JSON não é apenas o código exportado da animação.
+     * Ele guarda o estado de trabalho do MiauStudio: personagens,
+     * poses atuais, timelines individuais, timeline conjunta,
+     * modo selecionado, aplicador, quadro atual, zoom e intervalo.
+     *
+     * Assim podemos fechar o editor no meio de uma técnica e continuar
+     * outro dia exatamente do ponto em que paramos.
+     */
+
+    private void salvarProjetoJson() {
+
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        File destino = arquivoProjetoAtual;
+
+        if (destino == null) {
+            destino = escolherArquivoProjetoParaSalvar();
+        }
+
+        if (destino == null) {
+            return;
+        }
+
+        try {
+
+            Map<String, Object> projeto =
+                    criarMapaProjetoJson();
+
+            String json =
+                    JsonSimples.escrever(projeto);
+
+            Files.writeString(
+                    destino.toPath(),
+                    json,
+                    StandardCharsets.UTF_8
+            );
+
+            arquivoProjetoAtual = destino;
+            atualizarTituloJanela();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Projeto salvo com sucesso em:\n"
+                    + destino.getAbsolutePath(),
+                    "MiauStudio",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+        } catch (Exception ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível salvar o projeto.\n\n"
+                    + ex.getMessage(),
+                    "Erro ao salvar projeto",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private void salvarProjetoJsonComo() {
+
+        File destino =
+                escolherArquivoProjetoParaSalvar();
+
+        if (destino == null) {
+            return;
+        }
+
+        File anterior = arquivoProjetoAtual;
+        arquivoProjetoAtual = destino;
+
+        try {
+            salvarProjetoJson();
+        } finally {
+            /*
+             * Se a gravação falhar, salvarProjetoJson mostra o erro.
+             * Mantemos o novo caminho apenas quando o arquivo existir.
+             */
+            if (!destino.exists()) {
+                arquivoProjetoAtual = anterior;
+                atualizarTituloJanela();
+            }
+        }
+    }
+
+    private File escolherArquivoProjetoParaSalvar() {
+
+        JFileChooser chooser =
+                criarSeletorProjetoJson();
+
+        String nomeSugerido =
+                normalizarNomeAnimacao(
+                        txtNomeAnimacao.getText()
+                ).toLowerCase();
+
+        chooser.setSelectedFile(
+                new File(
+                        nomeSugerido + ".json"
+                )
+        );
+
+        int resultado =
+                chooser.showSaveDialog(this);
+
+        if (resultado != JFileChooser.APPROVE_OPTION) {
+            return null;
+        }
+
+        File arquivo = chooser.getSelectedFile();
+
+        if (!arquivo.getName().toLowerCase().endsWith(".json")) {
+            arquivo = new File(
+                    arquivo.getParentFile(),
+                    arquivo.getName() + ".json"
+            );
+        }
+
+        if (arquivo.exists()) {
+
+            int escolha =
+                    JOptionPane.showConfirmDialog(
+                            this,
+                            "O arquivo já existe. Deseja substituí-lo?",
+                            "Substituir projeto",
+                            JOptionPane.YES_NO_OPTION,
+                            JOptionPane.WARNING_MESSAGE
+                    );
+
+            if (escolha != JOptionPane.YES_OPTION) {
+                return null;
+            }
+        }
+
+        return arquivo;
+    }
+
+    private void carregarProjetoJson() {
+
+        pararPreviewAnimacao(true);
+        finalizarGrupoHistorico();
+
+        JFileChooser chooser =
+                criarSeletorProjetoJson();
+
+        int resultado =
+                chooser.showOpenDialog(this);
+
+        if (resultado != JFileChooser.APPROVE_OPTION) {
+            return;
+        }
+
+        File arquivo = chooser.getSelectedFile();
+
+        try {
+
+            String json =
+                    Files.readString(
+                            arquivo.toPath(),
+                            StandardCharsets.UTF_8
+                    );
+
+            Object raizLida =
+                    JsonSimples.ler(json);
+
+            Map<String, Object> raiz =
+                    exigirObjeto(
+                            raizLida,
+                            "raiz do projeto"
+                    );
+
+            aplicarProjetoJson(raiz);
+
+            arquivoProjetoAtual = arquivo;
+            atualizarTituloJanela();
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Projeto carregado com sucesso.",
+                    "MiauStudio",
+                    JOptionPane.INFORMATION_MESSAGE
+            );
+
+        } catch (Exception ex) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Não foi possível carregar o projeto.\n\n"
+                    + ex.getMessage(),
+                    "Erro ao carregar projeto",
+                    JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
+    private JFileChooser criarSeletorProjetoJson() {
+
+        JFileChooser chooser =
+                new JFileChooser();
+
+        chooser.setDialogTitle(
+                "Projeto MiauStudio (.json)"
+        );
+
+        chooser.setFileFilter(
+                new javax.swing.filechooser.FileNameExtensionFilter(
+                        "Projeto MiauStudio (*.json)",
+                        "json"
+                )
+        );
+
+        return chooser;
+    }
+
+    private void atualizarTituloJanela() {
+
+        String sufixo =
+                arquivoProjetoAtual == null
+                ? "Projeto não salvo"
+                : arquivoProjetoAtual.getName();
+
+        setTitle(
+                "MiauStudio Ultimate - " + sufixo
+        );
+    }
+
+    private Map<String, Object> criarMapaProjetoJson() {
+
+        Map<String, Object> projeto =
+                new LinkedHashMap<>();
+
+        projeto.put(
+                "tipo",
+                TIPO_PROJETO_JSON
+        );
+
+        projeto.put(
+                "versao",
+                VERSAO_PROJETO_JSON
+        );
+
+        projeto.put(
+                "nomeAnimacao",
+                txtNomeAnimacao.getText()
+        );
+
+        projeto.put(
+                "modoAnimacao",
+                modoAnimacao.name()
+        );
+
+        projeto.put(
+                "aplicadorConjunto",
+                String.valueOf(
+                        comboAplicadorConjunto.getSelectedItem()
+                )
+        );
+
+        projeto.put(
+                "intervaloPreviewMs",
+                (int) spinIntervaloAnimacao.getValue()
+        );
+
+        projeto.put(
+                "zoomX10",
+                (int) Math.round(
+                        zoomGlobalCena * 10.0
+                )
+        );
+
+        projeto.put(
+                "arrasteRigAtivo",
+                arrasteRigAtivo
+        );
+
+        projeto.put(
+                "alvoAtualIndice",
+                Math.max(
+                        0,
+                        cena.indexOf(alvoAtual)
+                )
+        );
+
+        projeto.put(
+                "quadroSelecionado",
+                Math.max(
+                        0,
+                        comboQuadroAnimacao.getSelectedIndex()
+                )
+        );
+
+        List<Object> personagens =
+                new ArrayList<>();
+
+        for (DadosPersonagem pd : cena) {
+            personagens.add(
+                    personagemParaJson(pd)
+            );
+        }
+
+        projeto.put(
+                "personagens",
+                personagens
+        );
+
+        List<Object> conjuntos =
+                new ArrayList<>();
+
+        for (QuadroConjunto quadro : quadrosConjuntos) {
+
+            if (quadro == null) {
+                conjuntos.add(null);
+                continue;
+            }
+
+            Map<String, Object> item =
+                    new LinkedHashMap<>();
+
+            item.put(
+                    "branco",
+                    poseParaJson(
+                            quadro.poseBranco
+                    )
+            );
+
+            item.put(
+                    "preto",
+                    poseParaJson(
+                            quadro.posePreto
+                    )
+            );
+
+            conjuntos.add(item);
+        }
+
+        projeto.put(
+                "timelineConjunta",
+                conjuntos
+        );
+
+        return projeto;
+    }
+
+    private Map<String, Object> personagemParaJson(
+            DadosPersonagem pd
+    ) {
+
+        Map<String, Object> objeto =
+                new LinkedHashMap<>();
+
+        objeto.put("nome", pd.nome);
+        objeto.put(
+                "classe",
+                pd.instancia.getClass().getName()
+        );
+
+        objeto.put(
+                "estadoAtual",
+                poseParaJson(
+                        new PoseSalva(pd)
+                )
+        );
+
+        List<Object> timeline =
+                new ArrayList<>();
+
+        for (PoseSalva pose : pd.quadrosAnimacao) {
+            timeline.add(
+                    poseParaJson(pose)
+            );
+        }
+
+        objeto.put(
+                "timelineIndividual",
+                timeline
+        );
+
+        return objeto;
+    }
+
+    private Object poseParaJson(
+            PoseSalva pose
+    ) {
+
+        if (pose == null) {
+            return null;
+        }
+
+        Map<String, Object> objeto =
+                new LinkedHashMap<>();
+
+        objeto.put("cenaX", pose.cenaX);
+        objeto.put("linhaAtual", pose.linhaAtual);
+        objeto.put("escalaX10", pose.escalaX10);
+        objeto.put("viradoDireita", pose.viradoDireita);
+
+        objeto.put("rotGlobal", pose.rotGlobal);
+
+        objeto.put("offCinturaX", pose.offCinturaX);
+        objeto.put("offCinturaY", pose.offCinturaY);
+        objeto.put("rotCintura", pose.rotCintura);
+
+        objeto.put("offPeitoX", pose.offPeitoX);
+        objeto.put("offPeitoY", pose.offPeitoY);
+        objeto.put("rotPeito", pose.rotPeito);
+
+        objeto.put("rotCabeca", pose.rotCabeca);
+        objeto.put("offCabX", pose.offCabX);
+        objeto.put("offCabY", pose.offCabY);
+
+        objeto.put("offCotEsqX", pose.offCotEsqX);
+        objeto.put("offCotEsqY", pose.offCotEsqY);
+        objeto.put("offMaoEsqX", pose.offMaoEsqX);
+        objeto.put("offMaoEsqY", pose.offMaoEsqY);
+
+        objeto.put("offCotDirX", pose.offCotDirX);
+        objeto.put("offCotDirY", pose.offCotDirY);
+        objeto.put("offMaoDirX", pose.offMaoDirX);
+        objeto.put("offMaoDirY", pose.offMaoDirY);
+
+        objeto.put("offJoelEsqX", pose.offJoelEsqX);
+        objeto.put("offJoelEsqY", pose.offJoelEsqY);
+        objeto.put("offPeEsqX", pose.offPeEsqX);
+        objeto.put("offPeEsqY", pose.offPeEsqY);
+
+        objeto.put("offJoelDirX", pose.offJoelDirX);
+        objeto.put("offJoelDirY", pose.offJoelDirY);
+        objeto.put("offPeDirX", pose.offPeDirX);
+        objeto.put("offPeDirY", pose.offPeDirY);
+
+        return objeto;
+    }
+
+    private void aplicarProjetoJson(
+            Map<String, Object> projeto
+    ) throws Exception {
+
+        String tipo =
+                obterString(
+                        projeto,
+                        "tipo",
+                        ""
+                );
+
+        if (!TIPO_PROJETO_JSON.equals(tipo)) {
+            throw new IllegalArgumentException(
+                    "O arquivo não é um projeto do MiauStudio."
+            );
+        }
+
+        int versao =
+                obterInt(
+                        projeto,
+                        "versao",
+                        -1
+                );
+
+        if (versao != VERSAO_PROJETO_JSON) {
+            throw new IllegalArgumentException(
+                    "Versão de projeto não suportada: "
+                    + versao
+                    + ". Esta versão do editor usa o formato "
+                    + VERSAO_PROJETO_JSON
+                    + "."
+            );
+        }
+
+        List<Object> personagensJson =
+                exigirLista(
+                        projeto.get("personagens"),
+                        "personagens"
+                );
+
+        if (personagensJson.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "O projeto não possui personagens."
+            );
+        }
+
+        List<DadosPersonagem> novaCena =
+                new ArrayList<>();
+
+        for (Object item : personagensJson) {
+
+            Map<String, Object> pdJson =
+                    exigirObjeto(
+                            item,
+                            "personagem"
+                    );
+
+            novaCena.add(
+                    personagemDeJson(pdJson)
+            );
+        }
+
+        List<Object> conjuntosJson =
+                exigirLista(
+                        projeto.get("timelineConjunta"),
+                        "timelineConjunta"
+                );
+
+        validarQuantidadeQuadros(
+                conjuntosJson.size(),
+                "timeline conjunta"
+        );
+
+        QuadroConjunto[] novosConjuntos =
+                new QuadroConjunto[
+                        conjuntosJson.size()
+                ];
+
+        for (int i = 0;
+                i < conjuntosJson.size();
+                i++) {
+
+            Object item = conjuntosJson.get(i);
+
+            if (item == null) {
+                continue;
+            }
+
+            Map<String, Object> quadroJson =
+                    exigirObjeto(
+                            item,
+                            "quadro conjunto " + (i + 1)
+                    );
+
+            novosConjuntos[i] =
+                    new QuadroConjunto(
+                            poseDeJson(
+                                    quadroJson.get("branco")
+                            ),
+                            poseDeJson(
+                                    quadroJson.get("preto")
+                            )
+                    );
+        }
+
+        ModoAnimacao novoModo;
+
+        try {
+            novoModo =
+                    ModoAnimacao.valueOf(
+                            obterString(
+                                    projeto,
+                                    "modoAnimacao",
+                                    ModoAnimacao.INDIVIDUAL.name()
+                            )
+                    );
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException(
+                    "Modo de animação inválido no projeto."
+            );
+        }
+
+        int novoAlvo =
+                obterInt(
+                        projeto,
+                        "alvoAtualIndice",
+                        0
+                );
+
+        novoAlvo =
+                Math.max(
+                        0,
+                        Math.min(
+                                novaCena.size() - 1,
+                                novoAlvo
+                        )
+                );
+
+        int novoQuadro =
+                obterInt(
+                        projeto,
+                        "quadroSelecionado",
+                        0
+                );
+
+        int novoIntervalo =
+                Math.max(
+                        50,
+                        Math.min(
+                                2000,
+                                obterInt(
+                                        projeto,
+                                        "intervaloPreviewMs",
+                                        230
+                                )
+                        )
+                );
+
+        int novoZoomX10 =
+                Math.max(
+                        5,
+                        Math.min(
+                                30,
+                                obterInt(
+                                        projeto,
+                                        "zoomX10",
+                                        10
+                                )
+                        )
+                );
+
+        boolean novoArrasteRig =
+                obterBoolean(
+                        projeto,
+                        "arrasteRigAtivo",
+                        true
+                );
+
+        String novoNome =
+                obterString(
+                        projeto,
+                        "nomeAnimacao",
+                        "nova_animacao"
+                );
+
+        String novoAplicador =
+                obterString(
+                        projeto,
+                        "aplicadorConjunto",
+                        "Branco"
+                );
+
+        /*
+         * Só depois de validar o arquivo inteiro substituímos o workspace.
+         * Se o JSON estiver quebrado, o projeto que já estava aberto não
+         * é destruído no meio do carregamento.
+         */
+        painelDesenho.cancelarInteracaoRig();
+
+        cena.clear();
+        cena.addAll(novaCena);
+
+        quadrosConjuntos = novosConjuntos;
+        alvoAtual = cena.get(novoAlvo);
+        modoAnimacao = novoModo;
+
+        for (DadosPersonagem pd : cena) {
+            pd.historicoDesfazer.clear();
+            pd.historicoRefazer.clear();
+        }
+
+        boolean estadoAnterior =
+                atualizandoUI;
+
+        atualizandoUI = true;
+
+        txtNomeAnimacao.setText(
+                novoNome
+        );
+
+        spinIntervaloAnimacao.setValue(
+                novoIntervalo
+        );
+
+        zoomGlobalCena =
+                novoZoomX10 / 10.0;
+
+        sZoomCena.setValue(
+                novoZoomX10
+        );
+
+        arrasteRigAtivo =
+                novoArrasteRig;
+
+        btnArrasteRig.setSelected(
+                novoArrasteRig
+        );
+
+        btnArrasteRig.setText(
+                novoArrasteRig
+                ? "● Arraste: ON"
+                : "○ Arraste: OFF"
+        );
+
+        comboModoAnimacao.setSelectedIndex(
+                novoModo == ModoAnimacao.CONJUNTA
+                ? 1
+                : 0
+        );
+
+        comboAplicadorConjunto.setSelectedItem(
+                "Preto".equalsIgnoreCase(
+                        novoAplicador
+                )
+                ? "Preto"
+                : "Branco"
+        );
+
+        atualizarComboAlvos();
+
+        comboAlvo.setSelectedIndex(
+                novoAlvo
+        );
+
+        lblAplicadorConjunto.setEnabled(
+                novoModo == ModoAnimacao.CONJUNTA
+        );
+
+        comboAplicadorConjunto.setEnabled(
+                novoModo == ModoAnimacao.CONJUNTA
+        );
+
+        atualizarComboQuadros();
+
+        int limiteQuadro =
+                getQuantidadeQuadrosAtiva();
+
+        if (limiteQuadro > 0) {
+            comboQuadroAnimacao.setSelectedIndex(
+                    Math.max(
+                            0,
+                            Math.min(
+                                    limiteQuadro - 1,
+                                    novoQuadro
+                            )
+                    )
+            );
+        }
+
+        atualizandoUI =
+                estadoAnterior;
+
+        carregarUIComDadosDoAlvo();
+        gerarCodigoAnimacaoParcial();
+        painelDesenho.repaint();
+    }
+
+    private DadosPersonagem personagemDeJson(
+            Map<String, Object> objeto
+    ) throws Exception {
+
+        String nome =
+                obterString(
+                        objeto,
+                        "nome",
+                        "Personagem"
+                );
+
+        String caminhoClasse =
+                obterString(
+                        objeto,
+                        "classe",
+                        ""
+                );
+
+        if (caminhoClasse.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Um personagem do projeto não possui a classe Java."
+            );
+        }
+
+        Class<?> clazz =
+                Class.forName(
+                        caminhoClasse
+                );
+
+        if (!IrmaoMiau.class.isAssignableFrom(clazz)) {
+            throw new IllegalArgumentException(
+                    caminhoClasse
+                    + " não é um IrmaoMiau válido."
+            );
+        }
+
+        Constructor<?> construtor =
+                clazz.getConstructor(
+                        int.class,
+                        int.class,
+                        double.class
+                );
+
+        IrmaoMiau instancia =
+                (IrmaoMiau) construtor.newInstance(
+                        0,
+                        0,
+                        0.7
+                );
+
+        PoseSalva estadoAtual =
+                poseDeJson(
+                        objeto.get("estadoAtual")
+                );
+
+        if (estadoAtual == null) {
+            throw new IllegalArgumentException(
+                    "O personagem "
+                    + nome
+                    + " não possui estadoAtual."
+            );
+        }
+
+        DadosPersonagem pd =
+                new DadosPersonagem(
+                        nome,
+                        instancia,
+                        estadoAtual.cenaX,
+                        estadoAtual.linhaAtual,
+                        estadoAtual.escalaX10 / 10.0,
+                        estadoAtual.viradoDireita
+                );
+
+        estadoAtual.aplicarEm(pd);
+
+        List<Object> timeline =
+                exigirLista(
+                        objeto.get("timelineIndividual"),
+                        "timeline individual de " + nome
+                );
+
+        validarQuantidadeQuadros(
+                timeline.size(),
+                "timeline individual de " + nome
+        );
+
+        pd.quadrosAnimacao =
+                new PoseSalva[
+                        timeline.size()
+                ];
+
+        for (int i = 0;
+                i < timeline.size();
+                i++) {
+
+            pd.quadrosAnimacao[i] =
+                    poseDeJson(
+                            timeline.get(i)
+                    );
+        }
+
+        return pd;
+    }
+
+    private PoseSalva poseDeJson(
+            Object valor
+    ) {
+
+        if (valor == null) {
+            return null;
+        }
+
+        Map<String, Object> objeto =
+                exigirObjeto(
+                        valor,
+                        "pose"
+                );
+
+        PoseSalva pose =
+                new PoseSalva();
+
+        pose.cenaX = obterInt(objeto, "cenaX", 0);
+        pose.linhaAtual =
+                Math.max(
+                        LINHA_MINIMA,
+                        Math.min(
+                                LINHA_MAXIMA,
+                                obterInt(
+                                        objeto,
+                                        "linhaAtual",
+                                        2
+                                )
+                        )
+                );
+
+        pose.escalaX10 =
+                Math.max(
+                        2,
+                        Math.min(
+                                30,
+                                obterInt(
+                                        objeto,
+                                        "escalaX10",
+                                        7
+                                )
+                        )
+                );
+
+        pose.viradoDireita =
+                obterBoolean(
+                        objeto,
+                        "viradoDireita",
+                        true
+                );
+
+        pose.rotGlobal = obterInt(objeto, "rotGlobal", 0);
+
+        pose.offCinturaX = obterInt(objeto, "offCinturaX", 0);
+        pose.offCinturaY = obterInt(objeto, "offCinturaY", 0);
+        pose.rotCintura = obterInt(objeto, "rotCintura", 0);
+
+        pose.offPeitoX = obterInt(objeto, "offPeitoX", 0);
+        pose.offPeitoY = obterInt(objeto, "offPeitoY", 0);
+        pose.rotPeito = obterInt(objeto, "rotPeito", 0);
+
+        pose.rotCabeca = obterInt(objeto, "rotCabeca", 0);
+        pose.offCabX = obterInt(objeto, "offCabX", 0);
+        pose.offCabY = obterInt(objeto, "offCabY", 0);
+
+        pose.offCotEsqX = obterInt(objeto, "offCotEsqX", 0);
+        pose.offCotEsqY = obterInt(objeto, "offCotEsqY", 0);
+        pose.offMaoEsqX = obterInt(objeto, "offMaoEsqX", 0);
+        pose.offMaoEsqY = obterInt(objeto, "offMaoEsqY", 0);
+
+        pose.offCotDirX = obterInt(objeto, "offCotDirX", 0);
+        pose.offCotDirY = obterInt(objeto, "offCotDirY", 0);
+        pose.offMaoDirX = obterInt(objeto, "offMaoDirX", 0);
+        pose.offMaoDirY = obterInt(objeto, "offMaoDirY", 0);
+
+        pose.offJoelEsqX = obterInt(objeto, "offJoelEsqX", 0);
+        pose.offJoelEsqY = obterInt(objeto, "offJoelEsqY", 0);
+        pose.offPeEsqX = obterInt(objeto, "offPeEsqX", 0);
+        pose.offPeEsqY = obterInt(objeto, "offPeEsqY", 0);
+
+        pose.offJoelDirX = obterInt(objeto, "offJoelDirX", 0);
+        pose.offJoelDirY = obterInt(objeto, "offJoelDirY", 0);
+        pose.offPeDirX = obterInt(objeto, "offPeDirX", 0);
+        pose.offPeDirY = obterInt(objeto, "offPeDirY", 0);
+
+        return pose;
+    }
+
+    private void validarQuantidadeQuadros(
+            int quantidade,
+            String contexto
+    ) {
+
+        if (quantidade < MIN_QUADROS
+                || quantidade > MAX_QUADROS) {
+
+            throw new IllegalArgumentException(
+                    "Quantidade inválida de quadros em "
+                    + contexto
+                    + ": "
+                    + quantidade
+            );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> exigirObjeto(
+            Object valor,
+            String contexto
+    ) {
+
+        if (!(valor instanceof Map<?, ?>)) {
+            throw new IllegalArgumentException(
+                    "Era esperado um objeto JSON em "
+                    + contexto
+                    + "."
+            );
+        }
+
+        return (Map<String, Object>) valor;
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Object> exigirLista(
+            Object valor,
+            String contexto
+    ) {
+
+        if (!(valor instanceof List<?>)) {
+            throw new IllegalArgumentException(
+                    "Era esperada uma lista JSON em "
+                    + contexto
+                    + "."
+            );
+        }
+
+        return (List<Object>) valor;
+    }
+
+    private int obterInt(
+            Map<String, Object> objeto,
+            String chave,
+            int padrao
+    ) {
+
+        Object valor = objeto.get(chave);
+
+        if (valor == null) {
+            return padrao;
+        }
+
+        if (valor instanceof Number numero) {
+            return numero.intValue();
+        }
+
+        throw new IllegalArgumentException(
+                "Campo numérico inválido: " + chave
+        );
+    }
+
+    private boolean obterBoolean(
+            Map<String, Object> objeto,
+            String chave,
+            boolean padrao
+    ) {
+
+        Object valor = objeto.get(chave);
+
+        if (valor == null) {
+            return padrao;
+        }
+
+        if (valor instanceof Boolean b) {
+            return b;
+        }
+
+        throw new IllegalArgumentException(
+                "Campo booleano inválido: " + chave
+        );
+    }
+
+    private String obterString(
+            Map<String, Object> objeto,
+            String chave,
+            String padrao
+    ) {
+
+        Object valor = objeto.get(chave);
+
+        if (valor == null) {
+            return padrao;
+        }
+
+        if (valor instanceof String texto) {
+            return texto;
+        }
+
+        throw new IllegalArgumentException(
+                "Campo de texto inválido: " + chave
+        );
+    }
+
+    // =====================================================
+    // JSON SIMPLES - SEM DEPENDÊNCIA EXTERNA
+    // =====================================================
+    /*
+     * O projeto é uma ferramenta Java/Swing independente. Para o primeiro
+     * formato de projeto preferimos não obrigar Gson/Jackson apenas para
+     * gravar dados simples. Este leitor/escritor cobre exatamente os tipos
+     * usados pelo arquivo: objeto, lista, texto, número, boolean e null.
+     */
+    private static final class JsonSimples {
+
+        static String escrever(
+                Object valor
+        ) {
+
+            StringBuilder out =
+                    new StringBuilder();
+
+            escreverValor(
+                    valor,
+                    out,
+                    0
+            );
+
+            out.append('\n');
+            return out.toString();
+        }
+
+        static Object ler(
+                String texto
+        ) {
+
+            Parser parser =
+                    new Parser(texto);
+
+            Object valor =
+                    parser.lerValor();
+
+            parser.pularEspacos();
+
+            if (!parser.chegouAoFim()) {
+                throw new IllegalArgumentException(
+                        "Há conteúdo extra depois do fim do JSON."
+                );
+            }
+
+            return valor;
+        }
+
+        private static void escreverValor(
+                Object valor,
+                StringBuilder out,
+                int nivel
+        ) {
+
+            if (valor == null) {
+                out.append("null");
+                return;
+            }
+
+            if (valor instanceof String texto) {
+                escreverString(texto, out);
+                return;
+            }
+
+            if (valor instanceof Number
+                    || valor instanceof Boolean) {
+
+                out.append(valor);
+                return;
+            }
+
+            if (valor instanceof Map<?, ?> mapa) {
+                escreverObjeto(mapa, out, nivel);
+                return;
+            }
+
+            if (valor instanceof List<?> lista) {
+                escreverLista(lista, out, nivel);
+                return;
+            }
+
+            throw new IllegalArgumentException(
+                    "Tipo não suportado no JSON: "
+                    + valor.getClass().getName()
+            );
+        }
+
+        private static void escreverObjeto(
+                Map<?, ?> mapa,
+                StringBuilder out,
+                int nivel
+        ) {
+
+            out.append('{');
+
+            if (!mapa.isEmpty()) {
+                out.append('\n');
+            }
+
+            int indice = 0;
+
+            for (Map.Entry<?, ?> entrada : mapa.entrySet()) {
+
+                indentar(out, nivel + 1);
+                escreverString(
+                        String.valueOf(
+                                entrada.getKey()
+                        ),
+                        out
+                );
+
+                out.append(": ");
+
+                escreverValor(
+                        entrada.getValue(),
+                        out,
+                        nivel + 1
+                );
+
+                indice++;
+
+                if (indice < mapa.size()) {
+                    out.append(',');
+                }
+
+                out.append('\n');
+            }
+
+            if (!mapa.isEmpty()) {
+                indentar(out, nivel);
+            }
+
+            out.append('}');
+        }
+
+        private static void escreverLista(
+                List<?> lista,
+                StringBuilder out,
+                int nivel
+        ) {
+
+            out.append('[');
+
+            if (!lista.isEmpty()) {
+                out.append('\n');
+            }
+
+            for (int i = 0;
+                    i < lista.size();
+                    i++) {
+
+                indentar(out, nivel + 1);
+
+                escreverValor(
+                        lista.get(i),
+                        out,
+                        nivel + 1
+                );
+
+                if (i < lista.size() - 1) {
+                    out.append(',');
+                }
+
+                out.append('\n');
+            }
+
+            if (!lista.isEmpty()) {
+                indentar(out, nivel);
+            }
+
+            out.append(']');
+        }
+
+        private static void escreverString(
+                String texto,
+                StringBuilder out
+        ) {
+
+            out.append('"');
+
+            for (int i = 0;
+                    i < texto.length();
+                    i++) {
+
+                char c = texto.charAt(i);
+
+                switch (c) {
+                    case '"' -> out.append("\\\"");
+                    case '\\' -> out.append("\\\\");
+                    case '\b' -> out.append("\\b");
+                    case '\f' -> out.append("\\f");
+                    case '\n' -> out.append("\\n");
+                    case '\r' -> out.append("\\r");
+                    case '\t' -> out.append("\\t");
+                    default -> {
+                        if (c < 0x20) {
+                            out.append(
+                                    String.format(
+                                            "\\u%04x",
+                                            (int) c
+                                    )
+                            );
+                        } else {
+                            out.append(c);
+                        }
+                    }
+                }
+            }
+
+            out.append('"');
+        }
+
+        private static void indentar(
+                StringBuilder out,
+                int nivel
+        ) {
+
+            out.append(
+                    "  ".repeat(
+                            Math.max(
+                                    0,
+                                    nivel
+                            )
+                    )
+            );
+        }
+
+        private static final class Parser {
+
+            private final String texto;
+            private int indice = 0;
+
+            Parser(String texto) {
+                this.texto =
+                        texto == null
+                        ? ""
+                        : texto;
+            }
+
+            boolean chegouAoFim() {
+                return indice >= texto.length();
+            }
+
+            void pularEspacos() {
+
+                while (!chegouAoFim()
+                        && Character.isWhitespace(
+                                texto.charAt(indice)
+                        )) {
+
+                    indice++;
+                }
+            }
+
+            Object lerValor() {
+
+                pularEspacos();
+
+                if (chegouAoFim()) {
+                    erro("Fim inesperado do JSON");
+                }
+
+                char c = texto.charAt(indice);
+
+                return switch (c) {
+                    case '{' -> lerObjeto();
+                    case '[' -> lerLista();
+                    case '"' -> lerString();
+                    case 't' -> lerLiteral("true", Boolean.TRUE);
+                    case 'f' -> lerLiteral("false", Boolean.FALSE);
+                    case 'n' -> lerLiteral("null", null);
+                    default -> {
+                        if (c == '-'
+                                || Character.isDigit(c)) {
+                            yield lerNumero();
+                        }
+
+                        erro(
+                                "Valor JSON inesperado"
+                        );
+
+                        yield null;
+                    }
+                };
+            }
+
+            private Map<String, Object> lerObjeto() {
+
+                consumir('{');
+                pularEspacos();
+
+                Map<String, Object> mapa =
+                        new LinkedHashMap<>();
+
+                if (tentarConsumir('}')) {
+                    return mapa;
+                }
+
+                while (true) {
+
+                    pularEspacos();
+
+                    if (chegouAoFim()
+                            || texto.charAt(indice) != '"') {
+                        erro("Chave de objeto JSON inválida");
+                    }
+
+                    String chave = lerString();
+
+                    pularEspacos();
+                    consumir(':');
+
+                    Object valor = lerValor();
+                    mapa.put(chave, valor);
+
+                    pularEspacos();
+
+                    if (tentarConsumir('}')) {
+                        return mapa;
+                    }
+
+                    consumir(',');
+                }
+            }
+
+            private List<Object> lerLista() {
+
+                consumir('[');
+                pularEspacos();
+
+                List<Object> lista =
+                        new ArrayList<>();
+
+                if (tentarConsumir(']')) {
+                    return lista;
+                }
+
+                while (true) {
+
+                    lista.add(
+                            lerValor()
+                    );
+
+                    pularEspacos();
+
+                    if (tentarConsumir(']')) {
+                        return lista;
+                    }
+
+                    consumir(',');
+                }
+            }
+
+            private String lerString() {
+
+                consumir('"');
+
+                StringBuilder valor =
+                        new StringBuilder();
+
+                while (!chegouAoFim()) {
+
+                    char c = texto.charAt(indice++);
+
+                    if (c == '"') {
+                        return valor.toString();
+                    }
+
+                    if (c != '\\') {
+                        valor.append(c);
+                        continue;
+                    }
+
+                    if (chegouAoFim()) {
+                        erro("Escape incompleto em string JSON");
+                    }
+
+                    char escape =
+                            texto.charAt(indice++);
+
+                    switch (escape) {
+                        case '"' -> valor.append('"');
+                        case '\\' -> valor.append('\\');
+                        case '/' -> valor.append('/');
+                        case 'b' -> valor.append('\b');
+                        case 'f' -> valor.append('\f');
+                        case 'n' -> valor.append('\n');
+                        case 'r' -> valor.append('\r');
+                        case 't' -> valor.append('\t');
+                        case 'u' -> valor.append(
+                                lerUnicode()
+                        );
+                        default -> erro(
+                                "Escape JSON inválido: \\" + escape
+                        );
+                    }
+                }
+
+                erro("String JSON não terminada");
+                return "";
+            }
+
+            private char lerUnicode() {
+
+                if (indice + 4 > texto.length()) {
+                    erro("Escape unicode incompleto");
+                }
+
+                String hex =
+                        texto.substring(
+                                indice,
+                                indice + 4
+                        );
+
+                indice += 4;
+
+                try {
+                    return (char) Integer.parseInt(
+                            hex,
+                            16
+                    );
+                } catch (NumberFormatException ex) {
+                    erro("Escape unicode inválido");
+                    return 0;
+                }
+            }
+
+            private Object lerNumero() {
+
+                int inicio = indice;
+
+                if (texto.charAt(indice) == '-') {
+                    indice++;
+                }
+
+                while (!chegouAoFim()
+                        && Character.isDigit(
+                                texto.charAt(indice)
+                        )) {
+                    indice++;
+                }
+
+                boolean decimal = false;
+
+                if (!chegouAoFim()
+                        && texto.charAt(indice) == '.') {
+
+                    decimal = true;
+                    indice++;
+
+                    while (!chegouAoFim()
+                            && Character.isDigit(
+                                    texto.charAt(indice)
+                            )) {
+                        indice++;
+                    }
+                }
+
+                if (!chegouAoFim()
+                        && (texto.charAt(indice) == 'e'
+                        || texto.charAt(indice) == 'E')) {
+
+                    decimal = true;
+                    indice++;
+
+                    if (!chegouAoFim()
+                            && (texto.charAt(indice) == '+'
+                            || texto.charAt(indice) == '-')) {
+                        indice++;
+                    }
+
+                    while (!chegouAoFim()
+                            && Character.isDigit(
+                                    texto.charAt(indice)
+                            )) {
+                        indice++;
+                    }
+                }
+
+                String numero =
+                        texto.substring(
+                                inicio,
+                                indice
+                        );
+
+                try {
+                    return decimal
+                            ? Double.parseDouble(numero)
+                            : Long.parseLong(numero);
+                } catch (NumberFormatException ex) {
+                    erro("Número JSON inválido: " + numero);
+                    return 0L;
+                }
+            }
+
+            private Object lerLiteral(
+                    String esperado,
+                    Object valor
+            ) {
+
+                if (!texto.startsWith(
+                        esperado,
+                        indice
+                )) {
+                    erro("Literal JSON inválido");
+                }
+
+                indice += esperado.length();
+                return valor;
+            }
+
+            private boolean tentarConsumir(
+                    char esperado
+            ) {
+
+                pularEspacos();
+
+                if (!chegouAoFim()
+                        && texto.charAt(indice) == esperado) {
+
+                    indice++;
+                    return true;
+                }
+
+                return false;
+            }
+
+            private void consumir(
+                    char esperado
+            ) {
+
+                pularEspacos();
+
+                if (chegouAoFim()
+                        || texto.charAt(indice) != esperado) {
+
+                    erro(
+                            "Era esperado '"
+                            + esperado
+                            + "'"
+                    );
+                }
+
+                indice++;
+            }
+
+            private void erro(
+                    String mensagem
+            ) {
+
+                throw new IllegalArgumentException(
+                        mensagem
+                        + " na posição "
+                        + indice
+                        + "."
+                );
+            }
+        }
+    }
+
+    private void configurarAtalhosProjeto() {
+
+        int mascaraAtalho =
+                Toolkit.getDefaultToolkit()
+                        .getMenuShortcutKeyMaskEx();
+
+        JRootPane raiz =
+                getRootPane();
+
+        InputMap inputMap =
+                raiz.getInputMap(
+                        JComponent.WHEN_IN_FOCUSED_WINDOW
+                );
+
+        ActionMap actionMap =
+                raiz.getActionMap();
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_S,
+                        mascaraAtalho
+                ),
+                "salvarProjetoMiau"
+        );
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_S,
+                        mascaraAtalho
+                        | InputEvent.SHIFT_DOWN_MASK
+                ),
+                "salvarProjetoMiauComo"
+        );
+
+        inputMap.put(
+                KeyStroke.getKeyStroke(
+                        KeyEvent.VK_O,
+                        mascaraAtalho
+                ),
+                "abrirProjetoMiau"
+        );
+
+        actionMap.put(
+                "salvarProjetoMiau",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+                        salvarProjetoJson();
+                    }
+                }
+        );
+
+        actionMap.put(
+                "salvarProjetoMiauComo",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+                        salvarProjetoJsonComo();
+                    }
+                }
+        );
+
+        actionMap.put(
+                "abrirProjetoMiau",
+                new AbstractAction() {
+                    @Override
+                    public void actionPerformed(
+                            java.awt.event.ActionEvent e
+                    ) {
+                        carregarProjetoJson();
+                    }
+                }
+        );
+    }
+
     public EditorDePoses() {
-        setTitle("MiauStudio Ultimate - Rig de Cintura, Tronco & Animação");
+        setTitle("MiauStudio Ultimate - Projeto não salvo");
         setSize(1450, 950);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -889,6 +2591,33 @@ public class EditorDePoses extends JFrame {
             painelDesenho.repaint();
         });
         painelTop.add(btnArrasteRig);
+
+        painelTop.add(new JSeparator(SwingConstants.VERTICAL));
+
+        JButton btnSalvarProjeto =
+                new JButton("💾 Salvar projeto");
+
+        btnSalvarProjeto.setToolTipText(
+                "Salva todo o workspace em JSON (Ctrl+S)."
+        );
+
+        btnSalvarProjeto.addActionListener(
+                e -> salvarProjetoJson()
+        );
+
+        JButton btnCarregarProjeto =
+                new JButton("📂 Carregar projeto");
+
+        btnCarregarProjeto.setToolTipText(
+                "Abre um projeto JSON do MiauStudio (Ctrl+O)."
+        );
+
+        btnCarregarProjeto.addActionListener(
+                e -> carregarProjetoJson()
+        );
+
+        painelTop.add(btnSalvarProjeto);
+        painelTop.add(btnCarregarProjeto);
 
         painelTop.add(new JSeparator(SwingConstants.VERTICAL));
         painelTop.add(new JLabel("Novo Lutador (Classe):"));
@@ -1324,6 +3053,7 @@ public class EditorDePoses extends JFrame {
         add(painelDireito, BorderLayout.EAST);
 
         configurarAtalhosHistorico();
+        configurarAtalhosProjeto();
 
         atualizandoUI = false;
         atualizarComboQuadros();
