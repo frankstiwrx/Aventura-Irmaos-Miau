@@ -15,6 +15,14 @@ public final class AcaoCombate {
     private final EstadoInteracaoCombate estadoInteracaoAoSucesso;
 
     /*
+     * Referencia opcional para uma animacao conjunta disparada no sucesso.
+     * O motor conhece apenas o ID e a duracao; os dados visuais dos tracks
+     * entram nas etapas seguintes.
+     */
+    private final String idAnimacaoConjunta;
+    private final int duracaoAnimacaoFrames;
+
+    /*
      * Alcance em unidades locais do rig do ATACANTE.
      *
      * Exemplo: com escala 0.7, alcance 80 representa aproximadamente
@@ -39,6 +47,8 @@ public final class AcaoCombate {
             String nome,
             CategoriaAcao categoria,
             EstadoInteracaoCombate estadoInteracaoAoSucesso,
+            String idAnimacaoConjunta,
+            int duracaoAnimacaoFrames,
             double alcanceHorizontal,
             int diferencaMaximaLinhas,
             boolean exigeFrenteParaOponente,
@@ -60,6 +70,21 @@ public final class AcaoCombate {
 
         if (categoria == null) {
             throw new IllegalArgumentException("A acao precisa de uma categoria.");
+        }
+
+        boolean possuiIdAnimacao = idAnimacaoConjunta != null
+                && !idAnimacaoConjunta.isBlank();
+
+        if (possuiIdAnimacao && duracaoAnimacaoFrames <= 0) {
+            throw new IllegalArgumentException(
+                    "Uma animacao conjunta cadastrada precisa ter duracao maior que zero."
+            );
+        }
+
+        if (!possuiIdAnimacao && duracaoAnimacaoFrames != 0) {
+            throw new IllegalArgumentException(
+                    "Duracao de animacao so pode ser informada quando existe um id de animacao."
+            );
         }
 
         if (alcanceHorizontal < 0) {
@@ -87,6 +112,10 @@ public final class AcaoCombate {
         this.nome = nome.trim();
         this.categoria = categoria;
         this.estadoInteracaoAoSucesso = estadoInteracaoAoSucesso;
+        this.idAnimacaoConjunta = possuiIdAnimacao
+                ? idAnimacaoConjunta.trim().toLowerCase()
+                : null;
+        this.duracaoAnimacaoFrames = duracaoAnimacaoFrames;
         this.alcanceHorizontal = alcanceHorizontal;
         this.diferencaMaximaLinhas = diferencaMaximaLinhas;
         this.exigeFrenteParaOponente = exigeFrenteParaOponente;
@@ -124,6 +153,18 @@ public final class AcaoCombate {
      */
     public EstadoInteracaoCombate getEstadoInteracaoAoSucesso() {
         return estadoInteracaoAoSucesso;
+    }
+
+    public boolean possuiAnimacaoConjunta() {
+        return idAnimacaoConjunta != null;
+    }
+
+    public String getIdAnimacaoConjunta() {
+        return idAnimacaoConjunta;
+    }
+
+    public int getDuracaoAnimacaoFrames() {
+        return duracaoAnimacaoFrames;
     }
 
     public double getAlcanceHorizontal() {

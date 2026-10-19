@@ -28,6 +28,11 @@ public final class SistemaCombate {
     private IrmaoMiau receptorInteracao;
     private String idAcaoInteracao;
 
+    // =====================================================
+    // ANIMACAO CONJUNTA ATIVA
+    // =====================================================
+    private AnimacaoCombateAtiva animacaoCombateAtiva;
+
     // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
     private ResultadoAcao ultimoResultado;
     private String ultimaAcaoId;
@@ -104,6 +109,25 @@ public final class SistemaCombate {
         );
 
         atualizarManutencaoDaInteracao();
+        atualizarAnimacaoCombate();
+    }
+
+    /**
+     * Avanca um unico relogio compartilhado por aplicador e receptor.
+     * Ao terminar, libera o controle dos dois sem encerrar a interacao
+     * persistente conquistada pela acao.
+     */
+    private void atualizarAnimacaoCombate() {
+
+        if (animacaoCombateAtiva == null) {
+            return;
+        }
+
+        animacaoCombateAtiva.atualizar();
+
+        if (animacaoCombateAtiva.isFinalizada()) {
+            finalizarAnimacaoCombateAtiva();
+        }
     }
 
     private void atualizarManutencaoDaInteracao() {
@@ -187,6 +211,20 @@ public final class SistemaCombate {
         return idAcaoInteracao;
     }
 
+    public boolean isAnimacaoCombateAtiva() {
+        return animacaoCombateAtiva != null;
+    }
+
+    public AnimacaoCombateAtiva getAnimacaoCombateAtiva() {
+        return animacaoCombateAtiva;
+    }
+
+    public double getProgressoAnimacaoCombate() {
+        return animacaoCombateAtiva == null
+                ? 0.0
+                : animacaoCombateAtiva.getProgresso();
+    }
+
     public ResultadoAcao getUltimoResultado() {
         return ultimoResultado;
     }
@@ -200,6 +238,8 @@ public final class SistemaCombate {
     }
 
     public void encerrarInteracao() {
+
+        cancelarAnimacaoCombateAtiva();
 
         estadoInteracao = EstadoInteracaoCombate.LIVRE;
         aplicadorInteracao = null;
@@ -309,6 +349,10 @@ public final class SistemaCombate {
 
         validarParticipantes(atacante, defensor);
 
+        if (isAnimacaoCombateAtiva()) {
+            return false;
+        }
+
         if (acaoJaRepresentaInteracaoAtual(
                 acao,
                 atacante,
@@ -384,8 +428,61 @@ public final class SistemaCombate {
             );
         }
 
+        if (acao.possuiAnimacaoConjunta()) {
+            iniciarAnimacaoCombate(
+                    acao,
+                    atacante,
+                    defensor
+            );
+        }
+
         ultimoResultado = ResultadoAcao.SUCESSO;
         return ultimoResultado;
+    }
+
+
+    private void iniciarAnimacaoCombate(
+            AcaoCombate acao,
+            IrmaoMiau aplicador,
+            IrmaoMiau receptor
+    ) {
+
+        cancelarAnimacaoCombateAtiva();
+
+        animacaoCombateAtiva = new AnimacaoCombateAtiva(
+                acao.getIdAnimacaoConjunta(),
+                aplicador,
+                receptor,
+                acao.getDuracaoAnimacaoFrames()
+        );
+
+        aplicador.setBloqueadoPorAnimacaoCombate(true);
+        receptor.setBloqueadoPorAnimacaoCombate(true);
+    }
+
+    private void finalizarAnimacaoCombateAtiva() {
+
+        if (animacaoCombateAtiva == null) {
+            return;
+        }
+
+        IrmaoMiau aplicador = animacaoCombateAtiva.getAplicador();
+        IrmaoMiau receptor = animacaoCombateAtiva.getReceptor();
+
+        aplicador.limparEstadoAnimacaoCombate();
+        receptor.limparEstadoAnimacaoCombate();
+
+        animacaoCombateAtiva = null;
+    }
+
+    private void cancelarAnimacaoCombateAtiva() {
+
+        if (animacaoCombateAtiva == null) {
+            return;
+        }
+
+        animacaoCombateAtiva.finalizar();
+        finalizarAnimacaoCombateAtiva();
     }
 
     private void iniciarInteracao(

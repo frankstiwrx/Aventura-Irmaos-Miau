@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.RenderingHints;
+import java.util.Arrays;
 
 public abstract class IrmaoMiau {
 
@@ -121,6 +122,29 @@ public abstract class IrmaoMiau {
 
     private double condicionamentoAtual;
     private double folegoAtual;
+
+    // =============================
+    // POSE EXTERNA DE COMBATE
+    // =============================
+    /*
+     * Ponte entre o motor de combate e os renderers dos personagens.
+     *
+     * Nesta etapa apenas ARMAZENAMOS a pose externa. Branco/Preto ainda
+     * nao a desenham; essa prioridade visual sera ligada na etapa 8D.
+     *
+     * O formato continua sendo o padrao de 30 valores do MiauStudio.
+     */
+    private static final int TAMANHO_POSE_MIAUSTUDIO = 30;
+
+    private int[] poseCombateExterna;
+    private double deslocamentoVisualCombateX;
+    private double deslocamentoVisualCombateY;
+
+    /*
+     * Estado separado da pose visual. Assim o motor podera bloquear o
+     * controle durante uma animacao sem transformar o renderer em regra.
+     */
+    private boolean bloqueadoPorAnimacaoCombate = false;
 
     private boolean correndo = false;
 
@@ -1967,6 +1991,102 @@ public void alternarDeitado() {
                 5,
                 5
         );
+    }
+
+    // =============================
+    // POSE EXTERNA DE COMBATE
+    // =============================
+    /**
+     * Recebe uma pose temporaria controlada pelo motor de combate.
+     *
+     * Fazemos copia defensiva para que o array original da animacao nao
+     * possa ser alterado acidentalmente pelo personagem.
+     */
+    public void aplicarPoseCombateExterna(
+            int[] pose,
+            double deslocamentoVisualX,
+            double deslocamentoVisualY
+    ) {
+
+        if (pose == null) {
+            throw new IllegalArgumentException(
+                    "A pose externa de combate nao pode ser nula."
+            );
+        }
+
+        if (pose.length != TAMANHO_POSE_MIAUSTUDIO) {
+            throw new IllegalArgumentException(
+                    "A pose externa precisa possuir exatamente "
+                    + TAMANHO_POSE_MIAUSTUDIO
+                    + " valores."
+            );
+        }
+
+        poseCombateExterna = Arrays.copyOf(
+                pose,
+                pose.length
+        );
+
+        deslocamentoVisualCombateX = deslocamentoVisualX;
+        deslocamentoVisualCombateY = deslocamentoVisualY;
+    }
+
+    public void limparPoseCombateExterna() {
+        poseCombateExterna = null;
+        deslocamentoVisualCombateX = 0.0;
+        deslocamentoVisualCombateY = 0.0;
+    }
+
+    public boolean isPoseCombateExternaAtiva() {
+        return poseCombateExterna != null;
+    }
+
+    /**
+     * Copia publica para debug/testes sem expor o array interno mutavel.
+     */
+    public int[] copiarPoseCombateExterna() {
+
+        if (poseCombateExterna == null) {
+            return null;
+        }
+
+        return Arrays.copyOf(
+                poseCombateExterna,
+                poseCombateExterna.length
+        );
+    }
+
+    /**
+     * Acesso protegido que os renderers Branco/Preto usarao na etapa 8D.
+     */
+    protected int[] getPoseCombateExternaParaDesenho() {
+        return copiarPoseCombateExterna();
+    }
+
+    public double getDeslocamentoVisualCombateX() {
+        return deslocamentoVisualCombateX;
+    }
+
+    public double getDeslocamentoVisualCombateY() {
+        return deslocamentoVisualCombateY;
+    }
+
+    public boolean isBloqueadoPorAnimacaoCombate() {
+        return bloqueadoPorAnimacaoCombate;
+    }
+
+    public void setBloqueadoPorAnimacaoCombate(
+            boolean bloqueado
+    ) {
+        bloqueadoPorAnimacaoCombate = bloqueado;
+    }
+
+    /**
+     * Limpa de uma vez o estado temporario deixado por uma animacao.
+     */
+    public void limparEstadoAnimacaoCombate() {
+        limparPoseCombateExterna();
+        bloqueadoPorAnimacaoCombate = false;
     }
 
     // =============================

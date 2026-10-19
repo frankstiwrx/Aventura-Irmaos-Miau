@@ -430,6 +430,11 @@ public class GamePanel extends JPanel {
     // =====================================================
     private void atualizarMiauBranco() {
 
+        if (jogadorBranco.isBloqueadoPorAnimacaoCombate()) {
+            atualizarMiauBrancoBloqueadoPorCombate();
+            return;
+        }
+
         boolean agachando
                 = input.isAgachar();
 
@@ -554,6 +559,11 @@ public class GamePanel extends JPanel {
     // =====================================================
     private void atualizarMiauPreto() {
 
+        if (jogadorPreto.isBloqueadoPorAnimacaoCombate()) {
+            atualizarMiauPretoBloqueadoPorCombate();
+            return;
+        }
+
         boolean agachando
                 = input.isPretoAgachar();
 
@@ -671,6 +681,36 @@ public class GamePanel extends JPanel {
                 = input.isPretoDeitar();
         sprawlPretoAnterior
                 = input.isPretoSprawl();
+    }
+
+    // =====================================================
+    // 7.4 BLOQUEIO TEMPORARIO POR ANIMACAO DE COMBATE
+    // =====================================================
+    private void atualizarMiauBrancoBloqueadoPorCombate() {
+
+        jogadorBranco.setCorrendo(false);
+        jogadorBranco.setRespirando(false);
+        jogadorBranco.atualizar(false, false);
+
+        // Sincroniza as bordas das teclas para nada disparar ao desbloquear.
+        puloBrancoAnterior = input.isPular();
+        puloCurtoBrancoAnterior = input.isPularCurto();
+        rolamentoBrancoAnterior = input.isRolar();
+        deitarBrancoAnterior = input.isDeitar();
+        sprawlBrancoAnterior = input.isSprawl();
+    }
+
+    private void atualizarMiauPretoBloqueadoPorCombate() {
+
+        jogadorPreto.setCorrendo(false);
+        jogadorPreto.setRespirando(false);
+        jogadorPreto.atualizar(false, false);
+
+        puloPretoAnterior = input.isPretoPular();
+        puloCurtoPretoAnterior = input.isPretoPularCurto();
+        rolamentoPretoAnterior = input.isPretoRolar();
+        deitarPretoAnterior = input.isPretoDeitar();
+        sprawlPretoAnterior = input.isPretoSprawl();
     }
 
     // =====================================================
@@ -1574,6 +1614,35 @@ public class GamePanel extends JPanel {
                 130
         );
 
+        String textoAnimacao = "-";
+
+        if (sistemaCombate.isAnimacaoCombateAtiva()) {
+
+            com.irmaosmiau.combate.AnimacaoCombateAtiva animacao
+                    = sistemaCombate.getAnimacaoCombateAtiva();
+
+            int percentualAnimacao
+                    = (int) Math.round(
+                            animacao.getProgresso() * 100.0
+                    );
+
+            textoAnimacao
+                    = animacao.getIdAnimacao()
+                    + " "
+                    + animacao.getFrameAtual()
+                    + "/"
+                    + animacao.getDuracaoFrames()
+                    + " ("
+                    + percentualAnimacao
+                    + "%)";
+        }
+
+        g2.drawString(
+                "ANIM: " + textoAnimacao,
+                270,
+                147
+        );
+
         ResultadoAcao ultimoResultado
                 = sistemaCombate.getUltimoResultado();
 
@@ -1586,13 +1655,13 @@ public class GamePanel extends JPanel {
         g2.drawString(
                 "ULTIMA: " + textoUltima,
                 270,
-                147
+                164
         );
 
         g2.drawString(
                 "H = tentar PEGADA_1 (Branco)",
                 270,
-                164
+                181
         );
     }
 
