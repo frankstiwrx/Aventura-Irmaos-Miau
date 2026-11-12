@@ -403,6 +403,17 @@ int[] poseInterpolada =
             int[] quadro,
             double deslocamentoVisualY
     ) {
+        // Mantem intactas as chamadas de chao, rolamento, sprawl e taunt.
+        desenharPoseMiauStudio(g2, quadro, 0.0, deslocamentoVisualY);
+    }
+
+    // Etapa 8D: permite offset horizontal/vertical sem alterar a posicao fisica.
+    private void desenharPoseMiauStudio(
+            Graphics2D g2,
+            int[] quadro,
+            double deslocamentoVisualX,
+            double deslocamentoVisualY
+    ) {
 
         prepararDesenho(g2);
 
@@ -410,7 +421,7 @@ int[] poseInterpolada =
                 (Graphics2D) g2.create();
 
         raiz.translate(
-                0,
+                deslocamentoVisualX,
                 deslocamentoVisualY
         );
 
@@ -1508,6 +1519,18 @@ private void desenharEmPe(
     public void desenhar(Graphics2D g2) {
 
         prepararDesenho(g2);
+
+        // A pose do motor tem prioridade sobre qualquer animacao local.
+        int[] poseCombate = getPoseCombateExternaParaDesenho();
+        if (poseCombate != null) {
+            desenharPoseMiauStudio(
+                    g2,
+                    poseCombate,
+                    getDeslocamentoVisualCombateX(),
+                    getDeslocamentoVisualCombateY()
+            );
+            return;
+        }
 
         /*
          * O novo taunt do MiauStudio só assume o desenho
