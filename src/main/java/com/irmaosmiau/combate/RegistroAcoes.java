@@ -31,8 +31,9 @@ public final class RegistroAcoes {
                         EstadoInteracaoCombate.PEGADA_1,
                         "pegada_1_entrada",
                         30,
-                        /* alcance em unidades locais do atacante */
-                        80.0,
+                        /* 125u ~ 87.5 px na escala 0.7, incluindo
+                         * os 84 px da posicao inicial do MiauStudio. */
+                        125.0,
                         1,
                         true,
                         3.0,

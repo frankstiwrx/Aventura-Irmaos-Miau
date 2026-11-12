@@ -32,6 +32,7 @@ public final class SistemaCombate {
     // ANIMACAO CONJUNTA ATIVA
     // =====================================================
     private AnimacaoCombateAtiva animacaoCombateAtiva;
+    private final RegistroAnimacoesCombate registroAnimacoes = new RegistroAnimacoesCombate();
 
     // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
     private ResultadoAcao ultimoResultado;
@@ -124,10 +125,33 @@ public final class SistemaCombate {
         }
 
         animacaoCombateAtiva.atualizar();
+        aplicarQuadroDaAnimacao();
 
         if (animacaoCombateAtiva.isFinalizada()) {
             finalizarAnimacaoCombateAtiva();
         }
+    }
+
+    /** Envia o MESMO quadro aos dois lutadores, sem alterar X fisico. */
+    private void aplicarQuadroDaAnimacao() {
+        if (animacaoCombateAtiva == null) {
+            return;
+        }
+        AnimacaoConjuntaQuadros sequencia = registroAnimacoes.buscar(
+                animacaoCombateAtiva.getIdAnimacao());
+        if (sequencia == null) {
+            return;
+        }
+        int indice = sequencia.indiceParaProgresso(
+                animacaoCombateAtiva.getProgresso());
+        animacaoCombateAtiva.getAplicador().aplicarPoseCombateExterna(
+                sequencia.copiarQuadroAplicador(indice),
+                sequencia.deslocamentoAplicadorX(indice),
+                sequencia.getOffsetVisualY());
+        animacaoCombateAtiva.getReceptor().aplicarPoseCombateExterna(
+                sequencia.copiarQuadroReceptor(indice),
+                sequencia.deslocamentoReceptorX(indice),
+                sequencia.getOffsetVisualY());
     }
 
     private void atualizarManutencaoDaInteracao() {
@@ -240,6 +264,13 @@ public final class SistemaCombate {
     public void encerrarInteracao() {
 
         cancelarAnimacaoCombateAtiva();
+        // Tambem remove a pose FINAL persistente depois que a timeline terminou.
+        if (aplicadorInteracao != null) {
+            aplicadorInteracao.limparEstadoAnimacaoCombate();
+        }
+        if (receptorInteracao != null) {
+            receptorInteracao.limparEstadoAnimacaoCombate();
+        }
 
         estadoInteracao = EstadoInteracaoCombate.LIVRE;
         aplicadorInteracao = null;
@@ -458,6 +489,7 @@ public final class SistemaCombate {
 
         aplicador.setBloqueadoPorAnimacaoCombate(true);
         receptor.setBloqueadoPorAnimacaoCombate(true);
+        aplicarQuadroDaAnimacao(); // Quadro 1 ja no frame inicial.
     }
 
     private void finalizarAnimacaoCombateAtiva() {
@@ -469,8 +501,18 @@ public final class SistemaCombate {
         IrmaoMiau aplicador = animacaoCombateAtiva.getAplicador();
         IrmaoMiau receptor = animacaoCombateAtiva.getReceptor();
 
-        aplicador.limparEstadoAnimacaoCombate();
-        receptor.limparEstadoAnimacaoCombate();
+        // Mantem o ultimo quadro enquanto a pegada estiver conquistada.
+        // Bloqueio de movimento termina normalmente apos os 30 frames.
+        boolean manterPose = estaEmInteracao()
+                && aplicadorInteracao == aplicador
+                && receptorInteracao == receptor;
+        if (manterPose) {
+            aplicador.setBloqueadoPorAnimacaoCombate(false);
+            receptor.setBloqueadoPorAnimacaoCombate(false);
+        } else {
+            aplicador.limparEstadoAnimacaoCombate();
+            receptor.limparEstadoAnimacaoCombate();
+        }
 
         animacaoCombateAtiva = null;
     }
