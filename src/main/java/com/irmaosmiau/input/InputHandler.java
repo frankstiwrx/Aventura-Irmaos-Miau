@@ -88,6 +88,15 @@ public class InputHandler {
     private boolean pretoDeitar;
     private boolean pretoSprawl;
 
+    /*
+     * Entrega 3A: comandos segurados durante um bloqueio de animacao de
+     * combate ficam travados ate a tecla ser solta (nada retroativo).
+     */
+    private static final String PREFIXO_BRANCO = "branco";
+    private static final String PREFIXO_PRETO = "preto";
+
+    private final TravaComandos trava = new TravaComandos();
+
     // =====================================================
     // 4. CONFIGURAÇÃO DOS KEY BINDINGS
     // =====================================================
@@ -274,6 +283,7 @@ public class InputHandler {
                 new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                trava.pressionar(nome);
                 aoPressionar.run();
             }
         }
@@ -284,6 +294,7 @@ public class InputHandler {
                 new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                trava.soltar(nome);
                 aoSoltar.run();
             }
         }
@@ -291,108 +302,125 @@ public class InputHandler {
     }
 
     // =====================================================
+    // 5.1 TRAVA DE COMANDOS DURANTE BLOQUEIO (Entrega 3A)
+    // =====================================================
+    /**
+     * Chamado a cada frame em que o Branco esta bloqueado por uma animacao
+     * de combate: toda tecla dele que estiver segurada passa a ser lida como
+     * solta ate ser liberada e pressionada de novo.
+     */
+    public void travarComandosPressionadosBranco() {
+        trava.travarPressionados(PREFIXO_BRANCO);
+    }
+
+    /** Igual a {@link #travarComandosPressionadosBranco()}, para o Preto. */
+    public void travarComandosPressionadosPreto() {
+        trava.travarPressionados(PREFIXO_PRETO);
+    }
+
+    // =====================================================
     // 6. GETTERS - MIAU BRANCO
     // =====================================================
     public boolean isEsquerda() {
-        return esquerda;
+        return esquerda && trava.isLivre("brancoEsquerda");
     }
 
     public boolean isDireita() {
-        return direita;
+        return direita && trava.isLivre("brancoDireita");
     }
 
     public boolean isCima() {
-        return cima;
+        return cima && trava.isLivre("brancoCima");
     }
 
     public boolean isBaixo() {
-        return baixo;
+        return baixo && trava.isLivre("brancoBaixo");
     }
 
     public boolean isPular() {
-        return pular;
+        return pular && trava.isLivre("brancoPular");
     }
 
     public boolean isAgachar() {
-        return agachar;
+        return agachar && trava.isLivre("brancoAgachar");
     }
 
     public boolean isCorrer() {
-        return correr;
+        return correr && trava.isLivre("brancoCorrer");
     }
 
     public boolean isPularCurto() {
-        return pularCurto;
+        return pularCurto && trava.isLivre("brancoPularCurto");
     }
 
     public boolean isRespirar() {
-        return respirar;
+        return respirar && trava.isLivre("brancoRespirar");
     }
 
     public boolean isRolar() {
-        return rolar;
+        return rolar && trava.isLivre("brancoRolar");
     }
 
     public boolean isDeitar() {
-        return deitar;
+        return deitar && trava.isLivre("brancoDeitar");
     }
 
     public boolean isSprawl() {
-        return sprawl;
+        return sprawl && trava.isLivre("brancoSprawl");
     }
 
     public boolean isPegada1() {
-        return pegada1;
+        return pegada1 && trava.isLivre("brancoPegada1");
     }
 
     // =====================================================
     // 7. GETTERS - MIAU PRETO
     // =====================================================
     public boolean isPretoEsquerda() {
-        return pretoEsquerda;
+        return pretoEsquerda && trava.isLivre("pretoEsquerda");
     }
 
     public boolean isPretoDireita() {
-        return pretoDireita;
+        return pretoDireita && trava.isLivre("pretoDireita");
     }
 
     public boolean isPretoCima() {
-        return pretoCima;
+        return pretoCima && trava.isLivre("pretoCima");
     }
 
     public boolean isPretoBaixo() {
-        return pretoBaixo;
+        return pretoBaixo && trava.isLivre("pretoBaixo");
     }
 
     public boolean isPretoPular() {
-        return pretoPular;
+        return pretoPular && trava.isLivre("pretoPular");
     }
 
     public boolean isPretoAgachar() {
-        return pretoAgachar;
+        return pretoAgachar && trava.isLivre("pretoAgachar");
     }
 
     public boolean isPretoCorrer() {
-        return pretoCorrer;
+        return pretoCorrer && trava.isLivre("pretoCorrer");
     }
 
     public boolean isPretoPularCurto() {
-        return pretoPularCurto;
+        return pretoPularCurto && trava.isLivre("pretoPularCurto");
     }
 
     public boolean isPretoRespirar() {
-        return pretoRespirar;
+        return pretoRespirar && trava.isLivre("pretoRespirar");
     }
 
     public boolean isPretoRolar() {
-        return pretoRolar;
+        return pretoRolar && trava.isLivre("pretoRolar");
     }
 
     public boolean isPretoDeitar() {
-        return pretoDeitar;
+        return pretoDeitar && trava.isLivre("pretoDeitar");
     }
 
     public boolean isPretoSprawl() {
-        return pretoSprawl;
+        return pretoSprawl && trava.isLivre("pretoSprawl");
     }
 }

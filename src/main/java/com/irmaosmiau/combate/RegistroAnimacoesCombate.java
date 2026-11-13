@@ -17,7 +17,11 @@ import java.util.Set;
  */
 public final class RegistroAnimacoesCombate {
 
+    /** Origem registrada quando nenhuma e informada (arrays em Java). */
+    public static final String ORIGEM_CODIGO_JAVA = "codigo Java (RegistroAnimacoesCombate)";
+
     private final Map<String, AnimacaoConjuntaQuadros> animacoes = new LinkedHashMap<>();
+    private final Map<String, String> origens = new LinkedHashMap<>();
 
     public RegistroAnimacoesCombate() {
         // Dados gerados a partir de PEGADA_1.json, MiauStudio projeto v2.
@@ -53,6 +57,17 @@ public final class RegistroAnimacoesCombate {
      *         ou ja existir uma animacao com o mesmo id
      */
     public void registrar(String id, AnimacaoConjuntaQuadros sequencia) {
+        registrar(id, sequencia, ORIGEM_CODIGO_JAVA);
+    }
+
+    /**
+     * Cadastra uma animacao informando de onde ela veio (ex.: caminho do
+     * projeto MiauStudio). A origem serve para diagnostico e testes.
+     */
+    public void registrar(String id, AnimacaoConjuntaQuadros sequencia, String origem) {
+        if (origem == null || origem.isBlank()) {
+            throw new IllegalArgumentException("A origem da animacao e obrigatoria.");
+        }
         if (id == null || id.isBlank() || sequencia == null) {
             throw new IllegalArgumentException("ID e sequencia sao obrigatorios.");
         }
@@ -62,6 +77,12 @@ public final class RegistroAnimacoesCombate {
                     "Ja existe uma animacao de combate registrada com o id: " + normalizado);
         }
         animacoes.put(normalizado, sequencia);
+        origens.put(normalizado, origem.trim());
+    }
+
+    /** De onde a animacao veio, ou null se o id nao existe. */
+    public String getOrigem(String id) {
+        return id == null ? null : origens.get(normalizar(id));
     }
 
     public AnimacaoConjuntaQuadros buscar(String id) {

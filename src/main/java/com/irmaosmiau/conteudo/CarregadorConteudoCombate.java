@@ -58,8 +58,36 @@ public final class CarregadorConteudoCombate {
 
     /** Catalogos padrao do classpath. */
     public static ConteudoCombate carregarPadrao() {
-        return carregar(FonteConteudo.classpath(),
-                CATALOGO_ANIMACOES_PADRAO, CATALOGO_TECNICAS_PADRAO);
+        return carregarPadrao(FonteConteudo.classpath());
+    }
+
+    /** Catalogos padrao lidos de outra fonte (usado nos testes de falha). */
+    public static ConteudoCombate carregarPadrao(FonteConteudo fonte) {
+        return carregar(fonte, CATALOGO_ANIMACOES_PADRAO, CATALOGO_TECNICAS_PADRAO);
+    }
+
+    /**
+     * Ponto de entrada do JOGO: carrega o conteudo padrao e, se algo
+     * obrigatorio estiver ausente ou invalido, falha com uma mensagem
+     * unica e diagnosticavel. Nunca troca o conteudo por outra fonte.
+     *
+     * @throws ConteudoInvalidoException com o prefixo
+     *         "Falha ao carregar o conteudo de combate"
+     */
+    public static ConteudoCombate carregarParaJogo() {
+        return carregarParaJogo(FonteConteudo.classpath());
+    }
+
+    /** @see #carregarParaJogo() */
+    public static ConteudoCombate carregarParaJogo(FonteConteudo fonte) {
+        try {
+            return carregarPadrao(fonte);
+        } catch (IllegalArgumentException ex) {
+            throw new ConteudoInvalidoException(
+                    "Falha ao carregar o conteudo de combate (catalogos "
+                    + CATALOGO_TECNICAS_PADRAO + " e " + CATALOGO_ANIMACOES_PADRAO
+                    + "): " + ex.getMessage(), ex);
+        }
     }
 
     public static ConteudoCombate carregar(
@@ -111,7 +139,7 @@ public final class CarregadorConteudoCombate {
                 throw item.erro(null, "animacao " + id + ": " + ex.getMessage());
             }
 
-            registro.registrar(id, quadros);
+            registro.registrar(id, quadros, arquivo);
         }
         return registro;
     }

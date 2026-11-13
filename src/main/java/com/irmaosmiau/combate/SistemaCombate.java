@@ -35,6 +35,17 @@ public final class SistemaCombate {
     private final RegistroAnimacoesCombate registroAnimacoes;
 
     // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
+    // =====================================================
+    // POLITICA DE INTERACAO (Entrega 3A)
+    // =====================================================
+    private final PoliticaInteracao politicaInteracao;
+
+    /* Retratos tirados quando a interacao foi ESTABELECIDA (fim da entrada). */
+    private EstadoCorporalObservado referenciaAplicador;
+    private EstadoCorporalObservado referenciaReceptor;
+
+    private MotivoEncerramentoInteracao ultimoMotivoEncerramento;
+
     private ResultadoAcao ultimoResultado;
     private String ultimaAcaoId;
     private IrmaoMiau ultimoAtacante;
@@ -76,6 +87,33 @@ public final class SistemaCombate {
             RegistroAcoes registroAcoes,
             RegistroAnimacoesCombate registroAnimacoes
     ) {
+        this(
+                lutadorA,
+                lutadorB,
+                registroAcoes,
+                registroAnimacoes,
+                new PoliticaInteracaoPadrao()
+        );
+    }
+
+    /**
+     * Entrega 3A: politica de interacao injetavel.
+     */
+    public SistemaCombate(
+            IrmaoMiau lutadorA,
+            IrmaoMiau lutadorB,
+            RegistroAcoes registroAcoes,
+            RegistroAnimacoesCombate registroAnimacoes,
+            PoliticaInteracao politicaInteracao
+    ) {
+
+        if (politicaInteracao == null) {
+            throw new IllegalArgumentException(
+                    "A politica de interacao nao pode ser nula."
+            );
+        }
+
+        this.politicaInteracao = politicaInteracao;
 
         if (registroAnimacoes == null) {
             throw new IllegalArgumentException(
@@ -212,10 +250,11 @@ public final class SistemaCombate {
         );
 
         if (acao == null
+                || !acao.isJogavel()
                 || aplicadorInteracao == null
                 || receptorInteracao == null) {
 
-            encerrarInteracao();
+            encerrarInteracao(MotivoEncerramentoInteracao.ACAO_INDISPONIVEL);
             return;
         }
 
@@ -226,20 +265,47 @@ public final class SistemaCombate {
 
         /*
          * Depois que a pegada foi conquistada, o custo de folego nao e
-         * reavaliado a cada frame. Para MANTER esta primeira interacao
-         * verificamos somente os requisitos espaciais/orientacao.
-         *
-         * Quando o sistema de disputa entrar, romper uma pegada deixara de
-         * depender apenas destes limites simples.
+         * reavaliado a cada frame. Quem decide se a interacao continua e a
+         * PoliticaInteracao: limites espaciais sempre; mudancas corporais
+         * somente depois de estabelecida (fim da animacao de entrada).
          */
-        boolean aindaValida
-                = estaNoAlcanceHorizontal(acao, contexto)
-                && estaDentroDaDiferencaDeLinhas(acao, contexto)
-                && atendeOrientacaoDaAcao(acao, contexto);
+        boolean entradaEmAndamento = !isInteracaoEstabelecida();
 
-        if (!aindaValida) {
-            encerrarInteracao();
-        }
+        SituacaoInteracao situacao = new SituacaoInteracao(
+                acao,
+                contexto,
+                entradaEmAndamento,
+                referenciaAplicador,
+                referenciaReceptor,
+                EstadoCorporalObservado.de(aplicadorInteracao),
+                EstadoCorporalObservado.de(receptorInteracao)
+        );
+
+        politicaInteracao.avaliar(situacao)
+                .ifPresent(this::encerrarInteracao);
+    }
+
+    /**
+     * true quando a interacao existe e a animacao de entrada ja terminou
+     * (ou a acao nao tinha animacao).
+     */
+    public boolean isInteracaoEstabelecida() {
+        return estaEmInteracao() && referenciaAplicador != null;
+    }
+
+    /** Motivo do ultimo encerramento de interacao (null se nunca houve). */
+    public MotivoEncerramentoInteracao getUltimoMotivoEncerramento() {
+        return ultimoMotivoEncerramento;
+    }
+
+    public PoliticaInteracao getPoliticaInteracao() {
+        return politicaInteracao;
+    }
+
+    /** Fixa os retratos corporais usados pela politica a partir de agora. */
+    private void estabelecerInteracao() {
+        referenciaAplicador = EstadoCorporalObservado.de(aplicadorInteracao);
+        referenciaReceptor = EstadoCorporalObservado.de(receptorInteracao);
     }
 
     public ContextoCombate getContextoAParaBAtual() {
@@ -308,9 +374,21 @@ public final class SistemaCombate {
         return ultimoAtacante;
     }
 
+    /** Encerramento solicitado de fora (motivo ENCERRAMENTO_MANUAL). */
     public void encerrarInteracao() {
+        encerrarInteracao(MotivoEncerramentoInteracao.ENCERRAMENTO_MANUAL);
+    }
+
+    private void encerrarInteracao(MotivoEncerramentoInteracao motivo) {
+
+        if (estaEmInteracao()) {
+            ultimoMotivoEncerramento = motivo;
+        }
 
         cancelarAnimacaoCombateAtiva();
+
+        referenciaAplicador = null;
+        referenciaReceptor = null;
         // Tambem remove a pose FINAL persistente depois que a timeline terminou.
         if (aplicadorInteracao != null) {
             aplicadorInteracao.limparEstadoAnimacaoCombate();
@@ -517,6 +595,9 @@ public final class SistemaCombate {
                     atacante,
                     defensor
             );
+        } else if (estadoAoSucesso != null) {
+            // Sem animacao de entrada: a interacao ja nasce estabelecida.
+            estabelecerInteracao();
         }
 
         ultimoResultado = ResultadoAcao.SUCESSO;
@@ -561,6 +642,9 @@ public final class SistemaCombate {
         if (manterPose) {
             aplicador.setBloqueadoPorAnimacaoCombate(false);
             receptor.setBloqueadoPorAnimacaoCombate(false);
+            // Entrada concluida: a partir daqui a PoliticaInteracao observa
+            // as mudancas corporais em relacao a este instante.
+            estabelecerInteracao();
         } else {
             aplicador.limparEstadoAnimacaoCombate();
             receptor.limparEstadoAnimacaoCombate();
@@ -598,6 +682,10 @@ public final class SistemaCombate {
         aplicadorInteracao = aplicador;
         receptorInteracao = receptor;
         idAcaoInteracao = idAcao;
+
+        // Ainda nao estabelecida: depende do fim da animacao de entrada.
+        referenciaAplicador = null;
+        referenciaReceptor = null;
     }
 
     private void validarParticipantes(

@@ -60,15 +60,13 @@ Convenção: 1 tick = 1 chamada de `SistemaCombate.atualizar()` = 1 frame do
 | 7 | Durante os 30 ticks os dois ficam `bloqueadoPorAnimacaoCombate` | idem |
 | 8 | No tick 30 a animação termina, o bloqueio sai e a **pose 3 persiste** enquanto a interação existir | idem |
 | 9 | Posição física (X) não muda por causa da animação | idem |
-| 10 | Manutenção a cada tick: se sair do alcance, passar de 1 linha de diferença ou o Branco ficar de costas → `LIVRE`, poses e deslocamentos limpos nos dois | idem |
+| 10 | Manutenção a cada tick: se sair do alcance, passar de 1 linha de diferença ou o Branco ficar de costas → `LIVRE`, poses e deslocamentos limpos nos dois. Depois de estabelecida, também rompe por mudança corporal (ver C8) | idem, `PoliticaInteracaoTest` |
 | 11 | Romper durante a entrada cancela a animação e desbloqueia os dois | idem |
 | 12 | `encerrarInteracao()` limpa estado, poses e bloqueio | idem |
 | 13 | Arrays e parâmetros da PEGADA_1 são idênticos aos aprovados | `Pegada1RegressaoArraysTest` |
 
-### Não coberto (comportamento atual, a mudar na Entrega 3)
+### Não coberto
 
-- Deitar, pular, sprawl ou rolar **depois** da entrada não rompem a pegada; a pose externa
-  continua sobrepondo o desenho. Decisão aprovada: essas ações passarão a romper a interação.
 - Sucesso é determinístico (pesos e dificuldade ainda não são usados).
 
 ## C6 — Conteúdo (Entrega 2)
@@ -88,6 +86,26 @@ Convenção: 1 tick = 1 chamada de `SistemaCombate.atualizar()` = 1 frame do
 | Catálogo JSON: técnica jogável exige todas as regras; campos desconhecidos são rejeitados; duração herdada da animação ou igual a ela | `CarregadorConteudoCombateTest` |
 | Catálogo padrão: `pegada_1` jogável (= legado); `pegada_2..4` pendentes, sem animação nem estado | idem |
 | Ação sem estado de interação: ao fim da animação as poses saem e o controle volta | `ConteudoNoSistemaCombateTest` |
+
+## C8 — Política de interação (Entrega 3A)
+
+| # | Regra | Teste |
+|---|---|---|
+| 1 | No jogo, a PEGADA_1 vem de `/conteudo/miaustudio/PEGADA_1.json` (origem registrada no `RegistroAnimacoesCombate`) | `GamePanelConteudoTest`, `CarregamentoJogoTest` |
+| 2 | Recurso obrigatório ausente/inválido → `ConteudoInvalidoException` "Falha ao carregar o conteudo de combate ..." com arquivo/linha; nunca troca para os arrays legados | `CarregamentoJogoTest` |
+| 3 | Entrada (30 frames): os dois bloqueados; comandos ignorados; nenhuma ação ignorada gasta fôlego; os 3 quadros do JSON tocam iguais | `PoliticaInteracaoTest` |
+| 4 | Teclas seguradas durante o bloqueio ficam travadas até serem soltas (inclusive as apertadas no meio); a trava de um lutador não afeta o outro | `TravaComandosTest` |
+| 5 | Estabelecida (fim da entrada): ficar parado ou respirando mantém a pegada e a pose 3 indefinidamente | `PoliticaInteracaoTest` |
+| 6 | Branco **ou** Preto: andar (frente, trás, profundidade), correr → `MOVIMENTO`; pular/pulo curto → `PULO`; agachar → `AGACHAMENTO`; deitar/levantar → `DEITAR_OU_LEVANTAR`; rolar → `ROLAMENTO`; sprawl → `SPRAWL` — no mesmo tick em que o corpo muda | idem (parametrizado, 20 casos) |
+| 7 | Rompeu → `LIVRE`, sem pose externa, sem deslocamento, sem bloqueio nos dois; a ação pedida continua normalmente (pulo sobe, andar anda, deitado fica deitado) | idem |
+| 8 | Ação que não pode acontecer (ex.: pular respirando) não rompe | idem |
+| 9 | `ALCANCE`, `LINHAS`, `ORIENTACAO` continuam valendo (também durante a entrada); `encerrarInteracao()` → `ENCERRAMENTO_MANUAL` | idem |
+| 10 | Depois do rompimento a PEGADA_1 pode ser repetida: novo custo de 3, mesmos 3 quadros, pose final | idem |
+| 11 | A política é substituível por injeção sem mudar mais nada | idem |
+
+A regra observa o **corpo** (X, Y, linha, pulando, agachado, deitado, rolando, sprawl) comparado com o
+retrato do estabelecimento, e não as teclas. "Correr" parado (só segurar a tecla, sem andar) não muda o
+corpo e por isso não rompe.
 
 ## C7 — Personagens
 

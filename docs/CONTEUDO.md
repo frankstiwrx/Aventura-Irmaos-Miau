@@ -103,10 +103,8 @@ SistemaCombate sistema = conteudo.criarSistema(branco, preto);
 O `SistemaCombate` se recusa a ser criado se uma técnica jogável apontar para uma
 animação que não existe.
 
-> **Estado atual:** o `GamePanel` ainda usa `new SistemaCombate(branco, preto)`, isto é,
-> o registro legado em Java. O teste `ConteudoNoSistemaCombateTest` prova que a versão
-> JSON produz o mesmo resultado tick a tick. Trocar o jogo para o conteúdo JSON é uma
-> linha no `GamePanel`, deixada para a Entrega 3.
+> **Estado atual (Entrega 3A):** o `GamePanel` usa `CarregadorConteudoCombate.carregarParaJogo()`.
+> Tudo que estiver nos catálogos entra no jogo; os arrays legados ficam só como referência de regressão.
 
 ## 4. Novo personagem
 

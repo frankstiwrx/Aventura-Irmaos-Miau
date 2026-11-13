@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 98, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 145, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -47,7 +47,17 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] Durante a animação nenhum dos dois responde às teclas
 - [ ] Ao terminar, a **terceira pose permanece** e `INTERACAO: PEGADA_1`
 - [ ] H de novo com a pegada ativa não cobra fôlego (`-> INDISPONIVEL`)
+- [ ] Debug mostra `FONTE ANIM: /conteudo/miaustudio/PEGADA_1.json`
 - [ ] Afastar um dos dois (ou subir/descer 2 linhas) → `INTERACAO: LIVRE` e o desenho normal volta
+
+#### Política de interação (Entrega 3A) — repetir para o Branco e para o Preto
+
+- [ ] Chegar andando, segurar a direção e apertar H: depois dos 30 frames **ninguém sai andando sozinho**; a pegada continua
+- [ ] Soltar a direção e apertar de novo: anda e rompe (`ROMPIMENTO: MOVIMENTO`), desenho normal na hora
+- [ ] Apertar pulo durante a animação: nada acontece depois que ela termina
+- [ ] Parado alguns segundos (inclusive respirando): pegada e terceira pose continuam
+- [ ] Depois da pegada: pular → `PULO`, agachar → `AGACHAMENTO`, deitar → `DEITAR_OU_LEVANTAR`, rolar → `ROLAMENTO`, sprawl → `SPRAWL`, andar para cima/baixo ou correr → `MOVIMENTO`
+- [ ] Em todos os casos a ação acontece normalmente e não sobra pose congelada
 - [ ] Depois de romper, a pegada pode ser feita de novo
 
 ### MiauStudio (`EditorDePoses` — Run File)

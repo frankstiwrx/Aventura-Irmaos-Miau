@@ -1,6 +1,6 @@
 # Arquitetura — Aventura dos Irmãos Miau
 
-> Estado de referência: Entrega 2 (Conteúdo expansível). Descreve o código **como ele é hoje**
+> Estado de referência: Entrega 3A (conteúdo integrado + política de interação). Descreve o código **como ele é hoje**
 > e as direções já aprovadas. Itens marcados *(planejado)* ainda não existem.
 
 ## Stack e build
@@ -70,7 +70,24 @@ Guia de cadastro: [CONTEUDO.md](CONTEUDO.md).
 
 `SistemaCombate` aceita os dois registros por injeção
 (`new SistemaCombate(a, b, acoes, animacoes)`); os construtores antigos continuam
-usando os registros legados. O `GamePanel` ainda usa o construtor antigo.
+usando os registros legados (compatibilidade explícita e referência de regressão).
+
+**Entrega 3A:** o `GamePanel` cria o combate com
+`CarregadorConteudoCombate.carregarParaJogo().criarSistema(branco, preto)`: a PEGADA_1 do jogo vem de
+`/conteudo/miaustudio/PEGADA_1.json` (o HUD de debug mostra `FONTE ANIM`). Se um recurso faltar ou
+estiver inválido, o jogo mostra o erro (console + janela) e não abre a luta; não há troca silenciosa
+para os arrays legados.
+
+### Política de interação (Entrega 3A)
+
+`SistemaCombate` delega a decisão de manter/encerrar a interação a uma `PoliticaInteracao`
+(padrão: `PoliticaInteracaoPadrao`; injetável no construtor de 5 argumentos). Quando a entrada termina,
+o sistema tira um retrato (`EstadoCorporalObservado`) dos dois corpos; a cada tick a política compara o
+corpo atual com esse retrato. O motivo do último encerramento fica em `getUltimoMotivoEncerramento()`
+(HUD: `ROMPIMENTO`). Detalhes em [CONTRATOS.md](CONTRATOS.md#c8--política-de-interação-entrega-3a).
+
+`InputHandler` tem uma `TravaComandos`: o `GamePanel` a aciona a cada frame bloqueado, e as teclas
+seguradas nesse período só voltam a valer depois de soltas.
 
 ### Ordem de um tick no modo dois Miaus (`GamePanel.atualizar`)
 
@@ -93,7 +110,7 @@ o que inverte automaticamente os deslocamentos quando os lados se trocam.
 1. `EstadoInteracaoCombate` é enum fixo → nova técnica exige editar o enum.
 2. ~~Registro de animações não injetável~~ — resolvido na Entrega 2. Ainda existem duas fontes da PEGADA_1 (arrays legados e JSON), mantidas iguais pelos testes de paridade; o jogo usa a legada.
 3. O combate depende da classe concreta `IrmaoMiau`, não de uma interface.
-4. Após a entrada da PEGADA_1, mudanças corporais (deitar, pular, sprawl) **não** rompem a pegada e a pose externa continua sobrepondo o desenho. Decisão aprovada: romper — implementar na Entrega 3 (Motor).
+4. ~~Mudanças corporais não rompiam a pegada~~ — resolvido na Entrega 3A (`PoliticaInteracao`).
 5. `GamePanel` concentra loop, input, HUD e menus; atualização triplicada por personagem.
 6. Pesos e `dificuldade` da `AcaoCombate` ainda não influenciam: sucesso é determinístico.
 7. ~~Arrays colados à mão~~ — o JSON do MiauStudio agora é importado diretamente (`ConversorMiauStudio`). O editor continua com seu próprio parser e exportação Java.
@@ -101,6 +118,12 @@ o que inverte automaticamente os deslocamentos quando os lados se trocam.
 ## Direções aprovadas *(planejado)*
 
 - **Entrega 2 — Conteúdo:** *(concluída)* ver [CONTEUDO.md](CONTEUDO.md).
-- **Entrega 3 — Motor:** ligar o `GamePanel` a `CarregadorConteudoCombate.carregarPadrao()`; estado de interação por ID, política de interação (entrada bloqueia ambos; depois, movimento/mudança corporal rompe até haver movimentação conjunta), efeitos genéricos, disputa com RNG injetável, comandos por lutador desacoplados do teclado.
+- **Entrega 3A:** *(concluída)* conteúdo JSON no jogo e política de interação.
+- **Entrega 3 (restante) — Motor:** estado de interação por ID, efeitos genéricos, disputa com RNG injetável, comandos por lutador desacoplados do teclado.
 - **Entrega 4 — Produto:** construtores alternativos de Branco/Preto para atributos customizados (preservando os atuais), saves JSON versionados, áudio WAV com fallback silencioso, menus ampliados.
 - **Entrega 5 — Apresentação:** cenário plugável, HUD de pegada, modo treino, empacotamento final.
+
+## Requisitos futuros
+
+Ver [REQUISITOS_FUTUROS.md](REQUISITOS_FUTUROS.md): lógica independente da animação, níveis de prontidão,
+reuso de animações por papel e evolução visual dos personagens.

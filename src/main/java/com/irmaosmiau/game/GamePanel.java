@@ -4,6 +4,9 @@ import com.irmaosmiau.combate.ContextoCombate;
 import com.irmaosmiau.combate.EstadoInteracaoCombate;
 import com.irmaosmiau.combate.ResultadoAcao;
 import com.irmaosmiau.combate.SistemaCombate;
+import com.irmaosmiau.conteudo.CarregadorConteudoCombate;
+import com.irmaosmiau.conteudo.ConteudoCombate;
+import com.irmaosmiau.conteudo.ConteudoInvalidoException;
 import com.irmaosmiau.entities.Direcao;
 import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.entities.IrmaoMiauBranco;
@@ -17,11 +20,13 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 
@@ -228,8 +233,14 @@ public class GamePanel extends JPanel {
         // =========================
         // MOTOR DE COMBATE
         // =========================
+        /*
+         * Entrega 3A: tecnicas e animacoes vem dos catalogos JSON
+         * (conteudo/tecnicas, conteudo/animacoes, conteudo/miaustudio).
+         * Se algo obrigatorio faltar, o jogo PARA com erro claro: nao
+         * existe troca silenciosa para os arrays legados.
+         */
         sistemaCombate = modoDoisMiaus
-                ? new SistemaCombate(
+                ? carregarConteudoCombate().criarSistema(
                         jogadorBranco,
                         jogadorPreto
                 )
@@ -258,6 +269,33 @@ public class GamePanel extends JPanel {
                 );
 
         gameLoop.start();
+    }
+
+    /**
+     * Carrega o conteudo de combate do classpath (NetBeans e JAR).
+     * Em caso de falha mostra a mensagem completa (console e, se houver
+     * tela, numa janela de erro) e propaga a excecao.
+     */
+    private static ConteudoCombate carregarConteudoCombate() {
+        try {
+            return CarregadorConteudoCombate.carregarParaJogo();
+        } catch (ConteudoInvalidoException ex) {
+            System.err.println(ex.getMessage());
+            if (!GraphicsEnvironment.isHeadless()) {
+                JOptionPane.showMessageDialog(
+                        null,
+                        ex.getMessage(),
+                        "Aventura dos Irmãos Miau - erro de conteúdo",
+                        JOptionPane.ERROR_MESSAGE
+                );
+            }
+            throw ex;
+        }
+    }
+
+    /** Acesso para testes do pacote (o jogo nao usa). */
+    SistemaCombate getSistemaCombate() {
+        return sistemaCombate;
     }
 
     // =====================================================
@@ -692,6 +730,9 @@ public class GamePanel extends JPanel {
         jogadorBranco.setRespirando(false);
         jogadorBranco.atualizar(false, false);
 
+        // Teclas seguradas agora so voltam a valer depois de soltas (3A).
+        input.travarComandosPressionadosBranco();
+
         // Sincroniza as bordas das teclas para nada disparar ao desbloquear.
         puloBrancoAnterior = input.isPular();
         puloCurtoBrancoAnterior = input.isPularCurto();
@@ -705,6 +746,8 @@ public class GamePanel extends JPanel {
         jogadorPreto.setCorrendo(false);
         jogadorPreto.setRespirando(false);
         jogadorPreto.atualizar(false, false);
+
+        input.travarComandosPressionadosPreto();
 
         puloPretoAnterior = input.isPretoPular();
         puloCurtoPretoAnterior = input.isPretoPularCurto();
@@ -1662,6 +1705,29 @@ public class GamePanel extends JPanel {
                 "H = tentar PEGADA_1 (Branco)",
                 270,
                 181
+        );
+
+        // Entrega 3A: de onde veio a animacao e por que a ultima pegada acabou.
+        com.irmaosmiau.combate.AcaoCombate pegada1
+                = sistemaCombate.getAcao("pegada_1");
+        String fonte = pegada1 == null || !pegada1.possuiAnimacaoConjunta()
+                ? "-"
+                : String.valueOf(sistemaCombate.getRegistroAnimacoes()
+                        .getOrigem(pegada1.getIdAnimacaoConjunta()));
+
+        g2.drawString(
+                "FONTE ANIM: " + fonte,
+                270,
+                198
+        );
+
+        g2.drawString(
+                "ROMPIMENTO: "
+                + (sistemaCombate.getUltimoMotivoEncerramento() == null
+                        ? "-"
+                        : sistemaCombate.getUltimoMotivoEncerramento()),
+                270,
+                215
         );
     }
 
