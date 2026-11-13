@@ -54,6 +54,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `hud` | HUD do jogador (painéis, estado da interação, feedback) | `HudCombate`, `DadosLutadorHud`, `FeedbackCombate` |
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
+| `persistencia` | Configurações e perfis em JSON versionado, gravação segura (Entrega 4B, ainda não ligada à interface; ver [PERSISTENCIA.md](PERSISTENCIA.md)) | `RepositorioConfiguracoes`, `ConfiguracoesJogo`, `RepositorioPerfis`, `ServicoPerfis`, `ArmazenamentoJson` |
 | `personagens` | Catálogo de personagens por ID com fábrica | `CatalogoPersonagens`, `DefinicaoPersonagem`, `FabricaLutador`, `ReferenciasVisuais` |
 
 Guia de cadastro: [CONTEUDO.md](CONTEUDO.md).
