@@ -198,8 +198,18 @@ public final class HudCombate {
         g.drawString(texto, centro - fm.stringWidth(texto) / 2, y + 12);
     }
 
-    /** Texto centralizado sobre uma caixa escura (legivel em qualquer cenario). */
+    /** Largura maxima do texto central (espaco entre os dois paineis). */
+    static final int LARGURA_MAXIMA_CENTRO = 330;
+
+    /**
+     * Texto centralizado sobre uma caixa escura (legivel em qualquer cenario).
+     * Se nao couber entre os paineis, a fonte diminui (minimo 9 pt).
+     */
     private static void textoComSombra(Graphics2D g, String texto, int centro, int y, Color cor) {
+        Font original = g.getFont();
+        while (g.getFontMetrics().stringWidth(texto) > LARGURA_MAXIMA_CENTRO && g.getFont().getSize() > 9) {
+            g.setFont(g.getFont().deriveFont((float) (g.getFont().getSize() - 1)));
+        }
         FontMetrics fm = g.getFontMetrics();
         int largura = fm.stringWidth(texto);
         int x = centro - largura / 2;
@@ -209,6 +219,7 @@ public final class HudCombate {
         g.drawString(texto, x + 1, y + 1);
         g.setColor(cor);
         g.drawString(texto, x, y);
+        g.setFont(original);
     }
 
     private static Color corDe(FeedbackCombate.Tipo tipo) {

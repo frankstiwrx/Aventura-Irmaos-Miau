@@ -36,6 +36,10 @@ public class InputHandler {
     /* Primeira entrada do motor de combate. */
     private static final String TECLA_BRANCO_PEGADA_1 = "H";
 
+    // Entrega 5A: acoes tecnicas durante a pegada (teclas antes livres).
+    private static final String TECLA_BRANCO_DESEQUILIBRIO = "T";
+    private static final String TECLA_PRETO_ROMPIMENTO = "U";
+
     // =====================================================
     // 2. TECLAS - MIAU PRETO
     // =====================================================
@@ -70,6 +74,7 @@ public class InputHandler {
     private boolean deitar;
     private boolean sprawl;
     private boolean pegada1;
+    private boolean desequilibrio;
 
     // =====================================================
     // 3. ESTADO ATUAL DOS CONTROLES - MIAU PRETO
@@ -87,6 +92,7 @@ public class InputHandler {
     private boolean pretoRolar;
     private boolean pretoDeitar;
     private boolean pretoSprawl;
+    private boolean pretoRompimento;
 
     /*
      * Entrega 3A: comandos segurados durante um bloqueio de animacao de
@@ -183,6 +189,11 @@ public class InputHandler {
                 TECLA_BRANCO_PEGADA_1, "brancoPegada1",
                 () -> pegada1 = true,
                 () -> pegada1 = false);
+
+        mapearTecla(inputMap, actionMap,
+                TECLA_BRANCO_DESEQUILIBRIO, "brancoDesequilibrio",
+                () -> desequilibrio = true,
+                () -> desequilibrio = false);
     }
 
     private void configurarControlesPreto(
@@ -251,6 +262,11 @@ public class InputHandler {
                 TECLA_PRETO_SPRAWL, "pretoSprawl",
                 () -> pretoSprawl = true,
                 () -> pretoSprawl = false);
+
+        mapearTecla(inputMap, actionMap,
+                TECLA_PRETO_ROMPIMENTO, "pretoRompimento",
+                () -> pretoRompimento = true,
+                () -> pretoRompimento = false);
     }
 
     // =====================================================
@@ -373,6 +389,11 @@ public class InputHandler {
         return pegada1 && trava.isLivre("brancoPegada1");
     }
 
+    /** T: acao ofensiva do slot 1 (desequilibrio, se for o aplicador). */
+    public boolean isDesequilibrio() {
+        return desequilibrio && trava.isLivre("brancoDesequilibrio");
+    }
+
     // =====================================================
     // 7. GETTERS - MIAU PRETO
     // =====================================================
@@ -422,5 +443,10 @@ public class InputHandler {
 
     public boolean isPretoSprawl() {
         return pretoSprawl && trava.isLivre("pretoSprawl");
+    }
+
+    /** U: acao defensiva do slot 2 (rompimento tecnico, se for o receptor). */
+    public boolean isPretoRompimento() {
+        return pretoRompimento && trava.isLivre("pretoRompimento");
     }
 }

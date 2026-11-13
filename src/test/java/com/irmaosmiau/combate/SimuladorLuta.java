@@ -93,6 +93,14 @@ final class SimuladorLuta {
         sistema = CarregadorConteudoCombate.carregarParaJogo().criarSistema(branco, preto);
     }
 
+    /** Entrega 5A: lutadores prontos (ex.: com atributos de perfil). */
+    SimuladorLuta(IrmaoMiau branco, IrmaoMiau preto) {
+        this.branco = branco;
+        this.preto = preto;
+        orientar();
+        sistema = CarregadorConteudoCombate.carregarParaJogo().criarSistema(branco, preto);
+    }
+
     SimuladorLuta(PoliticaInteracao politica) {
         branco = new IrmaoMiauBranco(X_BRANCO, 150, 0.7);
         preto = new IrmaoMiauPreto(X_PRETO, 150, 0.7);

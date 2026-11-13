@@ -164,6 +164,9 @@ public class GamePanel extends JPanel {
     private boolean sprawlBrancoAnterior;
     private boolean deitarBrancoAnterior;
     private boolean pegada1BrancoAnterior;
+    // Entrega 5A: acoes tecnicas (borda de subida, uma acao por toque).
+    private boolean desequilibrioAnterior;
+    private boolean rompimentoPretoAnterior;
 
     // Preto no modo de dois jogadores.
     private boolean puloPretoAnterior;
@@ -936,6 +939,30 @@ public class GamePanel extends JPanel {
 
         pegada1BrancoAnterior
                 = pegada1Branco;
+
+        // =========================
+        // ACOES TECNICAS (Entrega 5A)
+        // =========================
+        // T (slot 1): desequilibrio, se este lutador for o APLICADOR da pegada.
+        boolean desequilibrio = input.isDesequilibrio();
+        if (desequilibrio && !desequilibrioAnterior) {
+            feedback.registrarAcaoTecnica(
+                    com.irmaosmiau.combate.TipoDisputa.DESEQUILIBRIO,
+                    sistemaCombate.tentarDesequilibrio(jogadorBranco),
+                    tick);
+        }
+        desequilibrioAnterior = desequilibrio;
+
+        // U (slot 2): rompimento tecnico, se este lutador for o RECEPTOR.
+        // No treino o parceiro e passivo: a tecla do segundo jogador e ignorada.
+        boolean rompimento = !modoTreino && input.isPretoRompimento();
+        if (rompimento && !rompimentoPretoAnterior) {
+            feedback.registrarAcaoTecnica(
+                    com.irmaosmiau.combate.TipoDisputa.ROMPIMENTO_TECNICO,
+                    sistemaCombate.tentarRompimentoTecnico(jogadorPreto),
+                    tick);
+        }
+        rompimentoPretoAnterior = rompimento;
     }
 
     // =====================================================
@@ -1889,6 +1916,16 @@ public class GamePanel extends JPanel {
                 270,
                 215
         );
+
+        // Entrega 5A: ultima disputa tecnica com as pontuacoes.
+        g2.drawString(
+                "DISPUTA: "
+                + (sistemaCombate.getUltimaDisputa() == null
+                        ? "-"
+                        : sistemaCombate.getUltimaDisputa()),
+                270,
+                232
+        );
     }
 
     // =====================================================
@@ -1905,13 +1942,13 @@ public class GamePanel extends JPanel {
                     DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
                     DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
             );
-            dica = "WASD mover · Z correr · ESPAÇO pular · C agachar · H pegada · F5 reiniciar · ESC pausa";
+            dica = "WASD mover · ESPAÇO pular · C agachar · H pegada · T desequilibrar · F5 reiniciar · ESC pausa";
         } else if (modoDoisMiaus) {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorBranco, "J1"),
                     DadosLutadorHud.de(jogadorPreto, "J2")
             );
-            dica = "J1: WASD · ESPAÇO · C · H pegada    J2: setas · N · M    ESC pausa · F3 debug · F4 cenário";
+            dica = "J1: WASD · H pegada · T desequilibrar    J2: setas · N · M · U romper    ESC pausa · F3 debug · F4 cenário";
         } else {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorPrincipal, "JOGADOR")
@@ -1921,7 +1958,10 @@ public class GamePanel extends JPanel {
 
         return new HudCombate.Estado(
                 lutadores,
-                FeedbackCombate.textoEstadoInteracao(sistemaCombate),
+                FeedbackCombate.textoEstado(sistemaCombate,
+                        modoDoisMiaus
+                                ? List.of(jogadorBranco, jogadorPreto)
+                                : List.of(jogadorPrincipal)),
                 feedback.getMensagem(tick),
                 feedback.getTipo(),
                 modoTreino,
@@ -1939,7 +1979,7 @@ public class GamePanel extends JPanel {
         Graphics2D d = (Graphics2D) g2.create();
         d.translate(0, 30);
         d.setColor(new Color(255, 255, 255, 170));
-        d.fillRoundRect(262, 32, 350, 190, 8, 8);
+        d.fillRoundRect(262, 32, 350, 207, 8, 8);
         desenharDebugCombate(d);
         d.dispose();
     }
@@ -2006,6 +2046,7 @@ public class GamePanel extends JPanel {
         deitarBrancoAnterior = input.isDeitar();
         sprawlBrancoAnterior = input.isSprawl();
         pegada1BrancoAnterior = input.isPegada1();
+        desequilibrioAnterior = input.isDesequilibrio();
 
         feedback.reiniciarObservacao();
         feedback.mostrarInfo("Posições reiniciadas", tick);

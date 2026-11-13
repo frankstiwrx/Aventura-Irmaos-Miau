@@ -46,6 +46,25 @@ public final class SistemaCombate {
 
     private MotivoEncerramentoInteracao ultimoMotivoEncerramento;
 
+    // =====================================================
+    // ACOES TECNICAS DURANTE A PEGADA (Entrega 5A)
+    // =====================================================
+    /** Folego do aplicador para tentar o desequilibrio. */
+    public static final double CUSTO_DESEQUILIBRIO = 4.0;
+    /** Folego do receptor para tentar o rompimento tecnico (pago com ou sem sucesso). */
+    public static final double CUSTO_ROMPIMENTO_TECNICO = 3.0;
+    /** Folego de quem RESISTE a uma acao tecnica (limitado ao que ele tiver). */
+    public static final double CUSTO_RESISTENCIA = 1.0;
+    /** Recarga entre acoes tecnicas do mesmo lutador (~0,75 s). */
+    public static final int RECARGA_ACAO_TECNICA_TICKS = 45;
+    /** Duracao do DESEQUILIBRIO no receptor (~2 s). */
+    public static final int DURACAO_DESEQUILIBRIO_TICKS = 120;
+
+    /* Relogio do sistema (1 por atualizar()), usado nas recargas. */
+    private long tick;
+    private final java.util.Map<IrmaoMiau, Long> recargaAte = new java.util.IdentityHashMap<>();
+    private ResultadoDisputa ultimaDisputa;
+
     private ResultadoAcao ultimoResultado;
     private String ultimaAcaoId;
     private IrmaoMiau ultimoAtacante;
@@ -183,6 +202,8 @@ public final class SistemaCombate {
      * interacao persistente ainda pode continuar espacialmente.
      */
     public void atualizar() {
+
+        tick++;
 
         contextoAParaBAtual = new ContextoCombate(
                 lutadorA,
@@ -406,6 +427,104 @@ public final class SistemaCombate {
     /**
      * Cria uma fotografia nova do instante atual.
      */
+    // =====================================================
+    // ACOES TECNICAS (Entrega 5A)
+    // =====================================================
+    /**
+     * O APLICADOR de uma pegada ja estabelecida tenta desequilibrar o
+     * receptor. Nao reinicia a animacao de entrada. Sucesso aplica
+     * DESEQUILIBRIO temporario no receptor; a pegada continua.
+     */
+    public ResultadoAcaoTecnica tentarDesequilibrio(IrmaoMiau atacante) {
+        validarDoCombate(atacante);
+        if (!isInteracaoEstabelecida() || atacante != aplicadorInteracao) {
+            return ResultadoAcaoTecnica.SEM_PEGADA;
+        }
+        IrmaoMiau defensor = receptorInteracao;
+        ResultadoAcaoTecnica pre = prepararAcao(atacante, CUSTO_DESEQUILIBRIO);
+        if (pre != null) {
+            return pre;
+        }
+        ResultadoDisputa disputa = disputar(TipoDisputa.DESEQUILIBRIO, atacante, defensor, CUSTO_DESEQUILIBRIO);
+        if (disputa.isSucessoDoAtaque()) {
+            defensor.getEfeitos().aplicar(
+                    com.irmaosmiau.entities.EfeitosTemporarios.Tipo.DESEQUILIBRIO,
+                    DURACAO_DESEQUILIBRIO_TICKS);
+            return ResultadoAcaoTecnica.SUCESSO;
+        }
+        cobrarResistencia(defensor);
+        return ResultadoAcaoTecnica.RESISTIDO;
+    }
+
+    /**
+     * O RECEPTOR de uma pegada ja estabelecida tenta solta-la sem se
+     * deslocar. Paga o folego com ou sem sucesso. Sucesso encerra a
+     * interacao pelo mecanismo normal (motivo ROMPIMENTO_TECNICO).
+     */
+    public ResultadoAcaoTecnica tentarRompimentoTecnico(IrmaoMiau receptor) {
+        validarDoCombate(receptor);
+        if (!isInteracaoEstabelecida() || receptor != receptorInteracao) {
+            return ResultadoAcaoTecnica.SEM_PEGADA;
+        }
+        IrmaoMiau aplicador = aplicadorInteracao;
+        ResultadoAcaoTecnica pre = prepararAcao(receptor, CUSTO_ROMPIMENTO_TECNICO);
+        if (pre != null) {
+            return pre;
+        }
+        ResultadoDisputa disputa = disputar(TipoDisputa.ROMPIMENTO_TECNICO, receptor, aplicador,
+                CUSTO_ROMPIMENTO_TECNICO);
+        if (disputa.isSucessoDoAtaque()) {
+            encerrarInteracao(MotivoEncerramentoInteracao.ROMPIMENTO_TECNICO);
+            return ResultadoAcaoTecnica.SUCESSO;
+        }
+        cobrarResistencia(aplicador);
+        return ResultadoAcaoTecnica.RESISTIDO;
+    }
+
+    /** Recarga e folego; null = pode agir. */
+    private ResultadoAcaoTecnica prepararAcao(IrmaoMiau lutador, double custo) {
+        if (getRecargaRestante(lutador) > 0) {
+            return ResultadoAcaoTecnica.EM_RECARGA;
+        }
+        if (lutador.getFolegoAtual() < custo) {
+            return ResultadoAcaoTecnica.SEM_FOLEGO;
+        }
+        return null;
+    }
+
+    /**
+     * Disputa com o folego do momento da tentativa; depois cobra o custo de
+     * quem agiu e inicia a recarga.
+     */
+    private ResultadoDisputa disputar(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor, double custo) {
+        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor);
+        atacante.consumirFolegoCombate(custo);
+        recargaAte.put(atacante, tick + RECARGA_ACAO_TECNICA_TICKS);
+        return ultimaDisputa;
+    }
+
+    /** Resistir cansa um pouco, sem nunca deixar o folego negativo. */
+    private static void cobrarResistencia(IrmaoMiau defensor) {
+        defensor.consumirFolegoCombate(Math.min(CUSTO_RESISTENCIA, Math.max(0.0, defensor.getFolegoAtual())));
+    }
+
+    /** Ticks que faltam para o lutador poder fazer outra acao tecnica (0 = livre). */
+    public int getRecargaRestante(IrmaoMiau lutador) {
+        Long ate = recargaAte.get(lutador);
+        return ate == null ? 0 : (int) Math.max(0, ate - tick);
+    }
+
+    /** Ultima disputa resolvida (null se nenhuma). Para HUD de debug e testes. */
+    public ResultadoDisputa getUltimaDisputa() {
+        return ultimaDisputa;
+    }
+
+    private void validarDoCombate(IrmaoMiau lutador) {
+        if (lutador != lutadorA && lutador != lutadorB) {
+            throw new IllegalArgumentException("O lutador precisa pertencer a este SistemaCombate.");
+        }
+    }
+
     public ContextoCombate criarContexto(
             IrmaoMiau atacante,
             IrmaoMiau defensor

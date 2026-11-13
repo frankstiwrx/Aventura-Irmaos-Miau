@@ -21,6 +21,9 @@ public enum MotivoEncerramentoInteracao {
     ROLAMENTO,
     SPRAWL,
 
+    /* Acoes tecnicas (Entrega 5A): receptor soltou a pegada sem se deslocar. */
+    ROMPIMENTO_TECNICO,
+
     /* Administrativos. */
     ACAO_INDISPONIVEL,
     ENCERRAMENTO_MANUAL

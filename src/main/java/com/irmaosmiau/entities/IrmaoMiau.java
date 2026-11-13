@@ -146,6 +146,12 @@ public abstract class IrmaoMiau {
      */
     private boolean bloqueadoPorAnimacaoCombate = false;
 
+    /*
+     * Entrega 5A: efeitos temporarios desta instancia (ex.: DESEQUILIBRIO).
+     * Sem efeito ativo o multiplicador e exatamente 1.0 (formulas inalteradas).
+     */
+    private final EfeitosTemporarios efeitos = new EfeitosTemporarios();
+
     private boolean correndo = false;
 
     private boolean respirando = false;
@@ -570,6 +576,9 @@ public void iniciarSprawl() {
             boolean estaAndando,
             boolean querAgachar
     ) {
+
+        // Entrega 5A: duracao dos efeitos avanca no loop logico.
+        efeitos.atualizar();
 
         // =========================
         // ESTADO ATUAL
@@ -1297,12 +1306,19 @@ public void alternarDeitado() {
 
     private double calcularVelocidadeNormal() {
 
-    return 3.2
+    // Formula original intacta; o fator de efeitos e 1.0 sem efeitos ativos.
+    return (3.2
             + (
                     atributos.getVelocidade()
                     / 100.0
-            ) * 1.6;
+            ) * 1.6)
+            * efeitos.getFatorVelocidade();
 }
+
+    /** Efeitos temporarios desta instancia (Entrega 5A). */
+    public EfeitosTemporarios getEfeitos() {
+        return efeitos;
+    }
     public boolean isCorrendo() {
 
         return correndo;

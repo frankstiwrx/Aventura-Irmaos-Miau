@@ -4,8 +4,14 @@ import com.irmaosmiau.combate.AcaoCombate;
 import com.irmaosmiau.combate.ContextoCombate;
 import com.irmaosmiau.combate.MotivoEncerramentoInteracao;
 import com.irmaosmiau.combate.ResultadoAcao;
+import com.irmaosmiau.combate.ResultadoAcaoTecnica;
+import com.irmaosmiau.combate.TipoDisputa;
+import com.irmaosmiau.entities.EfeitosTemporarios;
 import com.irmaosmiau.combate.SistemaCombate;
 import com.irmaosmiau.entities.IrmaoMiau;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mensagens curtas para o jogador sobre o combate ("Pegada 1!",
@@ -62,10 +68,61 @@ public final class FeedbackCombate {
         boolean terminou = estavaEmInteracao && !emInteracao;
         estavaEmInteracao = emInteracao;
 
-        if (terminou) {
+        // O rompimento tecnico ja mostrou "PEGADA ROMPIDA" no proprio tick.
+        if (terminou && sistema.getUltimoMotivoEncerramento() != MotivoEncerramentoInteracao.ROMPIMENTO_TECNICO) {
             mostrar("Pegada desfeita: " + texto(sistema.getUltimoMotivoEncerramento()), Tipo.INFO, tick);
         }
         return terminou;
+    }
+
+    /**
+     * Entrega 5A: resultado de uma acao tecnica (desequilibrio ou rompimento).
+     */
+    public void registrarAcaoTecnica(TipoDisputa tipo, ResultadoAcaoTecnica resultado, long tick) {
+        boolean desequilibrio = tipo == TipoDisputa.DESEQUILIBRIO;
+        String acao = desequilibrio ? "DESEQUILÍBRIO" : "ROMPIMENTO TÉCNICO";
+        switch (resultado) {
+            case SUCESSO:
+                mostrar(desequilibrio ? "DESEQUILIBROU!" : "PEGADA ROMPIDA!", Tipo.SUCESSO, tick);
+                break;
+            case RESISTIDO:
+                mostrar(desequilibrio ? "TENTATIVA DE DESEQUILÍBRIO: RESISTIU" : "DEFESA FALHOU", Tipo.AVISO, tick);
+                break;
+            case SEM_FOLEGO:
+                mostrar(acao + ": SEM FÔLEGO", Tipo.AVISO, tick);
+                break;
+            case EM_RECARGA:
+                mostrar(acao + ": aguarde", Tipo.INFO, tick);
+                break;
+            case SEM_PEGADA:
+            default:
+                mostrar(acao + ": só com a pegada estabelecida", Tipo.INFO, tick);
+                break;
+        }
+    }
+
+    /**
+     * Linha de estado: interacao (se houver) + efeitos ativos, por exemplo
+     * "PEGADA 1 · ESTABELECIDA · Irmão Miau Preto DESEQUILIBRADO".
+     */
+    public static String textoEstado(SistemaCombate sistema, List<IrmaoMiau> lutadores) {
+        List<String> efeitos = new ArrayList<>();
+        for (IrmaoMiau l : lutadores) {
+            if (l != null && l.getEfeitos().isAtivo(EfeitosTemporarios.Tipo.DESEQUILIBRIO)) {
+                efeitos.add(l.getNome() + " DESEQUILIBRADO");
+            }
+        }
+        String interacao = textoEstadoInteracao(sistema);
+        if (efeitos.isEmpty()) {
+            return interacao;
+        }
+        // Com efeito ativo, a interacao aparece abreviada para caber no centro.
+        List<String> partes = new ArrayList<>();
+        if (interacao != null) {
+            partes.add(interacao.split(" · ")[0]);
+        }
+        partes.addAll(efeitos);
+        return String.join(" · ", partes);
     }
 
     /** Mensagem informativa avulsa (ex.: "Posições reiniciadas"). */
@@ -154,6 +211,7 @@ public final class FeedbackCombate {
             case ROLAMENTO: return "rolamento";
             case SPRAWL: return "sprawl";
             case ACAO_INDISPONIVEL: return "técnica indisponível";
+            case ROMPIMENTO_TECNICO: return "rompimento técnico";
             case ENCERRAMENTO_MANUAL: return "reinício";
             default: return motivo.name().toLowerCase();
         }

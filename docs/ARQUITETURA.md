@@ -56,6 +56,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
 | `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C) | `PreferenciasJogo` |
 | `selecao` | Opções de lutador por slot: oficial + perfis da base (4D) | `OpcoesDeLutadores` |
+| `combate` (5A) | Disputas técnicas determinísticas e ações durante a pegada; ver [COMBATE_AVANCADO.md](COMBATE_AVANCADO.md) | `ResolvedorDisputa`, `TipoDisputa`, `ResultadoAcaoTecnica` |
 | `persistencia` | Configurações e perfis em JSON versionado, gravação segura (Entrega 4B, ainda não ligada à interface; ver [PERSISTENCIA.md](PERSISTENCIA.md)) | `RepositorioConfiguracoes`, `ConfiguracoesJogo`, `RepositorioPerfis`, `ServicoPerfis`, `ArmazenamentoJson` |
 | `personagens` | Catálogo de personagens por ID com fábrica | `CatalogoPersonagens`, `DefinicaoPersonagem`, `FabricaLutador`, `ReferenciasVisuais` |
 

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 297, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 328, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -105,6 +105,20 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] Ordem de profundidade correta com perfis em linhas diferentes
 - [ ] Arquivo de perfil corrompido: aviso na seleção; oficiais continuam escolhíveis
 - [ ] Depois de jogar, o perfil no editor continua com os mesmos valores
+
+### Combate avançado (Entrega 5A) — ver COMBATE_AVANCADO.md
+
+- [ ] Sem pegada, T mostra "DESEQUILÍBRIO: só com a pegada estabelecida"; durante os 30 quadros também
+- [ ] Pegada estabelecida (oficiais): T → "DESEQUILIBROU!", fôlego do Branco −4, estado "… Irmão Miau Preto DESEQUILIBRADO"
+- [ ] A pose final da pegada não muda e a animação de entrada não recomeça
+- [ ] T de novo logo em seguida → "aguarde"; segurar T não repete
+- [ ] Preto desequilibrado anda mais devagar (~60%) por ~2 s, inclusive depois que a pegada acaba
+- [ ] Os Dois: U com o Branco descansado → "DEFESA FALHOU", pegada continua, Preto −3 e Branco −1
+- [ ] Gastar o fôlego do Branco (correr) antes da pegada e depois U → "PEGADA ROMPIDA!", o Preto não sai do lugar
+- [ ] Mover/pular/agachar continua rompendo a pegada como antes (3A)
+- [ ] Treino: U não faz nada; o parceiro nunca defende sozinho; F5 tira o desequilíbrio e zera as recargas
+- [ ] Perfil sem força/técnica: T → "TENTATIVA DE DESEQUILÍBRIO: RESISTIU"
+- [ ] F3: linha DISPUTA mostra as pontuações
 
 ### MiauStudio (`EditorDePoses` — Run File)
 
