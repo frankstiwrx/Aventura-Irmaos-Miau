@@ -7,7 +7,48 @@
     <packaging>jar</packaging>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Bytecode Java 23; compila e roda no JDK 25 (Temurin) do ambiente atual. -->
         <maven.compiler.release>23</maven.compiler.release>
-        <exec.mainClass>com.irmaosmiau.aventurairmaosmiau.AventuraIrmaosMiau</exec.mainClass>
+        <!-- Classe principal oficial: menu -> selecao -> jogo. -->
+        <exec.mainClass>com.irmaosmiau.main.Main</exec.mainClass>
+        <junit.version>5.10.5</junit.version>
     </properties>
+
+    <dependencies>
+        <!-- Somente para testes; nao entra no JAR do jogo. -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.6</version>
+                <configuration>
+                    <systemPropertyVariables>
+                        <!-- Testes nao abrem janelas Swing. -->
+                        <java.awt.headless>true</java.awt.headless>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${exec.mainClass}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>
