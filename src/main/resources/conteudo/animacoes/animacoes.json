@@ -1,0 +1,13 @@
+{
+  "tipo": "CATALOGO_ANIMACOES_COMBATE",
+  "versao": 1,
+  "animacoes": [
+    {
+      "id": "pegada_1_entrada",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1.json",
+      "duracaoFrames": 30,
+      "descricao": "Entrada da PEGADA_1: Branco aplicador, Preto receptor, 3 quadros com tempos iguais."
+    }
+  ]
+}

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 43, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 98, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -52,7 +52,13 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 
 ### MiauStudio (`EditorDePoses` — Run File)
 
-- [ ] Abre normalmente; carregar `PEGADA_1.json` (quando estiver no repositório) e conferir que a exportação conjunta gera os mesmos arrays de `RegistroAnimacoesCombate`
+- [ ] Abre normalmente; carregar `src/main/resources/conteudo/miaustudio/PEGADA_1.json` e conferir a prévia dos 3 quadros
+- [ ] **Não salvar por cima** do arquivo de `resources` ao testar (salvar como outro nome); se salvar de propósito, rodar `mvn test` — o teste de SHA-256 vai acusar a mudança
+
+### Conteúdo (Entrega 2)
+
+- [ ] `git status` mostra `src/main/resources/conteudo/miaustudio/PEGADA_1.json` sem modificação
+- [ ] Os testes `ConversorMiauStudioTest` e `ConteudoNoSistemaCombateTest` passaram
 
 ## 3. Arte e animações
 

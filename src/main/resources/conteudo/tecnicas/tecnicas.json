@@ -1,0 +1,43 @@
+{
+  "tipo": "CATALOGO_TECNICAS_COMBATE",
+  "versao": 1,
+  "tecnicas": [
+    {
+      "id": "pegada_1",
+      "nome": "Pegada 1",
+      "categoria": "PEGADA",
+      "disponibilidade": "JOGAVEL",
+      "descricao": "Uma lapela + um braco.",
+      "estadoInteracaoAoSucesso": "PEGADA_1",
+      "animacao": "pegada_1_entrada",
+      "duracaoAnimacaoFrames": 30,
+      "alcanceHorizontal": 125.0,
+      "diferencaMaximaLinhas": 1,
+      "exigeFrenteParaOponente": true,
+      "custoFolego": 3.0,
+      "dificuldade": 20.0,
+      "pesos": { "tecnica": 0.50, "forca": 0.30, "agilidade": 0.20, "pesoCorporal": 0.00 }
+    },
+    {
+      "id": "pegada_2",
+      "nome": "Pegada 2",
+      "categoria": "PEGADA",
+      "disponibilidade": "PENDENTE",
+      "descricao": "Inversao das maos. Aguardando animacao no MiauStudio e regras."
+    },
+    {
+      "id": "pegada_3",
+      "nome": "Pegada 3",
+      "categoria": "PEGADA",
+      "disponibilidade": "PENDENTE",
+      "descricao": "Ambas as maos nas lapelas. Aguardando animacao no MiauStudio e regras."
+    },
+    {
+      "id": "pegada_4",
+      "nome": "Pegada 4",
+      "categoria": "PEGADA",
+      "disponibilidade": "PENDENTE",
+      "descricao": "Ambas as maos nos bracos. Aguardando animacao no MiauStudio e regras."
+    }
+  ]
+}

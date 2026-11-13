@@ -32,7 +32,7 @@ public final class SistemaCombate {
     // ANIMACAO CONJUNTA ATIVA
     // =====================================================
     private AnimacaoCombateAtiva animacaoCombateAtiva;
-    private final RegistroAnimacoesCombate registroAnimacoes = new RegistroAnimacoesCombate();
+    private final RegistroAnimacoesCombate registroAnimacoes;
 
     // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
     private ResultadoAcao ultimoResultado;
@@ -55,6 +55,49 @@ public final class SistemaCombate {
             IrmaoMiau lutadorB,
             RegistroAcoes registroAcoes
     ) {
+        this(
+                lutadorA,
+                lutadorB,
+                registroAcoes,
+                new RegistroAnimacoesCombate()
+        );
+    }
+
+    /**
+     * Entrega 2: registros injetados (por exemplo, carregados de JSON).
+     *
+     * Toda acao JOGAVEL com animacao conjunta precisa encontrar essa
+     * animacao no registro; caso contrario o sistema nem e criado, em vez
+     * de falhar silenciosamente no meio da luta.
+     */
+    public SistemaCombate(
+            IrmaoMiau lutadorA,
+            IrmaoMiau lutadorB,
+            RegistroAcoes registroAcoes,
+            RegistroAnimacoesCombate registroAnimacoes
+    ) {
+
+        if (registroAnimacoes == null) {
+            throw new IllegalArgumentException(
+                    "O registro de animacoes nao pode ser nulo."
+            );
+        }
+
+        if (registroAcoes != null) {
+            for (AcaoCombate acao : registroAcoes.listar()) {
+                if (acao.isJogavel()
+                        && acao.possuiAnimacaoConjunta()
+                        && !registroAnimacoes.contem(acao.getIdAnimacaoConjunta())) {
+                    throw new IllegalArgumentException(
+                            "A acao " + acao.getId()
+                            + " usa a animacao inexistente: "
+                            + acao.getIdAnimacaoConjunta()
+                    );
+                }
+            }
+        }
+
+        this.registroAnimacoes = registroAnimacoes;
 
         if (lutadorA == null || lutadorB == null) {
             throw new IllegalArgumentException(
@@ -91,6 +134,10 @@ public final class SistemaCombate {
 
     public RegistroAcoes getRegistroAcoes() {
         return registroAcoes;
+    }
+
+    public RegistroAnimacoesCombate getRegistroAnimacoes() {
+        return registroAnimacoes;
     }
 
     /**
@@ -379,6 +426,11 @@ public final class SistemaCombate {
         }
 
         validarParticipantes(atacante, defensor);
+
+        // Tecnicas PENDENTES existem no catalogo, mas nunca executam.
+        if (!acao.isJogavel()) {
+            return false;
+        }
 
         if (isAnimacaoCombateAtiva()) {
             return false;

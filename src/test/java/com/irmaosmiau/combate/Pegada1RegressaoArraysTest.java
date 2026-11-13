@@ -19,15 +19,16 @@ import org.junit.jupiter.api.Test;
  * NAO "conserte" o teste copiando os novos valores sem autorizacao
  * explicita do criador e sem novo teste jogavel no NetBeans.
  */
-class Pegada1RegressaoArraysTest {
+public class Pegada1RegressaoArraysTest {
 
-    private static final int[][] APLICADOR_APROVADO = {
+    // Visiveis no pacote de testes: reutilizados nos testes de paridade do JSON.
+    public static final int[][] APLICADOR_APROVADO = {
         {56, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {56, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 60, 3, -10, 12, -14, 26, 0, 0, 0, 0, 0, 0, 0, 0},
         {56, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 37, 13, 119, -25, -10, 12, -14, 26, 7, -2, 14, 3, 11, -6, 0, 0}
     };
 
-    private static final int[][] RECEPTOR_APROVADO = {
+    public static final int[][] RECEPTOR_APROVADO = {
         {140, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
         {140, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -12, -12, -15, -9, 0, 0, 0, 0, 0, 0, 0, 0},
         {125, 0, 7, 0, 0, 0, 0, 0, 0, 0, 0, -6, 0, 0, 21, -11, 8, 10, -23, -18, -28, 0, 14, 0, 27, 0, 15, -1, 0, 0}

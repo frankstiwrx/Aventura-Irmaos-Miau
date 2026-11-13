@@ -22,7 +22,7 @@ Convenção: 1 tick = 1 chamada de `SistemaCombate.atualizar()` = 1 frame do
 
 | Regra | Teste |
 |---|---|
-| Registro padrão contém exatamente `pegada_1` | `RegistroAcoesTest` |
+| Registro padrão (legado, `new RegistroAcoes()`) contém exatamente `pegada_1` | `RegistroAcoesTest` |
 | Busca ignora maiúsculas e espaços; id desconhecido ou nulo → `null`/`false` | idem |
 | Id duplicado ou ação nula → `IllegalArgumentException` | idem |
 | `listar()` preserva ordem de cadastro e é somente leitura | idem |
@@ -70,6 +70,32 @@ Convenção: 1 tick = 1 chamada de `SistemaCombate.atualizar()` = 1 frame do
 - Deitar, pular, sprawl ou rolar **depois** da entrada não rompem a pegada; a pose externa
   continua sobrepondo o desenho. Decisão aprovada: essas ações passarão a romper a interação.
 - Sucesso é determinístico (pesos e dificuldade ainda não são usados).
+
+## C6 — Conteúdo (Entrega 2)
+
+| Regra | Teste |
+|---|---|
+| `PEGADA_1.json` importado = os 6 arrays aprovados, valor por valor; offsets, deslocamentos e índices por frame idênticos ao legado | `ConversorMiauStudioTest` |
+| A PEGADA_1 via catálogo JSON se comporta **tick a tick** igual à legada (poses, deslocamentos, bloqueio, estado, fôlego, rompimento) | `ConteudoNoSistemaCombateTest` |
+| O arquivo original não muda (SHA-256 conferido; `.gitattributes` impede conversão de fim de linha) | `ConversorMiauStudioTest` |
+| Ordem dos 30 valores = `PoseSalva.paraLinhaJava()` do MiauStudio; cada campo cai no seu índice | idem |
+| De 1 a 60 quadros; aplicador `Branco` ou `Preto` (troca os tracks) | idem |
+| Todos os campos de cada pose são obrigatórios; erros dizem arquivo + caminho (`timelineConjunta[2].preto.offMaoEsqY`) | idem |
+| Sem `duracoesQuadros` → tempos iguais (caminho original). Com distribuição → troca de quadro nos limites acumulados; `[10,10,10]` = comportamento original | `RegistrosExpansiveisTest` |
+| Registros de ações, animações e personagens rejeitam IDs duplicados | `RegistrosExpansiveisTest`, `CarregadorConteudoCombateTest`, `CatalogoPersonagensTest` |
+| Técnica `PENDENTE` → `podeTentarAcao = false`, `tentarAcao = INDISPONIVEL`, sem custo/estado/animação | `RegistrosExpansiveisTest`, `ConteudoNoSistemaCombateTest` |
+| `SistemaCombate` com registro injetado não aceita técnica jogável apontando para animação inexistente | `RegistrosExpansiveisTest` |
+| Catálogo JSON: técnica jogável exige todas as regras; campos desconhecidos são rejeitados; duração herdada da animação ou igual a ela | `CarregadorConteudoCombateTest` |
+| Catálogo padrão: `pegada_1` jogável (= legado); `pegada_2..4` pendentes, sem animação nem estado | idem |
+| Ação sem estado de interação: ao fim da animação as poses saem e o controle volta | `ConteudoNoSistemaCombateTest` |
+
+## C7 — Personagens
+
+| Regra | Teste |
+|---|---|
+| `CatalogoPersonagens.padrao()` = `miau_branco`, `miau_preto`, nessa ordem | `CatalogoPersonagensTest` |
+| Nome, estilo e os 8 atributos da definição = os da instância criada pela fábrica | idem |
+| Personagem fictício registrado só com definição + fábrica entra no `SistemaCombate` e executa a PEGADA_1 | idem |
 
 ## C5 — Pose externa em `IrmaoMiau`
 

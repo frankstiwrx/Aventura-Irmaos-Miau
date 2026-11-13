@@ -1,0 +1,19 @@
+{
+  "tipo": "CATALOGO_ANIMACOES_COMBATE",
+  "versao": 1,
+  "animacoes": [
+    {
+      "id": "pegada_1_entrada",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1.json",
+      "duracaoFrames": 30
+    },
+    {
+      "id": "teste_5_quadros",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "miaustudio/TESTE_5_QUADROS.json",
+      "duracoesQuadros": [4, 4, 8, 8, 16],
+      "descricao": "Animacao ficticia somente para testes (aplicador Preto)."
+    }
+  ]
+}

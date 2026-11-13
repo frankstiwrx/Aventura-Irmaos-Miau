@@ -17,8 +17,18 @@ public final class RegistroAcoes {
 
     private final Map<String, AcaoCombate> acoes = new LinkedHashMap<>();
 
+    /** Registro LEGADO: somente a pegada_1 cadastrada em Java. */
     public RegistroAcoes() {
         registrarAcoesPadrao();
+    }
+
+    private RegistroAcoes(boolean semPadrao) {
+        // Registro vazio, para conteudo carregado de arquivos.
+    }
+
+    /** Registro sem nenhuma acao pre-cadastrada. */
+    public static RegistroAcoes vazio() {
+        return new RegistroAcoes(true);
     }
 
     private void registrarAcoesPadrao() {

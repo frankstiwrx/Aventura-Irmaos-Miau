@@ -1,0 +1,3 @@
+# Projetos originais do MiauStudio: preservar byte a byte (sem conversao CRLF/LF).
+# O teste ConversorMiauStudioTest confere o SHA-256 do PEGADA_1.json original.
+src/main/resources/conteudo/miaustudio/*.json -text

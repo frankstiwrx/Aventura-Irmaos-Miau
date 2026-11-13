@@ -42,6 +42,14 @@ public final class AcaoCombate {
     private final double pesoAgilidade;
     private final double pesoPesoCorporal;
 
+    /* Entrega 2: estado de producao e descricao livre (opcional). */
+    private final DisponibilidadeAcao disponibilidade;
+    private final String descricao;
+
+    /**
+     * Construtor original (Entrega 1). Cria uma acao JOGAVEL sem descricao.
+     * Para cadastros novos prefira {@link #builder(String, String, CategoriaAcao)}.
+     */
     public AcaoCombate(
             String id,
             String nome,
@@ -59,6 +67,36 @@ public final class AcaoCombate {
             double pesoAgilidade,
             double pesoPesoCorporal
     ) {
+        this(id, nome, categoria, estadoInteracaoAoSucesso, idAnimacaoConjunta,
+                duracaoAnimacaoFrames, alcanceHorizontal, diferencaMaximaLinhas,
+                exigeFrenteParaOponente, custoFolego, dificuldade, pesoTecnica,
+                pesoForca, pesoAgilidade, pesoPesoCorporal,
+                DisponibilidadeAcao.JOGAVEL, null);
+    }
+
+    private AcaoCombate(
+            String id,
+            String nome,
+            CategoriaAcao categoria,
+            EstadoInteracaoCombate estadoInteracaoAoSucesso,
+            String idAnimacaoConjunta,
+            int duracaoAnimacaoFrames,
+            double alcanceHorizontal,
+            int diferencaMaximaLinhas,
+            boolean exigeFrenteParaOponente,
+            double custoFolego,
+            double dificuldade,
+            double pesoTecnica,
+            double pesoForca,
+            double pesoAgilidade,
+            double pesoPesoCorporal,
+            DisponibilidadeAcao disponibilidade,
+            String descricao
+    ) {
+
+        if (disponibilidade == null) {
+            throw new IllegalArgumentException("A acao precisa de uma disponibilidade.");
+        }
 
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("A acao precisa de um id.");
@@ -125,6 +163,126 @@ public final class AcaoCombate {
         this.pesoForca = pesoForca;
         this.pesoAgilidade = pesoAgilidade;
         this.pesoPesoCorporal = pesoPesoCorporal;
+        this.disponibilidade = disponibilidade;
+        this.descricao = descricao == null || descricao.isBlank()
+                ? null
+                : descricao.trim();
+    }
+
+    /**
+     * Inicia um cadastro com os campos obrigatorios.
+     *
+     * Padroes: JOGAVEL, sem estado de interacao, sem animacao, alcance 0,
+     * 0 linhas, sem exigir frente, custo 0, dificuldade 0, pesos 0.
+     * As validacoes sao as mesmas do construtor original.
+     */
+    public static Builder builder(String id, String nome, CategoriaAcao categoria) {
+        return new Builder(id, nome, categoria);
+    }
+
+    /** Construtor fluente de {@link AcaoCombate}. */
+    public static final class Builder {
+
+        private final String id;
+        private final String nome;
+        private final CategoriaAcao categoria;
+        private EstadoInteracaoCombate estadoInteracaoAoSucesso;
+        private String idAnimacaoConjunta;
+        private int duracaoAnimacaoFrames;
+        private double alcanceHorizontal;
+        private int diferencaMaximaLinhas;
+        private boolean exigeFrenteParaOponente;
+        private double custoFolego;
+        private double dificuldade;
+        private double pesoTecnica;
+        private double pesoForca;
+        private double pesoAgilidade;
+        private double pesoPesoCorporal;
+        private DisponibilidadeAcao disponibilidade = DisponibilidadeAcao.JOGAVEL;
+        private String descricao;
+
+        private Builder(String id, String nome, CategoriaAcao categoria) {
+            this.id = id;
+            this.nome = nome;
+            this.categoria = categoria;
+        }
+
+        public Builder estadoInteracaoAoSucesso(EstadoInteracaoCombate estado) {
+            this.estadoInteracaoAoSucesso = estado;
+            return this;
+        }
+
+        /** Animacao conjunta disparada no sucesso e sua duracao em frames. */
+        public Builder animacao(String idAnimacao, int duracaoFrames) {
+            this.idAnimacaoConjunta = idAnimacao;
+            this.duracaoAnimacaoFrames = duracaoFrames;
+            return this;
+        }
+
+        public Builder alcanceHorizontal(double alcance) {
+            this.alcanceHorizontal = alcance;
+            return this;
+        }
+
+        public Builder diferencaMaximaLinhas(int linhas) {
+            this.diferencaMaximaLinhas = linhas;
+            return this;
+        }
+
+        public Builder exigeFrenteParaOponente(boolean exige) {
+            this.exigeFrenteParaOponente = exige;
+            return this;
+        }
+
+        public Builder custoFolego(double custo) {
+            this.custoFolego = custo;
+            return this;
+        }
+
+        public Builder dificuldade(double dificuldade) {
+            this.dificuldade = dificuldade;
+            return this;
+        }
+
+        public Builder pesos(double tecnica, double forca, double agilidade, double pesoCorporal) {
+            this.pesoTecnica = tecnica;
+            this.pesoForca = forca;
+            this.pesoAgilidade = agilidade;
+            this.pesoPesoCorporal = pesoCorporal;
+            return this;
+        }
+
+        public Builder disponibilidade(DisponibilidadeAcao disponibilidade) {
+            this.disponibilidade = disponibilidade;
+            return this;
+        }
+
+        public Builder descricao(String descricao) {
+            this.descricao = descricao;
+            return this;
+        }
+
+        public AcaoCombate build() {
+            return new AcaoCombate(id, nome, categoria, estadoInteracaoAoSucesso,
+                    idAnimacaoConjunta, duracaoAnimacaoFrames, alcanceHorizontal,
+                    diferencaMaximaLinhas, exigeFrenteParaOponente, custoFolego,
+                    dificuldade, pesoTecnica, pesoForca, pesoAgilidade,
+                    pesoPesoCorporal, disponibilidade, descricao);
+        }
+    }
+
+    public DisponibilidadeAcao getDisponibilidade() {
+        return disponibilidade;
+    }
+
+    /** Somente acoes JOGAVEL podem ser tentadas pelo SistemaCombate. */
+    public boolean isJogavel() {
+        return disponibilidade == DisponibilidadeAcao.JOGAVEL;
+    }
+
+    /** Descricao livre (pode ser null). */
+    public String getDescricao() {
+        return descricao;
     }
 
     private static void validarPeso(String nome, double valor) {

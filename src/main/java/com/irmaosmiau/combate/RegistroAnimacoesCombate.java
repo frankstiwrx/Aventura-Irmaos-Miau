@@ -1,12 +1,23 @@
 package com.irmaosmiau.combate;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
-/** Dados visuais separados das regras e dos atributos do combate. */
+/**
+ * Dados visuais separados das regras e dos atributos do combate.
+ *
+ * Duas formas de uso:
+ * - {@code new RegistroAnimacoesCombate()}: registro LEGADO com a PEGADA_1
+ *   em arrays Java (comportamento original, protegido pelo teste golden);
+ * - {@link #vazio()} + {@link #registrar}: registro preenchido por conteudo,
+ *   por exemplo pelo CarregadorConteudoCombate a partir de JSON do MiauStudio.
+ */
 public final class RegistroAnimacoesCombate {
 
-    private final Map<String, AnimacaoConjuntaQuadros> animacoes = new HashMap<>();
+    private final Map<String, AnimacaoConjuntaQuadros> animacoes = new LinkedHashMap<>();
 
     public RegistroAnimacoesCombate() {
         // Dados gerados a partir de PEGADA_1.json, MiauStudio projeto v2.
@@ -26,14 +37,61 @@ public final class RegistroAnimacoesCombate {
         ));
     }
 
+    private RegistroAnimacoesCombate(boolean semPadrao) {
+        // Registro vazio, para conteudo carregado de arquivos.
+    }
+
+    /** Registro sem nenhuma animacao pre-cadastrada. */
+    public static RegistroAnimacoesCombate vazio() {
+        return new RegistroAnimacoesCombate(true);
+    }
+
+    /**
+     * Cadastra uma animacao.
+     *
+     * @throws IllegalArgumentException se o id for vazio, a sequencia nula
+     *         ou ja existir uma animacao com o mesmo id
+     */
     public void registrar(String id, AnimacaoConjuntaQuadros sequencia) {
         if (id == null || id.isBlank() || sequencia == null) {
             throw new IllegalArgumentException("ID e sequencia sao obrigatorios.");
         }
-        animacoes.put(id.trim().toLowerCase(), sequencia);
+        String normalizado = normalizar(id);
+        if (animacoes.containsKey(normalizado)) {
+            throw new IllegalArgumentException(
+                    "Ja existe uma animacao de combate registrada com o id: " + normalizado);
+        }
+        animacoes.put(normalizado, sequencia);
     }
 
     public AnimacaoConjuntaQuadros buscar(String id) {
-        return id == null ? null : animacoes.get(id.trim().toLowerCase());
+        return id == null ? null : animacoes.get(normalizar(id));
+    }
+
+    /** Como {@link #buscar}, mas com erro claro quando o id nao existe. */
+    public AnimacaoConjuntaQuadros exigir(String id) {
+        AnimacaoConjuntaQuadros a = buscar(id);
+        if (a == null) {
+            throw new IllegalArgumentException(
+                    "Animacao de combate nao registrada: " + id
+                    + " (registradas: " + animacoes.keySet() + ")");
+        }
+        return a;
+    }
+
+    public boolean contem(String id) {
+        return buscar(id) != null;
+    }
+
+    public int quantidade() {
+        return animacoes.size();
+    }
+
+    public Set<String> ids() {
+        return Collections.unmodifiableSet(animacoes.keySet());
+    }
+
+    private static String normalizar(String id) {
+        return id.trim().toLowerCase(Locale.ROOT);
     }
 }

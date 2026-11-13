@@ -1,0 +1,33 @@
+{
+  "tipo": "CATALOGO_TECNICAS_COMBATE",
+  "versao": 1,
+  "tecnicas": [
+    {
+      "id": "pegada_1",
+      "nome": "Pegada 1",
+      "categoria": "PEGADA",
+      "disponibilidade": "JOGAVEL",
+      "estadoInteracaoAoSucesso": "PEGADA_1",
+      "animacao": "pegada_1_entrada",
+      "alcanceHorizontal": 125.0,
+      "diferencaMaximaLinhas": 1,
+      "exigeFrenteParaOponente": true,
+      "custoFolego": 3.0,
+      "dificuldade": 20.0,
+      "pesos": { "tecnica": 0.5, "forca": 0.3, "agilidade": 0.2, "pesoCorporal": 0.0 }
+    },
+    {
+      "id": "tecnica_teste",
+      "nome": "Tecnica de Teste",
+      "categoria": "CONTROLE",
+      "disponibilidade": "JOGAVEL",
+      "animacao": "teste_5_quadros",
+      "alcanceHorizontal": 500.0,
+      "diferencaMaximaLinhas": 4,
+      "exigeFrenteParaOponente": false,
+      "custoFolego": 1.0,
+      "dificuldade": 0.0,
+      "pesos": { "tecnica": 1.0, "forca": 0.0, "agilidade": 0.0, "pesoCorporal": 0.0 }
+    }
+  ]
+}
