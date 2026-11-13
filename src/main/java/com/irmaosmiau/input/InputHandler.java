@@ -1,6 +1,17 @@
 package com.irmaosmiau.input;
 
+import com.irmaosmiau.controles.AcaoJogador;
+import com.irmaosmiau.controles.MapaControles;
+import com.irmaosmiau.controles.SlotJogador;
+import com.irmaosmiau.controles.TeclaFisica;
+
 import java.awt.event.ActionEvent;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.InputMap;
@@ -8,349 +19,134 @@ import javax.swing.JComponent;
 import javax.swing.KeyStroke;
 
 /**
- * Centraliza todo o mapeamento de teclado dos dois personagens.
+ * Ponto UNICO de leitura do teclado dos dois jogadores.
  *
- * MAPA RÁPIDO DO ARQUIVO 1. Teclas do Miau Branco 2. Teclas do Miau Preto 3.
- * Estado atual dos controles 4. Configuração dos key bindings 5. Método
- * genérico de mapeamento 6. Getters do Miau Branco 7. Getters do Miau Preto
+ * Entrega 5C: as teclas deixaram de ser constantes deste arquivo. O fluxo e
+ * tecla fisica (MapaControles) -> acao logica (AcaoJogador) -> estado
+ * pressionado/solto por slot. Quem decide o que a acao significa no estado
+ * atual e o GamePanel (e, no combate, AcoesContextuais), nunca a tecla.
+ *
+ * Mantido desde a Entrega 1:
+ * - nomes de comando no ActionMap ("brancoPegada1Pressionada" etc.);
+ * - TravaComandos (3A): tecla segurada durante bloqueio so volta a valer
+ *   depois de solta;
+ * - getters especificos (isPegada1, isPretoRompimento...), agora apenas
+ *   atalhos para {@link #isAtiva(SlotJogador, AcaoJogador)}.
  */
 public class InputHandler {
 
-    // =====================================================
-    // 1. TECLAS - MIAU BRANCO
-    // =====================================================
-    private static final String TECLA_BRANCO_ESQUERDA = "A";
-    private static final String TECLA_BRANCO_DIREITA = "D";
-    private static final String TECLA_BRANCO_CIMA = "W";
-    private static final String TECLA_BRANCO_BAIXO = "S";
-
-    private static final String TECLA_BRANCO_PULAR = "SPACE";
-    private static final String TECLA_BRANCO_AGACHAR = "C";
-    private static final String TECLA_BRANCO_CORRER = "Z";
-    private static final String TECLA_BRANCO_PULAR_CURTO = "V";
-    private static final String TECLA_BRANCO_RESPIRAR = "X";
-    private static final String TECLA_BRANCO_ROLAR = "R";
-    private static final String TECLA_BRANCO_DEITAR = "F";
-    private static final String TECLA_BRANCO_SPRAWL = "G";
-
-    /* Primeira entrada do motor de combate. */
-    private static final String TECLA_BRANCO_PEGADA_1 = "H";
-
-    // Entrega 5A: acoes tecnicas durante a pegada (teclas antes livres).
-    private static final String TECLA_BRANCO_DESEQUILIBRIO = "T";
-    private static final String TECLA_PRETO_ROMPIMENTO = "U";
-
-    // Entrega 5B: reforco da pegada e modo de controle (deslocamento conjunto).
-    private static final String TECLA_BRANCO_REFORCO = "Y";
-    private static final String TECLA_BRANCO_CONTROLE = "SHIFT";
-
-    // =====================================================
-    // 2. TECLAS - MIAU PRETO
-    // =====================================================
-    private static final String TECLA_PRETO_ESQUERDA = "LEFT";
-    private static final String TECLA_PRETO_DIREITA = "RIGHT";
-    private static final String TECLA_PRETO_CIMA = "UP";
-    private static final String TECLA_PRETO_BAIXO = "DOWN";
-
-    private static final String TECLA_PRETO_PULAR = "N";
-    private static final String TECLA_PRETO_AGACHAR = "M";
-    private static final String TECLA_PRETO_CORRER = "K";
-    private static final String TECLA_PRETO_PULAR_CURTO = "B";
-    private static final String TECLA_PRETO_RESPIRAR = "L";
-    private static final String TECLA_PRETO_ROLAR = "O";
-    private static final String TECLA_PRETO_DEITAR = "J";
-    private static final String TECLA_PRETO_SPRAWL = "I";
-
-    // =====================================================
-    // 3. ESTADO ATUAL DOS CONTROLES - MIAU BRANCO
-    // =====================================================
-    private boolean esquerda;
-    private boolean direita;
-    private boolean cima;
-    private boolean baixo;
-
-    private boolean pular;
-    private boolean agachar;
-    private boolean correr;
-    private boolean pularCurto;
-    private boolean respirar;
-    private boolean rolar;
-    private boolean deitar;
-    private boolean sprawl;
-    private boolean pegada1;
-    private boolean desequilibrio;
-    private boolean reforco;
-    private boolean controle;
-
-    // =====================================================
-    // 3. ESTADO ATUAL DOS CONTROLES - MIAU PRETO
-    // =====================================================
-    private boolean pretoEsquerda;
-    private boolean pretoDireita;
-    private boolean pretoCima;
-    private boolean pretoBaixo;
-
-    private boolean pretoPular;
-    private boolean pretoAgachar;
-    private boolean pretoCorrer;
-    private boolean pretoPularCurto;
-    private boolean pretoRespirar;
-    private boolean pretoRolar;
-    private boolean pretoDeitar;
-    private boolean pretoSprawl;
-    private boolean pretoRompimento;
-
     /*
-     * Entrega 3A: comandos segurados durante um bloqueio de animacao de
-     * combate ficam travados ate a tecla ser solta (nada retroativo).
+     * Com SHIFT/CTRL/ALT segurados o Swing gera "shift pressed X" etc. em vez
+     * de "pressed X". Registrar todas as combinacoes mantem todos os
+     * controles funcionando enquanto um modificador (qualquer que seja a
+     * tecla escolhida para o modo de controle) esta segurado, e as teclas
+     * sao soltas corretamente em qualquer ordem.
      */
-    private static final String PREFIXO_BRANCO = "branco";
-    private static final String PREFIXO_PRETO = "preto";
+    static final String[] COMBINACOES_MODIFICADORES = {
+        "", "shift ", "ctrl ", "alt ", "shift ctrl ", "shift alt ", "ctrl alt ", "shift ctrl alt "
+    };
 
+    private static final String PREFIXO_BRANCO = SlotJogador.JOGADOR_1.getPrefixoComando();
+    private static final String PREFIXO_PRETO = SlotJogador.JOGADOR_2.getPrefixoComando();
+
+    private final MapaControles mapa;
+    private final Map<SlotJogador, Set<AcaoJogador>> pressionadas = new EnumMap<>(SlotJogador.class);
     private final TravaComandos trava = new TravaComandos();
 
     // =====================================================
-    // 4. CONFIGURAÇÃO DOS KEY BINDINGS
+    // CONFIGURACAO DOS KEY BINDINGS
     // =====================================================
+    /** Controles padrao (identicos aos de antes da Entrega 5C). */
     public InputHandler(JComponent componente) {
+        this(componente, MapaControles.padrao());
+    }
 
-        InputMap inputMap = componente.getInputMap(
-                JComponent.WHEN_IN_FOCUSED_WINDOW
-        );
+    /**
+     * Controles configurados. Um mapa com conflitos nunca deveria chegar
+     * aqui (PreferenciasControles valida ao carregar e ao salvar); se chegar,
+     * os padroes sao usados para o jogo continuar controlavel.
+     */
+    public InputHandler(JComponent componente, MapaControles mapaConfigurado) {
+        MapaControles m = mapaConfigurado == null ? MapaControles.padrao() : mapaConfigurado;
+        if (m.problemas().stream().anyMatch(p -> p.tipo() != com.irmaosmiau.controles.ProblemaControle.Tipo.SEM_TECLA)) {
+            System.err.println("[controles] mapa com conflitos " + m.problemas() + "; usando os padroes.");
+            m = MapaControles.padrao();
+        }
+        this.mapa = m;
 
+        InputMap inputMap = componente.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = componente.getActionMap();
 
-        configurarControlesBranco(inputMap, actionMap);
-        configurarControlesPreto(inputMap, actionMap);
+        for (SlotJogador slot : SlotJogador.values()) {
+            pressionadas.put(slot, EnumSet.noneOf(AcaoJogador.class));
+            for (AcaoJogador acao : slot.acoes()) {
+                mapearAcao(inputMap, actionMap, slot, acao, mapa.tecla(slot, acao));
+            }
+        }
     }
 
-    private void configurarControlesBranco(
-            InputMap inputMap,
-            ActionMap actionMap
-    ) {
+    private void mapearAcao(InputMap inputMap, ActionMap actionMap, SlotJogador slot,
+            AcaoJogador acao, Optional<TeclaFisica> tecla) {
 
-        // Movimento
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_ESQUERDA, "brancoEsquerda",
-                () -> esquerda = true,
-                () -> esquerda = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_DIREITA, "brancoDireita",
-                () -> direita = true,
-                () -> direita = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_CIMA, "brancoCima",
-                () -> cima = true,
-                () -> cima = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_BAIXO, "brancoBaixo",
-                () -> baixo = true,
-                () -> baixo = false);
-
-        // Ações
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_PULAR, "brancoPular",
-                () -> pular = true,
-                () -> pular = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_AGACHAR, "brancoAgachar",
-                () -> agachar = true,
-                () -> agachar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_CORRER, "brancoCorrer",
-                () -> correr = true,
-                () -> correr = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_PULAR_CURTO, "brancoPularCurto",
-                () -> pularCurto = true,
-                () -> pularCurto = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_RESPIRAR, "brancoRespirar",
-                () -> respirar = true,
-                () -> respirar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_ROLAR, "brancoRolar",
-                () -> rolar = true,
-                () -> rolar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_DEITAR, "brancoDeitar",
-                () -> deitar = true,
-                () -> deitar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_SPRAWL, "brancoSprawl",
-                () -> sprawl = true,
-                () -> sprawl = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_PEGADA_1, "brancoPegada1",
-                () -> pegada1 = true,
-                () -> pegada1 = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_DESEQUILIBRIO, "brancoDesequilibrio",
-                () -> desequilibrio = true,
-                () -> desequilibrio = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_REFORCO, "brancoReforco",
-                () -> reforco = true,
-                () -> reforco = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_BRANCO_CONTROLE, "brancoControle",
-                () -> controle = true,
-                () -> controle = false);
-    }
-
-    private void configurarControlesPreto(
-            InputMap inputMap,
-            ActionMap actionMap
-    ) {
-
-        // Movimento
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_ESQUERDA, "pretoEsquerda",
-                () -> pretoEsquerda = true,
-                () -> pretoEsquerda = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_DIREITA, "pretoDireita",
-                () -> pretoDireita = true,
-                () -> pretoDireita = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_CIMA, "pretoCima",
-                () -> pretoCima = true,
-                () -> pretoCima = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_BAIXO, "pretoBaixo",
-                () -> pretoBaixo = true,
-                () -> pretoBaixo = false);
-
-        // Ações
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_PULAR, "pretoPular",
-                () -> pretoPular = true,
-                () -> pretoPular = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_AGACHAR, "pretoAgachar",
-                () -> pretoAgachar = true,
-                () -> pretoAgachar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_CORRER, "pretoCorrer",
-                () -> pretoCorrer = true,
-                () -> pretoCorrer = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_PULAR_CURTO, "pretoPularCurto",
-                () -> pretoPularCurto = true,
-                () -> pretoPularCurto = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_RESPIRAR, "pretoRespirar",
-                () -> pretoRespirar = true,
-                () -> pretoRespirar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_ROLAR, "pretoRolar",
-                () -> pretoRolar = true,
-                () -> pretoRolar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_DEITAR, "pretoDeitar",
-                () -> pretoDeitar = true,
-                () -> pretoDeitar = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_SPRAWL, "pretoSprawl",
-                () -> pretoSprawl = true,
-                () -> pretoSprawl = false);
-
-        mapearTecla(inputMap, actionMap,
-                TECLA_PRETO_ROMPIMENTO, "pretoRompimento",
-                () -> pretoRompimento = true,
-                () -> pretoRompimento = false);
-    }
-
-    // =====================================================
-    // 5. MAPEAMENTO GENÉRICO
-    // =====================================================
-    private void mapearTecla(
-            InputMap inputMap,
-            ActionMap actionMap,
-            String tecla,
-            String nome,
-            Runnable aoPressionar,
-            Runnable aoSoltar
-    ) {
-
+        String nome = slot.comando(acao);
         String pressionada = nome + "Pressionada";
         String solta = nome + "Solta";
 
-        inputMap.put(
-                KeyStroke.getKeyStroke("pressed " + tecla),
-                pressionada
-        );
+        // Acao sem tecla continua existindo no ActionMap, so nao tem atalho.
+        tecla.ifPresent(t -> {
+            for (String mod : COMBINACOES_MODIFICADORES) {
+                inputMap.put(KeyStroke.getKeyStroke(mod + "pressed " + t.getNome()), pressionada);
+                inputMap.put(KeyStroke.getKeyStroke(mod + "released " + t.getNome()), solta);
+            }
+        });
 
-        inputMap.put(
-                KeyStroke.getKeyStroke("released " + tecla),
-                solta
-        );
+        actionMap.put(pressionada, new AbstractAction() {
+            private static final long serialVersionUID = 1L;
 
-        /*
-         * Entrega 5B: com SHIFT segurado o Swing gera "shift pressed X" em
-         * vez de "pressed X". Registrar as duas formas mantem todos os
-         * controles funcionando enquanto o SHIFT (modo de controle) esta
-         * pressionado, e a tecla e solta corretamente em qualquer ordem.
-         */
-        inputMap.put(
-                KeyStroke.getKeyStroke("shift pressed " + tecla),
-                pressionada
-        );
-
-        inputMap.put(
-                KeyStroke.getKeyStroke("shift released " + tecla),
-                solta
-        );
-
-        actionMap.put(
-                pressionada,
-                new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 trava.pressionar(nome);
-                aoPressionar.run();
+                pressionadas.get(slot).add(acao);
             }
-        }
-        );
+        });
 
-        actionMap.put(
-                solta,
-                new AbstractAction() {
+        actionMap.put(solta, new AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
             @Override
             public void actionPerformed(ActionEvent e) {
                 trava.soltar(nome);
-                aoSoltar.run();
+                pressionadas.get(slot).remove(acao);
             }
-        }
-        );
+        });
+    }
+
+    /** Mapa efetivamente em uso (para a ajuda e a faixa de dicas). */
+    public MapaControles getMapa() {
+        return mapa;
     }
 
     // =====================================================
-    // 5.1 TRAVA DE COMANDOS DURANTE BLOQUEIO (Entrega 3A)
+    // LEITURA GENERICA (Entrega 5C)
+    // =====================================================
+    /** A acao esta segurada agora e nao esta travada por um bloqueio de combate. */
+    public boolean isAtiva(SlotJogador slot, AcaoJogador acao) {
+        return pressionadas.get(slot).contains(acao) && trava.isLivre(slot.comando(acao));
+    }
+
+    /**
+     * Solta tudo (janela perdeu o foco): sem o evento "released", uma tecla
+     * ficaria presa e o lutador andaria sozinho.
+     */
+    public void liberarTodas() {
+        for (Set<AcaoJogador> s : pressionadas.values()) {
+            s.clear();
+        }
+        trava.soltarTodos();
+    }
+
+    // =====================================================
+    // TRAVA DE COMANDOS DURANTE BLOQUEIO (Entrega 3A)
     // =====================================================
     /**
      * Chamado a cada frame em que o Branco esta bloqueado por uma animacao
@@ -367,128 +163,136 @@ public class InputHandler {
     }
 
     // =====================================================
-    // 6. GETTERS - MIAU BRANCO
+    // GETTERS - JOGADOR 1 (Miau Branco / jogador individual)
     // =====================================================
+    private boolean j1(AcaoJogador a) {
+        return isAtiva(SlotJogador.JOGADOR_1, a);
+    }
+
+    private boolean j2(AcaoJogador a) {
+        return isAtiva(SlotJogador.JOGADOR_2, a);
+    }
+
     public boolean isEsquerda() {
-        return esquerda && trava.isLivre("brancoEsquerda");
+        return j1(AcaoJogador.MOVER_ESQUERDA);
     }
 
     public boolean isDireita() {
-        return direita && trava.isLivre("brancoDireita");
+        return j1(AcaoJogador.MOVER_DIREITA);
     }
 
     public boolean isCima() {
-        return cima && trava.isLivre("brancoCima");
+        return j1(AcaoJogador.MOVER_CIMA);
     }
 
     public boolean isBaixo() {
-        return baixo && trava.isLivre("brancoBaixo");
+        return j1(AcaoJogador.MOVER_BAIXO);
     }
 
     public boolean isPular() {
-        return pular && trava.isLivre("brancoPular");
+        return j1(AcaoJogador.PULAR);
     }
 
     public boolean isAgachar() {
-        return agachar && trava.isLivre("brancoAgachar");
+        return j1(AcaoJogador.AGACHAR);
     }
 
     public boolean isCorrer() {
-        return correr && trava.isLivre("brancoCorrer");
+        return j1(AcaoJogador.CORRER);
     }
 
     public boolean isPularCurto() {
-        return pularCurto && trava.isLivre("brancoPularCurto");
+        return j1(AcaoJogador.PULO_CURTO);
     }
 
     public boolean isRespirar() {
-        return respirar && trava.isLivre("brancoRespirar");
+        return j1(AcaoJogador.RESPIRAR);
     }
 
     public boolean isRolar() {
-        return rolar && trava.isLivre("brancoRolar");
+        return j1(AcaoJogador.ROLAR);
     }
 
     public boolean isDeitar() {
-        return deitar && trava.isLivre("brancoDeitar");
+        return j1(AcaoJogador.DEITAR_LEVANTAR);
     }
 
     public boolean isSprawl() {
-        return sprawl && trava.isLivre("brancoSprawl");
+        return j1(AcaoJogador.SPRAWL);
     }
 
     public boolean isPegada1() {
-        return pegada1 && trava.isLivre("brancoPegada1");
+        return j1(AcaoJogador.INICIAR_PEGADA);
     }
 
-    /** Y: reforcar a pegada (slot 1, se for o aplicador). */
+    /** Reforcar a pegada (slot 1, se for o aplicador). */
     public boolean isReforco() {
-        return reforco && trava.isLivre("brancoReforco");
+        return j1(AcaoJogador.REFORCAR_PEGADA);
     }
 
-    /** SHIFT: modo de controle do slot 1 (com A/D = deslocamento conjunto da pegada). */
+    /** Modo de controle do slot 1 (com esquerda/direita = deslocamento conjunto). */
     public boolean isControle() {
-        return controle && trava.isLivre("brancoControle");
+        return j1(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
     }
 
-    /** T: acao ofensiva do slot 1 (desequilibrio, se for o aplicador). */
+    /** Acao ofensiva do slot 1 (desequilibrio, se for o aplicador). */
     public boolean isDesequilibrio() {
-        return desequilibrio && trava.isLivre("brancoDesequilibrio");
+        return j1(AcaoJogador.TENTAR_DESEQUILIBRIO);
     }
 
     // =====================================================
-    // 7. GETTERS - MIAU PRETO
+    // GETTERS - JOGADOR 2 (Miau Preto)
     // =====================================================
     public boolean isPretoEsquerda() {
-        return pretoEsquerda && trava.isLivre("pretoEsquerda");
+        return j2(AcaoJogador.MOVER_ESQUERDA);
     }
 
     public boolean isPretoDireita() {
-        return pretoDireita && trava.isLivre("pretoDireita");
+        return j2(AcaoJogador.MOVER_DIREITA);
     }
 
     public boolean isPretoCima() {
-        return pretoCima && trava.isLivre("pretoCima");
+        return j2(AcaoJogador.MOVER_CIMA);
     }
 
     public boolean isPretoBaixo() {
-        return pretoBaixo && trava.isLivre("pretoBaixo");
+        return j2(AcaoJogador.MOVER_BAIXO);
     }
 
     public boolean isPretoPular() {
-        return pretoPular && trava.isLivre("pretoPular");
+        return j2(AcaoJogador.PULAR);
     }
 
     public boolean isPretoAgachar() {
-        return pretoAgachar && trava.isLivre("pretoAgachar");
+        return j2(AcaoJogador.AGACHAR);
     }
 
     public boolean isPretoCorrer() {
-        return pretoCorrer && trava.isLivre("pretoCorrer");
+        return j2(AcaoJogador.CORRER);
     }
 
     public boolean isPretoPularCurto() {
-        return pretoPularCurto && trava.isLivre("pretoPularCurto");
+        return j2(AcaoJogador.PULO_CURTO);
     }
 
     public boolean isPretoRespirar() {
-        return pretoRespirar && trava.isLivre("pretoRespirar");
+        return j2(AcaoJogador.RESPIRAR);
     }
 
     public boolean isPretoRolar() {
-        return pretoRolar && trava.isLivre("pretoRolar");
+        return j2(AcaoJogador.ROLAR);
     }
 
     public boolean isPretoDeitar() {
-        return pretoDeitar && trava.isLivre("pretoDeitar");
+        return j2(AcaoJogador.DEITAR_LEVANTAR);
     }
 
     public boolean isPretoSprawl() {
-        return pretoSprawl && trava.isLivre("pretoSprawl");
+        return j2(AcaoJogador.SPRAWL);
     }
 
-    /** U: acao defensiva do slot 2 (rompimento tecnico, se for o receptor). */
+    /** Acao defensiva do slot 2 (rompimento tecnico, se for o receptor). */
     public boolean isPretoRompimento() {
-        return pretoRompimento && trava.isLivre("pretoRompimento");
+        return j2(AcaoJogador.ROMPIMENTO_TECNICO);
     }
 }

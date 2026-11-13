@@ -43,7 +43,8 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `main` | Pontos de entrada e troca de telas | `Main`, `MainPrototipo` |
 | `ui` | Menu principal e seleção de personagem | `MenuPanel`, `SelecaoPersonagemPanel` |
 | `game` | Loop (Timer 16 ms ≈ 60 FPS), input → personagens → combate, pausa/fim, render, HUD, espelhamento | `GamePanel` |
-| `input` | Teclas → flags booleanas por personagem (InputMap/ActionMap) | `InputHandler` |
+| `input` | Único leitor do teclado: teclas configuradas → estado das ações lógicas por slot (InputMap/ActionMap), trava de bloqueio | `InputHandler`, `TravaComandos` |
+| `controles` (5C) | Ações lógicas, teclas suportadas, mapa configurável dos dois slots, conflitos, papel no combate e ações contextuais; ver [CONTROLES.md](CONTROLES.md) | `AcaoJogador`, `SlotJogador`, `TeclaFisica`, `MapaControles`, `PapelCombate`, `AcoesContextuais`, `DetectorToques` |
 | `entities` | Corpo, movimento, linhas, fôlego/condicionamento, estados corporais, renderers e arrays de animação | `IrmaoMiau` (base), `IrmaoMiauBranco`, `IrmaoMiauPreto`, `AtributosLutador` |
 | `combate` | Ações declarativas, fotografia espacial, interação compartilhada, timeline conjunta | ver abaixo |
 | `editor` | MiauStudio: autoria de poses/animações, projeto JSON v2, exportação de arrays | `EditorDePoses` |
@@ -54,7 +55,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `hud` | HUD do jogador (painéis, estado da interação, feedback) | `HudCombate`, `DadosLutadorHud`, `FeedbackCombate` |
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
-| `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C) | `PreferenciasJogo` |
+| `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C); controles (5C) | `PreferenciasJogo`, `PreferenciasControles` |
 | `selecao` | Opções de lutador por slot: oficial + perfis da base (4D) | `OpcoesDeLutadores` |
 | `combate` (5A) | Disputas técnicas determinísticas e ações durante a pegada; ver [COMBATE_AVANCADO.md](COMBATE_AVANCADO.md) | `ResolvedorDisputa`, `TipoDisputa`, `ResultadoAcaoTecnica` |
 | `persistencia` | Configurações e perfis em JSON versionado, gravação segura (Entrega 4B, ainda não ligada à interface; ver [PERSISTENCIA.md](PERSISTENCIA.md)) | `RepositorioConfiguracoes`, `ConfiguracoesJogo`, `RepositorioPerfis`, `ServicoPerfis`, `ArmazenamentoJson` |
@@ -159,7 +160,7 @@ de tatame centrada nos pés (y = 326 + 20·linha, medido nos renderers atuais).
 No treino o `GamePanel` usa uma `SessaoTreino`: o parceiro é atualizado pelo `ComportamentoParceiro.PASSIVO`
 (as teclas do segundo jogador são ignoradas) e F5 recria os dois lutadores nas posições iniciais.
 
-### Atalhos (teclas livres, sem conflito com os controles)
+### Atalhos (teclas reservadas, nunca atribuíveis aos controles — 5C)
 
 | Tecla | Ação |
 |---|---|
@@ -208,3 +209,20 @@ perfil JSON --ServicoPerfis--> PerfilLutador --OpcoesDeLutadores--> EscolhaLutad
   (`3.2 + velocidade/100 × 1.6`) e recuperação (taxas de recuperação). Força, agilidade, técnica e peso
   acompanham a instância, mas nenhuma fórmula os usa ainda (nada foi inventado).
 - `SelecaoLutadoresPanel` substitui no fluxo a `SelecaoPersonagemPanel` (mantida no projeto, sem alterações).
+
+## Controles configuráveis (Entrega 5C)
+
+Tecla física → `AcaoJogador` (via `MapaControles`) → `InputHandler.isAtiva(slot, ação)` →
+`GamePanel` (contínua, toque ou modificador) → sistema existente. O motor não conhece teclas.
+
+- `controles.json` separado de `configuracoes.json` (tipo `CONTROLES_IRMAOS_MIAU`, versão 1),
+  carregado por `Main.prepararControles()` e instalado em `PreferenciasControles.global()`;
+  cada `GamePanel` lê o mapa ao ser criado.
+- CONFIGURAÇÕES → CONTROLES (`ui.ControlesPanel`): remapear, trocar em conflito, restaurar, salvar.
+- Pausa → CONTROLES (`game.PainelAjudaControles`): ajuda com as teclas reais; a faixa de dicas do
+  HUD (`hud.AjudaControles`) é gerada das teclas e mostra só as ações úteis no papel atual.
+- Ações de combate despachadas por `GamePanel.executarAcaoCombate` na ordem
+  `AcoesContextuais.ACOES_DE_COMBATE` (pegada, T, Y, U), iguais à 5B.
+- Janela sem foco solta todas as teclas.
+
+Detalhes, regras de conflito, como adicionar ações e o plano das ações contextuais: [CONTROLES.md](CONTROLES.md).

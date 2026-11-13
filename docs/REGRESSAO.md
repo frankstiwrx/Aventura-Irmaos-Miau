@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 350, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 404, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -133,6 +133,25 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] Linhas diferentes (Preto uma linha abaixo): arrastar mantém a profundidade correta
 - [ ] Treino: Y, T e SHIFT+A/D funcionam; parceiro passivo; F5 volta tudo ao início
 - [ ] Fora da pegada, os controles com e sem SHIFT continuam normais
+
+### Controles configuráveis (Entrega 5C) — ver CONTROLES.md
+
+- [ ] Sem `controles.json`: todos os controles iguais aos de antes (WASD/H/T/Y/SHIFT, setas/U); a pasta de dados não ganha arquivo novo só por jogar
+- [ ] CONFIGURAÇÕES → CONTROLES abre; JOGADOR 1 e JOGADOR 2 mostram suas ações com rolagem, agrupadas
+- [ ] Clicar na tecla de "Iniciar pegada" → "pressione uma tecla…" → P; ESC durante a captura cancela; F5/ESC/TAB são recusadas
+- [ ] Durante a captura, ESPAÇO/ENTER não acionam os botões da tela
+- [ ] Escolher uma tecla já usada (ex.: D, ou A no Jogador 2) pergunta se deve trocar; "Não" mantém tudo
+- [ ] VOLTAR com mudança pergunta salvar/descartar/cancelar; SALVAR, fechar e abrir o jogo: P continua
+- [ ] Partida Os Dois: P faz a PEGADA_1 (H não faz nada); 3 quadros, custo 3, pose final, firmeza normal
+- [ ] Remapear T, Y e U: desequilíbrio, reforço e rompimento funcionam pelas teclas novas, com as mesmas mensagens
+- [ ] Remapear o modo controle para CTRL (ou Q) e esquerda/direita: arrasto funciona com as teclas novas; SHIFT não arrasta mais; direita sem o modo rompe
+- [ ] Faixa de dicas mostra as teclas configuradas e muda com o papel (livre: pegar; aplicador: desequilibrar/reforçar/arrastar; receptor: romper)
+- [ ] ESC → CONTROLES mostra a ajuda com as teclas reais e a linha AGORA; ESC/VOLTAR volta à pausa
+- [ ] Segurar uma direção e trocar de janela (Alt+Tab): ao voltar, ninguém está andando sozinho
+- [ ] Treino: teclas personalizadas funcionam; parceiro passivo; F5 reinicia
+- [ ] RESTAURAR PADRÕES + SALVAR volta tudo ao original
+- [ ] Editar `controles.json` à mão com lixo: o jogo abre com aviso e controles padrão; o arquivo só vira `.corrompido-…` ao salvar
+- [ ] Modo individual (Branco ou Preto) usa as teclas do Jogador 1
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

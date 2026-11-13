@@ -8,6 +8,12 @@ import com.irmaosmiau.audio.ServicoAudio;
 import com.irmaosmiau.cenario.Cenario;
 import com.irmaosmiau.cenario.RegistroCenarios;
 import com.irmaosmiau.combate.SistemaCombate;
+import com.irmaosmiau.controles.AcaoJogador;
+import com.irmaosmiau.controles.AcoesContextuais;
+import com.irmaosmiau.controles.DetectorToques;
+import com.irmaosmiau.controles.MapaControles;
+import com.irmaosmiau.controles.PapelCombate;
+import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.conteudo.CarregadorConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoInvalidoException;
@@ -16,12 +22,14 @@ import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.entities.IrmaoMiauBranco;
 import com.irmaosmiau.entities.IrmaoMiauPreto;
 import com.irmaosmiau.entities.TipoPersonagem;
+import com.irmaosmiau.hud.AjudaControles;
 import com.irmaosmiau.hud.DadosLutadorHud;
 import com.irmaosmiau.hud.FeedbackCombate;
 import com.irmaosmiau.hud.HudCombate;
 import com.irmaosmiau.input.InputHandler;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.EscolhaLutador;
+import com.irmaosmiau.preferencias.PreferenciasControles;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
 import com.irmaosmiau.treino.SessaoTreino;
@@ -163,11 +171,12 @@ public class GamePanel extends JPanel {
     private boolean rolamentoBrancoAnterior;
     private boolean sprawlBrancoAnterior;
     private boolean deitarBrancoAnterior;
-    private boolean pegada1BrancoAnterior;
-    // Entrega 5A: acoes tecnicas (borda de subida, uma acao por toque).
-    private boolean desequilibrioAnterior;
-    // Entrega 5B: reforco (borda) e deslocamento conjunto em andamento.
-    private boolean reforcoAnterior;
+    /*
+     * Entrega 5C: borda de subida das acoes de COMBATE (pegada, T, Y, U)
+     * por slot e acao logica, em vez de um campo por tecla.
+     */
+    private final DetectorToques toques = new DetectorToques();
+    // Entrega 5B: deslocamento conjunto em andamento.
     private boolean deslocandoConjunto;
 
     /*
@@ -177,7 +186,6 @@ public class GamePanel extends JPanel {
      */
     static final int LIMITE_ESQUERDO_ARENA = 15;
     static final int LIMITE_DIREITO_ARENA = LARGURA - 85;
-    private boolean rompimentoPretoAnterior;
 
     // Preto no modo de dois jogadores.
     private boolean puloPretoAnterior;
@@ -194,6 +202,16 @@ public class GamePanel extends JPanel {
 
     private boolean pausado;
     private JPanel menuPausa;
+    // Entrega 5C: tela de ajuda de controles (pausa -> CONTROLES).
+    private boolean ajudaVisivel;
+    private JButton voltarDaAjuda;
+    private final transient java.awt.event.WindowFocusListener aoPerderFoco =
+            new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowLostFocus(java.awt.event.WindowEvent e) {
+                    liberarTeclas();
+                }
+            };
 
     private boolean fimDeJogo;
     private String mensagemFim = "";
@@ -392,8 +410,9 @@ public class GamePanel extends JPanel {
         // =========================
         // INPUT
         // =========================
+        // Entrega 5C: teclas configuradas (controles.json) ou os padroes.
         input
-                = new InputHandler(this);
+                = new InputHandler(this, PreferenciasControles.global().getAtual());
 
         // =========================
         // PAUSA
@@ -946,65 +965,58 @@ public class GamePanel extends JPanel {
     // =====================================================
     private void atualizarEntradasCombate() {
 
-        boolean pegada1Branco
-                = input.isPegada1();
-
-        if (pegada1Branco
-                && !pegada1BrancoAnterior) {
-
-            ResultadoAcao resultado = sistemaCombate.tentarAcao(
-                    jogadorBranco,
-                    jogadorPreto,
-                    "pegada_1"
-            );
-
-            feedback.registrarTentativa(
-                    sistemaCombate,
-                    jogadorBranco,
-                    jogadorPreto,
-                    "pegada_1",
-                    resultado,
-                    tick
-            );
-
-            if (resultado == ResultadoAcao.SUCESSO) {
-                audio.tocarEfeito(AudioJogo.EFEITO_PEGADA);
+        /*
+         * Entrega 5C: tecla fisica -> acao logica (InputHandler) -> borda de
+         * subida (DetectorToques) -> sistema existente. A ordem e os
+         * resultados sao os da 5B (pegada, desequilibrio, reforco, rompimento);
+         * o SistemaCombate continua decidindo se a acao vale no estado atual.
+         */
+        for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
+            for (SlotJogador slot : SlotJogador.values()) {
+                if (!slot.usa(acao)) {
+                    continue;
+                }
+                // No treino o parceiro e passivo: as teclas do segundo jogador sao ignoradas.
+                boolean ativa = !(modoTreino && slot == SlotJogador.JOGADOR_2)
+                        && input.isAtiva(slot, acao);
+                if (toques.tocou(slot, acao, ativa)) {
+                    executarAcaoCombate(slot, acao);
+                }
             }
         }
+    }
 
-        pegada1BrancoAnterior
-                = pegada1Branco;
+    /** Uma acao de combate pedida por um slot, encaminhada ao SistemaCombate. */
+    private void executarAcaoCombate(SlotJogador slot, AcaoJogador acao) {
 
-        // =========================
-        // ACOES TECNICAS (Entrega 5A)
-        // =========================
-        // T (slot 1): desequilibrio, se este lutador for o APLICADOR da pegada.
-        boolean desequilibrio = input.isDesequilibrio();
-        if (desequilibrio && !desequilibrioAnterior) {
-            feedback.registrarAcaoTecnica(
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
+
+        switch (acao) {
+            case INICIAR_PEGADA -> {
+                ResultadoAcao resultado = sistemaCombate.tentarAcao(ator, outro, "pegada_1");
+                feedback.registrarTentativa(sistemaCombate, ator, outro, "pegada_1", resultado, tick);
+                if (resultado == ResultadoAcao.SUCESSO) {
+                    audio.tocarEfeito(AudioJogo.EFEITO_PEGADA);
+                }
+            }
+            // Desequilibrio: so vale se este lutador for o APLICADOR da pegada.
+            case TENTAR_DESEQUILIBRIO -> feedback.registrarAcaoTecnica(
                     com.irmaosmiau.combate.TipoDisputa.DESEQUILIBRIO,
-                    sistemaCombate.tentarDesequilibrio(jogadorBranco),
+                    sistemaCombate.tentarDesequilibrio(ator),
                     tick);
-        }
-        desequilibrioAnterior = desequilibrio;
-
-        // Y (slot 1): reforcar a pegada, se este lutador for o APLICADOR.
-        boolean reforco = input.isReforco();
-        if (reforco && !reforcoAnterior) {
-            feedback.registrarReforco(sistemaCombate.tentarReforcarPegada(jogadorBranco), tick);
-        }
-        reforcoAnterior = reforco;
-
-        // U (slot 2): rompimento tecnico, se este lutador for o RECEPTOR.
-        // No treino o parceiro e passivo: a tecla do segundo jogador e ignorada.
-        boolean rompimento = !modoTreino && input.isPretoRompimento();
-        if (rompimento && !rompimentoPretoAnterior) {
-            feedback.registrarAcaoTecnica(
+            // Reforco: so vale se este lutador for o APLICADOR.
+            case REFORCAR_PEGADA -> feedback.registrarReforco(
+                    sistemaCombate.tentarReforcarPegada(ator), tick);
+            // Rompimento tecnico: so vale se este lutador for o RECEPTOR.
+            case ROMPIMENTO_TECNICO -> feedback.registrarAcaoTecnica(
                     com.irmaosmiau.combate.TipoDisputa.ROMPIMENTO_TECNICO,
-                    sistemaCombate.tentarRompimentoTecnico(jogadorPreto),
+                    sistemaCombate.tentarRompimentoTecnico(ator),
                     tick);
+            default -> {
+                // Acoes continuas/modificadoras sao lidas no movimento.
+            }
         }
-        rompimentoPretoAnterior = rompimento;
     }
 
     // =====================================================
@@ -1208,9 +1220,9 @@ public class GamePanel extends JPanel {
 
         menuPausa.setBounds(
                 250,
-                90,
+                65,
                 300,
-                270
+                320
         );
 
         GridBagConstraints gbc
@@ -1265,6 +1277,12 @@ public class GamePanel extends JPanel {
                         "MENU PRINCIPAL"
                 );
 
+        // Entrega 5C: ajuda com as teclas configuradas.
+        JButton controles
+                = new JButton(
+                        "CONTROLES"
+                );
+
         Font fonteBotao
                 = new Font(
                         "Arial",
@@ -1282,6 +1300,14 @@ public class GamePanel extends JPanel {
 
         menuPrincipal.setFont(
                 fonteBotao
+        );
+
+        controles.setFont(
+                fonteBotao
+        );
+
+        controles.addActionListener(
+                e -> mostrarAjudaControles(true)
         );
 
         continuar.addActionListener(
@@ -1323,6 +1349,13 @@ public class GamePanel extends JPanel {
         gbc.gridy = 3;
 
         menuPausa.add(
+                controles,
+                gbc
+        );
+
+        gbc.gridy = 4;
+
+        menuPausa.add(
                 menuPrincipal,
                 gbc
         );
@@ -1330,6 +1363,13 @@ public class GamePanel extends JPanel {
         menuPausa.setVisible(false);
 
         add(menuPausa);
+
+        voltarDaAjuda = new JButton("VOLTAR");
+        voltarDaAjuda.setFont(fonteBotao);
+        voltarDaAjuda.setBounds(630, 400, 120, 28);
+        voltarDaAjuda.addActionListener(e -> mostrarAjudaControles(false));
+        voltarDaAjuda.setVisible(false);
+        add(voltarDaAjuda);
     }
 
     private void configurarPausa() {
@@ -1339,6 +1379,15 @@ public class GamePanel extends JPanel {
         ).put(
                 javax.swing.KeyStroke.getKeyStroke(
                         "pressed ESCAPE"
+                ),
+                "alternarPausa"
+        );
+
+        getInputMap(
+                WHEN_IN_FOCUSED_WINDOW
+        ).put(
+                javax.swing.KeyStroke.getKeyStroke(
+                        "shift pressed ESCAPE"
                 ),
                 "alternarPausa"
         );
@@ -1360,6 +1409,12 @@ public class GamePanel extends JPanel {
 
     private void alternarPausa() {
 
+        // ESC com a ajuda aberta volta ao menu de pausa.
+        if (ajudaVisivel) {
+            mostrarAjudaControles(false);
+            return;
+        }
+
         pausado
                 = !pausado;
 
@@ -1368,6 +1423,64 @@ public class GamePanel extends JPanel {
         );
 
         repaint();
+    }
+
+    /** Entrega 5C: abre/fecha a ajuda de controles (somente com o jogo pausado). */
+    void mostrarAjudaControles(boolean visivel) {
+        ajudaVisivel = visivel && pausado;
+        menuPausa.setVisible(pausado && !ajudaVisivel);
+        voltarDaAjuda.setVisible(ajudaVisivel);
+        repaint();
+    }
+
+    boolean isAjudaVisivel() {
+        return ajudaVisivel;
+    }
+
+    /** Conteudo da ajuda: colunas por jogador, acoes uteis agora e atalhos do sistema. */
+    PainelAjudaControles.Conteudo montarAjudaControles() {
+        MapaControles mapa = input.getMapa();
+        List<PainelAjudaControles.Coluna> colunas = new java.util.ArrayList<>();
+        List<String> agora = new java.util.ArrayList<>();
+        if (modoDoisMiaus && !modoTreino) {
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 1 · " + jogadorBranco.getNome(),
+                    AjudaControles.linhas(mapa, SlotJogador.JOGADOR_1)));
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 2 · " + jogadorPreto.getNome(),
+                    AjudaControles.linhas(mapa, SlotJogador.JOGADOR_2)));
+            adicionarAgora(agora, "J1", mapa, SlotJogador.JOGADOR_1, jogadorBranco);
+            adicionarAgora(agora, "J2", mapa, SlotJogador.JOGADOR_2, jogadorPreto);
+        } else {
+            IrmaoMiau jogador = modoDoisMiaus ? jogadorBranco : jogadorPrincipal;
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR · " + jogador.getNome(),
+                    AjudaControles.linhas(mapa, SlotJogador.JOGADOR_1)));
+            if (modoDoisMiaus) {
+                adicionarAgora(agora, "J1", mapa, SlotJogador.JOGADOR_1, jogadorBranco);
+            }
+        }
+        return new PainelAjudaControles.Conteudo(colunas, String.join("   ", agora),
+                modoTreino ? "Parceiro de treino passivo." : "");
+    }
+
+    private void adicionarAgora(List<String> agora, String sigla, MapaControles mapa,
+            SlotJogador slot, IrmaoMiau lutador) {
+        String texto = AjudaControles.agora(mapa, slot, PapelCombate.de(sistemaCombate, lutador));
+        if (!texto.isEmpty()) {
+            agora.add(sigla + ": " + texto);
+        }
+    }
+
+    /** Entrega 5C: janela sem foco = nenhuma tecla continua segurada. */
+    private void liberarTeclas() {
+        input.liberarTodas();
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        java.awt.Window janela = javax.swing.SwingUtilities.getWindowAncestor(this);
+        if (janela != null) {
+            janela.addWindowFocusListener(aoPerderFoco);
+        }
     }
 
     // =====================================================
@@ -1728,6 +1841,11 @@ public class GamePanel extends JPanel {
             );
         }
 
+        if (ajudaVisivel) {
+
+            PainelAjudaControles.desenhar(g2, montarAjudaControles(), LARGURA, ALTURA);
+        }
+
         if (fimDeJogo) {
 
             desenharFimDeJogo(g2);
@@ -1996,18 +2114,21 @@ public class GamePanel extends JPanel {
                     DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
                     DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
             );
-            dica = "WASD · ESPAÇO · C · H pegada · T desequilibrar · Y reforçar · SHIFT+A/D arrastar · F5 reiniciar · ESC";
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, input.getMapa(),
+                    PapelCombate.de(sistemaCombate, jogadorBranco), PapelCombate.de(sistemaCombate, jogadorPreto));
         } else if (modoDoisMiaus) {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorBranco, "J1"),
                     DadosLutadorHud.de(jogadorPreto, "J2")
             );
-            dica = "J1: WASD · H pegada · T desequil. · Y reforçar · SHIFT+A/D arrastar   J2: setas · U romper   ESC · F3 · F4";
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, input.getMapa(),
+                    PapelCombate.de(sistemaCombate, jogadorBranco), PapelCombate.de(sistemaCombate, jogadorPreto));
         } else {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorPrincipal, "JOGADOR")
             );
-            dica = "WASD mover · Z correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário";
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.INDIVIDUAL, input.getMapa(),
+                    PapelCombate.LIVRE, PapelCombate.LIVRE);
         }
 
         return new HudCombate.Estado(
@@ -2099,9 +2220,11 @@ public class GamePanel extends JPanel {
         rolamentoBrancoAnterior = input.isRolar();
         deitarBrancoAnterior = input.isDeitar();
         sprawlBrancoAnterior = input.isSprawl();
-        pegada1BrancoAnterior = input.isPegada1();
-        desequilibrioAnterior = input.isDesequilibrio();
-        reforcoAnterior = input.isReforco();
+        for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
+            if (SlotJogador.JOGADOR_1.usa(acao)) {
+                toques.sincronizar(SlotJogador.JOGADOR_1, acao, input.isAtiva(SlotJogador.JOGADOR_1, acao));
+            }
+        }
         deslocandoConjunto = false;
 
         feedback.reiniciarObservacao();
@@ -2116,6 +2239,10 @@ public class GamePanel extends JPanel {
     @Override
     public void removeNotify() {
         gameLoop.stop();
+        java.awt.Window janela = javax.swing.SwingUtilities.getWindowAncestor(this);
+        if (janela != null) {
+            janela.removeWindowFocusListener(aoPerderFoco);
+        }
         super.removeNotify();
     }
 
@@ -2150,10 +2277,24 @@ public class GamePanel extends JPanel {
         return pausado;
     }
 
+    /** Entrega 5C: o mesmo que acontece quando a janela perde o foco. */
+    void simularPerdaDeFocoParaTestes() {
+        liberarTeclas();
+    }
+
+    MapaControles getMapaControles() {
+        return input.getMapa();
+    }
+
     private void atalho(String tecla, String nome, Runnable acao) {
 
+        // Tambem com SHIFT segurado (modo controle padrao) o atalho continua valendo.
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(
                 javax.swing.KeyStroke.getKeyStroke("pressed " + tecla),
+                nome
+        );
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(
+                javax.swing.KeyStroke.getKeyStroke("shift pressed " + tecla),
                 nome
         );
 

@@ -4,12 +4,15 @@ import com.irmaosmiau.audio.AudioJogo;
 import com.irmaosmiau.cenario.RegistroCenarios;
 import com.irmaosmiau.persistencia.DiretorioDados;
 import com.irmaosmiau.persistencia.RepositorioConfiguracoes;
+import com.irmaosmiau.persistencia.RepositorioControles;
 import com.irmaosmiau.persistencia.ServicoPerfis;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.EscolhaLutador;
+import com.irmaosmiau.preferencias.PreferenciasControles;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.selecao.OpcoesDeLutadores;
 import com.irmaosmiau.ui.ConfiguracoesPanel;
+import com.irmaosmiau.ui.ControlesPanel;
 import com.irmaosmiau.ui.Dialogos;
 import com.irmaosmiau.ui.PerfisPanel;
 import com.irmaosmiau.ui.SelecaoLutadoresPanel;
@@ -41,16 +44,19 @@ public class Main {
 
             // Entrega 4C: preferencias salvas aplicadas antes da primeira tela.
             PreferenciasJogo preferencias = prepararPreferencias();
+            // Entrega 5C: controles salvos (controles.json) antes da primeira partida.
+            PreferenciasControles controles = prepararControles();
 
             mostrarMenu(janela);
 
             janela.setVisible(true);
 
-            if (!preferencias.getAvisos().isEmpty()) {
+            java.util.List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
+            avisos.addAll(controles.getAvisos());
+            if (!avisos.isEmpty()) {
                 JOptionPane.showMessageDialog(
                         janela,
-                        String.join(System.lineSeparator() + System.lineSeparator(),
-                                preferencias.getAvisos()),
+                        String.join(System.lineSeparator() + System.lineSeparator(), avisos),
                         "Configurações",
                         JOptionPane.WARNING_MESSAGE
                 );
@@ -69,6 +75,14 @@ public class Main {
         );
         PreferenciasJogo.instalarGlobal(preferencias);
         return preferencias;
+    }
+
+    /** Carrega controles.json (sem criar nada) e instala como controles do jogo. */
+    static PreferenciasControles prepararControles() {
+        PreferenciasControles controles = PreferenciasControles.carregar(
+                new RepositorioControles(DiretorioDados.doUsuario()));
+        PreferenciasControles.instalarGlobal(controles);
+        return controles;
     }
 
     private static void mostrarMenu(JFrame janela) {
@@ -156,7 +170,18 @@ public class Main {
                 PreferenciasJogo.global(),
                 RegistroCenarios.padrao(),
                 Dialogos.SWING,
-                () -> mostrarMenu(janela)
+                () -> mostrarMenu(janela),
+                () -> mostrarControles(janela)
+        ));
+    }
+
+    /** Entrega 5C: remapeamento das teclas dos dois jogadores. */
+    private static void mostrarControles(JFrame janela) {
+
+        trocarTela(janela, new ControlesPanel(
+                PreferenciasControles.global(),
+                Dialogos.SWING,
+                () -> mostrarConfiguracoes(janela)
         ));
     }
 

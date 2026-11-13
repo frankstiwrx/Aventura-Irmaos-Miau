@@ -26,6 +26,7 @@ import javax.swing.JSlider;
  * - Mudancas de audio valem NA HORA (previa) via PreferenciasJogo.aplicar.
  * - So sao gravadas ao clicar em SALVAR.
  * - VOLTAR com alteracoes pendentes pergunta: salvar / descartar / cancelar.
+ * - Entrega 5C: botao CONTROLES abre a tela de teclas (mesma pergunta antes de sair).
  */
 public final class ConfiguracoesPanel extends JPanel {
 
@@ -35,6 +36,7 @@ public final class ConfiguracoesPanel extends JPanel {
     private final transient RegistroCenarios cenarios;
     private final transient Dialogos dialogos;
     private final transient Runnable aoVoltar;
+    private final transient Runnable aoAbrirControles;   // null = sem botao
 
     private final JCheckBox musica = new JCheckBox("Ligada");
     private final JSlider volumeMusica = new JSlider(0, 100);
@@ -48,6 +50,7 @@ public final class ConfiguracoesPanel extends JPanel {
     private final JButton restaurar = EstiloTelas.botao("RESTAURAR PADRÕES");
     private final JButton salvar = EstiloTelas.botao("SALVAR");
     private final JButton voltar = EstiloTelas.botao("VOLTAR");
+    private final JButton controles = EstiloTelas.botao("CONTROLES");
 
     private boolean atualizandoControles;
 
@@ -69,6 +72,13 @@ public final class ConfiguracoesPanel extends JPanel {
 
     public ConfiguracoesPanel(PreferenciasJogo preferencias, RegistroCenarios cenarios,
             Dialogos dialogos, Runnable aoVoltar) {
+        this(preferencias, cenarios, dialogos, aoVoltar, null);
+    }
+
+    /** Entrega 5C: com o botao CONTROLES (aoAbrirControles nulo = sem botao). */
+    public ConfiguracoesPanel(PreferenciasJogo preferencias, RegistroCenarios cenarios,
+            Dialogos dialogos, Runnable aoVoltar, Runnable aoAbrirControles) {
+        this.aoAbrirControles = aoAbrirControles;
         this.preferencias = preferencias;
         this.cenarios = cenarios;
         this.dialogos = dialogos;
@@ -102,6 +112,7 @@ public final class ConfiguracoesPanel extends JPanel {
         restaurar.addActionListener(e -> restaurarPadroes());
         salvar.addActionListener(e -> salvar());
         voltar.addActionListener(e -> voltar());
+        controles.addActionListener(e -> abrirControles());
     }
 
     private void montar() {
@@ -130,13 +141,25 @@ public final class ConfiguracoesPanel extends JPanel {
         cartao.add(cenario, g);
         g.gridwidth = 1;
 
-        g.gridy = 4;
+        // Entrega 5C: teclas configuraveis dos dois jogadores.
+        int linha = 4;
+        if (aoAbrirControles != null) {
+            g.gridy = linha++;
+            g.gridx = 0;
+            cartao.add(EstiloTelas.rotulo("Teclado"), g);
+            g.gridx = 1;
+            g.gridwidth = 3;
+            cartao.add(controles, g);
+            g.gridwidth = 1;
+        }
+
+        g.gridy = linha++;
         g.gridx = 0;
         g.gridwidth = 4;
         cartao.add(EstiloTelas.texto("As mudanças de som valem na hora; clique em SALVAR para mantê-las.",
                 EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE), g);
 
-        g.gridy = 5;
+        g.gridy = linha++;
         status.setPreferredSize(new Dimension(640, 34));
         status.setVerticalAlignment(JLabel.TOP);
         cartao.add(status, g);
@@ -146,7 +169,7 @@ public final class ConfiguracoesPanel extends JPanel {
         botoes.add(restaurar);
         botoes.add(salvar);
         botoes.add(voltar);
-        g.gridy = 6;
+        g.gridy = linha;
         g.anchor = GridBagConstraints.CENTER;
         cartao.add(botoes, g);
 
@@ -257,6 +280,17 @@ public final class ConfiguracoesPanel extends JPanel {
     }
 
     void voltar() {
+        sairPara(aoVoltar);
+    }
+
+    /** Entrega 5C: CONTROLES, com a mesma protecao de alteracoes nao salvas. */
+    void abrirControles() {
+        if (aoAbrirControles != null) {
+            sairPara(aoAbrirControles);
+        }
+    }
+
+    private void sairPara(Runnable destino) {
         if (preferencias.temAlteracoesNaoSalvas()) {
             Dialogos.Resposta r = dialogos.perguntar(this, "Configurações",
                     "Há alterações não salvas. Deseja salvá-las antes de voltar?");
@@ -270,7 +304,7 @@ public final class ConfiguracoesPanel extends JPanel {
                 preferencias.descartarAlteracoes();
             }
         }
-        aoVoltar.run();
+        destino.run();
     }
 
     private void mostrarStatus(String texto, boolean erro) {
@@ -311,5 +345,9 @@ public final class ConfiguracoesPanel extends JPanel {
 
     JButton botaoVoltar() {
         return voltar;
+    }
+
+    JButton botaoControles() {
+        return controles;
     }
 }

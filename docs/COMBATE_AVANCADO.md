@@ -1,5 +1,8 @@
 # Combate avançado — Entregas 5A e 5B
 
+> **5C:** as letras citadas aqui (T, U, Y, SHIFT, A/D) são os **padrões**. Todas são configuráveis em
+> CONFIGURAÇÕES → CONTROLES; ver [CONTROLES.md](CONTROLES.md). Regras e números não mudaram.
+
 Primeira disputa técnica jogável: **desequilíbrio** (ataque do aplicador) e **rompimento técnico**
 (defesa do receptor) a partir de uma PEGADA_1 **estabelecida**. Só lógica e HUD: nenhuma pose, array,
 renderer, JSON do MiauStudio ou geometria foi alterado.

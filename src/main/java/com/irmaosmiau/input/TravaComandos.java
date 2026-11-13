@@ -27,6 +27,12 @@ public final class TravaComandos {
         travados.remove(comando);
     }
 
+    /** Entrega 5C: janela perdeu o foco; nenhuma tecla continua segurada ou travada. */
+    public void soltarTodos() {
+        pressionados.clear();
+        travados.clear();
+    }
+
     /** Trava todos os comandos atualmente pressionados cujo nome comeca com o prefixo. */
     public void travarPressionados(String prefixo) {
         for (String comando : pressionados) {
