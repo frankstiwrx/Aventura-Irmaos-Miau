@@ -38,14 +38,14 @@ import javax.swing.SpinnerNumberModel;
  * PerfilLutador, LimitesAtributos). Os personagens oficiais nunca sao
  * editados: um perfil novo apenas COPIA os atributos do personagem-base.
  *
- * Nesta entrega os perfis ainda NAO sao usados nas lutas (aviso na tela).
+ * Entrega 4D: os perfis sao escolhidos na selecao (COMECAR/TREINO).
  */
 public final class PerfisPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
     static final String AVISO_COMBATE =
-            "Perfis ainda não são usados nas lutas (próxima entrega). Branco e Preto oficiais nunca mudam.";
+            "Use os perfis em COMEÇAR ou TREINO, no slot do personagem-base. Branco e Preto oficiais nunca mudam.";
 
     private final transient ServicoPerfis servico;
     private final transient Dialogos dialogos;

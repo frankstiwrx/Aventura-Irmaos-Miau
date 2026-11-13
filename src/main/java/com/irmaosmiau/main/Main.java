@@ -5,15 +5,18 @@ import com.irmaosmiau.cenario.RegistroCenarios;
 import com.irmaosmiau.persistencia.DiretorioDados;
 import com.irmaosmiau.persistencia.RepositorioConfiguracoes;
 import com.irmaosmiau.persistencia.ServicoPerfis;
+import com.irmaosmiau.personagens.CatalogoPersonagens;
+import com.irmaosmiau.personagens.EscolhaLutador;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
+import com.irmaosmiau.selecao.OpcoesDeLutadores;
 import com.irmaosmiau.ui.ConfiguracoesPanel;
 import com.irmaosmiau.ui.Dialogos;
 import com.irmaosmiau.ui.PerfisPanel;
+import com.irmaosmiau.ui.SelecaoLutadoresPanel;
 import com.irmaosmiau.game.GamePanel;
 import com.irmaosmiau.entities.TipoPersonagem;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
 import com.irmaosmiau.ui.MenuPanel;
-import com.irmaosmiau.ui.SelecaoPersonagemPanel;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -72,7 +75,7 @@ public class Main {
 
         MenuPanel menu = new MenuPanel(
                 () -> mostrarSelecao(janela),
-                () -> iniciarTreino(janela),
+                () -> abrirTreino(janela),
                 () -> mostrarConfiguracoes(janela),
                 () -> mostrarPerfis(janela)
         );
@@ -88,17 +91,57 @@ public class Main {
      * no dojo). Pausa -> MENU PRINCIPAL volta ao menu; TENTAR NOVAMENTE
      * recomeca o treino.
      */
-    private static void iniciarTreino(JFrame janela) {
+    /**
+     * Entrega 4D: sem perfis salvos, o TREINO abre direto como antes; com
+     * perfis, mostra a escolha de jogador (slot Branco) e parceiro (slot Preto).
+     */
+    private static void abrirTreino(JFrame janela) {
+
+        OpcoesDeLutadores opcoes = OpcoesDeLutadores.padrao();
+        boolean haPerfis =
+                opcoes.paraBase(CatalogoPersonagens.ID_BRANCO).getValor().size() > 1
+                || opcoes.paraBase(CatalogoPersonagens.ID_PRETO).getValor().size() > 1;
+
+        if (haPerfis) {
+            mostrarSelecaoTreino(janela, opcoes);
+        } else {
+            iniciarTreino(janela, null, null);
+        }
+    }
+
+    private static void mostrarSelecaoTreino(JFrame janela, OpcoesDeLutadores opcoes) {
+
+        trocarTela(janela, new SelecaoLutadoresPanel(
+                opcoes,
+                true,
+                (tipo, jogador, parceiro) -> iniciarTreino(janela, jogador, parceiro),
+                () -> mostrarMenu(janela)
+        ));
+    }
+
+    /**
+     * @param jogador  escolha do slot Branco (null = Branco oficial)
+     * @param parceiro escolha do slot Preto (null = Preto oficial)
+     */
+    private static void iniciarTreino(JFrame janela, EscolhaLutador jogador, EscolhaLutador parceiro) {
 
         // Treino no cenario preferido (se ainda existir).
         String cenario = PreferenciasJogo.global()
                 .cenarioValido(RegistroCenarios.padrao());
 
+        ConfiguracaoTreino configuracao = ConfiguracaoTreino.padrao().comCenario(cenario);
+        if (jogador != null) {
+            configuracao = configuracao.comJogador(jogador);
+        }
+        if (parceiro != null) {
+            configuracao = configuracao.comParceiro(parceiro);
+        }
+
         GamePanel treino = new GamePanel(
-                ConfiguracaoTreino.padrao().comCenario(cenario),
+                configuracao,
                 () -> mostrarMenu(janela),
-                () -> mostrarSelecao(janela),
-                () -> iniciarTreino(janela)
+                () -> mostrarSelecaoTreino(janela, OpcoesDeLutadores.padrao()),
+                () -> iniciarTreino(janela, jogador, parceiro)
         );
 
         trocarTela(janela, treino);
@@ -129,12 +172,13 @@ public class Main {
 
     private static void mostrarSelecao(JFrame janela) {
 
-        SelecaoPersonagemPanel selecao
-                = new SelecaoPersonagemPanel(
-                        tipo -> iniciarJogo(
-                                janela,
-                                tipo
-                        )
+        // Entrega 4D: oficiais + perfis personalizados (lidos a cada abertura).
+        SelecaoLutadoresPanel selecao
+                = new SelecaoLutadoresPanel(
+                        OpcoesDeLutadores.padrao(),
+                        false,
+                        (tipo, branco, preto) -> iniciarJogo(janela, tipo, branco, preto),
+                        () -> mostrarMenu(janela)
                 );
 
         trocarTela(janela, selecao);
@@ -142,11 +186,15 @@ public class Main {
 
 private static void iniciarJogo(
         JFrame janela,
-        TipoPersonagem tipo
+        TipoPersonagem tipo,
+        EscolhaLutador slotBranco,
+        EscolhaLutador slotPreto
 ) {
 
     GamePanel jogo = new GamePanel(
             tipo,
+            slotBranco,
+            slotPreto,
 
             // MENU PRINCIPAL
             () -> mostrarMenu(
@@ -161,7 +209,9 @@ private static void iniciarJogo(
             // TENTAR NOVAMENTE
             () -> iniciarJogo(
                     janela,
-                    tipo
+                    tipo,
+                    slotBranco,
+                    slotPreto
             )
     );
 

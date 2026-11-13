@@ -21,6 +21,7 @@ import com.irmaosmiau.hud.FeedbackCombate;
 import com.irmaosmiau.hud.HudCombate;
 import com.irmaosmiau.input.InputHandler;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
+import com.irmaosmiau.personagens.EscolhaLutador;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
 import com.irmaosmiau.treino.SessaoTreino;
@@ -195,7 +196,24 @@ public class GamePanel extends JPanel {
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
-        this(tipo, null, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+        this(tipo, null, null, null, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+    }
+
+    /**
+     * Entrega 4D: partida com lutadores escolhidos (oficiais ou perfis).
+     * slotBranco/slotPreto nulos = personagem oficial daquele slot.
+     * O slot Branco aceita apenas Branco/perfis do Branco (controles WASD/H);
+     * o slot Preto, apenas Preto/perfis do Preto (setas).
+     */
+    public GamePanel(
+            TipoPersonagem tipo,
+            EscolhaLutador slotBranco,
+            EscolhaLutador slotPreto,
+            Runnable aoVoltarMenu,
+            Runnable aoTrocarPersonagem,
+            Runnable aoTentarNovamente
+    ) {
+        this(tipo, null, slotBranco, slotPreto, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
     }
 
     /**
@@ -208,8 +226,20 @@ public class GamePanel extends JPanel {
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
-        this(TipoPersonagem.AMBOS, exigirTreino(treino),
+        this(TipoPersonagem.AMBOS, exigirTreino(treino), null, null,
                 aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+    }
+
+    /**
+     * Instancia o lutador escolhido para um slot, conferindo que a base
+     * combina com os controles daquele slot.
+     */
+    private static IrmaoMiau criarDoSlot(EscolhaLutador escolha, String idBaseDoSlot, int x) {
+        if (!idBaseDoSlot.equals(escolha.getIdBase())) {
+            throw new IllegalArgumentException("O slot " + idBaseDoSlot + " so aceita o personagem oficial"
+                    + " ou perfis baseados nele; recebeu " + escolha.getDescricao());
+        }
+        return escolha.criarLutador(x, Y_INICIAL_PERSONAGEM, ESCALA_PERSONAGEM);
     }
 
     private static ConfiguracaoTreino exigirTreino(ConfiguracaoTreino treino) {
@@ -222,6 +252,8 @@ public class GamePanel extends JPanel {
     private GamePanel(
             TipoPersonagem tipo,
             ConfiguracaoTreino treino,
+            EscolhaLutador slotBranco,
+            EscolhaLutador slotPreto,
             Runnable aoVoltarMenu,
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
@@ -277,19 +309,21 @@ public class GamePanel extends JPanel {
 
             jogadorPrincipal = null;
 
-            jogadorBranco
-                    = new IrmaoMiauBranco(
+            jogadorBranco = slotBranco == null
+                    ? new IrmaoMiauBranco(
                             X_BRANCO_DUO,
                             Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
-                    );
+                    )
+                    : criarDoSlot(slotBranco, CatalogoPersonagens.ID_BRANCO, X_BRANCO_DUO);
 
-            jogadorPreto
-                    = new IrmaoMiauPreto(
+            jogadorPreto = slotPreto == null
+                    ? new IrmaoMiauPreto(
                             X_PRETO_DUO,
                             Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
-                    );
+                    )
+                    : criarDoSlot(slotPreto, CatalogoPersonagens.ID_PRETO, X_PRETO_DUO);
 
         } else {
 
@@ -300,21 +334,23 @@ public class GamePanel extends JPanel {
 
             if (tipo == TipoPersonagem.BRANCO) {
 
-                jogadorPrincipal
-                        = new IrmaoMiauBranco(
+                jogadorPrincipal = slotBranco == null
+                        ? new IrmaoMiauBranco(
                                 X_JOGADOR_INDIVIDUAL,
                                 Y_INICIAL_PERSONAGEM,
                                 ESCALA_PERSONAGEM
-                        );
+                        )
+                        : criarDoSlot(slotBranco, CatalogoPersonagens.ID_BRANCO, X_JOGADOR_INDIVIDUAL);
 
             } else {
 
-                jogadorPrincipal
-                        = new IrmaoMiauPreto(
+                jogadorPrincipal = slotPreto == null
+                        ? new IrmaoMiauPreto(
                                 X_JOGADOR_INDIVIDUAL,
                                 Y_INICIAL_PERSONAGEM,
                                 ESCALA_PERSONAGEM
-                        );
+                        )
+                        : criarDoSlot(slotPreto, CatalogoPersonagens.ID_PRETO, X_JOGADOR_INDIVIDUAL);
             }
         }
 

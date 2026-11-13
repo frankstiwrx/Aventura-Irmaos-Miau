@@ -36,6 +36,21 @@ public class AtributosLutador {
         this.peso = peso;
     }
 
+    /** Copia independente (Entrega 4D: cada lutador recebe a sua). */
+    public AtributosLutador copiar() {
+
+        return new AtributosLutador(
+                condicionamento,
+                folego,
+                forca,
+                velocidade,
+                agilidade,
+                tecnica,
+                recuperacao,
+                peso
+        );
+    }
+
     public double getCondicionamento() {
         return condicionamento;
     }

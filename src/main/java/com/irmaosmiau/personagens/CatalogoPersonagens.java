@@ -45,6 +45,7 @@ public final class CatalogoPersonagens {
                 new AtributosLutador(35, 25, 42, 22, 25, 25, 22, 72),
                 new ReferenciasVisuais(Color.WHITE, Color.BLACK, Color.BLACK,
                         "/assets/sprites/miau-branco.png"),
+                IrmaoMiauBranco::new,
                 IrmaoMiauBranco::new
         ));
 
@@ -56,6 +57,7 @@ public final class CatalogoPersonagens {
                 new AtributosLutador(25, 40, 18, 45, 45, 28, 38, 68),
                 new ReferenciasVisuais(Color.BLACK, Color.WHITE, Color.WHITE,
                         "/assets/sprites/miau-preto.png"),
+                IrmaoMiauPreto::new,
                 IrmaoMiauPreto::new
         ));
 

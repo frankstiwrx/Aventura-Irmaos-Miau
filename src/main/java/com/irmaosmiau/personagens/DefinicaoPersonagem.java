@@ -21,6 +21,7 @@ public final class DefinicaoPersonagem {
     private final AtributosLutador atributosPadrao;
     private final ReferenciasVisuais visual;
     private final FabricaLutador fabrica;
+    private final FabricaLutadorPersonalizado fabricaPersonalizada;   // null = nao aceita perfis
 
     public DefinicaoPersonagem(
             String id,
@@ -30,6 +31,23 @@ public final class DefinicaoPersonagem {
             AtributosLutador atributosPadrao,
             ReferenciasVisuais visual,
             FabricaLutador fabrica
+    ) {
+        this(id, nome, estilo, descricao, atributosPadrao, visual, fabrica, null);
+    }
+
+    /**
+     * Entrega 4D: com fabrica personalizada, o personagem pode servir de
+     * base para perfis jogaveis (mesmo visual, atributos do perfil).
+     */
+    public DefinicaoPersonagem(
+            String id,
+            String nome,
+            String estilo,
+            String descricao,
+            AtributosLutador atributosPadrao,
+            ReferenciasVisuais visual,
+            FabricaLutador fabrica,
+            FabricaLutadorPersonalizado fabricaPersonalizada
     ) {
         if (id == null || id.isBlank()) {
             throw new IllegalArgumentException("O personagem precisa de um id.");
@@ -56,6 +74,7 @@ public final class DefinicaoPersonagem {
         this.atributosPadrao = atributosPadrao;
         this.visual = visual;
         this.fabrica = fabrica;
+        this.fabricaPersonalizada = fabricaPersonalizada;
     }
 
     static String normalizarId(String id) {
@@ -91,7 +110,31 @@ public final class DefinicaoPersonagem {
         return fabrica;
     }
 
-    /** Cria a instancia jogavel na posicao e escala indicadas. */
+    /** true se perfis personalizados podem usar este personagem como base jogavel. */
+    public boolean aceitaPerfis() {
+        return fabricaPersonalizada != null;
+    }
+
+    /**
+     * Instancia com atributos de um perfil (copiados pelo personagem) e nome
+     * de exibicao. Nao altera esta definicao nem os atributos padrao.
+     */
+    public IrmaoMiau criarLutadorPersonalizado(int x, int y, double escala,
+            AtributosLutador atributos, String nomeExibicao) {
+        if (fabricaPersonalizada == null) {
+            throw new IllegalStateException("O personagem " + id + " ainda nao aceita perfis personalizados.");
+        }
+        if (atributos == null) {
+            throw new IllegalArgumentException("Os atributos do perfil sao obrigatorios.");
+        }
+        IrmaoMiau lutador = fabricaPersonalizada.criar(x, y, escala, atributos, nomeExibicao);
+        if (lutador == null) {
+            throw new IllegalStateException("A fabrica personalizada do personagem " + id + " retornou null.");
+        }
+        return lutador;
+    }
+
+    /** Cria a instancia jogavel (oficial) na posicao e escala indicadas. */
     public IrmaoMiau criarLutador(int x, int y, double escala) {
         IrmaoMiau lutador = fabrica.criar(x, y, escala);
         if (lutador == null) {

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 268, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 297, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -91,7 +91,20 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] Mudar um valor e clicar em outro perfil: pergunta salvar/descartar/cancelar
 - [ ] Digitar 500 em Força e SALVAR: mensagem de erro, nada gravado
 - [ ] EXCLUIR pede confirmação; "Não" mantém; "Sim" remove
-- [ ] Branco/Preto nas lutas continuam com os atributos oficiais (ex.: fôlego 25/25 e 40/40 no HUD)
+- [ ] Branco/Preto OFICIAIS nas lutas continuam com os atributos oficiais (ex.: fôlego 25/25 e 40/40 no HUD)
+
+### Perfis jogáveis (Entrega 4D)
+
+- [ ] COMEÇAR: cada slot mostra o oficial + perfis daquela base; trocar o seletor mostra OFICIAL/PERSONALIZADO, base e os 8 atributos
+- [ ] Perfil do Branco com fôlego 60 e velocidade 100 → MIAU BRANCO: HUD mostra o nome do perfil e `60/60`; anda visivelmente mais rápido
+- [ ] OS DOIS MIAUS com perfil em cada slot: HUD com os dois nomes/valores; WASD e setas como antes
+- [ ] TREINO (com perfis salvos) abre a escolha de jogador/parceiro; sem perfis, abre direto como antes
+- [ ] No treino com perfil: gastar fôlego, F5 → fôlego volta ao máximo DO PERFIL
+- [ ] PEGADA_1 com perfil: 3 quadros iguais, custo 3, pose final, rompimento normal
+- [ ] Perfil com fôlego 2: H mostra "sem fôlego"
+- [ ] Ordem de profundidade correta com perfis em linhas diferentes
+- [ ] Arquivo de perfil corrompido: aviso na seleção; oficiais continuam escolhíveis
+- [ ] Depois de jogar, o perfil no editor continua com os mesmos valores
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

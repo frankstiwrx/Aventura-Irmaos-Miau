@@ -55,6 +55,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
 | `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C) | `PreferenciasJogo` |
+| `selecao` | Opções de lutador por slot: oficial + perfis da base (4D) | `OpcoesDeLutadores` |
 | `persistencia` | Configurações e perfis em JSON versionado, gravação segura (Entrega 4B, ainda não ligada à interface; ver [PERSISTENCIA.md](PERSISTENCIA.md)) | `RepositorioConfiguracoes`, `ConfiguracoesJogo`, `RepositorioPerfis`, `ServicoPerfis`, `ArmazenamentoJson` |
 | `personagens` | Catálogo de personagens por ID com fábrica | `CatalogoPersonagens`, `DefinicaoPersonagem`, `FabricaLutador`, `ReferenciasVisuais` |
 
@@ -182,5 +183,27 @@ O `GamePanel` agora para o próprio `Timer` em `removeNotify()`. Antes, ao volta
   arquivo nunca divergem. Sem instalação (testes, `MainPrototipo`) ela fica **em memória** e não grava.
 - **Telas** (`ui/ConfiguracoesPanel`, `ui/PerfisPanel`) recebem serviços por construtor e um `Dialogos`
   (JOptionPane no jogo, respostas programadas nos testes headless).
-- **Perfis ainda não lutam:** a seleção de personagem e o treino continuam usando Branco/Preto oficiais
-  (aviso na própria tela). Ver [PERSISTENCIA.md](PERSISTENCIA.md).
+- **Perfis jogáveis (4D):** ver seção abaixo.
+
+## Perfis jogáveis (Entrega 4D)
+
+Caminho dos atributos até a instância:
+
+```
+perfil JSON --ServicoPerfis--> PerfilLutador --OpcoesDeLutadores--> EscolhaLutador
+  --(GamePanel / SessaoTreino)--> DefinicaoPersonagem.criarLutadorPersonalizado
+  --> new IrmaoMiauBranco(x, y, escala, atributos.copiar(), nome)   (mesmo renderer/animações)
+  --> IrmaoMiau.atributos  --> fôlego/condicionamento máximos, velocidade, recuperação
+```
+
+- Branco e Preto ganharam construtores com `AtributosLutador` (e nome de exibição). O construtor
+  antigo `(x, y, escala)` delega a eles com `atributosOficiais()`, valores idênticos aos de antes.
+- `DefinicaoPersonagem` aceita uma `FabricaLutadorPersonalizado`; `EscolhaLutador` representa
+  oficial ou perfil (fotografia: jogar não grava nada e excluir o arquivo depois não quebra a partida).
+- **Slots com controles fixos:** slot Branco (WASD/H) = Branco oficial ou perfis do Branco; slot Preto
+  (setas) = Preto oficial ou perfis do Preto. No treino: jogador = slot Branco, parceiro passivo = slot Preto.
+  O `GamePanel` recusa perfil no slot errado.
+- **Atributos usados hoje pelo motor:** condicionamento e fôlego (máximos e consumo), velocidade
+  (`3.2 + velocidade/100 × 1.6`) e recuperação (taxas de recuperação). Força, agilidade, técnica e peso
+  acompanham a instância, mas nenhuma fórmula os usa ainda (nada foi inventado).
+- `SelecaoLutadoresPanel` substitui no fluxo a `SelecaoPersonagemPanel` (mantida no projeto, sem alterações).

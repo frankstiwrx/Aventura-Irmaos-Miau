@@ -288,7 +288,7 @@ class PerfisPanelTest {
     }
 
     @Test
-    void avisoDeQueOsPerfisAindaNaoLutamEstaNaTela() throws Exception {
+    void avisoDeOndeUsarOsPerfisEstaNaTela() throws Exception {
         abrir();
         naEdt(() -> {
             boolean achou = false;
@@ -299,7 +299,7 @@ class PerfisPanelTest {
                 }
             }
             assertTrue(achou);
-            assertTrue(PerfisPanel.AVISO_COMBATE.contains("não são usados nas lutas"));
+            assertTrue(PerfisPanel.AVISO_COMBATE.contains("COMEÇAR ou TREINO"));
         });
     }
 

@@ -39,10 +39,19 @@ public final class SessaoTreino {
     }
 
     private void montar() {
-        jogador = catalogo.exigir(configuracao.getIdJogador()).criarLutador(
-                configuracao.getXJogador(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA);
-        parceiro = catalogo.exigir(configuracao.getIdParceiro()).criarLutador(
-                configuracao.getXParceiro(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA);
+        // Entrega 4D: com escolha (oficial ou perfil), a instancia usa os
+        // atributos dela; sem escolha, o oficial do catalogo (como antes).
+        // Reiniciar (F5) passa por aqui: recursos voltam ao maximo DO PERFIL.
+        jogador = configuracao.getEscolhaJogador() != null
+                ? configuracao.getEscolhaJogador().criarLutador(
+                        configuracao.getXJogador(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA)
+                : catalogo.exigir(configuracao.getIdJogador()).criarLutador(
+                        configuracao.getXJogador(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA);
+        parceiro = configuracao.getEscolhaParceiro() != null
+                ? configuracao.getEscolhaParceiro().criarLutador(
+                        configuracao.getXParceiro(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA)
+                : catalogo.exigir(configuracao.getIdParceiro()).criarLutador(
+                        configuracao.getXParceiro(), ConfiguracaoTreino.Y_INICIAL, ConfiguracaoTreino.ESCALA);
 
         boolean jogadorAEsquerda = jogador.getX() < parceiro.getX();
         jogador.setViradoParaDireita(jogadorAEsquerda);

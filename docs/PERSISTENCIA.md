@@ -1,7 +1,6 @@
 # Persistência: configurações e perfis (Entrega 4B)
 
-Infraestrutura da 4B, **ligada aos menus na 4C** (configurações e editor de perfis).
-Perfis personalizados ainda **não** são usados nas lutas.
+Infraestrutura da 4B, ligada aos menus na 4C e **jogável na 4D** (perfis escolhidos na seleção e no treino).
 
 ## Onde ficam os dados
 
@@ -126,7 +125,7 @@ arquivo); ids de personagens oficiais (`miau_branco`, `miau_preto`) são reserva
 | F4 / F9 / F10 gravando a preferência | ✅ via `PreferenciasJogo` |
 | Cenário preferido usado nas arenas e no treino | ✅ (se não existir mais: dojo + aviso, preferência preservada) |
 | Tela PERSONAGENS PERSONALIZADOS (listar, criar a partir de Branco/Preto, editar 8 atributos, salvar, excluir com confirmação) | ✅ |
-| Usar um perfil como lutador | ⏳ próxima entrega (construtores alternativos de Branco/Preto) |
+| Usar um perfil como lutador | ✅ Entrega 4D (seleção COMEÇAR e TREINO; ver ARQUITETURA.md) |
 
 Regras da tela de perfis:
 - O ID é gerado do nome ao salvar ("Branco Forte" → `branco_forte`; repetido → `_2`, `_3`).

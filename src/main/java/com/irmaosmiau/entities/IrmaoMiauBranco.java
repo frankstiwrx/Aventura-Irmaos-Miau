@@ -29,6 +29,24 @@ public class IrmaoMiauBranco extends IrmaoMiau {
 
     public IrmaoMiauBranco(int x, int y, double escala) {
 
+        this(x, y, escala, atributosOficiais(), null);
+    }
+
+    /**
+     * Entrega 4D: mesmo personagem (mesmo desenho e animacoes) com
+     * atributos personalizados. Os atributos sao COPIADOS.
+     */
+    public IrmaoMiauBranco(int x, int y, double escala, AtributosLutador atributos) {
+
+        this(x, y, escala, atributos, null);
+    }
+
+    /**
+     * @param nomeExibicao nome mostrado no HUD (ex.: nome do perfil);
+     *                     null = "Irmão Miau Branco"
+     */
+    public IrmaoMiauBranco(int x, int y, double escala, AtributosLutador atributos, String nomeExibicao) {
+
         super(
                 x,
                 y,
@@ -36,19 +54,35 @@ public class IrmaoMiauBranco extends IrmaoMiau {
                 Color.WHITE,
                 Color.BLACK,
                 Color.BLACK,
-                "Irmão Miau Branco",
+                nomeExibicao == null || nomeExibicao.isBlank()
+                        ? "Irmão Miau Branco"
+                        : nomeExibicao.trim(),
                 "Jiu-Jitsu",
-                new AtributosLutador(
-                        35, // 35 condicionamento
-                        25, // 25 fôlego 
-                        42, // força
-                        22, // 22 velocidade
-                        25, // agilidade
-                        25, // técnica
-                        22, // 22 recuperação
-                        72 // peso
-                )
+                exigirAtributos(atributos).copiar()
         );
+    }
+
+    /** Atributos oficiais (valores originais, inalterados). */
+    public static AtributosLutador atributosOficiais() {
+
+        return new AtributosLutador(
+                35, // 35 condicionamento
+                25, // 25 fôlego
+                42, // força
+                22, // 22 velocidade
+                25, // agilidade
+                25, // técnica
+                22, // 22 recuperação
+                72 // peso
+        );
+    }
+
+    private static AtributosLutador exigirAtributos(AtributosLutador atributos) {
+
+        if (atributos == null) {
+            throw new IllegalArgumentException("Os atributos sao obrigatorios.");
+        }
+        return atributos;
     }
 
     // =============================================================

@@ -2,6 +2,7 @@ package com.irmaosmiau.treino;
 
 import com.irmaosmiau.cenario.CenarioDojo;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
+import com.irmaosmiau.personagens.EscolhaLutador;
 
 /**
  * Parametros de uma sessao de treino.
@@ -24,8 +25,18 @@ public final class ConfiguracaoTreino {
     private final int xParceiro;
     private final ComportamentoParceiro comportamentoParceiro;
 
+    /* Entrega 4D: lutadores escolhidos (oficial ou perfil). Null = oficial do id. */
+    private final EscolhaLutador escolhaJogador;
+    private final EscolhaLutador escolhaParceiro;
+
     public ConfiguracaoTreino(String idJogador, String idParceiro, String idCenario,
             int xJogador, int xParceiro, ComportamentoParceiro comportamentoParceiro) {
+        this(idJogador, idParceiro, idCenario, xJogador, xParceiro, comportamentoParceiro, null, null);
+    }
+
+    private ConfiguracaoTreino(String idJogador, String idParceiro, String idCenario,
+            int xJogador, int xParceiro, ComportamentoParceiro comportamentoParceiro,
+            EscolhaLutador escolhaJogador, EscolhaLutador escolhaParceiro) {
         if (idJogador == null || idParceiro == null || idCenario == null || comportamentoParceiro == null) {
             throw new IllegalArgumentException("Jogador, parceiro, cenario e comportamento sao obrigatorios.");
         }
@@ -38,6 +49,8 @@ public final class ConfiguracaoTreino {
         this.xJogador = xJogador;
         this.xParceiro = xParceiro;
         this.comportamentoParceiro = comportamentoParceiro;
+        this.escolhaJogador = escolhaJogador;
+        this.escolhaParceiro = escolhaParceiro;
     }
 
     /** Branco (jogador) x Preto (parceiro passivo) no dojo. */
@@ -54,7 +67,38 @@ public final class ConfiguracaoTreino {
     /** Mesma configuracao em outro cenario (ex.: o preferido do jogador). */
     public ConfiguracaoTreino comCenario(String idCenarioNovo) {
         return new ConfiguracaoTreino(idJogador, idParceiro, idCenarioNovo, xJogador, xParceiro,
-                comportamentoParceiro);
+                comportamentoParceiro, escolhaJogador, escolhaParceiro);
+    }
+
+    /**
+     * Entrega 4D: jogador escolhido (oficial ou perfil). O id do jogador
+     * passa a ser o do personagem-base da escolha.
+     */
+    public ConfiguracaoTreino comJogador(EscolhaLutador escolha) {
+        if (escolha == null) {
+            throw new IllegalArgumentException("A escolha do jogador e obrigatoria.");
+        }
+        return new ConfiguracaoTreino(escolha.getIdBase(), idParceiro, idCenario, xJogador, xParceiro,
+                comportamentoParceiro, escolha, escolhaParceiro);
+    }
+
+    /** Entrega 4D: parceiro escolhido (oficial ou perfil). */
+    public ConfiguracaoTreino comParceiro(EscolhaLutador escolha) {
+        if (escolha == null) {
+            throw new IllegalArgumentException("A escolha do parceiro e obrigatoria.");
+        }
+        return new ConfiguracaoTreino(idJogador, escolha.getIdBase(), idCenario, xJogador, xParceiro,
+                comportamentoParceiro, escolhaJogador, escolha);
+    }
+
+    /** Null quando o jogador e o oficial do id. */
+    public EscolhaLutador getEscolhaJogador() {
+        return escolhaJogador;
+    }
+
+    /** Null quando o parceiro e o oficial do id. */
+    public EscolhaLutador getEscolhaParceiro() {
+        return escolhaParceiro;
     }
 
     public String getIdJogador() {
