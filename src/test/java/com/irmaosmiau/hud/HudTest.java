@@ -120,7 +120,8 @@ class HudTest {
             s.atualizar();
             assertTrue(!f.observar(s, t));
         }
-        assertEquals("PEGADA 1 · ESTABELECIDA", FeedbackCombate.textoEstadoInteracao(s));
+        // Entrega 5B: estabelecida mostra a firmeza.
+        assertEquals("PEGADA 1 · FIRMEZA 100%", FeedbackCombate.textoEstadoInteracao(s));
 
         b.moverX(-5);
         s.atualizar();

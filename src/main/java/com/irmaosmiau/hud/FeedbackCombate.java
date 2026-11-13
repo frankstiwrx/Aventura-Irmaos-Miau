@@ -37,6 +37,7 @@ public final class FeedbackCombate {
     private long expiraNoTick = -1;
 
     private boolean estavaEmInteracao;
+    private double firmezaAnterior = Double.NaN;
 
     // =====================================================
     // EVENTOS
@@ -68,6 +69,20 @@ public final class FeedbackCombate {
         boolean terminou = estavaEmInteracao && !emInteracao;
         estavaEmInteracao = emInteracao;
 
+        // Entrega 5B: aviso unico ao cruzar o limiar de controle fraco.
+        double firmeza = sistema.isInteracaoEstabelecida() ? sistema.getFirmeza() : Double.NaN;
+        if (!Double.isNaN(firmeza) && !Double.isNaN(firmezaAnterior)
+                && firmezaAnterior >= SistemaCombate.LIMIAR_CONTROLE_FRACO
+                && firmeza < SistemaCombate.LIMIAR_CONTROLE_FRACO) {
+            mostrar("CONTROLE ENFRAQUECENDO", Tipo.AVISO, tick);
+        }
+        firmezaAnterior = firmeza;
+
+        if (terminou && sistema.getUltimoMotivoEncerramento() == MotivoEncerramentoInteracao.SEM_CONTROLE) {
+            mostrar("PEGADA DESFEITA: SEM CONTROLE", Tipo.INFO, tick);
+            return true;
+        }
+
         // O rompimento tecnico ja mostrou "PEGADA ROMPIDA" no proprio tick.
         if (terminou && sistema.getUltimoMotivoEncerramento() != MotivoEncerramentoInteracao.ROMPIMENTO_TECNICO) {
             mostrar("Pegada desfeita: " + texto(sistema.getUltimoMotivoEncerramento()), Tipo.INFO, tick);
@@ -97,6 +112,27 @@ public final class FeedbackCombate {
             case SEM_PEGADA:
             default:
                 mostrar(acao + ": só com a pegada estabelecida", Tipo.INFO, tick);
+                break;
+        }
+    }
+
+    /** Entrega 5B: resultado do reforco (Y). */
+    public void registrarReforco(ResultadoAcaoTecnica resultado, long tick) {
+        switch (resultado) {
+            case SUCESSO:
+                mostrar("PEGADA REFORÇADA", Tipo.SUCESSO, tick);
+                break;
+            case SEM_FOLEGO:
+                mostrar("REFORÇO: SEM FÔLEGO", Tipo.AVISO, tick);
+                break;
+            case EM_RECARGA:
+                mostrar("REFORÇO: AGUARDE", Tipo.INFO, tick);
+                break;
+            case SEM_EFEITO:
+                mostrar("PEGADA JÁ ESTÁ FIRME", Tipo.INFO, tick);
+                break;
+            default:
+                mostrar("REFORÇO: só com a pegada estabelecida", Tipo.INFO, tick);
                 break;
         }
     }
@@ -160,7 +196,10 @@ public final class FeedbackCombate {
         }
         AcaoCombate acao = sistema.getAcao(sistema.getIdAcaoInteracao());
         String nome = acao == null ? String.valueOf(sistema.getEstadoInteracao()) : acao.getNome();
-        return nome.toUpperCase() + (sistema.isInteracaoEstabelecida() ? " · ESTABELECIDA" : " · ENTRANDO");
+        // Entrega 5B: estabelecida mostra a firmeza ("PEGADA 1 · FIRMEZA 85%").
+        return nome.toUpperCase() + (sistema.isInteracaoEstabelecida()
+                ? " · FIRMEZA " + Math.round(sistema.getFirmeza()) + "%"
+                : " · ENTRANDO");
     }
 
     /** Primeiro requisito que impede a tecnica, em linguagem de jogador. */
@@ -212,6 +251,7 @@ public final class FeedbackCombate {
             case SPRAWL: return "sprawl";
             case ACAO_INDISPONIVEL: return "técnica indisponível";
             case ROMPIMENTO_TECNICO: return "rompimento técnico";
+            case SEM_CONTROLE: return "sem controle";
             case ENCERRAMENTO_MANUAL: return "reinício";
             default: return motivo.name().toLowerCase();
         }

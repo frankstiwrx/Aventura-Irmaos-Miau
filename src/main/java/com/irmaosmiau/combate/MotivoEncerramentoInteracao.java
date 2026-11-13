@@ -24,6 +24,9 @@ public enum MotivoEncerramentoInteracao {
     /* Acoes tecnicas (Entrega 5A): receptor soltou a pegada sem se deslocar. */
     ROMPIMENTO_TECNICO,
 
+    /* Entrega 5B: firmeza da pegada chegou a zero. */
+    SEM_CONTROLE,
+
     /* Administrativos. */
     ACAO_INDISPONIVEL,
     ENCERRAMENTO_MANUAL

@@ -17,6 +17,14 @@ import com.irmaosmiau.entities.IrmaoMiau;
  * SUCESSO      se ataque &gt; defesa + 1e-9 ; empate = o defensor resiste
  * </pre>
  *
+ * Entrega 5B - FIRMEZA da pegada (f = firmeza / 100, entre 0 e 1):
+ * <pre>
+ * DESEQUILIBRIO:      fatorPosicaoAtaque = 1 + 0,10 * f    (1,10 com f = 1, como na 5A)
+ * ROMPIMENTO_TECNICO: defesa *= 0,70 + 0,30 * f             (1,00 com f = 1, como na 5A)
+ * </pre>
+ * Firmeza alta: o aplicador mantem a vantagem de controle e segura melhor.
+ * Firmeza baixa: ate 30% menos defesa no rompimento; nunca anula atributos.
+ *
  * Pontuacoes ficam sempre em [0; 1,1]. Folego entra como multiplicador entre
  * 0,6 (exausto) e 1,0 (cheio): importa, mas nunca zera nem gera valor invalido.
  */
@@ -25,6 +33,9 @@ public final class ResolvedorDisputa {
     public static final double PESO_MINIMO_KG = 40.0;
     public static final double PESO_MAXIMO_KG = 120.0;
     public static final double FOLEGO_PISO = 0.6;
+    /** Firmeza 0 deixa 70% da defesa do aplicador no rompimento tecnico. */
+    public static final double PISO_CONTROLE_ROMPIMENTO = 0.7;
+    public static final double FIRMEZA_MAXIMA = 100.0;
     static final double TOLERANCIA_EMPATE = 1e-9;
 
     private ResolvedorDisputa() {
@@ -32,9 +43,15 @@ public final class ResolvedorDisputa {
 
     /** Disputa entre duas instancias de lutador (atributos reais, inclusive de perfis). */
     public static ResultadoDisputa resolver(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor) {
+        return resolver(tipo, atacante, defensor, FIRMEZA_MAXIMA);
+    }
+
+    /** Entrega 5B: com a firmeza atual da pegada (0..100). */
+    public static ResultadoDisputa resolver(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor,
+            double firmeza) {
         return resolver(tipo,
                 atacante.getAtributos(), atacante.getFolegoAtual(),
-                defensor.getAtributos(), defensor.getFolegoAtual());
+                defensor.getAtributos(), defensor.getFolegoAtual(), firmeza);
     }
 
     public static ResultadoDisputa resolver(
@@ -42,16 +59,43 @@ public final class ResolvedorDisputa {
             AtributosLutador atacante, double folegoAtacante,
             AtributosLutador defensor, double folegoDefensor
     ) {
+        return resolver(tipo, atacante, folegoAtacante, defensor, folegoDefensor, FIRMEZA_MAXIMA);
+    }
+
+    public static ResultadoDisputa resolver(
+            TipoDisputa tipo,
+            AtributosLutador atacante, double folegoAtacante,
+            AtributosLutador defensor, double folegoDefensor,
+            double firmeza
+    ) {
         if (tipo == null || atacante == null || defensor == null) {
             throw new IllegalArgumentException("Tipo e atributos dos dois lados sao obrigatorios.");
         }
+        double f = limitar(firmeza / FIRMEZA_MAXIMA);
         double ataque = base(tipo.getPesosAtaque(), atacante)
                 * fatorFolego(folegoAtacante, atacante.getFolego())
-                * tipo.getFatorPosicaoAtaque();
+                * fatorPosicaoAtaque(tipo, f);
         double defesa = base(tipo.getPesosDefesa(), defensor)
-                * fatorFolego(folegoDefensor, defensor.getFolego());
+                * fatorFolego(folegoDefensor, defensor.getFolego())
+                * fatorControleDefesa(tipo, f);
         boolean sucesso = ataque > defesa + TOLERANCIA_EMPATE;
         return new ResultadoDisputa(tipo, ataque, defesa, sucesso);
+    }
+
+    /** Vantagem de quem controla a pegada, proporcional a firmeza (5B). */
+    static double fatorPosicaoAtaque(TipoDisputa tipo, double f) {
+        if (tipo == TipoDisputa.DESEQUILIBRIO) {
+            return 1.0 + (tipo.getFatorPosicaoAtaque() - 1.0) * f;
+        }
+        return tipo.getFatorPosicaoAtaque();
+    }
+
+    /** Defesa do aplicador contra o rompimento cai com a firmeza (5B). */
+    static double fatorControleDefesa(TipoDisputa tipo, double f) {
+        if (tipo == TipoDisputa.ROMPIMENTO_TECNICO) {
+            return PISO_CONTROLE_ROMPIMENTO + (1.0 - PISO_CONTROLE_ROMPIMENTO) * f;
+        }
+        return 1.0;
     }
 
     static double base(TipoDisputa.Pesos p, AtributosLutador a) {

@@ -53,12 +53,40 @@ public final class SistemaCombate {
     public static final double CUSTO_DESEQUILIBRIO = 4.0;
     /** Folego do receptor para tentar o rompimento tecnico (pago com ou sem sucesso). */
     public static final double CUSTO_ROMPIMENTO_TECNICO = 3.0;
-    /** Folego de quem RESISTE a uma acao tecnica (limitado ao que ele tiver). */
-    public static final double CUSTO_RESISTENCIA = 1.0;
+    /*
+     * Entrega 5B: resistir PASSIVAMENTE nao custa nada (antes: 1 de folego).
+     * Evita drenar o adversario so repetindo tentativas contra quem nao agiu.
+     */
     /** Recarga entre acoes tecnicas do mesmo lutador (~0,75 s). */
     public static final int RECARGA_ACAO_TECNICA_TICKS = 45;
     /** Duracao do DESEQUILIBRIO no receptor (~2 s). */
     public static final int DURACAO_DESEQUILIBRIO_TICKS = 120;
+
+    // =====================================================
+    // FIRMEZA DA PEGADA (Entrega 5B)
+    // =====================================================
+    /** Firmeza de uma pegada recem-estabelecida (0..100). */
+    public static final double FIRMEZA_INICIAL = 100.0;
+    /** Desgaste por tick depois da entrada: 100 -> 0 em 1000 ticks (~16,7 s a 60 tps). */
+    public static final double DESGASTE_FIRMEZA_POR_TICK = 0.10;
+    /** Desgaste extra nos ticks com deslocamento conjunto (total 0,25/tick: ~6,7 s). */
+    public static final double DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK = 0.15;
+    /** Firmeza recuperada por um reforco (limitada a 100). */
+    public static final double REFORCO_FIRMEZA = 25.0;
+    /** Folego do aplicador por reforco. */
+    public static final double CUSTO_REFORCO = 3.0;
+    /** Recarga entre reforcos (~1 s), separada da recarga das acoes de disputa. */
+    public static final int RECARGA_REFORCO_TICKS = 60;
+    /** Abaixo disso o HUD avisa "controle enfraquecendo". */
+    public static final double LIMIAR_CONTROLE_FRACO = 30.0;
+    /** Deslocamento conjunto: 1 px por tick (caminhada normal: 3,2 a 4,8 px). */
+    public static final int VELOCIDADE_DESLOCAMENTO_CONJUNTO = 1;
+
+    /* Firmeza da interacao ATUAL (0 quando nao ha interacao). */
+    private double firmeza;
+    /* Houve deslocamento conjunto desde o ultimo desgaste? (1 cobranca por tick) */
+    private boolean deslocouNesteTick;
+    private final java.util.Map<IrmaoMiau, Long> recargaReforcoAte = new java.util.IdentityHashMap<>();
 
     /* Relogio do sistema (1 por atualizar()), usado nas recargas. */
     private long tick;
@@ -216,7 +244,34 @@ public final class SistemaCombate {
         );
 
         atualizarManutencaoDaInteracao();
+        atualizarFirmeza();
         atualizarAnimacaoCombate();
+    }
+
+    /**
+     * Entrega 5B: desgaste da firmeza. So corre com a interacao ja
+     * estabelecida (nunca nos 30 quadros de entrada). Firmeza zero encerra
+     * a pegada pelo mecanismo normal (motivo SEM_CONTROLE). Se a politica ja
+     * encerrou a interacao neste tick, nada acontece (sem encerramento duplo).
+     */
+    private void atualizarFirmeza() {
+        if (!isInteracaoEstabelecida()) {
+            deslocouNesteTick = false;
+            return;
+        }
+        double desgaste = DESGASTE_FIRMEZA_POR_TICK
+                + (deslocouNesteTick ? DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK : 0.0);
+        deslocouNesteTick = false;
+        firmeza = Math.max(0.0, firmeza - desgaste);
+        if (firmeza <= 1e-9) {
+            firmeza = 0.0;
+            encerrarInteracao(MotivoEncerramentoInteracao.SEM_CONTROLE);
+        }
+    }
+
+    /** Firmeza da pegada atual (0..100); 0 sem interacao. */
+    public double getFirmeza() {
+        return estaEmInteracao() ? firmeza : 0.0;
     }
 
     /**
@@ -410,6 +465,8 @@ public final class SistemaCombate {
 
         referenciaAplicador = null;
         referenciaReceptor = null;
+        firmeza = 0.0;
+        deslocouNesteTick = false;
         // Tambem remove a pose FINAL persistente depois que a timeline terminou.
         if (aplicadorInteracao != null) {
             aplicadorInteracao.limparEstadoAnimacaoCombate();
@@ -452,8 +509,7 @@ public final class SistemaCombate {
                     DURACAO_DESEQUILIBRIO_TICKS);
             return ResultadoAcaoTecnica.SUCESSO;
         }
-        cobrarResistencia(defensor);
-        return ResultadoAcaoTecnica.RESISTIDO;
+        return ResultadoAcaoTecnica.RESISTIDO;   // resistencia passiva: sem custo (5B)
     }
 
     /**
@@ -477,8 +533,69 @@ public final class SistemaCombate {
             encerrarInteracao(MotivoEncerramentoInteracao.ROMPIMENTO_TECNICO);
             return ResultadoAcaoTecnica.SUCESSO;
         }
-        cobrarResistencia(aplicador);
-        return ResultadoAcaoTecnica.RESISTIDO;
+        return ResultadoAcaoTecnica.RESISTIDO;   // resistencia passiva: sem custo (5B)
+    }
+
+    /**
+     * Entrega 5B: o APLICADOR reforca a pegada estabelecida: +25 de firmeza
+     * (maximo 100) por 3 de folego, recarga propria de 60 ticks. Nao mexe na
+     * animacao nem nas posicoes.
+     */
+    public ResultadoAcaoTecnica tentarReforcarPegada(IrmaoMiau aplicador) {
+        validarDoCombate(aplicador);
+        if (!isInteracaoEstabelecida() || aplicador != aplicadorInteracao) {
+            return ResultadoAcaoTecnica.SEM_PEGADA;
+        }
+        if (getRecargaReforcoRestante(aplicador) > 0) {
+            return ResultadoAcaoTecnica.EM_RECARGA;
+        }
+        if (firmeza >= FIRMEZA_INICIAL - 1e-9) {
+            return ResultadoAcaoTecnica.SEM_EFEITO;
+        }
+        if (aplicador.getFolegoAtual() < CUSTO_REFORCO) {
+            return ResultadoAcaoTecnica.SEM_FOLEGO;
+        }
+        aplicador.consumirFolegoCombate(CUSTO_REFORCO);
+        firmeza = Math.min(FIRMEZA_INICIAL, firmeza + REFORCO_FIRMEZA);
+        recargaReforcoAte.put(aplicador, tick + RECARGA_REFORCO_TICKS);
+        return ResultadoAcaoTecnica.SUCESSO;
+    }
+
+    /**
+     * Entrega 5B: o APLICADOR desloca a dupla 1 px na direcao pedida (-1/+1),
+     * mantendo a distancia relativa, as linhas e a orientacao. Os dois sao
+     * movidos pelo MESMO numero inteiro de pixels, e o desenho de cada um e
+     * relativo ao proprio x: o encaixe da pose conjunta nao muda.
+     *
+     * @param xMinimo menor x permitido para qualquer um dos dois
+     * @param xMaximo maior x permitido para qualquer um dos dois
+     */
+    public ResultadoAcaoTecnica deslocarPegadaControlada(IrmaoMiau aplicador, int direcao,
+            int xMinimo, int xMaximo) {
+        validarDoCombate(aplicador);
+        if (!isInteracaoEstabelecida() || aplicador != aplicadorInteracao || direcao == 0) {
+            return ResultadoAcaoTecnica.SEM_PEGADA;
+        }
+        int dx = Integer.signum(direcao) * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
+        IrmaoMiau receptor = receptorInteracao;
+        int menor = Math.min(aplicador.getX(), receptor.getX()) + dx;
+        int maior = Math.max(aplicador.getX(), receptor.getX()) + dx;
+        if (menor < xMinimo || maior > xMaximo) {
+            return ResultadoAcaoTecnica.LIMITE_ARENA;
+        }
+        aplicador.deslocarFisicamente(dx);
+        receptor.deslocarFisicamente(dx);
+        // A politica compara com estes retratos: deslocar a referencia junto
+        // evita romper por MOVIMENTO, sem esconder outras mudancas do corpo.
+        referenciaAplicador = referenciaAplicador.transladado(dx);
+        referenciaReceptor = referenciaReceptor.transladado(dx);
+        deslocouNesteTick = true;
+        return ResultadoAcaoTecnica.SUCESSO;
+    }
+
+    public int getRecargaReforcoRestante(IrmaoMiau lutador) {
+        Long ate = recargaReforcoAte.get(lutador);
+        return ate == null ? 0 : (int) Math.max(0, ate - tick);
     }
 
     /** Recarga e folego; null = pode agir. */
@@ -497,15 +614,10 @@ public final class SistemaCombate {
      * quem agiu e inicia a recarga.
      */
     private ResultadoDisputa disputar(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor, double custo) {
-        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor);
+        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor, firmeza);
         atacante.consumirFolegoCombate(custo);
         recargaAte.put(atacante, tick + RECARGA_ACAO_TECNICA_TICKS);
         return ultimaDisputa;
-    }
-
-    /** Resistir cansa um pouco, sem nunca deixar o folego negativo. */
-    private static void cobrarResistencia(IrmaoMiau defensor) {
-        defensor.consumirFolegoCombate(Math.min(CUSTO_RESISTENCIA, Math.max(0.0, defensor.getFolegoAtual())));
     }
 
     /** Ticks que faltam para o lutador poder fazer outra acao tecnica (0 = livre). */
@@ -805,6 +917,8 @@ public final class SistemaCombate {
         // Ainda nao estabelecida: depende do fim da animacao de entrada.
         referenciaAplicador = null;
         referenciaReceptor = null;
+        firmeza = FIRMEZA_INICIAL;
+        deslocouNesteTick = false;
     }
 
     private void validarParticipantes(

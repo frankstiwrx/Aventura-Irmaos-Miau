@@ -40,6 +40,10 @@ public class InputHandler {
     private static final String TECLA_BRANCO_DESEQUILIBRIO = "T";
     private static final String TECLA_PRETO_ROMPIMENTO = "U";
 
+    // Entrega 5B: reforco da pegada e modo de controle (deslocamento conjunto).
+    private static final String TECLA_BRANCO_REFORCO = "Y";
+    private static final String TECLA_BRANCO_CONTROLE = "SHIFT";
+
     // =====================================================
     // 2. TECLAS - MIAU PRETO
     // =====================================================
@@ -75,6 +79,8 @@ public class InputHandler {
     private boolean sprawl;
     private boolean pegada1;
     private boolean desequilibrio;
+    private boolean reforco;
+    private boolean controle;
 
     // =====================================================
     // 3. ESTADO ATUAL DOS CONTROLES - MIAU PRETO
@@ -194,6 +200,16 @@ public class InputHandler {
                 TECLA_BRANCO_DESEQUILIBRIO, "brancoDesequilibrio",
                 () -> desequilibrio = true,
                 () -> desequilibrio = false);
+
+        mapearTecla(inputMap, actionMap,
+                TECLA_BRANCO_REFORCO, "brancoReforco",
+                () -> reforco = true,
+                () -> reforco = false);
+
+        mapearTecla(inputMap, actionMap,
+                TECLA_BRANCO_CONTROLE, "brancoControle",
+                () -> controle = true,
+                () -> controle = false);
     }
 
     private void configurarControlesPreto(
@@ -294,6 +310,22 @@ public class InputHandler {
                 solta
         );
 
+        /*
+         * Entrega 5B: com SHIFT segurado o Swing gera "shift pressed X" em
+         * vez de "pressed X". Registrar as duas formas mantem todos os
+         * controles funcionando enquanto o SHIFT (modo de controle) esta
+         * pressionado, e a tecla e solta corretamente em qualquer ordem.
+         */
+        inputMap.put(
+                KeyStroke.getKeyStroke("shift pressed " + tecla),
+                pressionada
+        );
+
+        inputMap.put(
+                KeyStroke.getKeyStroke("shift released " + tecla),
+                solta
+        );
+
         actionMap.put(
                 pressionada,
                 new AbstractAction() {
@@ -387,6 +419,16 @@ public class InputHandler {
 
     public boolean isPegada1() {
         return pegada1 && trava.isLivre("brancoPegada1");
+    }
+
+    /** Y: reforcar a pegada (slot 1, se for o aplicador). */
+    public boolean isReforco() {
+        return reforco && trava.isLivre("brancoReforco");
+    }
+
+    /** SHIFT: modo de controle do slot 1 (com A/D = deslocamento conjunto da pegada). */
+    public boolean isControle() {
+        return controle && trava.isLivre("brancoControle");
     }
 
     /** T: acao ofensiva do slot 1 (desequilibrio, se for o aplicador). */

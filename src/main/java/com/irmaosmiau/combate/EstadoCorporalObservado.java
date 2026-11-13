@@ -57,6 +57,11 @@ public final class EstadoCorporalObservado {
         );
     }
 
+    /** Mesmo retrato deslocado no eixo X (deslocamento conjunto, 5B). */
+    public EstadoCorporalObservado transladado(int dx) {
+        return new EstadoCorporalObservado(x + dx, y, linha, pulando, agachado, deitado, rolando, fazendoSprawl);
+    }
+
     public int getX() {
         return x;
     }

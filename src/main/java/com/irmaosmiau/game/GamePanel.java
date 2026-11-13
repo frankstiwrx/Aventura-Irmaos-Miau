@@ -166,6 +166,17 @@ public class GamePanel extends JPanel {
     private boolean pegada1BrancoAnterior;
     // Entrega 5A: acoes tecnicas (borda de subida, uma acao por toque).
     private boolean desequilibrioAnterior;
+    // Entrega 5B: reforco (borda) e deslocamento conjunto em andamento.
+    private boolean reforcoAnterior;
+    private boolean deslocandoConjunto;
+
+    /*
+     * Entrega 5B: limites horizontais da arena para o deslocamento conjunto
+     * (x do canto do desenho; o corpo vai de x-15 a x+83 na escala 0,7).
+     * A caminhada normal continua sem limite, como antes.
+     */
+    static final int LIMITE_ESQUERDO_ARENA = 15;
+    static final int LIMITE_DIREITO_ARENA = LARGURA - 85;
     private boolean rompimentoPretoAnterior;
 
     // Preto no modo de dois jogadores.
@@ -688,10 +699,35 @@ public class GamePanel extends JPanel {
         // =========================
         // MOVIMENTO
         // =========================
+        /*
+         * Entrega 5B: SHIFT + A/D com a pegada estabelecida, sendo o
+         * aplicador = deslocamento conjunto lento (a dupla se move junta).
+         * Sem SHIFT, A/D continua sendo caminhada normal (e rompe a pegada).
+         */
+        boolean horizontal = input.isEsquerda() ^ input.isDireita();
+        boolean conjunto = horizontal
+                && input.isControle()
+                && sistemaCombate != null
+                && sistemaCombate.isInteracaoEstabelecida()
+                && sistemaCombate.getAplicadorInteracao() == jogadorBranco;
+
+        if (conjunto) {
+            com.irmaosmiau.combate.ResultadoAcaoTecnica r = sistemaCombate.deslocarPegadaControlada(
+                    jogadorBranco,
+                    input.isDireita() ? 1 : -1,
+                    LIMITE_ESQUERDO_ARENA,
+                    LIMITE_DIREITO_ARENA);
+            if (!deslocandoConjunto) {
+                feedback.mostrarInfo(r == com.irmaosmiau.combate.ResultadoAcaoTecnica.LIMITE_ARENA
+                        ? "LIMITE DA ARENA" : "DESLOCAMENTO CONTROLADO", tick);
+            }
+        }
+        deslocandoConjunto = conjunto;
+
         moverPersonagem(
                 jogadorBranco,
-                input.isEsquerda(),
-                input.isDireita(),
+                !conjunto && input.isEsquerda(),
+                !conjunto && input.isDireita(),
                 input.isCima(),
                 input.isBaixo(),
                 agachando,
@@ -718,8 +754,7 @@ public class GamePanel extends JPanel {
         }
 
         boolean andando
-                = input.isEsquerda()
-                || input.isDireita()
+                = (!conjunto && (input.isEsquerda() || input.isDireita()))
                 || input.isCima()
                 || input.isBaixo();
 
@@ -952,6 +987,13 @@ public class GamePanel extends JPanel {
                     tick);
         }
         desequilibrioAnterior = desequilibrio;
+
+        // Y (slot 1): reforcar a pegada, se este lutador for o APLICADOR.
+        boolean reforco = input.isReforco();
+        if (reforco && !reforcoAnterior) {
+            feedback.registrarReforco(sistemaCombate.tentarReforcarPegada(jogadorBranco), tick);
+        }
+        reforcoAnterior = reforco;
 
         // U (slot 2): rompimento tecnico, se este lutador for o RECEPTOR.
         // No treino o parceiro e passivo: a tecla do segundo jogador e ignorada.
@@ -1917,6 +1959,18 @@ public class GamePanel extends JPanel {
                 215
         );
 
+        // Entrega 5B: firmeza, desgaste e recargas.
+        g2.drawString(
+                String.format(java.util.Locale.ROOT, "FIRMEZA: %.1f  (-%.2f/t, +%.2f/t movendo) | REC T:%d Y:%d",
+                        sistemaCombate.getFirmeza(),
+                        SistemaCombate.DESGASTE_FIRMEZA_POR_TICK,
+                        SistemaCombate.DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK,
+                        sistemaCombate.getRecargaRestante(jogadorBranco),
+                        sistemaCombate.getRecargaReforcoRestante(jogadorBranco)),
+                270,
+                249
+        );
+
         // Entrega 5A: ultima disputa tecnica com as pontuacoes.
         g2.drawString(
                 "DISPUTA: "
@@ -1942,13 +1996,13 @@ public class GamePanel extends JPanel {
                     DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
                     DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
             );
-            dica = "WASD mover · ESPAÇO pular · C agachar · H pegada · T desequilibrar · F5 reiniciar · ESC pausa";
+            dica = "WASD · ESPAÇO · C · H pegada · T desequilibrar · Y reforçar · SHIFT+A/D arrastar · F5 reiniciar · ESC";
         } else if (modoDoisMiaus) {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorBranco, "J1"),
                     DadosLutadorHud.de(jogadorPreto, "J2")
             );
-            dica = "J1: WASD · H pegada · T desequilibrar    J2: setas · N · M · U romper    ESC pausa · F3 debug · F4 cenário";
+            dica = "J1: WASD · H pegada · T desequil. · Y reforçar · SHIFT+A/D arrastar   J2: setas · U romper   ESC · F3 · F4";
         } else {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorPrincipal, "JOGADOR")
@@ -1979,7 +2033,7 @@ public class GamePanel extends JPanel {
         Graphics2D d = (Graphics2D) g2.create();
         d.translate(0, 30);
         d.setColor(new Color(255, 255, 255, 170));
-        d.fillRoundRect(262, 32, 350, 207, 8, 8);
+        d.fillRoundRect(262, 32, 400, 224, 8, 8);
         desenharDebugCombate(d);
         d.dispose();
     }
@@ -2047,6 +2101,8 @@ public class GamePanel extends JPanel {
         sprawlBrancoAnterior = input.isSprawl();
         pegada1BrancoAnterior = input.isPegada1();
         desequilibrioAnterior = input.isDesequilibrio();
+        reforcoAnterior = input.isReforco();
+        deslocandoConjunto = false;
 
         feedback.reiniciarObservacao();
         feedback.mostrarInfo("Posições reiniciadas", tick);

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 328, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 350, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -113,12 +113,26 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] A pose final da pegada não muda e a animação de entrada não recomeça
 - [ ] T de novo logo em seguida → "aguarde"; segurar T não repete
 - [ ] Preto desequilibrado anda mais devagar (~60%) por ~2 s, inclusive depois que a pegada acaba
-- [ ] Os Dois: U com o Branco descansado → "DEFESA FALHOU", pegada continua, Preto −3 e Branco −1
+- [ ] Os Dois: U com o Branco descansado → "DEFESA FALHOU", pegada continua, Preto −3 e Branco sem custo (5B)
 - [ ] Gastar o fôlego do Branco (correr) antes da pegada e depois U → "PEGADA ROMPIDA!", o Preto não sai do lugar
 - [ ] Mover/pular/agachar continua rompendo a pegada como antes (3A)
 - [ ] Treino: U não faz nada; o parceiro nunca defende sozinho; F5 tira o desequilíbrio e zera as recargas
 - [ ] Perfil sem força/técnica: T → "TENTATIVA DE DESEQUILÍBRIO: RESISTIU"
 - [ ] F3: linha DISPUTA mostra as pontuações
+
+### Controle da pegada (Entrega 5B)
+
+- [ ] Durante os 30 quadros: "PEGADA 1 · ENTRANDO"; depois "PEGADA 1 · FIRMEZA 100%" caindo devagar
+- [ ] Parado ~12 s: aparece "CONTROLE ENFRAQUECENDO"; ~17 s: "PEGADA DESFEITA: SEM CONTROLE"
+- [ ] Y com a pegada caindo: "PEGADA REFORÇADA", firmeza +25, fôlego −3; Y de novo logo: "REFORÇO: AGUARDE"; com 100%: "PEGADA JÁ ESTÁ FIRME"
+- [ ] SHIFT + D / SHIFT + A: a dupla anda junta, devagar, sem separar os braços nem trocar de lado; "DESLOCAMENTO CONTROLADO"
+- [ ] Arrastar até a borda: para em "LIMITE DA ARENA"
+- [ ] D sem SHIFT ainda rompe a pegada
+- [ ] T/U contra quem não agiu não tiram fôlego do outro lado
+- [ ] Os Dois: com a firmeza abaixo de ~30, U do Preto rompe ("PEGADA ROMPIDA!")
+- [ ] Linhas diferentes (Preto uma linha abaixo): arrastar mantém a profundidade correta
+- [ ] Treino: Y, T e SHIFT+A/D funcionam; parceiro passivo; F5 volta tudo ao início
+- [ ] Fora da pegada, os controles com e sem SHIFT continuam normais
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

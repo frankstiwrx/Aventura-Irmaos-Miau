@@ -1315,6 +1315,15 @@ public void alternarDeitado() {
             * efeitos.getFatorVelocidade();
 }
 
+    /**
+     * Entrega 5B: deslocamento horizontal inteiro feito pelo motor de combate
+     * (deslocamento conjunto da pegada). Nao usa nem altera o resto decimal
+     * do movimento normal; o desenho continua relativo a x.
+     */
+    public void deslocarFisicamente(int dx) {
+        x += dx;
+    }
+
     /** Efeitos temporarios desta instancia (Entrega 5A). */
     public EfeitosTemporarios getEfeitos() {
         return efeitos;

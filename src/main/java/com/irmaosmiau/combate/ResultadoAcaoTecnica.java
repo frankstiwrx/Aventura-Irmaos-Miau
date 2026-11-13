@@ -11,5 +11,9 @@ public enum ResultadoAcaoTecnica {
     /** Sem pegada estabelecida, ainda na entrada, ou lutador no papel errado. */
     SEM_PEGADA,
     /** Acao tecnica recente: aguardar a recarga. */
-    EM_RECARGA
+    EM_RECARGA,
+    /** Entrega 5B: reforco com a pegada ja 100% firme (nada cobrado). */
+    SEM_EFEITO,
+    /** Entrega 5B: deslocamento conjunto bloqueado pelo limite da arena. */
+    LIMITE_ARENA
 }

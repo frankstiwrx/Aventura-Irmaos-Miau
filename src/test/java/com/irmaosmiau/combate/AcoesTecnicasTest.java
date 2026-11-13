@@ -123,7 +123,7 @@ class AcoesTecnicasTest {
     }
 
     @Test
-    void defesaAltaResisteEOsDoisPagam() {
+    void defesaAltaResisteSemCustoParaQuemResiste() {
         AtributosLutador muralha = new AtributosLutador(25, 40, 60, 45, 95, 95, 38, 110);
         SimuladorLuta s = com(IrmaoMiauBranco.atributosOficiais(), muralha);
         s.estabelecerPegada1();
@@ -133,7 +133,8 @@ class AcoesTecnicasTest {
         assertEquals(ResultadoAcaoTecnica.RESISTIDO, s.sistema.tentarDesequilibrio(s.branco));
 
         assertEquals(fb - SistemaCombate.CUSTO_DESEQUILIBRIO, s.branco.getFolegoAtual(), 1e-9);
-        assertEquals(fp - SistemaCombate.CUSTO_RESISTENCIA, s.preto.getFolegoAtual(), 1e-9);
+        // 5B: resistencia passiva nao custa folego.
+        assertEquals(fp, s.preto.getFolegoAtual(), 1e-9);
         assertFalse(s.preto.getEfeitos().isAtivo(DESEQ));
         assertTrue(s.sistema.isInteracaoEstabelecida());
         assertPoseFinal(s);
@@ -198,7 +199,7 @@ class AcoesTecnicasTest {
         assertEquals(ResultadoAcaoTecnica.RESISTIDO, s.sistema.tentarRompimentoTecnico(s.preto));
 
         assertEquals(fp - SistemaCombate.CUSTO_ROMPIMENTO_TECNICO, s.preto.getFolegoAtual(), 1e-9);
-        assertEquals(fb - SistemaCombate.CUSTO_RESISTENCIA, s.branco.getFolegoAtual(), 1e-9);
+        assertEquals(fb, s.branco.getFolegoAtual(), 1e-9, "5B: aplicador resiste sem custo");
         assertTrue(s.sistema.isInteracaoEstabelecida());
         assertEquals(xp, s.preto.getX(), "sem deslocamento");
         assertPoseFinal(s);
