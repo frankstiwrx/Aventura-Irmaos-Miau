@@ -1559,21 +1559,23 @@ public class GamePanel extends JPanel {
         cenario.desenharChao(g2, LARGURA, ALTURA);
 
         // =========================
-        // PERSONAGENS (ordem original)
+        // PERSONAGENS (do fundo para a frente)
         // =========================
         if (modoDoisMiaus) {
 
-            desenharPersonagemOrientado(
-                    g2,
-                    jogadorBranco,
-                    brancoViradoDireita
-            );
-
-            desenharPersonagemOrientado(
-                    g2,
-                    jogadorPreto,
-                    pretoViradoDireita
-            );
+            /*
+             * Quem esta numa linha mais ao fundo e desenhado primeiro.
+             * Mesma linha: Branco antes do Preto (ordem anterior, estavel).
+             */
+            for (IrmaoMiau lutador : ordemDeDesenho()) {
+                desenharPersonagemOrientado(
+                        g2,
+                        lutador,
+                        lutador == jogadorBranco
+                                ? brancoViradoDireita
+                                : pretoViradoDireita
+                );
+            }
 
         } else {
 
@@ -1617,6 +1619,11 @@ public class GamePanel extends JPanel {
 
             desenharFimDeJogo(g2);
         }
+    }
+
+    /** Lutadores na ordem em que sao desenhados (fundo -> frente). */
+    List<IrmaoMiau> ordemDeDesenho() {
+        return OrdemProfundidade.doFundoParaFrente(jogadorBranco, jogadorPreto);
     }
 
     // =====================================================
