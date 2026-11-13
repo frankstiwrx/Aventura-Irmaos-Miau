@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 145, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 186, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -59,6 +59,22 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] Depois da pegada: pular → `PULO`, agachar → `AGACHAMENTO`, deitar → `DEITAR_OU_LEVANTAR`, rolar → `ROLAMENTO`, sprawl → `SPRAWL`, andar para cima/baixo ou correr → `MOVIMENTO`
 - [ ] Em todos os casos a ação acontece normalmente e não sobra pose congelada
 - [ ] Depois de romper, a pegada pode ser feita de novo
+
+### Apresentação e treino (Entrega 4A)
+
+- [ ] Menu toca a música provisória (F9/F10 só existem dentro do jogo); botões COMEÇAR e **TREINO**
+- [ ] TREINO abre no **dojo** com selo `MODO TREINO`, painéis JOGADOR (Branco) e PARCEIRO (Preto)
+- [ ] Painéis mostram nome, FÔLEGO e CONDIC. com valores (ex.: `25/25`, `35/35`; Preto `40/40`, `25/25`)
+- [ ] Setas/N/M/J/O/I **não** movem o Preto no treino; WASD, Z, ESPAÇO, V, C, R, F, G movem o Branco
+- [ ] H longe: mensagem `Pegada 1: fora de alcance`; de costas: `de costas`
+- [ ] H perto: `Pegada 1!`, som curto, 3 quadros, `PEGADA 1 · ESTABELECIDA`, fôlego 25 → 22
+- [ ] Parado: pegada continua; andar/pular/agachar: `Pegada desfeita: ...` + som de rompimento
+- [ ] F5: os dois voltam às posições iniciais, fôlego cheio, `Posições reiniciadas`
+- [ ] ESC → MENU PRINCIPAL volta ao menu (e a música do menu volta)
+- [ ] F3 mostra/esconde o debug (inclusive `FONTE ANIM`); F4 alterna dojo/original; F9/F10 desligam música/efeitos
+- [ ] HUD não cobre os personagens em nenhuma das 5 linhas, nem no pulo alto
+- [ ] Modos Branco, Preto e Os Dois abrem no dojo e funcionam como antes; `MainPrototipo` abre com debug ligado
+- [ ] Rodar com `-Dirmaosmiau.audio=desligado` (ou sem placa de som): jogo funciona em silêncio
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

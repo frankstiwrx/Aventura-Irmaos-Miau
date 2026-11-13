@@ -3,6 +3,10 @@ package com.irmaosmiau.game;
 import com.irmaosmiau.combate.ContextoCombate;
 import com.irmaosmiau.combate.EstadoInteracaoCombate;
 import com.irmaosmiau.combate.ResultadoAcao;
+import com.irmaosmiau.audio.AudioJogo;
+import com.irmaosmiau.audio.ServicoAudio;
+import com.irmaosmiau.cenario.Cenario;
+import com.irmaosmiau.cenario.RegistroCenarios;
 import com.irmaosmiau.combate.SistemaCombate;
 import com.irmaosmiau.conteudo.CarregadorConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoCombate;
@@ -12,7 +16,13 @@ import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.entities.IrmaoMiauBranco;
 import com.irmaosmiau.entities.IrmaoMiauPreto;
 import com.irmaosmiau.entities.TipoPersonagem;
+import com.irmaosmiau.hud.DadosLutadorHud;
+import com.irmaosmiau.hud.FeedbackCombate;
+import com.irmaosmiau.hud.HudCombate;
 import com.irmaosmiau.input.InputHandler;
+import com.irmaosmiau.personagens.CatalogoPersonagens;
+import com.irmaosmiau.treino.ConfiguracaoTreino;
+import com.irmaosmiau.treino.SessaoTreino;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -24,6 +34,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
@@ -61,7 +72,6 @@ public class GamePanel extends JPanel {
     public static final int LARGURA = 800;
     public static final int ALTURA = 450;
 
-    private static final int TOPO_GRAMA = 300;
     private static final int INTERVALO_GAME_LOOP_MS = 16;
 
     private static final double ESCALA_PERSONAGEM = 0.7;
@@ -72,10 +82,23 @@ public class GamePanel extends JPanel {
     private static final int X_PRETO_DUO = 500;
 
     /*
-     * Temporario desta fase: deixa visivel que o motor esta observando
-     * a luta. Depois poderemos desligar sem remover a integracao.
+     * Entrega 4A: o debug tecnico do motor e uma camada separada do HUD
+     * do jogador. Comeca escondido e alterna com F3 (MainPrototipo liga
+     * por padrao).
      */
-    private static final boolean DEBUG_COMBATE = true;
+    private boolean debugVisivel = false;
+
+    // =====================================================
+    // CENARIO E HUD (Entrega 4A)
+    // =====================================================
+    private final RegistroCenarios cenarios = RegistroCenarios.padrao();
+    private Cenario cenario = cenarios.exigir(RegistroCenarios.ID_PADRAO);
+
+    private final HudCombate hud = new HudCombate();
+    private final FeedbackCombate feedback = new FeedbackCombate();
+
+    /* Relogio do jogo em ticks (60 por segundo), usado pelo feedback. */
+    private long tick;
 
     private final InputHandler input;
     private final Timer gameLoop;
@@ -92,15 +115,22 @@ public class GamePanel extends JPanel {
     // Usado quando apenas um personagem foi selecionado.
     private final IrmaoMiau jogadorPrincipal;
 
-    // Usados no modo "OS DOIS MIAUS".
-    private final IrmaoMiau jogadorBranco;
-    private final IrmaoMiau jogadorPreto;
+    // Usados no modo "OS DOIS MIAUS" e no treino (Branco = jogador).
+    // Nao sao final: o treino recria os lutadores ao reiniciar (F5).
+    private IrmaoMiau jogadorBranco;
+    private IrmaoMiau jogadorPreto;
+
+    // Modo treino (Entrega 4A): parceiro controlado por comportamento.
+    private final boolean modoTreino;
+    private final SessaoTreino sessaoTreino;
+
+    private final ServicoAudio audio = AudioJogo.servico();
 
     /*
      * O motor existe apenas quando ha dois lutadores na arena.
      * No modo individual ele fica nulo por enquanto.
      */
-    private final SistemaCombate sistemaCombate;
+    private SistemaCombate sistemaCombate;
 
     // =====================================================
     // 3. ESTADO DE ENTRADA / AÇÕES DE UM ÚNICO DISPARO
@@ -157,6 +187,37 @@ public class GamePanel extends JPanel {
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
+        this(tipo, null, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+    }
+
+    /**
+     * Entrega 4A: modo treino (jogador nos controles WASD/H, parceiro
+     * controlado pelo comportamento da configuracao).
+     */
+    public GamePanel(
+            ConfiguracaoTreino treino,
+            Runnable aoVoltarMenu,
+            Runnable aoTrocarPersonagem,
+            Runnable aoTentarNovamente
+    ) {
+        this(TipoPersonagem.AMBOS, exigirTreino(treino),
+                aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+    }
+
+    private static ConfiguracaoTreino exigirTreino(ConfiguracaoTreino treino) {
+        if (treino == null) {
+            throw new IllegalArgumentException("A configuracao de treino e obrigatoria.");
+        }
+        return treino;
+    }
+
+    private GamePanel(
+            TipoPersonagem tipo,
+            ConfiguracaoTreino treino,
+            Runnable aoVoltarMenu,
+            Runnable aoTrocarPersonagem,
+            Runnable aoTentarNovamente
+    ) {
 
         this.aoVoltarMenu = aoVoltarMenu;
         this.aoTrocarPersonagem = aoTrocarPersonagem;
@@ -184,10 +245,27 @@ public class GamePanel extends JPanel {
         // =========================
         // PERSONAGENS
         // =========================
+        modoTreino = treino != null;
+
         modoDoisMiaus
                 = tipo == TipoPersonagem.AMBOS;
 
-        if (modoDoisMiaus) {
+        if (modoTreino) {
+
+            jogadorPrincipal = null;
+
+            sessaoTreino = new SessaoTreino(
+                    treino,
+                    CatalogoPersonagens.padrao(),
+                    carregarConteudoCombate()
+            );
+
+            jogadorBranco = sessaoTreino.getJogador();
+            jogadorPreto = sessaoTreino.getParceiro();
+
+        } else if (modoDoisMiaus) {
+
+            sessaoTreino = null;
 
             jogadorPrincipal = null;
 
@@ -206,6 +284,8 @@ public class GamePanel extends JPanel {
                     );
 
         } else {
+
+            sessaoTreino = null;
 
             jogadorBranco = null;
             jogadorPreto = null;
@@ -239,12 +319,17 @@ public class GamePanel extends JPanel {
          * Se algo obrigatorio faltar, o jogo PARA com erro claro: nao
          * existe troca silenciosa para os arrays legados.
          */
-        sistemaCombate = modoDoisMiaus
-                ? carregarConteudoCombate().criarSistema(
-                        jogadorBranco,
-                        jogadorPreto
-                )
-                : null;
+        if (modoTreino) {
+            sistemaCombate = sessaoTreino.getSistema();
+            cenario = cenarios.exigir(treino.getIdCenario());
+        } else {
+            sistemaCombate = modoDoisMiaus
+                    ? carregarConteudoCombate().criarSistema(
+                            jogadorBranco,
+                            jogadorPreto
+                    )
+                    : null;
+        }
 
         // =========================
         // INPUT
@@ -258,6 +343,7 @@ public class GamePanel extends JPanel {
         criarMenuPausa();
         criarMenuFim();
         configurarPausa();
+        configurarAtalhos();
 
         // =========================
         // GAME LOOP
@@ -269,6 +355,13 @@ public class GamePanel extends JPanel {
                 );
 
         gameLoop.start();
+
+        // Musica da arena (arquivo ausente = silencio, sem erro).
+        audio.tocarMusica(
+                modoTreino
+                ? AudioJogo.MUSICA_TREINO
+                : AudioJogo.MUSICA_COMBATE
+        );
     }
 
     /**
@@ -316,7 +409,13 @@ public class GamePanel extends JPanel {
         if (modoDoisMiaus) {
 
             atualizarMiauBranco();
-            atualizarMiauPreto();
+
+            if (modoTreino) {
+                // Parceiro de treino: ignora as teclas do segundo jogador.
+                sessaoTreino.atualizarParceiro();
+            } else {
+                atualizarMiauPreto();
+            }
 
             /*
              * A orientacao precisa refletir a posicao DESTE frame antes de
@@ -325,6 +424,9 @@ public class GamePanel extends JPanel {
             atualizarOrientacaoDosMiaus();
 
             sistemaCombate.atualizar();
+            if (feedback.observar(sistemaCombate, tick)) {
+                audio.tocarEfeito(AudioJogo.EFEITO_ROMPIMENTO);
+            }
             atualizarEntradasCombate();
 
         } else {
@@ -332,6 +434,7 @@ public class GamePanel extends JPanel {
             atualizarJogadorPrincipal();
         }
 
+        tick++;
         verificarFimDeJogo();
         repaint();
     }
@@ -767,11 +870,24 @@ public class GamePanel extends JPanel {
         if (pegada1Branco
                 && !pegada1BrancoAnterior) {
 
-            sistemaCombate.tentarAcao(
+            ResultadoAcao resultado = sistemaCombate.tentarAcao(
                     jogadorBranco,
                     jogadorPreto,
                     "pegada_1"
             );
+
+            feedback.registrarTentativa(
+                    sistemaCombate,
+                    jogadorBranco,
+                    jogadorPreto,
+                    "pegada_1",
+                    resultado,
+                    tick
+            );
+
+            if (resultado == ResultadoAcao.SUCESSO) {
+                audio.tocarEfeito(AudioJogo.EFEITO_PEGADA);
+            }
         }
 
         pegada1BrancoAnterior
@@ -1437,30 +1553,15 @@ public class GamePanel extends JPanel {
                 = (Graphics2D) g;
 
         // =========================
-        // CHÃO
+        // CENARIO (fundo e chao)
         // =========================
-        g2.setColor(
-                new Color(
-                        80,
-                        180,
-                        80
-                )
-        );
-
-        g2.fillRect(
-                0,
-                TOPO_GRAMA,
-                LARGURA,
-                ALTURA - TOPO_GRAMA
-        );
+        cenario.desenharFundo(g2, LARGURA, ALTURA);
+        cenario.desenharChao(g2, LARGURA, ALTURA);
 
         // =========================
-        // MODO DOIS MIAUS
+        // PERSONAGENS (ordem original)
         // =========================
         if (modoDoisMiaus) {
-
-            desenharHudDoisMiaus(g2);
-            desenharDebugCombate(g2);
 
             desenharPersonagemOrientado(
                     g2,
@@ -1476,9 +1577,18 @@ public class GamePanel extends JPanel {
 
         } else {
 
-            desenharHudIndividual(g2);
-
             jogadorPrincipal.desenhar(g2);
+        }
+
+        cenario.desenharPrimeiroPlano(g2, LARGURA, ALTURA);
+
+        // =========================
+        // HUD DO JOGADOR E DEBUG
+        // =========================
+        hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
+
+        if (debugVisivel) {
+            desenharCamadaDebug(g2);
         }
 
         // =========================
@@ -1566,8 +1676,7 @@ public class GamePanel extends JPanel {
             Graphics2D g2
     ) {
 
-        if (!DEBUG_COMBATE
-                || sistemaCombate == null) {
+        if (sistemaCombate == null) {
 
             return;
         }
@@ -1732,368 +1841,187 @@ public class GamePanel extends JPanel {
     }
 
     // =====================================================
-    // 11. HUD INDIVIDUAL
+    // 11. HUD DO JOGADOR (Entrega 4A)
     // =====================================================
-    private void desenharHudIndividual(
-            Graphics2D g2
-    ) {
+    /** Monta o que o HUD mostra neste frame (somente leitura do jogo). */
+    HudCombate.Estado montarEstadoHud() {
 
-        g2.setColor(
-                Color.BLACK
-        );
+        List<DadosLutadorHud> lutadores;
+        String dica;
 
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.PLAIN,
-                        12
-                )
-        );
+        if (modoTreino) {
+            lutadores = List.of(
+                    DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
+                    DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
+            );
+            dica = "WASD mover · Z correr · ESPAÇO pular · C agachar · H pegada · F5 reiniciar · ESC pausa";
+        } else if (modoDoisMiaus) {
+            lutadores = List.of(
+                    DadosLutadorHud.de(jogadorBranco, "J1"),
+                    DadosLutadorHud.de(jogadorPreto, "J2")
+            );
+            dica = "J1: WASD · ESPAÇO · C · H pegada    J2: setas · N · M    ESC pausa · F3 debug · F4 cenário";
+        } else {
+            lutadores = List.of(
+                    DadosLutadorHud.de(jogadorPrincipal, "JOGADOR")
+            );
+            dica = "WASD mover · Z correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário";
+        }
 
-        g2.drawString(
-                jogadorPrincipal.getNome(),
-                20,
-                30
-        );
-
-        g2.drawString(
-                "Estilo: "
-                + jogadorPrincipal.getEstilo(),
-                20,
-                50
-        );
-
-        g2.drawString(
-                "Linha: "
-                + (jogadorPrincipal
-                        .getLinhaAtual()
-                + 1)
-                + "/5",
-                20,
-                70
-        );
-
-        g2.drawString(
-                "WASD mover | Z correr | SPACE pulo | V pulo curto | C agachar | ESC pausa",
-                20,
-                95
-        );
-
-        g2.drawString(
-                "CONDICIONAMENTO",
-                20,
-                120
-        );
-
-        desenharBarra(
-                g2,
-                20,
-                125,
-                180,
-                12,
-                jogadorPrincipal.getPercentualCondicionamento(),
-                new Color(60, 180, 80)
-        );
-
-        g2.drawString(
-                "FÔLEGO",
-                20,
-                153
-        );
-
-        desenharBarra(
-                g2,
-                20,
-                158,
-                180,
-                12,
-                jogadorPrincipal.getPercentualFolego(),
-                new Color(60, 140, 220)
-        );
-
-    }
-
-    // =====================================================
-    // 11. HUD - DOIS MIAUS
-    // =====================================================
-    private void desenharHudDoisMiaus(
-            Graphics2D g2
-    ) {
-
-        g2.setColor(
-                Color.BLACK
-        );
-
-        // =========================
-        // BRANCO - ESQUERDA
-        // =========================
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        14
-                )
-        );
-
-        g2.drawString(
-                "MIAU BRANCO",
-                20,
-                25
-        );
-
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.PLAIN,
-                        12
-                )
-        );
-
-        g2.drawString(
-                "WASD = mover",
-                20,
-                45
-        );
-
-        g2.drawString(
-                "ESPAÇO = pular",
-                20,
-                62
-        );
-
-        g2.drawString(
-                "C = agachar",
-                20,
-                79
-        );
-
-        g2.drawString(
-                "Linha: "
-                + (jogadorBranco
-                        .getLinhaAtual()
-                + 1)
-                + "/5",
-                20,
-                96
-        );
-
-        g2.drawString(
-                "CONDICIONAMENTO",
-                20,
-                120
-        );
-
-        desenharBarra(
-                g2,
-                20,
-                125,
-                160,
-                12,
-                jogadorBranco.getPercentualCondicionamento(),
-                new Color(60, 180, 80)
-        );
-
-        g2.drawString(
-                "FÔLEGO",
-                20,
-                153
-        );
-
-        desenharBarra(
-                g2,
-                20,
-                158,
-                160,
-                12,
-                jogadorBranco.getPercentualFolego(),
-                new Color(60, 140, 220)
-        );
-
-        // =========================
-        // PRETO - DIREITA
-        // =========================
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.BOLD,
-                        14
-                )
-        );
-
-        desenharTextoDireita(
-                g2,
-                "MIAU PRETO",
-                25
-        );
-
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.PLAIN,
-                        12
-                )
-        );
-
-        desenharTextoDireita(
-                g2,
-                "SETAS = mover",
-                45
-        );
-
-        desenharTextoDireita(
-                g2,
-                "N = pular",
-                62
-        );
-
-        desenharTextoDireita(
-                g2,
-                "M = agachar",
-                79
-        );
-
-        desenharTextoDireita(
-                g2,
-                "Linha: "
-                + (jogadorPreto
-                        .getLinhaAtual()
-                + 1)
-                + "/5",
-                96
-        );
-
-        desenharTextoDireita(
-                g2,
-                "CONDICIONAMENTO",
-                120
-        );
-
-        desenharBarra(
-                g2,
-                620,
-                125,
-                160,
-                12,
-                jogadorPreto.getPercentualCondicionamento(),
-                new Color(60, 180, 80)
-        );
-
-        desenharTextoDireita(
-                g2,
-                "FÔLEGO",
-                153
-        );
-
-        desenharBarra(
-                g2,
-                620,
-                158,
-                160,
-                12,
-                jogadorPreto.getPercentualFolego(),
-                new Color(60, 140, 220)
-        );
-
-        // =========================
-        // PAUSA
-        // =========================
-        g2.setFont(
-                new Font(
-                        "Arial",
-                        Font.PLAIN,
-                        11
-                )
-        );
-
-        String pausa
-                = "ESC = pausar";
-
-        FontMetrics fm
-                = g2.getFontMetrics();
-
-        int largura
-                = fm.stringWidth(
-                        pausa
-                );
-
-        g2.drawString(
-                pausa,
-                (LARGURA
-                - largura) / 2,
-                25
+        return new HudCombate.Estado(
+                lutadores,
+                FeedbackCombate.textoEstadoInteracao(sistemaCombate),
+                feedback.getMensagem(tick),
+                feedback.getTipo(),
+                modoTreino,
+                dica
         );
     }
 
-    // =====================================================
-    // 11. UTILITÁRIOS DO HUD
-    // =====================================================
-    private void desenharTextoDireita(
-            Graphics2D g2,
-            String texto,
-            int y
-    ) {
+    /** Debug tecnico do motor, numa caixa propria abaixo do HUD. */
+    private void desenharCamadaDebug(Graphics2D g2) {
 
-        FontMetrics fm
-                = g2.getFontMetrics();
+        if (sistemaCombate == null) {
+            return;
+        }
 
-        int larguraTexto
-                = fm.stringWidth(
-                        texto
-                );
-
-        g2.drawString(
-                texto,
-                LARGURA
-                - larguraTexto
-                - 20,
-                y
-        );
+        Graphics2D d = (Graphics2D) g2.create();
+        d.translate(0, 30);
+        d.setColor(new Color(255, 255, 255, 170));
+        d.fillRoundRect(262, 32, 350, 190, 8, 8);
+        desenharDebugCombate(d);
+        d.dispose();
     }
 
-    private void desenharBarra(
-            Graphics2D g2,
-            int x,
-            int y,
-            int largura,
-            int altura,
-            double percentual,
-            Color cor
-    ) {
+    // =====================================================
+    // 12. ATALHOS DE APRESENTACAO (Entrega 4A)
+    // =====================================================
+    /*
+     * Teclas livres (nao usadas pelos controles dos Miaus):
+     * F3 = debug tecnico | F4 = proximo cenario
+     */
+    private void configurarAtalhos() {
+        atalho("F3", "alternarDebug", () -> setDebugVisivel(!debugVisivel));
+        atalho("F4", "proximoCenario", () -> {
+            cenario = cenarios.proximo(cenario);
+            feedback.mostrarInfo("Cenário: " + cenario.getNome(), tick);
+            repaint();
+        });
+        atalho("F5", "reiniciarTreino", this::reiniciarTreino);
+        atalho("F9", "alternarMusica", () -> {
+            audio.setMusicaAtiva(!audio.isMusicaAtiva());
+            feedback.mostrarInfo("Música: " + (audio.isMusicaAtiva() ? "ligada" : "desligada"), tick);
+        });
+        atalho("F10", "alternarEfeitos", () -> {
+            audio.setEfeitosAtivos(!audio.isEfeitosAtivos());
+            feedback.mostrarInfo("Efeitos: " + (audio.isEfeitosAtivos() ? "ligados" : "desligados"), tick);
+        });
+    }
 
-        percentual
-                = Math.max(
-                        0,
-                        Math.min(
-                                1,
-                                percentual
-                        )
-                );
+    /**
+     * Treino: volta jogador e parceiro as posicoes iniciais (novas
+     * instancias, folego cheio, sem pegada). Fora do treino nao faz nada.
+     */
+    void reiniciarTreino() {
 
-        // Fundo da barra
-        g2.setColor(
-                new Color(
-                        45,
-                        45,
-                        45
-                )
+        if (!modoTreino || pausado || fimDeJogo) {
+            return;
+        }
+
+        sessaoTreino.reiniciar();
+
+        jogadorBranco = sessaoTreino.getJogador();
+        jogadorPreto = sessaoTreino.getParceiro();
+        sistemaCombate = sessaoTreino.getSistema();
+        brancoViradoDireita = jogadorBranco.isViradoParaDireita();
+        pretoViradoDireita = jogadorPreto.isViradoParaDireita();
+
+        // Nada do que estiver segurado dispara no primeiro tick.
+        puloBrancoAnterior = input.isPular();
+        puloCurtoBrancoAnterior = input.isPularCurto();
+        rolamentoBrancoAnterior = input.isRolar();
+        deitarBrancoAnterior = input.isDeitar();
+        sprawlBrancoAnterior = input.isSprawl();
+        pegada1BrancoAnterior = input.isPegada1();
+
+        feedback.reiniciarObservacao();
+        feedback.mostrarInfo("Posições reiniciadas", tick);
+        repaint();
+    }
+
+    /**
+     * Ao sair da tela (menu, selecao, tentar novamente) o loop deste
+     * painel para; antes ele continuava rodando em segundo plano.
+     */
+    @Override
+    public void removeNotify() {
+        gameLoop.stop();
+        super.removeNotify();
+    }
+
+    // =====================================================
+    // ACESSO PARA TESTES DO PACOTE
+    // =====================================================
+    void pararLoopParaTestes() {
+        gameLoop.stop();
+    }
+
+    void atualizarUmTickParaTestes() {
+        atualizar();
+    }
+
+    boolean isModoTreino() {
+        return modoTreino;
+    }
+
+    SessaoTreino getSessaoTreino() {
+        return sessaoTreino;
+    }
+
+    IrmaoMiau getLutador1() {
+        return modoDoisMiaus ? jogadorBranco : jogadorPrincipal;
+    }
+
+    IrmaoMiau getLutador2() {
+        return jogadorPreto;
+    }
+
+    boolean isPausado() {
+        return pausado;
+    }
+
+    private void atalho(String tecla, String nome, Runnable acao) {
+
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(
+                javax.swing.KeyStroke.getKeyStroke("pressed " + tecla),
+                nome
         );
 
-        g2.fillRect(
-                x,
-                y,
-                largura,
-                altura
-        );
+        getActionMap().put(nome, new javax.swing.AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                acao.run();
+            }
+        });
+    }
 
-        // Conteúdo
-        g2.setColor(cor);
+    public void setDebugVisivel(boolean visivel) {
+        debugVisivel = visivel;
+        repaint();
+    }
 
-        g2.fillRect(
-                x + 2,
-                y + 2,
-                (int) ((largura - 4)
-                * percentual),
-                altura - 4
-        );
+    public boolean isDebugVisivel() {
+        return debugVisivel;
+    }
+
+    /** Cenario atual (somente leitura). */
+    public Cenario getCenario() {
+        return cenario;
+    }
+
+    /** Troca o cenario por id; erro claro se nao existir. */
+    public void usarCenario(String idCenario) {
+        cenario = cenarios.exigir(idCenario);
+        repaint();
     }
 }

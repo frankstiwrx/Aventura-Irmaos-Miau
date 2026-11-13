@@ -132,3 +132,35 @@ definidos nos seus construtores. Os construtores alternativos aprovados para a
 Entrega 4 permitirão reaproveitar os renderers atuais com atributos/cores vindos da definição.
 
 O catálogo ainda não está ligado aos menus nem ao `GamePanel`.
+
+## 5. Nova música ou efeito (WAV)
+
+Detalhes e licença em `src/main/resources/audio/LEIAME.md`.
+
+1. Converta para **WAV** (PCM 16 bits; 22050 ou 44100 Hz).
+2. Copie para `src/main/resources/audio/musica/<id>.wav` (músicas, tocam em loop) ou
+   `src/main/resources/audio/efeitos/<id>.wav` (efeitos).
+3. Ids já usados pelo jogo, sem mudar código: `menu`, `treino`, `combate` (músicas), `pegada`,
+   `rompimento` (efeitos). Ex.: salvar `combate.wav` já faz a luta normal ter música.
+4. Id novo: `AudioJogo.servico().tocarMusica("<id>")` ou `tocarEfeito("<id>")`.
+
+Arquivo ausente ou inválido não trava nada: aparece `[audio] ... seguindo em silencio` no console.
+**Não use músicas comerciais** nem arquivos sem licença.
+Para rodar sem som: `-Dirmaosmiau.audio=desligado`.
+
+## 6. Novo cenário
+
+```java
+public final class CenarioPraia implements Cenario {
+    public String getId() { return "praia"; }
+    public String getNome() { return "Praia"; }
+    public void desenharFundo(Graphics2D g, int largura, int altura) { /* céu, mar... */ }
+    public void desenharChao(Graphics2D g, int largura, int altura)  { /* areia a partir de y ~ 296 */ }
+    // desenharPrimeiroPlano é opcional: não cubra a área dos personagens (y 56..410)
+}
+```
+
+Registre em `RegistroCenarios.padrao()` (`r.registrar(new CenarioPraia());`). Ele entra na rotação do F4
+e pode ser usado no treino com `new ConfiguracaoTreino(..., "praia", ...)` ou `painel.usarCenario("praia")`.
+Para desenhos pesados, renderize uma vez numa `BufferedImage` (como o `CenarioDojo`).
+Referências úteis: pés dos lutadores em `CenarioDojo.yCentroLinha(linha)`.

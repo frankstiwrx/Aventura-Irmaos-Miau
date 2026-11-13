@@ -1,6 +1,6 @@
 # Arquitetura — Aventura dos Irmãos Miau
 
-> Estado de referência: Entrega 3A (conteúdo integrado + política de interação). Descreve o código **como ele é hoje**
+> Estado de referência: Entrega 4A (cenários, HUD, áudio e modo treino). Descreve o código **como ele é hoje**
 > e as direções já aprovadas. Itens marcados *(planejado)* ainda não existem.
 
 ## Stack e build
@@ -50,6 +50,10 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `conteudo` | Leitura JSON sem dependências, conversor MiauStudio v2, catálogos de animações e técnicas | `CarregadorConteudoCombate`, `ConteudoCombate`, `FonteConteudo`, `ConteudoInvalidoException` |
 | `conteudo.json` | Parser JSON e acesso tipado com caminho nos erros | `LeitorJson`, `ObjetoJson` |
 | `conteudo.miaustudio` | `MIAUSTUDIO_PROJECT` v2 → quadros de 30 inteiros | `ConversorMiauStudio`, `AnimacaoConjuntaMiauStudio` |
+| `cenario` | Cenários de arena (fundo, chão, primeiro plano) por ID | `Cenario`, `CenarioDojo`, `CenarioOriginal`, `RegistroCenarios` |
+| `hud` | HUD do jogador (painéis, estado da interação, feedback) | `HudCombate`, `DadosLutadorHud`, `FeedbackCombate` |
+| `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
+| `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
 | `personagens` | Catálogo de personagens por ID com fábrica | `CatalogoPersonagens`, `DefinicaoPersonagem`, `FabricaLutador`, `ReferenciasVisuais` |
 
 Guia de cadastro: [CONTEUDO.md](CONTEUDO.md).
@@ -127,3 +131,42 @@ o que inverte automaticamente os deslocamentos quando os lados se trocam.
 
 Ver [REQUISITOS_FUTUROS.md](REQUISITOS_FUTUROS.md): lógica independente da animação, níveis de prontidão,
 reuso de animações por papel e evolução visual dos personagens.
+
+## Apresentação (Entrega 4A)
+
+### Ordem de desenho do `GamePanel`
+
+1. `cenario.desenharFundo` → 2. `cenario.desenharChao` → 3. personagens (mesma ordem e espelhamento
+de antes) → 4. `cenario.desenharPrimeiroPlano` → 5. `HudCombate` → 6. debug técnico (F3) → 7. escurecer de pausa/fim.
+
+O cenário só desenha: posições, linhas e colisões não mudaram. No dojo, cada uma das 5 linhas é uma faixa
+de tatame centrada nos pés (y = 326 + 20·linha, medido nos renderers atuais).
+
+### Modos
+
+| Modo | Como abre | Lutadores | Cenário | Música |
+|---|---|---|---|---|
+| Menu | `Main` | — | imagem do menu | `menu` |
+| Branco / Preto | Começar → seleção | 1 | dojo | `combate` (ainda sem arquivo: silêncio) |
+| Os dois | Começar → seleção | 2 jogadores | dojo | `combate` |
+| **Treino** | Menu → TREINO | Branco (jogador) x Preto (parceiro passivo) | dojo | `treino` |
+| Protótipo | `MainPrototipo` | 2 jogadores, debug ligado | dojo | `combate` |
+
+No treino o `GamePanel` usa uma `SessaoTreino`: o parceiro é atualizado pelo `ComportamentoParceiro.PASSIVO`
+(as teclas do segundo jogador são ignoradas) e F5 recria os dois lutadores nas posições iniciais.
+
+### Atalhos (teclas livres, sem conflito com os controles)
+
+| Tecla | Ação |
+|---|---|
+| ESC | Pausa (menu: continuar, trocar de Miau, menu principal) |
+| F3 | Mostra/esconde o debug técnico do motor |
+| F4 | Próximo cenário (dojo ↔ original) |
+| F5 | Treino: reinicia as posições |
+| F9 | Música liga/desliga |
+| F10 | Efeitos liga/desliga |
+
+### Correção incluída
+
+O `GamePanel` agora para o próprio `Timer` em `removeNotify()`. Antes, ao voltar ao menu ou usar
+"Tentar novamente", o painel antigo continuava rodando o loop em segundo plano.

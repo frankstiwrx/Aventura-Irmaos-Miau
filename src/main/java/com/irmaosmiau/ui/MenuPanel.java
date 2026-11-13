@@ -23,6 +23,17 @@ public class MenuPanel extends JPanel {
     public MenuPanel(
             Runnable aoComecar
     ) {
+        this(aoComecar, null);
+    }
+
+    /**
+     * Entrega 4A: menu com a opcao TREINO (abaixo de COMECAR).
+     * Com aoTreinar nulo o menu fica igual ao original.
+     */
+    public MenuPanel(
+            Runnable aoComecar,
+            Runnable aoTreinar
+    ) {
 
         setPreferredSize(
                 new Dimension(
@@ -160,6 +171,44 @@ public class MenuPanel extends JPanel {
                 botaoComecar,
                 gbc
         );
+
+        // =========================
+        // BOTÃO TREINO (Entrega 4A)
+        // =========================
+        if (aoTreinar != null) {
+
+            JButton botaoTreino =
+                    new JButton(
+                            "TREINO"
+                    );
+
+            botaoTreino.setFont(
+                    botaoComecar.getFont()
+            );
+
+            botaoTreino.setPreferredSize(
+                    botaoComecar.getPreferredSize()
+            );
+
+            botaoTreino.addActionListener(
+                    e -> aoTreinar.run()
+            );
+
+            gbc.gridy = 2;
+
+            gbc.insets =
+                    new Insets(
+                            12,
+                            70,
+                            0,
+                            70
+                    );
+
+            centro.add(
+                    botaoTreino,
+                    gbc
+            );
+        }
 
         add(
                 centro

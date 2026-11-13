@@ -56,6 +56,9 @@ public class MainPrototipo {
                 () -> iniciarPrototipo(janela)
         );
 
+        // Ambiente de testes: debug tecnico ligado desde o inicio (F3 alterna).
+        jogo.setDebugVisivel(true);
+
         janela.setContentPane(jogo);
 
         janela.pack();
