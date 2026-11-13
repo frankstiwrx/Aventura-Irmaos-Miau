@@ -51,6 +51,12 @@ public final class ConfiguracaoTreino {
                 ComportamentoParceiro.PASSIVO);
     }
 
+    /** Mesma configuracao em outro cenario (ex.: o preferido do jogador). */
+    public ConfiguracaoTreino comCenario(String idCenarioNovo) {
+        return new ConfiguracaoTreino(idJogador, idParceiro, idCenarioNovo, xJogador, xParceiro,
+                comportamentoParceiro);
+    }
+
     public String getIdJogador() {
         return idJogador;
     }

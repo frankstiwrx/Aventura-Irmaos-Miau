@@ -84,6 +84,31 @@ public final class ServicoPerfis {
         return atualizado;
     }
 
+    /** Nome e atributos numa unica gravacao (usado pelo editor da 4C). */
+    public PerfilLutador atualizar(String idPerfil, String novoNome, AtributosLutador novos) {
+        PerfilLutador atualizado = exigir(idPerfil).comNome(novoNome).comAtributos(novos);
+        repositorio.atualizar(atualizado);
+        return atualizado;
+    }
+
+    /**
+     * true se o id e valido, nao pertence a um personagem oficial e nao ha
+     * arquivo de perfil com ele (nem mesmo um corrompido).
+     */
+    public boolean idDisponivel(String idPerfil) {
+        String id;
+        try {
+            id = PerfilLutador.normalizarId(idPerfil);
+        } catch (IllegalArgumentException ex) {
+            return false;
+        }
+        return !catalogo.contem(id) && !repositorio.existe(id);
+    }
+
+    public CatalogoPersonagens getCatalogo() {
+        return catalogo;
+    }
+
     public PerfilLutador renomear(String idPerfil, String novoNome) {
         PerfilLutador atualizado = exigir(idPerfil).comNome(novoNome);
         repositorio.atualizar(atualizado);

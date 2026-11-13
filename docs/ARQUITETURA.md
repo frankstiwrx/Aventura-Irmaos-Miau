@@ -54,6 +54,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `hud` | HUD do jogador (painéis, estado da interação, feedback) | `HudCombate`, `DadosLutadorHud`, `FeedbackCombate` |
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
+| `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C) | `PreferenciasJogo` |
 | `persistencia` | Configurações e perfis em JSON versionado, gravação segura (Entrega 4B, ainda não ligada à interface; ver [PERSISTENCIA.md](PERSISTENCIA.md)) | `RepositorioConfiguracoes`, `ConfiguracoesJogo`, `RepositorioPerfis`, `ServicoPerfis`, `ArmazenamentoJson` |
 | `personagens` | Catálogo de personagens por ID com fábrica | `CatalogoPersonagens`, `DefinicaoPersonagem`, `FabricaLutador`, `ReferenciasVisuais` |
 
@@ -171,3 +172,15 @@ No treino o `GamePanel` usa uma `SessaoTreino`: o parceiro é atualizado pelo `C
 
 O `GamePanel` agora para o próprio `Timer` em `removeNotify()`. Antes, ao voltar ao menu ou usar
 "Tentar novamente", o painel antigo continuava rodando o loop em segundo plano.
+
+## Configurações e perfis (Entrega 4C)
+
+- **Menu:** COMEÇAR, TREINO, **CONFIGURAÇÕES**, **PERSONAGENS PERSONALIZADOS**.
+- **`PreferenciasJogo`** é a única porta para mudar áudio/cenário em execução. O `Main` carrega
+  `configuracoes.json` ao iniciar (sem criar nada) e instala a instância persistente; a tela de
+  configurações e os atalhos F4/F9/F10 do `GamePanel` usam a mesma instância, então tela, áudio e
+  arquivo nunca divergem. Sem instalação (testes, `MainPrototipo`) ela fica **em memória** e não grava.
+- **Telas** (`ui/ConfiguracoesPanel`, `ui/PerfisPanel`) recebem serviços por construtor e um `Dialogos`
+  (JOptionPane no jogo, respostas programadas nos testes headless).
+- **Perfis ainda não lutam:** a seleção de personagem e o treino continuam usando Branco/Preto oficiais
+  (aviso na própria tela). Ver [PERSISTENCIA.md](PERSISTENCIA.md).

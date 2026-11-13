@@ -21,6 +21,7 @@ import com.irmaosmiau.hud.FeedbackCombate;
 import com.irmaosmiau.hud.HudCombate;
 import com.irmaosmiau.input.InputHandler;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
+import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
 import com.irmaosmiau.treino.SessaoTreino;
 
@@ -92,7 +93,14 @@ public class GamePanel extends JPanel {
     // CENARIO E HUD (Entrega 4A)
     // =====================================================
     private final RegistroCenarios cenarios = RegistroCenarios.padrao();
-    private Cenario cenario = cenarios.exigir(RegistroCenarios.ID_PADRAO);
+
+    /*
+     * Entrega 4C: preferencias centralizadas (audio, cenario). F4/F9/F10
+     * passam por aqui para que tela, audio e arquivo salvo nao divirjam.
+     */
+    private final PreferenciasJogo preferencias = PreferenciasJogo.global();
+
+    private Cenario cenario = cenarios.exigir(preferencias.cenarioValido(cenarios));
 
     private final HudCombate hud = new HudCombate();
     private final FeedbackCombate feedback = new FeedbackCombate();
@@ -1911,18 +1919,30 @@ public class GamePanel extends JPanel {
         atalho("F3", "alternarDebug", () -> setDebugVisivel(!debugVisivel));
         atalho("F4", "proximoCenario", () -> {
             cenario = cenarios.proximo(cenario);
-            feedback.mostrarInfo("Cenário: " + cenario.getNome(), tick);
+            mostrarPreferencia("Cenário: " + cenario.getNome(),
+                    preferencias.definirCenarioPreferido(cenario.getId()));
             repaint();
         });
         atalho("F5", "reiniciarTreino", this::reiniciarTreino);
         atalho("F9", "alternarMusica", () -> {
-            audio.setMusicaAtiva(!audio.isMusicaAtiva());
-            feedback.mostrarInfo("Música: " + (audio.isMusicaAtiva() ? "ligada" : "desligada"), tick);
+            java.util.Optional<String> erro = preferencias.alternarMusica();
+            mostrarPreferencia("Música: "
+                    + (preferencias.getAtual().isMusicaAtiva() ? "ligada" : "desligada"), erro);
         });
         atalho("F10", "alternarEfeitos", () -> {
-            audio.setEfeitosAtivos(!audio.isEfeitosAtivos());
-            feedback.mostrarInfo("Efeitos: " + (audio.isEfeitosAtivos() ? "ligados" : "desligados"), tick);
+            java.util.Optional<String> erro = preferencias.alternarEfeitos();
+            mostrarPreferencia("Efeitos: "
+                    + (preferencias.getAtual().isEfeitosAtivos() ? "ligados" : "desligados"), erro);
         });
+    }
+
+    /** Mensagem do atalho; se a gravacao falhou, avisa (a mudanca vale assim mesmo). */
+    private void mostrarPreferencia(String texto, java.util.Optional<String> erroAoSalvar) {
+        feedback.mostrarInfo(
+                erroAoSalvar.map(e -> texto + " (não foi salvo)").orElse(texto),
+                tick
+        );
+        erroAoSalvar.ifPresent(e -> System.err.println("[preferencias] " + e));
     }
 
     /**

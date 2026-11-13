@@ -34,6 +34,20 @@ public class MenuPanel extends JPanel {
             Runnable aoComecar,
             Runnable aoTreinar
     ) {
+        this(aoComecar, aoTreinar, null, null);
+    }
+
+    /**
+     * Entrega 4C: menu completo com CONFIGURACOES e PERSONAGENS
+     * PERSONALIZADOS. Com quatro opcoes os botoes ficam mais largos e um
+     * pouco mais baixos para caber em 800 x 450.
+     */
+    public MenuPanel(
+            Runnable aoComecar,
+            Runnable aoTreinar,
+            Runnable aoConfiguracoes,
+            Runnable aoPerfis
+    ) {
 
         setPreferredSize(
                 new Dimension(
@@ -167,6 +181,14 @@ public class MenuPanel extends JPanel {
                         70
                 );
 
+        boolean menuCompleto = aoConfiguracoes != null || aoPerfis != null;
+
+        if (menuCompleto) {
+            botaoComecar.setFont(new Font("Arial", Font.BOLD, 17));
+            botaoComecar.setPreferredSize(new Dimension(340, 42));
+            gbc.insets = new Insets(0, 40, 0, 40);
+        }
+
         centro.add(
                 botaoComecar,
                 gbc
@@ -198,10 +220,10 @@ public class MenuPanel extends JPanel {
 
             gbc.insets =
                     new Insets(
-                            12,
-                            70,
+                            menuCompleto ? 10 : 12,
+                            menuCompleto ? 40 : 70,
                             0,
-                            70
+                            menuCompleto ? 40 : 70
                     );
 
             centro.add(
@@ -210,9 +232,38 @@ public class MenuPanel extends JPanel {
             );
         }
 
+        // =========================
+        // CONFIGURAÇÕES E PERFIS (Entrega 4C)
+        // =========================
+        adicionarOpcao(centro, gbc, 3, "CONFIGURAÇÕES", aoConfiguracoes, botaoComecar);
+        adicionarOpcao(centro, gbc, 4, "PERSONAGENS PERSONALIZADOS", aoPerfis, botaoComecar);
+
         add(
                 centro
         );
+    }
+
+    private static void adicionarOpcao(
+            JPanel centro,
+            GridBagConstraints gbc,
+            int linha,
+            String texto,
+            Runnable acao,
+            JButton modelo
+    ) {
+
+        if (acao == null) {
+            return;
+        }
+
+        JButton botao = new JButton(texto);
+        botao.setFont(modelo.getFont());
+        botao.setPreferredSize(modelo.getPreferredSize());
+        botao.addActionListener(e -> acao.run());
+
+        gbc.gridy = linha;
+        gbc.insets = new Insets(10, 40, 0, 40);
+        centro.add(botao, gbc);
     }
 
     // =============================

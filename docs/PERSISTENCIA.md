@@ -1,7 +1,7 @@
 # Persistência: configurações e perfis (Entrega 4B)
 
-Infraestrutura pronta e testada. **Ainda não ligada** a menus, áudio ou personagens:
-o jogo continua se comportando exatamente como antes.
+Infraestrutura da 4B, **ligada aos menus na 4C** (configurações e editor de perfis).
+Perfis personalizados ainda **não** são usados nas lutas.
 
 ## Onde ficam os dados
 
@@ -116,3 +116,23 @@ arquivo); ids de personagens oficiais (`miau_branco`, `miau_preto`) são reserva
 4. **Tela de edição:** usar `LimitesAtributos.todos()` (nome, mínimo, máximo) para montar os controles e
    `LimitesAtributos.problemas(...)` para mostrar erros antes de salvar.
 5. **Migrações:** quando houver `versaoEsquema` 2, tratar `versao < suportada` em `ArmazenamentoJson.ler`.
+
+## Entrega 4C: o que foi ligado
+
+| Item | Estado |
+|---|---|
+| Configurações carregadas ao iniciar e aplicadas no áudio | ✅ `Main.prepararPreferencias()` |
+| Tela CONFIGURAÇÕES (música, efeitos, volumes, cenário, restaurar padrões) | ✅ prévia imediata; grava em SALVAR |
+| F4 / F9 / F10 gravando a preferência | ✅ via `PreferenciasJogo` |
+| Cenário preferido usado nas arenas e no treino | ✅ (se não existir mais: dojo + aviso, preferência preservada) |
+| Tela PERSONAGENS PERSONALIZADOS (listar, criar a partir de Branco/Preto, editar 8 atributos, salvar, excluir com confirmação) | ✅ |
+| Usar um perfil como lutador | ⏳ próxima entrega (construtores alternativos de Branco/Preto) |
+
+Regras da tela de perfis:
+- O ID é gerado do nome ao salvar ("Branco Forte" → `branco_forte`; repetido → `_2`, `_3`).
+  IDs oficiais e IDs de arquivos existentes (até corrompidos) nunca são reaproveitados.
+- Validação 100% da 4B (`LimitesAtributos`, `PerfilLutador`, `ServicoPerfis`); valores digitados fora do
+  limite marcam o atributo em vermelho e nada é gravado.
+- Trocar de perfil, criar outro ou VOLTAR com mudanças pendentes pergunta: salvar / descartar / cancelar.
+- "PADRÃO DA BASE" copia os valores do oficial para o editor; o oficial nunca é alterado.
+- Arquivos de perfil com problema são listados como aviso e preservados.

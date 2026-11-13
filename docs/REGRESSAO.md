@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 219, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 268, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 ```bash
@@ -75,6 +75,23 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] HUD não cobre os personagens em nenhuma das 5 linhas, nem no pulo alto
 - [ ] Modos Branco, Preto e Os Dois abrem no dojo e funcionam como antes; `MainPrototipo` abre com debug ligado
 - [ ] Rodar com `-Dirmaosmiau.audio=desligado` (ou sem placa de som): jogo funciona em silêncio
+
+### Configurações e perfis (Entrega 4C)
+
+- [ ] Menu mostra COMEÇAR, TREINO, CONFIGURAÇÕES, PERSONAGENS PERSONALIZADOS (textos inteiros)
+- [ ] CONFIGURAÇÕES: desmarcar Música para o som na hora; mover o volume muda na hora
+- [ ] VOLTAR sem salvar pergunta; "Não" desfaz; "Cancelar" fica na tela
+- [ ] SALVAR, fechar o jogo e abrir de novo: valores mantidos
+- [ ] Escolher "Campo original", salvar, entrar em Os Dois / Treino: abre no campo original
+- [ ] F9/F10/F4 dentro do jogo e voltar ao menu → CONFIGURAÇÕES mostra o mesmo estado; reiniciar o jogo mantém
+- [ ] RESTAURAR PADRÕES + SALVAR volta a música/efeitos ligados, 60%/80%, dojo
+- [ ] PERSONAGENS PERSONALIZADOS: aviso "ainda não são usados nas lutas" visível
+- [ ] Base Preto → NOVO PERFIL → nome → mudar os 8 atributos → SALVAR → aparece na lista
+- [ ] Fechar e abrir o jogo: perfil continua; selecionar mostra os valores salvos
+- [ ] Mudar um valor e clicar em outro perfil: pergunta salvar/descartar/cancelar
+- [ ] Digitar 500 em Força e SALVAR: mensagem de erro, nada gravado
+- [ ] EXCLUIR pede confirmação; "Não" mantém; "Sim" remove
+- [ ] Branco/Preto nas lutas continuam com os atributos oficiais (ex.: fôlego 25/25 e 40/40 no HUD)
 
 ### MiauStudio (`EditorDePoses` — Run File)
 
