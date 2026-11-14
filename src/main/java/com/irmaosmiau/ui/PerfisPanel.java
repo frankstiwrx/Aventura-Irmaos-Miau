@@ -57,7 +57,7 @@ public final class PerfisPanel extends JPanel {
     private final JComboBox<ItemBase> base = new JComboBox<>();
     private final JButton novo = EstiloTelas.botao("NOVO PERFIL");
     private final JButton excluir = EstiloTelas.botao("EXCLUIR");
-    private final JButton voltar = EstiloTelas.botao("VOLTAR");
+    private final JButton voltar = NavegadorMenus.marcarVoltar(EstiloTelas.botao("VOLTAR"));
 
     // ---- editor
     private final JTextField nome = new JTextField();

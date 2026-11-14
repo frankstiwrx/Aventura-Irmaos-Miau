@@ -282,3 +282,25 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
 - `CamadaComando`: 1 (RS), 2 (LT), 3 (LB), 4 (LT + LB, avançada e reservada).
 - `MapaGamepad.acoesAtivas` (Contextual): andar para os lados também emite o "modo controle". O
   `GamePanel` (regra da 5B) só arrasta o aplicador de uma pegada estabelecida.
+
+## Papéis independentes do slot (Entrega 5I)
+
+- `AcaoJogador`: os dois slots têm tecla padrão para todas as ações; `usadaAntesDa5I` guarda o uso
+  antigo só para reconhecer arquivos salvos. `MapaGamepad.padrao5H/padrao5G/padraoAnterior`
+  reconstroem os padrões antigos para a migração do `RepositorioGamepad`.
+- `GamePanel.atualizarEntradasCombate`: coleta os toques dos dois slots, resolve o botão
+  compartilhado pelo papel (`resolverBotaoCompartilhado`) e descarta a segunda pegada do tick.
+  O arrasto existe para os dois slots (`deslocandoConjuntoJ1/J2`).
+- `GamePanel.criarDoSlot` não confere mais a base: qualquer irmão em qualquer slot.
+- `SelecaoLutadoresPanel.Slot`: seletor de irmão que repovoa o combo com `OpcoesDeLutadores.paraBase`.
+
+## Navegação de menus (Entrega 5I, complemento)
+
+- `dispositivos.LeitorNavegacao`: um gamepad → comandos de menu (sem Swing; zona morta,
+  histerese, repetição, armar só depois do repouso).
+- `ui.NavegadorMenus`: instalado uma vez na janela pelo `Main`; lê todos os gamepads conectados
+  (timer de 16 ms) e as setas/ENTER/ESC, e age na tela atual ou no diálogo aberto. Telas
+  `TelaNavegavel` dizem quando ele pode agir (`GamePanel`: só pausado/fim; `ControlesPanel`: nunca
+  durante a captura). O "voltar" de cada tela é o botão marcado com `NavegadorMenus.marcarVoltar`.
+- Ao sair da pausa, `GamePanel.sincronizarBordasDeToque` impede que o toque que fechou o menu
+  vire ação.

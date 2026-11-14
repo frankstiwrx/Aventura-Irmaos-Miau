@@ -49,7 +49,7 @@ public final class ConfiguracoesPanel extends JPanel {
 
     private final JButton restaurar = EstiloTelas.botao("RESTAURAR PADRÕES");
     private final JButton salvar = EstiloTelas.botao("SALVAR");
-    private final JButton voltar = EstiloTelas.botao("VOLTAR");
+    private final JButton voltar = NavegadorMenus.marcarVoltar(EstiloTelas.botao("VOLTAR"));
     private final JButton controles = EstiloTelas.botao("CONTROLES");
 
     private boolean atualizandoControles;

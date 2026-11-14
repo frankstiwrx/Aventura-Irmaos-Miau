@@ -163,9 +163,13 @@ class PerfisJogaveisGamePanelTest {
     }
 
     @Test
-    void perfilNoSlotErradoERecusado() {
-        assertThrows(IllegalArgumentException.class, () -> jogo(TipoPersonagem.AMBOS, pretoResistente, null));
-        assertThrows(IllegalArgumentException.class, () -> jogo(TipoPersonagem.PRETO, null, brancoTurbo));
+    void perfilDeOutraBaseEmQualquerSlot() {
+        // 5I (pedido): antes "perfilNoSlotErradoERecusado" (assertThrows). Agora qualquer irmao
+        // (ou perfil dele) joga em qualquer slot; os controles continuam os do slot.
+        GamePanel a = jogo(TipoPersonagem.AMBOS, pretoResistente, null);
+        assertTrue(a.getLutador1() instanceof com.irmaosmiau.entities.IrmaoMiauPreto, "perfil do Preto no J1");
+        GamePanel b = jogo(TipoPersonagem.PRETO, null, brancoTurbo);
+        assertTrue(b.getLutador1() instanceof com.irmaosmiau.entities.IrmaoMiauBranco, "perfil do Branco no J2 (sozinho)");
     }
 
     // =====================================================

@@ -82,7 +82,8 @@ class ControlesPanelTest {
             tela.selecionarSlot(SlotJogador.JOGADOR_2);
             assertEquals("U", tela.botaoTecla(AcaoJogador.ROMPIMENTO_TECNICO).getText());
             assertEquals("←", tela.botaoTecla(AcaoJogador.MOVER_ESQUERDA).getText());
-            assertEquals(null, tela.botaoTecla(AcaoJogador.INICIAR_PEGADA), "J2 nao tem pegada");
+            // 5I (pedido): antes null ("J2 nao tem pegada").
+            assertEquals("END", tela.botaoTecla(AcaoJogador.INICIAR_PEGADA).getText());
         });
     }
 

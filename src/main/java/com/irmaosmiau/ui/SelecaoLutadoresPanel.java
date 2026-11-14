@@ -32,12 +32,16 @@ import javax.swing.SwingConstants;
  * (Entrega 4D). Substitui no fluxo do Main a SelecaoPersonagemPanel, que
  * continua no projeto sem alteracoes.
  *
- * Slots com controles fixos (integracao incremental):
- * - slot Branco: Branco oficial ou perfis baseados no Branco (WASD, H);
- * - slot Preto:  Preto oficial ou perfis baseados no Preto (setas).
+ * Entrega 5I: cada coluna e um SLOT de controles (Jogador 1 = WASD/H,
+ * Jogador 2 = setas/END) e escolhe QUALQUER irmao: o seletor "IRMAO" troca
+ * a base da coluna (Branco ou Preto) e o combo lista o oficial e os perfis
+ * dessa base. Padrao: Jogador 1 = Branco, Jogador 2 = Preto (como antes).
+ * Os nomes internos slotBranco/slotPreto seguem significando "coluna do
+ * Jogador 1" e "coluna do Jogador 2".
  *
- * Duas variantes: partida (MIAU BRANCO / MIAU PRETO / OS DOIS MIAUS) e
- * treino (jogador = slot Branco, parceiro passivo = slot Preto).
+ * Duas variantes: partida (botao de cada coluna = jogar sozinho com ela /
+ * OS DOIS MIAUS) e treino (jogador = coluna 1, parceiro passivo = coluna 2;
+ * trocar o irmao do jogador troca o parceiro para o outro irmao).
  */
 public final class SelecaoLutadoresPanel extends JPanel {
 
@@ -63,32 +67,69 @@ public final class SelecaoLutadoresPanel extends JPanel {
     private final JButton botaoPreto = botao("MIAU PRETO");
     private final JButton botaoAmbos = botao("OS DOIS MIAUS");
     private final JButton botaoTreino = botao("COMEÇAR TREINO");
-    private final JButton botaoVoltar = botao("VOLTAR");
+    private final JButton botaoVoltar = NavegadorMenus.marcarVoltar(botao("VOLTAR"));
     private final JLabel rotuloAvisos = new JLabel(" ");
+
+    /** Os dois irmaos oficiais (bases possiveis de cada coluna). */
+    static final String[] IRMAOS = {CatalogoPersonagens.ID_BRANCO, CatalogoPersonagens.ID_PRETO};
 
     /** Uma coluna da tela (um slot de controles). */
     final class Slot {
+        final JComboBox<String> irmao = new JComboBox<>(new String[] {"MIAU BRANCO", "MIAU PRETO"});
         final JComboBox<EscolhaLutador> combo = new JComboBox<>();
         final JLabel tipo = new JLabel(" ");
         final JLabel base = new JLabel(" ");
+        final JLabel imagem = new JLabel(" ", SwingConstants.CENTER);
         final JPanel atributos = new JPanel(null);
+        private final transient OpcoesDeLutadores opcoes;
+        private String idBase;
+        private Runnable aoTrocarIrmao = () -> { };
 
         Slot(String idBase, OpcoesDeLutadores opcoes) {
-            ResultadoCarga<List<EscolhaLutador>> r = opcoes.paraBase(idBase);
+            this.opcoes = opcoes;
+            combo.setFont(new Font("Arial", Font.PLAIN, 12));
+            combo.addActionListener(ev -> atualizar());
+            irmao.setFont(new Font("Arial", Font.BOLD, 12));
+            irmao.setSelectedIndex(CatalogoPersonagens.ID_PRETO.equals(idBase) ? 1 : 0);
+            irmao.addActionListener(ev -> {
+                String novo = IRMAOS[Math.max(0, irmao.getSelectedIndex())];
+                if (!novo.equals(this.idBase)) {
+                    carregar(novo);
+                    aoTrocarIrmao.run();
+                }
+            });
+            tipo.setFont(new Font("Arial", Font.BOLD, 12));
+            base.setFont(new Font("Arial", Font.PLAIN, 11));
+            atributos.setOpaque(false);
+            carregar(idBase);
+        }
+
+        /** Repovoa o combo com o oficial e os perfis da base escolhida. */
+        private void carregar(String novaBase) {
+            idBase = novaBase;
+            ResultadoCarga<List<EscolhaLutador>> r = opcoes.paraBase(novaBase);
             for (String aviso : r.getAvisos()) {
                 if (!avisos.contains(aviso)) {
                     avisos.add(aviso);
                 }
             }
+            combo.removeAllItems();
             for (EscolhaLutador e : r.getValor()) {
                 combo.addItem(e);
             }
-            combo.setFont(new Font("Arial", Font.PLAIN, 12));
-            combo.addActionListener(ev -> atualizar());
-            tipo.setFont(new Font("Arial", Font.BOLD, 12));
-            base.setFont(new Font("Arial", Font.PLAIN, 11));
-            atributos.setOpaque(false);
+            imagem.setIcon(icone(CatalogoPersonagens.ID_PRETO.equals(novaBase)
+                    ? "/assets/sprites/miau-preto.png" : "/assets/sprites/miau-branco.png"));
             atualizar();
+        }
+
+        /** Base (irmao) atual da coluna. */
+        String idBase() {
+            return idBase;
+        }
+
+        /** Troca o irmao da coluna (mesmo efeito do seletor). */
+        void escolherIrmao(String id) {
+            irmao.setSelectedIndex(CatalogoPersonagens.ID_PRETO.equals(id) ? 1 : 0);
         }
 
         EscolhaLutador escolha() {
@@ -104,6 +145,7 @@ public final class SelecaoLutadoresPanel extends JPanel {
             tipo.setForeground(e.isOficial() ? new Color(30, 80, 30) : new Color(150, 40, 30));
             base.setText("Base: " + e.getBase().getNome());
             preencherAtributos(atributos, e.getAtributos());
+            atualizarBotoes();
         }
     }
 
@@ -126,10 +168,15 @@ public final class SelecaoLutadoresPanel extends JPanel {
         titulo.setFont(new Font("Arial", Font.BOLD, 24));
         colocar(titulo, 0, 8, 800, 32);
 
-        montarColuna(slotBranco, 30, modoTreino ? "JOGADOR  (WASD · H pegada)" : "SLOT BRANCO  (WASD · H)",
-                "/assets/sprites/miau-branco.png");
-        montarColuna(slotPreto, 410, modoTreino ? "PARCEIRO  (passivo)" : "SLOT PRETO  (setas)",
-                "/assets/sprites/miau-preto.png");
+        montarColuna(slotBranco, 30, modoTreino ? "JOGADOR  (WASD · H pegada)" : "JOGADOR 1  (WASD · H)");
+        montarColuna(slotPreto, 410, modoTreino ? "PARCEIRO  (passivo)" : "JOGADOR 2  (setas · END)");
+        if (modoTreino) {
+            // Treinar com o Preto deixa o Branco de parceiro (e vice-versa); o parceiro pode ser trocado depois.
+            slotBranco.aoTrocarIrmao = () -> slotPreto.escolherIrmao(
+                    CatalogoPersonagens.ID_PRETO.equals(slotBranco.idBase())
+                            ? CatalogoPersonagens.ID_BRANCO : CatalogoPersonagens.ID_PRETO);
+        }
+        atualizarBotoes();
 
         if (modoTreino) {
             colocar(botaoTreino, 300, 334, 200, 36);
@@ -163,16 +210,30 @@ public final class SelecaoLutadoresPanel extends JPanel {
         }
     }
 
-    private void montarColuna(Slot slot, int x, String cabecalho, String imagem) {
+    private void montarColuna(Slot slot, int x, String cabecalho) {
         JLabel cab = new JLabel(cabecalho);
         cab.setFont(new Font("Arial", Font.BOLD, 13));
         colocar(cab, x, 46, 360, 18);
 
-        colocar(criarImagem(imagem), x, 68, 90, 90);
-        colocar(slot.combo, x + 100, 70, 260, 26);
-        colocar(slot.tipo, x + 100, 102, 260, 18);
-        colocar(slot.base, x + 100, 122, 260, 18);
+        colocar(slot.imagem, x, 68, 90, 90);
+        colocar(slot.irmao, x + 100, 66, 260, 24);
+        colocar(slot.combo, x + 100, 94, 260, 24);
+        colocar(slot.tipo, x + 100, 122, 130, 18);
+        colocar(slot.base, x + 230, 122, 130, 18);
         colocar(slot.atributos, x, 164, 360, 8 * 17);
+    }
+
+    /** 5I: o botao de jogar sozinho mostra o irmao escolhido na coluna. */
+    private void atualizarBotoes() {
+        if (slotBranco == null || slotPreto == null) {
+            return;                                     // ainda montando as colunas
+        }
+        botaoBranco.setText(rotuloIrmao(slotBranco.idBase()));
+        botaoPreto.setText(rotuloIrmao(slotPreto.idBase()));
+    }
+
+    private static String rotuloIrmao(String idBase) {
+        return CatalogoPersonagens.ID_PRETO.equals(idBase) ? "MIAU PRETO" : "MIAU BRANCO";
     }
 
     private void escolher(TipoPersonagem tipo) {
@@ -231,13 +292,13 @@ public final class SelecaoLutadoresPanel extends JPanel {
         painel.repaint();
     }
 
-    private JLabel criarImagem(String caminho) {
-        URL recurso = getClass().getResource(caminho);
+    private static ImageIcon icone(String caminho) {
+        URL recurso = SelecaoLutadoresPanel.class.getResource(caminho);
         if (recurso == null) {
-            return new JLabel("IMAGEM", SwingConstants.CENTER);
+            return null;
         }
         Image img = new ImageIcon(recurso).getImage().getScaledInstance(90, 90, Image.SCALE_SMOOTH);
-        return new JLabel(new ImageIcon(img));
+        return new ImageIcon(img);
     }
 
     // =====================================================

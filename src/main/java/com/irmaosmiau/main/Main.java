@@ -79,6 +79,10 @@ public class Main {
             ServicoGamepads.iniciarFisico();
             Runtime.getRuntime().addShutdownHook(new Thread(ServicoGamepads::encerrar, "encerrar-gamepad"));
 
+            // Entrega 5I: menus navegaveis por gamepad e teclado (sem mouse).
+            new com.irmaosmiau.ui.NavegadorMenus(janela, ServicoGamepads::global, System::currentTimeMillis)
+                    .instalar();
+
             java.util.List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
             avisos.addAll(controles.getAvisos());
             avisos.addAll(dispositivos.getAvisos());
@@ -152,21 +156,13 @@ public class Main {
      * recomeca o treino.
      */
     /**
-     * Entrega 4D: sem perfis salvos, o TREINO abre direto como antes; com
-     * perfis, mostra a escolha de jogador (slot Branco) e parceiro (slot Preto).
+     * Entrega 5I: o TREINO sempre mostra a escolha (qual irmao controlar e
+     * quem e o parceiro passivo). Antes (4D) abria direto com o Branco quando
+     * nao havia perfis salvos.
      */
     private static void abrirTreino(JFrame janela) {
 
-        OpcoesDeLutadores opcoes = OpcoesDeLutadores.padrao();
-        boolean haPerfis =
-                opcoes.paraBase(CatalogoPersonagens.ID_BRANCO).getValor().size() > 1
-                || opcoes.paraBase(CatalogoPersonagens.ID_PRETO).getValor().size() > 1;
-
-        if (haPerfis) {
-            mostrarSelecaoTreino(janela, opcoes);
-        } else {
-            iniciarTreino(janela, null, null);
-        }
+        mostrarSelecaoTreino(janela, OpcoesDeLutadores.padrao());
     }
 
     private static void mostrarSelecaoTreino(JFrame janela, OpcoesDeLutadores opcoes) {

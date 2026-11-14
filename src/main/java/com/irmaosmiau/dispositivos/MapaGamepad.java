@@ -93,21 +93,33 @@ public final class MapaGamepad {
      * configuravel). No Classico o RB continua correndo quando segurado.
      */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
-        ConfigSlot c5g = padrao5G(slot, esquema);
-        if (esquema != EsquemaGamepad.CONTEXTUAL) {
+        // 5I: os dois slots usam todas as acoes de combate (papel vem da luta).
+        return transformar5H(transformar5G(layoutBase(slot, esquema, slot::usa), slot::usa));
+    }
+
+    /** Padroes da 5H (uso antigo dos slots), para reconhecer um gamepad.json nunca personalizado. */
+    public static ConfigSlot padrao5H(SlotJogador slot, EsquemaGamepad esquema) {
+        return transformar5H(padrao5G(slot, esquema));
+    }
+
+    /** 5H: no Contextual o arrasto e automatico; o LB fica so como modificador da camada 3. */
+    private static ConfigSlot transformar5H(ConfigSlot c5g) {
+        if (c5g.esquema() != EsquemaGamepad.CONTEXTUAL) {
             return c5g;
         }
-        // 5H: no Contextual o arrasto e automatico (aplicador + analogico esquerdo); o LB
-        // fica so como modificador da camada 3.
         Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
         a.putAll(c5g.acoes());
         a.remove(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
-        return new ConfigSlot(esquema, a, c5g.comandos());
+        return new ConfigSlot(c5g.esquema(), a, c5g.comandos());
     }
 
-    /** Padroes da 5G (para reconhecer um gamepad.json nunca personalizado). */
+    /** Padroes da 5G (uso antigo dos slots), para reconhecer um gamepad.json nunca personalizado. */
     public static ConfigSlot padrao5G(SlotJogador slot, EsquemaGamepad esquema) {
-        ConfigSlot antigo = padraoAnterior(slot, esquema);
+        return transformar5G(padraoAnterior(slot, esquema), a -> a.usadaAntesDa5I(slot));
+    }
+
+    private static ConfigSlot transformar5G(ConfigSlot antigo, java.util.function.Predicate<AcaoJogador> usa) {
+        EsquemaGamepad esquema = antigo.esquema();
         Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
         a.putAll(antigo.acoes());
         Map<ComandoGamepad, BotaoGamepad> c = new EnumMap<>(ComandoGamepad.class);
@@ -117,12 +129,17 @@ public final class MapaGamepad {
         a.put(AcaoJogador.ROLAR, BotaoGamepad.R3);
         a.put(AcaoJogador.DEITAR_LEVANTAR, BotaoGamepad.L3);
         c.put(ComandoGamepad.MODIFICADOR_PULO_ALTO, BotaoGamepad.RB);
-        a.keySet().removeIf(acao -> !slot.usa(acao));
+        a.keySet().removeIf(acao -> !usa.test(acao));
         return new ConfigSlot(esquema, a, c);
     }
 
-    /** Padroes da 5D/5F (usados para reconhecer um gamepad.json nunca personalizado). */
+    /** Padroes da 5D/5F com o uso antigo dos slots (reconhecer arquivos e o layout historico). */
     public static ConfigSlot padraoAnterior(SlotJogador slot, EsquemaGamepad esquema) {
+        return layoutBase(slot, esquema, a -> a.usadaAntesDa5I(slot));
+    }
+
+    private static ConfigSlot layoutBase(SlotJogador slot, EsquemaGamepad esquema,
+            java.util.function.Predicate<AcaoJogador> usa) {
         Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
         Map<ComandoGamepad, BotaoGamepad> c = new EnumMap<>(ComandoGamepad.class);
         if (esquema == EsquemaGamepad.CLASSICO) {
@@ -161,7 +178,7 @@ public final class MapaGamepad {
             c.put(ComandoGamepad.MODIFICADOR_CAMADA_2, BotaoGamepad.GATILHO_ESQ);
             c.put(ComandoGamepad.MODIFICADOR_CAMADA_3, BotaoGamepad.LB);
         }
-        a.keySet().removeIf(acao -> !slot.usa(acao));
+        a.keySet().removeIf(acao -> !usa.test(acao));
         return new ConfigSlot(esquema, a, c);
     }
 
@@ -235,7 +252,16 @@ public final class MapaGamepad {
      */
     public static boolean podemDividir(ItemGamepad x, ItemGamepad y) {
         return par(x, y, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, ComandoGamepad.MODIFICADOR_CAMADA_3)
-                || par(x, y, AcaoJogador.CORRER, ComandoGamepad.MODIFICADOR_PULO_ALTO);
+                || par(x, y, AcaoJogador.CORRER, ComandoGamepad.MODIFICADOR_PULO_ALTO)
+                || parDeAcoes(x, y, AcaoJogador.TENTAR_DESEQUILIBRIO, AcaoJogador.ROMPIMENTO_TECNICO);
+    }
+
+    /**
+     * 5I: desequilibrar (aplicador) e romper (receptor) nunca valem ao mesmo
+     * tempo; o mesmo botao serve aos dois e o GamePanel usa o do papel real.
+     */
+    private static boolean parDeAcoes(ItemGamepad x, ItemGamepad y, AcaoJogador a, AcaoJogador b) {
+        return (x.acao() == a && y.acao() == b) || (x.acao() == b && y.acao() == a);
     }
 
     private static boolean par(ItemGamepad x, ItemGamepad y, AcaoJogador a, ComandoGamepad c) {

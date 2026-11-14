@@ -92,8 +92,7 @@ class GamepadPersistenciaTest {
                     + "{\"esquema\":\"CLASSICO\",\"botoes\":{\"PULAR\":\"BOTAO_99\"}}}}",
             "{\"tipo\":\"MAPEAMENTO_GAMEPAD_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador1\":"
                     + "{\"esquema\":\"CLASSICO\",\"botoes\":{\"PULAR\":\"INICIAR\"}}}}",
-            "{\"tipo\":\"MAPEAMENTO_GAMEPAD_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador2\":"
-                    + "{\"esquema\":\"CLASSICO\",\"botoes\":{\"INICIAR_PEGADA\":\"OESTE\"}}}}",
+            // 5I (pedido): "jogador2 INICIAR_PEGADA" saiu desta lista: agora e valido.
             "{\"tipo\":\"MAPEAMENTO_GAMEPAD_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador1\":"
                     + "{\"esquema\":\"MAGICO\"}}}",
         };

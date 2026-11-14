@@ -38,7 +38,8 @@ class AjudaControlesTest {
         MapaControles p = MapaControles.padrao();
         String livre = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.LIVRE, PapelCombate.LIVRE);
-        assertEquals("J1: WASD · H pegar   J2: setas   ESC pausa/controles · F3 · F4", livre);
+        // 5I (pedido): antes "J2: setas" (o J2 nao aplicava pegada).
+        assertEquals("J1: WASD · H pegar   J2: setas · END pegar   ESC pausa/controles · F3 · F4", livre);
         String pegada = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.APLICADOR, PapelCombate.RECEPTOR);
         assertEquals("J1: WASD · T desequilibrar · Y reforçar · SHIFT+A/D arrastar   J2: setas · U romper"
@@ -66,7 +67,8 @@ class AjudaControlesTest {
         assertEquals("MOVIMENTO", linhas.get(0).texto());
         assertTrue(linhas.get(0).isTitulo());
         assertFalse(linhas.stream().anyMatch(l -> "H".equals(l.tecla())), "H nao aparece mais");
-        assertEquals(16 + 3, linhas.size(), "16 acoes + MOVIMENTO, COMBATE, DEFESA");
+        // 5I (pedido): antes 16 + 3; o J1 ganhou o rompimento.
+        assertEquals(17 + 3, linhas.size(), "17 acoes + MOVIMENTO, COMBATE, DEFESA");
         assertTrue(AjudaControles.linhas(m, SlotJogador.JOGADOR_2)
                 .contains(new AjudaControles.Linha("Sprawl", "NUM 1")));
     }

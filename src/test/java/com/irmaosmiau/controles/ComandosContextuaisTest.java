@@ -118,8 +118,9 @@ class ComandosContextuaisTest {
         List<CelulaContextual> l = celulas(SlotJogador.JOGADOR_1, PapelCombate.LIVRE, EstadoPosicional.separados(), Lado.A);
         assertEquals("[C1↑=PEGAR]", resumo(l));
         assertEquals(AcaoJogador.INICIAR_PEGADA, l.get(0).acao());
-        assertEquals("[]", resumo(celulas(SlotJogador.JOGADOR_2, PapelCombate.LIVRE,
-                EstadoPosicional.separados(), Lado.B)), "o Jogador 2 ainda nao aplica pegada");
+        // 5I (pedido): o Jogador 2 tambem aplica pegada (antes: "[]").
+        assertEquals("[C1↑=PEGAR]", resumo(celulas(SlotJogador.JOGADOR_2, PapelCombate.LIVRE,
+                EstadoPosicional.separados(), Lado.B)), "o Jogador 2 tambem aplica pegada");
     }
 
     @Test

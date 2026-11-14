@@ -32,6 +32,10 @@ class MapaControlesTest {
             {"pretoPular", "N"}, {"pretoAgachar", "M"}, {"pretoCorrer", "K"}, {"pretoPularCurto", "B"},
             {"pretoRespirar", "L"}, {"pretoRolar", "O"}, {"pretoDeitar", "J"}, {"pretoSprawl", "I"},
             {"pretoRompimento", "U"},
+            // 5I (pedido): teclas novas porque os dois slots usam todas as acoes de combate.
+            {"brancoRompimento", "5"},
+            {"pretoPegada1", "END"}, {"pretoDesequilibrio", "PAGE_DOWN"}, {"pretoReforco", "PAGE_UP"},
+            {"pretoControle", "DELETE"},
         };
         for (String[] l : tabela) {
             TECLAS_ANTERIORES.put(l[0], l[1]);
@@ -54,8 +58,9 @@ class MapaControlesTest {
         assertEquals(TECLAS_ANTERIORES, atual);
         assertTrue(p.isValido(), p.problemas().toString());
         assertTrue(p.ehPadrao());
-        assertEquals(16, SlotJogador.JOGADOR_1.acoes().size());
-        assertEquals(13, SlotJogador.JOGADOR_2.acoes().size());
+        // 5I (pedido): antes 16 (J1) e 13 (J2); agora os dois slots tem as 17 acoes.
+        assertEquals(17, SlotJogador.JOGADOR_1.acoes().size());
+        assertEquals(17, SlotJogador.JOGADOR_2.acoes().size());
     }
 
     @Test
@@ -93,10 +98,13 @@ class MapaControlesTest {
 
     @Test
     void slotsIndependentesEAcoesQueOSlotNaoUsa() {
-        assertThrows(IllegalArgumentException.class, () -> MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.INICIAR_PEGADA, t("P")));
-        assertThrows(IllegalArgumentException.class, () -> MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.ROMPIMENTO_TECNICO, t("P")));
+        // 5I (pedido): antes o J2 nao podia ter pegada nem o J1 rompimento (assertThrows).
+        assertEquals("P", MapaControles.padrao()
+                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.INICIAR_PEGADA, t("P"))
+                .rotulo(SlotJogador.JOGADOR_2, AcaoJogador.INICIAR_PEGADA));
+        assertEquals("P", MapaControles.padrao()
+                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.ROMPIMENTO_TECNICO, t("P"))
+                .rotulo(SlotJogador.JOGADOR_1, AcaoJogador.ROMPIMENTO_TECNICO));
         MapaControles m = MapaControles.padrao().comPadroesDo(SlotJogador.JOGADOR_2);
         assertEquals(MapaControles.padrao(), m);
     }
@@ -187,8 +195,9 @@ class MapaControlesTest {
     void acoesContextuaisPorPapel() {
         assertEquals(List.of(AcaoJogador.INICIAR_PEGADA),
                 AcoesContextuais.disponiveis(PapelCombate.LIVRE, SlotJogador.JOGADOR_1));
-        assertEquals(List.of(), AcoesContextuais.disponiveis(PapelCombate.LIVRE, SlotJogador.JOGADOR_2),
-                "o Jogador 2 ainda nao aplica pegada");
+        // 5I (pedido): antes List.of() ("o Jogador 2 ainda nao aplica pegada").
+        assertEquals(List.of(AcaoJogador.INICIAR_PEGADA),
+                AcoesContextuais.disponiveis(PapelCombate.LIVRE, SlotJogador.JOGADOR_2));
         assertEquals(List.of(), AcoesContextuais.disponiveis(PapelCombate.ENTRANDO, SlotJogador.JOGADOR_1));
         assertEquals(List.of(AcaoJogador.TENTAR_DESEQUILIBRIO, AcaoJogador.REFORCAR_PEGADA,
                 AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO),

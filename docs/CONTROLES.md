@@ -578,3 +578,119 @@ Proposta para quando existirem ataques altos e baixos reais:
   CONTÍNUA, resolvidas pelo motor contra o tipo do golpe recebido.
 - No Clássico o Y continua sendo o reforço; a defesa lá precisará de outro botão, a decidir.
 - Nada foi implementado: não existe defesa só visual, nem dano, hitbox ou colisão de golpes.
+
+---
+
+# Entrega 5I — Branco e Preto jogáveis, papéis independentes do slot
+
+## Auditoria: o que o Preto podia fazer (até a 5H) e agora
+
+| Capacidade | Até a 5H (slot J2 / Preto) | 5I |
+|---|---|---|
+| Andar, correr, agachar, pular, pulo curto, rolar, deitar, respirar, sprawl | sim | sim (igual) |
+| Iniciar PEGADA_1 | **não** (sem tecla, sem botão; `slot.usa` = false) | sim: END / X-Quadrado (Clássico) / RS ↑ (Contextual) |
+| Desequilibrar, reforçar | **não** | sim, quando for o aplicador: PAGE_DOWN, PAGE_UP / B, Y / RS |
+| Arrastar (modo controle) | **não** (`atualizarMiauPreto` não tinha arrasto) | sim, quando for o aplicador: DELETE + setas / LB + direção / automático no Contextual |
+| Romper a pegada | sim (U) | sim (U) — e agora o J1 também rompe (tecla 5 / B) |
+| Treino controlando o Preto | **não**: o treino abria com o Branco; o slot do jogador recusava o Preto | sim: escolha na tela do treino |
+| Preto no slot do J1 / Branco no do J2 | **não** (`criarDoSlot` lançava erro) | sim, qualquer combinação (inclusive o mesmo irmão nos dois) |
+
+O motor (`SistemaCombate`) já era genérico: `tentarAcao(atacante, defensor, "pegada_1")` e as
+ações técnicas conferem o papel real. A limitação estava só na entrada (`AcaoJogador` sem tecla
+para o J2, `slot.usa`), no `GamePanel` (arrasto só no J1) e na seleção.
+
+## Slot, identidade e papel
+
+- **Slot** (J1 / J2): de onde vêm as teclas/gamepad. Não muda durante a luta.
+- **Identidade** (Branco passador / Preto guardeiro, oficial ou perfil): escolhida na seleção.
+  Não muda atributos, poses nem renderizadores.
+- **Papel** (livre / entrando / aplicador / receptor): vem do `SistemaCombate` a cada tick
+  (`PapelCombate.de`). Quem toca a pegada primeiro e está no alcance vira o aplicador.
+
+O aplicador pode reforçar, desequilibrar e arrastar; o receptor pode romper. As ações de um papel
+que o lutador não tem só mostram o aviso de sempre ("só com a pegada estabelecida").
+
+## Teclas novas (padrão; todas remapeáveis em CONTROLES)
+
+| Ação | J1 | J2 |
+|---|---|---|
+| Iniciar pegada | H | **END** |
+| Desequilibrar | T | **PAGE DOWN** |
+| Reforçar | Y | **PAGE UP** |
+| Modo controle (arrastar) | SHIFT | **DELETE** |
+| Romper | **5** | U |
+
+Gamepad: os dois slots usam a mesma tabela. Clássico: X/Quadrado pega, Y reforça, **B
+desequilibra quando aplicador e rompe quando receptor**, LB + direção arrasta. Contextual:
+RS conforme o papel (a cruz já mostrava só o que vale) e arrasto automático (5H) para J1 e J2.
+
+`controles.json` e `gamepad.json` salvos antes: as teclas que faltam recebem o padrão (como desde a
+5C). Um `gamepad.json` igual a um padrão antigo (5F/5G/5H) passa ao padrão da 5I com aviso; um
+personalizado fica como está, com aviso se o Clássico não tiver botão para a pegada.
+
+## Entradas simultâneas (determinístico)
+
+1. Os toques do tick são lidos para os dois slots e despachados na ordem
+   pegar → desequilibrar → reforçar → romper, J1 antes do J2 em cada ação (a ordem da 5B).
+2. **Pegada ao mesmo tempo:** vale a do J1; a do J2 é descartada sem aviso, porque a interação
+   já começou nesse tick. Nunca há duas pegadas.
+3. **Desequilibrar e romper no mesmo toque** (o B do Clássico): vale a do papel real —
+   receptor rompe, aplicador desequilibra, livre fica com o desequilíbrio (que só avisa).
+
+## PEGADA_1 com papéis invertidos
+
+Nada mudou nos JSONs, nos arrays nem no renderizador. O `SistemaCombate` já entrega os quadros
+de aplicador ao aplicador e os de receptor ao receptor, cada um com o seu deslocamento, e o
+`GamePanel` espelha quem está virado para a esquerda. Teste: Branco aplicando da esquerda vs Branco
+aplicando da direita (J2) → mesma distância entre a dupla e silhuetas espelhadas (IoU > 0,95) em
+cinco quadros da entrada e na pegada estabelecida; a dupla não é simétrica (controle < 0,85).
+Duração, custo, firmeza e alcance são os mesmos para os dois slots (testado).
+
+## Treino
+
+A tela do treino sempre aparece (antes abria direto com o Branco quando não havia perfis). A
+coluna JOGADOR escolhe o irmão controlado; trocar o irmão do jogador troca o parceiro para o
+outro irmão (o parceiro pode ser trocado depois). O jogador usa os controles do J1 e faz tudo,
+inclusive pegada e arrasto; o parceiro continua passivo, sem IA. F5 reinicia com o mesmo irmão.
+
+## Seleção
+
+Cada coluna é um slot (JOGADOR 1 / JOGADOR 2) com um seletor **IRMÃO** (Miau Branco / Miau
+Preto) e o combo de oficial + perfis daquele irmão. O padrão continua Branco no J1 e Preto no J2.
+Os botões de jogar sozinho mostram o irmão escolhido na coluna. No gamepad: ↑↓ escolhe o campo,
+←→ troca o valor, A confirma.
+
+---
+
+# Entrega 5I (complemento) — Menus sem mouse
+
+## Navegação (todas as telas e a pausa)
+
+| | Gamepad | Teclado |
+|---|---|---|
+| Mover o foco | D-pad ou analógico esquerdo | setas |
+| Mudar valor (combo, slider) | ← → | ← → |
+| Confirmar | A | ENTER (ESPAÇO como antes) |
+| Voltar / cancelar | B | ESC (na partida o ESC continua sendo a pausa) |
+| Pausar / continuar | Start | ESC |
+
+- Foco visível: borda amarela no botão/campo em foco. O mouse continua funcionando.
+- Analógico: zona morta 0,5 e volta ao neutro abaixo de 0,3; segurar repete depois de 400 ms,
+  um passo a cada 140 ms.
+- Sem disparo acidental: a cada troca de tela (e ao abrir/fechar a pausa) o gamepad precisa voltar
+  ao repouso antes do próximo comando. Não depende do RB.
+- Diálogos (salvar / descartar / cancelar): navegáveis; B fecha = cancelar.
+- Na tela de controles, durante a captura de tecla/botão, o navegador não age.
+- Na pausa: foco inicial em CONTINUAR; B = continuar. Ao sair da pausa, nenhum toque que ainda
+  esteja segurado (A, pulo, pegada...) dispara; movimento segurado continua.
+
+## Ficou para a próxima entrega (dividido de propósito)
+
+- Pausa completa com **Configurar controles** e **Configurações** dentro da partida (exige
+  reaplicar o mapa de teclas e do gamepad com a partida viva; hoje o `InputHandler` e o
+  `MapaGamepad` são fixados na criação do `GamePanel`).
+- **Músicas originais** por tela (menu, configurações, treino, combate, seleção) e **SFX de
+  interface** (navegar, confirmar, voltar, escolher irmão, indisponível, abrir/fechar pausa). Nada
+  foi improvisado como música. A infraestrutura atual (`AudioJogo.tocarMusica`, uma faixa por
+  vez, volume das configurações, arquivo ausente = silêncio) continua a base.
+- Fundo animado do menu: nada foi bloqueado (o navegador só mexe em foco e cliques).

@@ -15,6 +15,12 @@ package com.irmaosmiau.controles;
  * - tecla padrao de cada jogador (nome do KeyStroke do Swing). null = o
  *   slot nao usa esta acao (ex.: o Jogador 2 ainda nao aplica pegada).
  *
+ * Entrega 5I: os dois slots usam todas as acoes de combate (o papel de
+ * aplicador/receptor vem da luta, nao do slot). Teclas novas: J2 pegar END,
+ * desequilibrar PAGE_DOWN, reforcar PAGE_UP, modo controle DELETE; J1 romper 5.
+ * O uso ANTERIOR (5C-5H: so o J1 aplicava, so o J2 rompia) fica em
+ * {@link #usadaAntesDa5I} para reconhecer arquivos antigos.
+ *
  * Para adicionar uma acao: nova constante aqui + leitura no GamePanel.
  * Arquivos controles.json antigos recebem a tecla padrao automaticamente
  * (ver RepositorioControles).
@@ -47,19 +53,19 @@ public enum AcaoJogador {
 
     // ---------------- COMBATE ----------------
     INICIAR_PEGADA("Pegada1", "Iniciar pegada (PEGADA 1)", "pegar",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "H", null),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "H", "END"),
     TENTAR_DESEQUILIBRIO("Desequilibrio", "Desequilibrar (na pegada)", "desequilibrar",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "T", null),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "T", "PAGE_DOWN"),
     REFORCAR_PEGADA("Reforco", "Reforçar a pegada", "reforçar",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "Y", null),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "Y", "PAGE_UP"),
     MODO_DESLOCAMENTO_CONTROLADO("Controle", "Modo controle (+ esquerda/direita = arrastar)", "arrastar",
-            GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "SHIFT", null),
+            GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "SHIFT", "DELETE"),
 
     // ---------------- DEFESA ----------------
     SPRAWL("Sprawl", "Sprawl", "sprawl",
             GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "G", "I"),
     ROMPIMENTO_TECNICO("Rompimento", "Romper a pegada (rompimento técnico)", "romper",
-            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, null, "U");
+            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "5", "U");
 
     private final String sufixoComando;
     private final String rotulo;
@@ -100,6 +106,15 @@ public enum AcaoJogador {
 
     public TipoAcionamento getAcionamento() {
         return acionamento;
+    }
+
+    /** Uso dos slots ate a 5H (para migracao de preferencias antigas). */
+    public boolean usadaAntesDa5I(SlotJogador slot) {
+        if (slot == SlotJogador.JOGADOR_1) {
+            return this != ROMPIMENTO_TECNICO;
+        }
+        return this != INICIAR_PEGADA && this != TENTAR_DESEQUILIBRIO && this != REFORCAR_PEGADA
+                && this != MODO_DESLOCAMENTO_CONTROLADO;
     }
 
     /** Nome da tecla padrao no slot, ou null se o slot nao usa a acao. */

@@ -45,8 +45,9 @@ class GamepadPadroes5HPersistenciaTest {
         repo().salvar(MapaGamepad.padrao().comEsquema(SlotJogador.JOGADOR_1, EsquemaGamepad.CONTEXTUAL));
         PreferenciasGamepad p = PreferenciasGamepad.carregar(repo());
         assertTrue(p.getAvisos().isEmpty(), p.getAvisos().toString());
+        // 5I (pedido): padraoDo agora e o da 5I (J2 com pegada); a 5H continua sendo comparada pelo padrao5H.
         assertEquals(MapaGamepad.padrao5G(SlotJogador.JOGADOR_2, EsquemaGamepad.CLASSICO),
-                MapaGamepad.padraoDo(SlotJogador.JOGADOR_2, EsquemaGamepad.CLASSICO), "o Classico nao mudou na 5H");
+                MapaGamepad.padrao5H(SlotJogador.JOGADOR_2, EsquemaGamepad.CLASSICO), "o Classico nao mudou na 5H");
     }
 
     @Test

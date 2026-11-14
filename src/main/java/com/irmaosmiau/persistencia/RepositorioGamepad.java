@@ -89,14 +89,20 @@ public final class RepositorioGamepad {
                 continue;
             }
             EsquemaGamepad e = lido.esquema(s);
-            boolean padraoAntigo = lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
-                    || (lido.config(s).equals(MapaGamepad.padrao5G(s, e)) && !lido.config(s).equals(MapaGamepad.padraoDo(s, e)));
+            boolean ehAtual = lido.config(s).equals(MapaGamepad.padraoDo(s, e));
+            boolean padraoAntigo = !ehAtual && (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
+                    || lido.config(s).equals(MapaGamepad.padrao5G(s, e))
+                    || lido.config(s).equals(MapaGamepad.padrao5H(s, e)));
             if (padraoAntigo) {
                 lido = lido.comEsquema(s, e);
                 avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"
                         + " RB + A pulo alto" + (e == EsquemaGamepad.CONTEXTUAL
                                 ? "; técnicas no analógico direito, arrasto automático" : "")
                         + "). Salve em CONTROLES para gravar.");
+            } else if (!ehAtual && e == EsquemaGamepad.CLASSICO
+                    && lido.botao(s, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA)).isEmpty()) {
+                avisos.add(s.getSigla() + ": seus botões personalizados foram mantidos. Agora os dois jogadores"
+                        + " aplicam e rompem pegadas: atribua botões em CONTROLES ou use RESTAURAR PADRÕES.");
             } else if (lido.botao(s, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).isEmpty()) {
                 avisos.add(s.getSigla() + ": seus botões personalizados foram mantidos. Os novos padrões"
                         + " (R3 rola, L3 deita, RB + A pulo alto) estão em CONTROLES → RESTAURAR PADRÕES.");

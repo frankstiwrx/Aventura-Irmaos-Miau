@@ -117,8 +117,10 @@ class MapaGamepadEditavelTest {
         assertThrows(IllegalArgumentException.class,
                 () -> MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.SUL),
                 "comandos so no contextual");
-        assertThrows(IllegalArgumentException.class,
-                () -> MapaGamepad.padrao().comBotao(J2, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA), BotaoGamepad.SUL));
+        // 5I (pedido): antes assertThrows (o J2 nao tinha pegada); agora o J2 remapeia a pegada.
+        assertEquals(BotaoGamepad.SUL, MapaGamepad.padrao()
+                .comBotao(J2, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA), BotaoGamepad.SUL)
+                .botao(J2, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA)).orElseThrow());
     }
 
     @Test

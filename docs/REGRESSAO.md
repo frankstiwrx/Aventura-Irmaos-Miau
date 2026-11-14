@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 551, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 586, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -253,6 +253,20 @@ Gamepad (Xbox):
 - [ ] J2 no Xbox como receptor: andar rompe a pegada e não leva o J1
 - [ ] Clássico: tudo igual à 5G (LB + analógico arrasta; andar sem LB rompe; RS não faz nada)
 - [ ] Botões personalizados continuam; um gamepad.json da 5G não personalizado mostra aviso de padrões atualizados
+
+### Branco e Preto jogáveis (Entrega 5I)
+
+- [ ] Seleção: J1 = Preto e J2 = Branco (seletor IRMÃO); a partida abre com o Preto à esquerda nas teclas WASD
+- [ ] J2 (setas) chega perto e aperta END: o Preto aplica a PEGADA_1 no Branco; as poses ficam encaixadas, espelhadas da pegada do J1
+- [ ] J2 aplicador: PAGE UP reforça, PAGE DOWN desequilibra, DELETE + setas arrasta a dupla devagar
+- [ ] J1 receptor: 5 rompe; T/Y não fazem nada além do aviso; SHIFT + A/D não arrasta (andar rompe)
+- [ ] H e END no mesmo instante: só o J1 pega
+- [ ] Treino: escolher JOGADOR = Miau Preto; o Branco vira parceiro e fica parado; WASD + H pega, Y reforça, SHIFT + D arrasta; F5 mantém o Preto
+- [ ] Xbox Clássico no J2: X pega, Y reforça, B desequilibra (aplicador) / rompe (receptor), LB + direção arrasta
+- [ ] Xbox Contextual no J2: RS ↑ pega; analógico esquerdo arrasta sozinho quando aplicador
+- [ ] Menus só com o Xbox: D-pad/analógico movem a borda amarela, A confirma, B volta; nenhum A "vaza" para a tela seguinte
+- [ ] Pausa pelo Start: foco em CONTINUAR; A continua sem pular; B também continua
+- [ ] Teclado nos menus: setas, ENTER, ESC volta (na partida o ESC segue pausando)
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

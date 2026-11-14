@@ -125,8 +125,7 @@ class ControlesPersistenciaTest {
             // acao desconhecida / acao que o slot nao usa
             "{\"tipo\":\"CONTROLES_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador1\":"
                     + "{\"VOAR\":\"P\"}}}",
-            "{\"tipo\":\"CONTROLES_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador2\":"
-                    + "{\"INICIAR_PEGADA\":\"P\"}}}",
+            // 5I (pedido): "jogador2 INICIAR_PEGADA" saiu desta lista: agora e valido.
             // jogador desconhecido
             "{\"tipo\":\"CONTROLES_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador3\":{}}}",
             // versao futura e tipo errado

@@ -68,7 +68,7 @@ import javax.swing.JToggleButton;
  *   segurado e ignorado; ESC ou Start cancelam; Backspace deixa sem botao).
  *   Durante a captura nenhuma tecla ou botao aciona a tela.
  */
-public final class ControlesPanel extends JPanel {
+public final class ControlesPanel extends JPanel implements TelaNavegavel {
 
     private static final long serialVersionUID = 1L;
 
@@ -124,7 +124,7 @@ public final class ControlesPanel extends JPanel {
 
     private final JButton restaurar = EstiloTelas.botao("RESTAURAR PADRÕES");
     private final JButton salvar = EstiloTelas.botao("SALVAR");
-    private final JButton voltar = EstiloTelas.botao("VOLTAR");
+    private final JButton voltar = NavegadorMenus.marcarVoltar(EstiloTelas.botao("VOLTAR"));
 
     private final transient KeyEventDispatcher captura = this::capturarEvento;
 
@@ -530,6 +530,12 @@ public final class ControlesPanel extends JPanel {
         return MapaGamepad.podemDividir(a, b);
     }
 
+    /** 5I: o navegador de menus nao age enquanto uma tecla ou botao e capturado. */
+    @Override
+    public boolean aceitaNavegacao() {
+        return capturando == null && capturandoBotao == null;
+    }
+
     /** Backspace durante a captura: o item fica sem botao (ex.: tirar uma acao do RB defeituoso). */
     void removerBotaoCapturado() {
         if (capturandoBotao == null) {
@@ -586,6 +592,10 @@ public final class ControlesPanel extends JPanel {
         atualizarTeclas();
         mostrarStatus("Pressione a nova tecla para " + slotAtual.getSigla() + " · " + acao.getRotulo()
                 + " (ESC cancela).", false);
+    }
+
+    void cancelarCapturaParaTestes() {
+        cancelarCaptura();
     }
 
     private void cancelarCaptura() {

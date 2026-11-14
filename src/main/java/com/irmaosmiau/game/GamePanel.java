@@ -89,7 +89,7 @@ import javax.swing.Timer;
  * 10. Renderização
  * 11. HUD
  */
-public class GamePanel extends JPanel {
+public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel {
 
     // =====================================================
     // 1. CONFIGURAÇÃO GERAL
@@ -193,6 +193,9 @@ public class GamePanel extends JPanel {
     private final DetectorToques toques = new DetectorToques();
     // Entrega 5B: deslocamento conjunto em andamento.
     private boolean deslocandoConjunto;
+    // 5I: arrasto por slot (o aplicador pode ser o J1 ou o J2); deslocandoConjunto = OU dos dois.
+    private boolean deslocandoConjuntoJ1;
+    private boolean deslocandoConjuntoJ2;
 
     /*
      * Entrega 5B: limites horizontais da arena para o deslocamento conjunto
@@ -217,6 +220,8 @@ public class GamePanel extends JPanel {
 
     private boolean pausado;
     private JPanel menuPausa;
+    // 5I: primeiro foco da pausa (A/ENTER = continuar) e o "voltar" do B.
+    private JButton botaoContinuar;
     // Entrega 5C: tela de ajuda de controles (pausa -> CONTROLES).
     private boolean ajudaVisivel;
     private JButton voltarDaAjuda;
@@ -302,10 +307,7 @@ public class GamePanel extends JPanel {
      * combina com os controles daquele slot.
      */
     private static IrmaoMiau criarDoSlot(EscolhaLutador escolha, String idBaseDoSlot, int x) {
-        if (!idBaseDoSlot.equals(escolha.getIdBase())) {
-            throw new IllegalArgumentException("O slot " + idBaseDoSlot + " so aceita o personagem oficial"
-                    + " ou perfis baseados nele; recebeu " + escolha.getDescricao());
-        }
+        // 5I: qualquer irmao em qualquer slot. idBaseDoSlot e so o padrao quando nada foi escolhido.
         return escolha.criarLutador(x, Y_INICIAL_PERSONAGEM, ESCALA_PERSONAGEM);
     }
 
@@ -547,9 +549,11 @@ public class GamePanel extends JPanel {
             if (modoTreino) {
                 // Parceiro de treino: ignora as teclas do segundo jogador.
                 sessaoTreino.atualizarParceiro();
+                deslocandoConjuntoJ2 = false;
             } else {
                 atualizarMiauPreto();
             }
+            deslocandoConjunto = deslocandoConjuntoJ1 || deslocandoConjuntoJ2;
 
             /*
              * A orientacao precisa refletir a posicao DESTE frame antes de
@@ -800,12 +804,12 @@ public class GamePanel extends JPanel {
                     input.isDireita() ? 1 : -1,
                     LIMITE_ESQUERDO_ARENA,
                     LIMITE_DIREITO_ARENA);
-            if (!deslocandoConjunto) {
+            if (!deslocandoConjuntoJ1) {
                 feedback.mostrarInfo(r == com.irmaosmiau.combate.ResultadoAcaoTecnica.LIMITE_ARENA
                         ? "LIMITE DA ARENA" : "DESLOCAMENTO CONTROLADO", tick);
             }
         }
-        deslocandoConjunto = conjunto;
+        deslocandoConjuntoJ1 = conjunto;
 
         moverPersonagem(
                 jogadorBranco,
@@ -934,10 +938,35 @@ public class GamePanel extends JPanel {
         // =========================
         // MOVIMENTO
         // =========================
+        /*
+         * Entrega 5I: o J2 tambem pode ser o aplicador. Mesma regra da 5B
+         * (modo controle + esquerda/direita, so o aplicador de uma pegada
+         * estabelecida); no Contextual o modo vem do analogico (5H).
+         */
+        boolean horizontal = input.isPretoEsquerda() ^ input.isPretoDireita();
+        boolean conjunto = horizontal
+                && input.isAtiva(SlotJogador.JOGADOR_2, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO)
+                && sistemaCombate != null
+                && sistemaCombate.isInteracaoEstabelecida()
+                && sistemaCombate.getAplicadorInteracao() == jogadorPreto;
+
+        if (conjunto) {
+            com.irmaosmiau.combate.ResultadoAcaoTecnica r = sistemaCombate.deslocarPegadaControlada(
+                    jogadorPreto,
+                    input.isPretoDireita() ? 1 : -1,
+                    LIMITE_ESQUERDO_ARENA,
+                    LIMITE_DIREITO_ARENA);
+            if (!deslocandoConjuntoJ2) {
+                feedback.mostrarInfo(r == com.irmaosmiau.combate.ResultadoAcaoTecnica.LIMITE_ARENA
+                        ? "LIMITE DA ARENA" : "DESLOCAMENTO CONTROLADO", tick);
+            }
+        }
+        deslocandoConjuntoJ2 = conjunto;
+
         moverPersonagem(
                 jogadorPreto,
-                input.isPretoEsquerda(),
-                input.isPretoDireita(),
+                !conjunto && input.isPretoEsquerda(),
+                !conjunto && input.isPretoDireita(),
                 input.isPretoCima(),
                 input.isPretoBaixo(),
                 agachando,
@@ -1035,8 +1064,21 @@ public class GamePanel extends JPanel {
          * resultados sao os da 5B (pegada, desequilibrio, reforco, rompimento);
          * o SistemaCombate continua decidindo se a acao vale no estado atual.
          */
-        for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
-            for (SlotJogador slot : SlotJogador.values()) {
+        /*
+         * Entrega 5I: os dois slots usam todas as acoes; o PAPEL (aplicador,
+         * receptor, livre) vem do SistemaCombate. Resolucao deterministica:
+         * - toques do mesmo tick sao lidos primeiro e despachados na ordem
+         *   ACOES_DE_COMBATE x (J1, J2), como desde a 5B;
+         * - pegada simultanea: vale a do J1; a do J2 e descartada em silencio
+         *   se uma interacao comecou neste tick (nada de pegadas incompativeis);
+         * - desequilibrar e romper no mesmo toque (botao compartilhado do
+         *   Classico): vale a do papel real (aplicador desequilibra, receptor
+         *   rompe, livre fica com o desequilibrio, que so avisa).
+         */
+        java.util.Map<SlotJogador, java.util.EnumSet<AcaoJogador>> tocadas = new java.util.EnumMap<>(SlotJogador.class);
+        for (SlotJogador slot : SlotJogador.values()) {
+            java.util.EnumSet<AcaoJogador> doSlot = java.util.EnumSet.noneOf(AcaoJogador.class);
+            for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
                 if (!slot.usa(acao)) {
                     continue;
                 }
@@ -1044,14 +1086,41 @@ public class GamePanel extends JPanel {
                 boolean ativa = !(modoTreino && slot == SlotJogador.JOGADOR_2)
                         && input.isAtiva(slot, acao);
                 if (toques.tocou(slot, acao, ativa)) {
-                    executarAcaoCombate(slot, acao);
+                    doSlot.add(acao);
                 }
+            }
+            resolverBotaoCompartilhado(slot, doSlot);
+            tocadas.put(slot, doSlot);
+        }
+        boolean interacaoAntes = sistemaCombate.estaEmInteracao();
+        for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
+            for (SlotJogador slot : SlotJogador.values()) {
+                if (!tocadas.get(slot).contains(acao)) {
+                    continue;
+                }
+                if (acao == AcaoJogador.INICIAR_PEGADA && !interacaoAntes && sistemaCombate.estaEmInteracao()) {
+                    continue;   // o outro slot ja comecou a pegada neste tick
+                }
+                executarAcaoCombate(slot, acao);
             }
         }
 
         // Entrega 5F: D-pad contextual (3 camadas), pelo mesmo caminho das teclas.
         for (SlotJogador slot : SlotJogador.values()) {
             dispositivos.consumirComandoContextual(slot).ifPresent(p -> executarComandoContextual(slot, p));
+        }
+    }
+
+    /** 5I: desequilibrio e rompimento no mesmo toque do slot: fica so a do papel real. */
+    private void resolverBotaoCompartilhado(SlotJogador slot, java.util.Set<AcaoJogador> doSlot) {
+        if (!doSlot.contains(AcaoJogador.TENTAR_DESEQUILIBRIO) || !doSlot.contains(AcaoJogador.ROMPIMENTO_TECNICO)) {
+            return;
+        }
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        if (sistemaCombate.getReceptorInteracao() == ator) {
+            doSlot.remove(AcaoJogador.TENTAR_DESEQUILIBRIO);
+        } else {
+            doSlot.remove(AcaoJogador.ROMPIMENTO_TECNICO);
         }
     }
 
@@ -1427,6 +1496,7 @@ public class GamePanel extends JPanel {
                 e -> mostrarAjudaControles(true)
         );
 
+        botaoContinuar = com.irmaosmiau.ui.NavegadorMenus.marcarVoltar(continuar);
         continuar.addActionListener(
                 e -> alternarPausa()
         );
@@ -1481,7 +1551,7 @@ public class GamePanel extends JPanel {
 
         add(menuPausa);
 
-        voltarDaAjuda = new JButton("VOLTAR");
+        voltarDaAjuda = com.irmaosmiau.ui.NavegadorMenus.marcarVoltar(new JButton("VOLTAR"));
         voltarDaAjuda.setFont(fonteBotao);
         voltarDaAjuda.setBounds(630, 400, 120, 28);
         voltarDaAjuda.addActionListener(e -> mostrarAjudaControles(false));
@@ -1538,6 +1608,14 @@ public class GamePanel extends JPanel {
         menuPausa.setVisible(
                 pausado
         );
+        if (pausado) {
+            botaoContinuar.requestFocusInWindow();
+        } else {
+            // 5I: o botao/tecla usado para sair do menu nao vira acao de toque (pulo,
+            // rolamento, pegada...): so um toque NOVO vale. Movimento segurado continua.
+            sincronizarBordasDeToque();
+            requestFocusInWindow();
+        }
 
         repaint();
     }
@@ -1548,6 +1626,48 @@ public class GamePanel extends JPanel {
         menuPausa.setVisible(pausado && !ajudaVisivel);
         voltarDaAjuda.setVisible(ajudaVisivel);
         repaint();
+    }
+
+    /** 5I: o que estiver segurado agora conta como "ja visto" (nenhuma borda de subida no proximo tick). */
+    private void sincronizarBordasDeToque() {
+        puloAnterior = input.isPular();
+        puloCurtoAnterior = input.isPularCurto();
+        rolamentoAnterior = input.isRolar();
+        sprawlAnterior = input.isSprawl();
+        deitarAnterior = input.isDeitar();
+        puloBrancoAnterior = input.isPular();
+        puloCurtoBrancoAnterior = input.isPularCurto();
+        rolamentoBrancoAnterior = input.isRolar();
+        deitarBrancoAnterior = input.isDeitar();
+        sprawlBrancoAnterior = input.isSprawl();
+        puloPretoAnterior = input.isPretoPular();
+        puloCurtoPretoAnterior = input.isPretoPularCurto();
+        rolamentoPretoAnterior = input.isPretoRolar();
+        deitarPretoAnterior = input.isPretoDeitar();
+        sprawlPretoAnterior = input.isPretoSprawl();
+        for (SlotJogador slot : SlotJogador.values()) {
+            for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
+                if (slot.usa(acao)) {
+                    toques.sincronizar(slot, acao, input.isAtiva(slot, acao));
+                }
+            }
+        }
+    }
+
+    /** 5I: o navegador de menus so age com o jogo pausado ou no fim de jogo. */
+    @Override
+    public boolean aceitaNavegacao() {
+        return pausado || fimDeJogo;
+    }
+
+    /** O ESC continua sendo da pausa (abrir/fechar), nao do navegador. */
+    @Override
+    public boolean escVolta() {
+        return false;
+    }
+
+    JButton getBotaoContinuar() {
+        return botaoContinuar;
     }
 
     boolean isAjudaVisivel() {
@@ -2374,6 +2494,8 @@ public class GamePanel extends JPanel {
             }
         }
         deslocandoConjunto = false;
+        deslocandoConjuntoJ1 = false;
+        deslocandoConjuntoJ2 = false;
 
         feedback.reiniciarObservacao();
         feedback.mostrarInfo("Posições reiniciadas", tick);
@@ -2411,6 +2533,11 @@ public class GamePanel extends JPanel {
 
     SessaoTreino getSessaoTreino() {
         return sessaoTreino;
+    }
+
+    /** 5I: mensagem de combate visivel agora (para testes). */
+    String mensagemFeedbackParaTestes() {
+        return feedback.getMensagem(tick);
     }
 
     IrmaoMiau getLutador1() {
