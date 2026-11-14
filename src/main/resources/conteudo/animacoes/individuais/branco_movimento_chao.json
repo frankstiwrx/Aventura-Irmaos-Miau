@@ -1,0 +1,21 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "branco.movimento_chao",
+  "estado": "MOVIMENTO_CHAO",
+  "rig": "miau_v1",
+  "uso": "INDIVIDUAL",
+  "loop": true,
+  "duracaoQuadroMs": 150,
+  "sequencia": [0, 1, 2, 3, 4, 3, 2, 1],
+  "deslocamentoVisual": { "x": 0, "y": 70 },
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "IrmaoMiauBranco.MOVIMENTO_CHAO_MIAUSTUDIO (convertido sem alteracao na Entrega 5E)",
+  "quadros": [
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 34, 0, 0, 6, -11, -31, -16, -18, 24, -36, 58, 6, 8, 15, 15, -19, 5, -33, 15] },
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 34, 0, 0, 18, -5, 3, 4, 2, 18, -20, 51, 6, 8, 15, 15, -2, 1, -33, 15] },
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 34, 0, 0, -1, -21, -34, -24, -18, 15, -39, 46, -10, -6, 12, -5, -19, 4, -33, 11] },
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 6, 0, 0, 20, 4, -9, 17, -6, 30, -29, 63, 6, 12, 12, -5, 2, 4, -16, 15] },
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 24, 0, 0, 15, 7, -20, -2, -16, 33, -14, 66, 0, 9, -6, -3, -17, 3, -35, 8] }
+  ]
+}

@@ -1,5 +1,10 @@
 package com.irmaosmiau.dispositivos;
 
+import com.irmaosmiau.persistencia.DiretorioDados;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Locale;
 
 /**
@@ -11,11 +16,19 @@ import java.util.Locale;
  *   tenta o GLFW por REFLEXAO: sem a biblioteca, sem as DLLs, num sistema nao
  *   suportado ou com {@code -Dirmaosmiau.gamepad=desligado}, o jogo segue so
  *   com o teclado e o motivo aparece em CONFIGURACOES -> CONTROLES.
+ *
+ * Entrega 5E: mapeamentos extras (formato SDL) sao lidos, SOMENTE LEITURA, de
+ * {@code -Dirmaosmiau.gamepad.mapeamentos=<arquivo>} ou, se existir,
+ * {@code <pasta de dados>/gamecontrollerdb.txt}. O jogo nunca cria esse arquivo.
  */
 public final class ServicoGamepads {
 
     public static final String PROPRIEDADE = "irmaosmiau.gamepad";
     static final String CLASSE_GLFW = "com.irmaosmiau.dispositivos.glfw.ProvedorGamepadGlfw";
+    public static final String PROPRIEDADE_MAPEAMENTOS = "irmaosmiau.gamepad.mapeamentos";
+    public static final String ARQUIVO_MAPEAMENTOS = "gamecontrollerdb.txt";
+
+    private static ArquivoMapeamentos.Status statusMapeamentos = ArquivoMapeamentos.Status.NENHUM;
 
     private static ProvedorGamepads global;
 
@@ -66,14 +79,68 @@ public final class ServicoGamepads {
             return new ProvedorGamepadsAusente("gamepad ainda não suportado no macOS");
         }
         prepararLwjgl();
+        Path arquivo = localizarMapeamentos();
+        ArquivoMapeamentos.Validacao validacao = null;
+        String problemaLeitura = null;
+        if (arquivo != null) {
+            try {
+                validacao = ArquivoMapeamentos.lerArquivo(arquivo);
+            } catch (java.io.IOException | RuntimeException ex) {
+                problemaLeitura = "não foi possível ler: " + ex.getMessage();
+            }
+        }
+        String texto = validacao != null && validacao.temValidas() ? validacao.textoParaGlfw() : null;
         try {
             Class<?> c = Class.forName(CLASSE_GLFW);
-            return (ProvedorGamepads) c.getMethod("iniciar").invoke(null);
+            ProvedorGamepads p = (ProvedorGamepads) c.getMethod("iniciar", String.class).invoke(null, texto);
+            registrarStatus(arquivo, validacao, problemaLeitura, p.mapeamentosAceitos().orElse(null));
+            return p;
         } catch (java.lang.reflect.InvocationTargetException ex) {
+            registrarStatus(arquivo, validacao, problemaLeitura, null);
             return new ProvedorGamepadsAusente("gamepad indisponível: " + descrever(ex.getCause()));
         } catch (Throwable t) {
+            registrarStatus(arquivo, validacao, problemaLeitura, null);
             return new ProvedorGamepadsAusente("gamepad indisponível: " + descrever(t));
         }
+    }
+
+    /** Arquivo de mapeamentos extras, se houver (somente leitura). */
+    static Path localizarMapeamentos() {
+        String configurado = System.getProperty(PROPRIEDADE_MAPEAMENTOS);
+        if (configurado != null && !configurado.isBlank()) {
+            return Paths.get(configurado.trim());
+        }
+        try {
+            Path padrao = DiretorioDados.doUsuario().resolver(ARQUIVO_MAPEAMENTOS);
+            return Files.isRegularFile(padrao) ? padrao : null;
+        } catch (RuntimeException ex) {
+            return null;
+        }
+    }
+
+    private static synchronized void registrarStatus(Path arquivo, ArquivoMapeamentos.Validacao v,
+            String problemaLeitura, Boolean aceito) {
+        if (arquivo == null) {
+            statusMapeamentos = ArquivoMapeamentos.Status.NENHUM;
+            return;
+        }
+        java.util.List<String> problemas = new java.util.ArrayList<>();
+        if (problemaLeitura != null) {
+            problemas.add(problemaLeitura);
+        }
+        if (v != null) {
+            problemas.addAll(v.problemas());
+            if (!v.temValidas() && problemaLeitura == null) {
+                problemas.add("nenhuma linha válida: o arquivo foi ignorado");
+            }
+        }
+        statusMapeamentos = new ArquivoMapeamentos.Status(arquivo.toString(), v == null ? 0 : v.validas().size(),
+                java.util.List.copyOf(problemas), aceito);
+    }
+
+    /** Situacao do ultimo arquivo de mapeamentos (para o diagnostico). */
+    public static synchronized ArquivoMapeamentos.Status statusMapeamentos() {
+        return statusMapeamentos;
     }
 
     /**

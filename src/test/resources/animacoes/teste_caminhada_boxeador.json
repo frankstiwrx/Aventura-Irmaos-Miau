@@ -1,0 +1,17 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "teste.boxeador.caminhada",
+  "estado": "CAMINHADA",
+  "rig": "miau_v1",
+  "uso": "INDIVIDUAL",
+  "loop": true,
+  "duracaoQuadroMs": 120,
+  "sequencia": [0, 1],
+  "deslocamentoVisual": { "x": 0, "y": 0 },
+  "origem": "SOMENTE TESTE (Entrega 5E): prova de extensibilidade, nao e um lutador do jogo",
+  "quadros": [
+    { "pose": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+    { "pose": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 6, 0, -4, 0, -6, 0, 3, 0, 5, 0, -3, 0, -5, 0] }
+  ]
+}

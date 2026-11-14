@@ -26,4 +26,22 @@ public interface ProvedorGamepads {
 
     /** Libera recursos (thread, biblioteca nativa). Chamadas repetidas sao inofensivas. */
     void encerrar();
+
+    /**
+     * Entrega 5E (diagnostico): TODOS os joysticks presentes, inclusive os
+     * sem mapeamento de gamepad. Padrao: os conectados, sem detalhes crus.
+     */
+    default List<DispositivoDetectado> detectados() {
+        List<DispositivoDetectado> l = new java.util.ArrayList<>();
+        int porta = 0;
+        for (InfoGamepad g : conectados()) {
+            l.add(new DispositivoDetectado(porta++, g.nome(), g.identidade(), true, g.nome(), -1, -1, -1));
+        }
+        return List.copyOf(l);
+    }
+
+    /** Se mapeamentos extras foram enviados, o GLFW os aceitou? (vazio = nenhum enviado) */
+    default Optional<Boolean> mapeamentosAceitos() {
+        return Optional.empty();
+    }
 }

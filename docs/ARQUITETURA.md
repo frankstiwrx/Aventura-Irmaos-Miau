@@ -56,6 +56,8 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
 | `dispositivos` (5D) | Gamepad: provedores (GLFW, simulado, ausente), estado, esquema experimental de botões, analógico, fonte de ações por slot e sessão de dispositivos da partida; ver [CONTROLES.md](CONTROLES.md) | `ProvedorGamepads`, `ServicoGamepads`, `MapaGamepad`, `FonteGamepad`, `SessaoDispositivos`, `glfw.ProvedorGamepadGlfw` |
+| `posicional` (5E) | Posição da dupla, cima/baixo, controle e transições em tempo real (simulador; no jogo só em pé); ver [COMBATE_POSICIONAL.md](COMBATE_POSICIONAL.md) | `MotorPosicional`, `EstadoPosicional`, `CatalogoTransicoes`, `LeituraPosicionalEmPe`, `RepertorioPosicional` |
+| `animacao` (5E) | Catálogo, perfis e controlador de animações; JSON individuais; root motion; ver [ANIMACOES.md](ANIMACOES.md) | `ControladorAnimacoes`, `CatalogoAnimacoes`, `PerfilAnimacoes`, `CarregadorAnimacaoJson`, `ReprodutorPoseJson`, `SincronizadorPassos` |
 | `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C); controles (5C) | `PreferenciasJogo`, `PreferenciasControles` |
 | `selecao` | Opções de lutador por slot: oficial + perfis da base (4D) | `OpcoesDeLutadores` |
 | `combate` (5A) | Disputas técnicas determinísticas e ações durante a pegada; ver [COMBATE_AVANCADO.md](COMBATE_AVANCADO.md) | `ResolvedorDisputa`, `TipoDisputa`, `ResultadoAcaoTecnica` |
@@ -239,3 +241,14 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
 - `GamePanel.atualizar()` chama `SessaoDispositivos.atualizar()` no início de cada tick, inclusive
   pausado (Start = pausa); foco perdido/ganho chega à sessão pelo `WindowFocusListener` da 5C.
 - `dispositivos.json` próprio; nenhum formato anterior mudou.
+
+## Fundação 5E: posições e animações
+
+- `posicional` não duplica o `SistemaCombate`: em pé ele é **lido** dele (`LeituraPosicionalEmPe`);
+  o chão existe só no simulador (o `MotorPosicional` em modo JOGO recusa transições para o chão).
+- `animacao` decide a animação por estado (`ControladorAnimacoes`) sem tocar no movimento. O jogo
+  continua desenhando pelo código legado; duas animações (movimento no chão do Branco e do Preto)
+  já existem em JSON com paridade pixel a pixel.
+- `GamePanel`, renderizadores, arrays e `SistemaCombate` não mudaram. `IrmaoMiau` ganhou só dois
+  getters de leitura (`estaAndando`, `estaEmTaunt`).
+- Diagnóstico de joystick ampliado (presente × mapeado) e mapeamentos SDL extras, somente leitura.

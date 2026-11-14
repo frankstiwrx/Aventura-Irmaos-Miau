@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 447, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 476, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -179,6 +179,21 @@ Com um controle (Xbox e/ou PlayStation; USB e Bluetooth):
 - [ ] Dois controles com J1 e J2 em Gamepad: cada um controla um jogador; nunca os dois
 - [ ] Treino com gamepad: Y/T/arrasto funcionam; parceiro passivo; F5 reinicia
 - [ ] Fechar o jogo com o controle conectado: o processo termina sem travar
+
+### Fundação posicional, animações e diagnóstico (Entrega 5E)
+
+Nada novo deve aparecer no jogo; esta parte confirma que **nada mudou**:
+- [ ] Os Dois e Treino: andar, correr, agachar, pular, rolar, sprawl, deitar e **rastejar no chão** com a mesma aparência e o mesmo ritmo de antes
+- [ ] PEGADA_1: 3 quadros, pose final, firmeza, T/U/Y, SHIFT+A/D (arrasto) e profundidade como na 5B
+- [ ] Nenhuma posição de chão (guarda, cem quilos...) aparece nem é acionável
+- [ ] Perfis personalizados: mesma aparência do personagem base
+- [ ] Teclado configurável (5C) e escolha de dispositivo (5D) funcionando, sem joystick
+
+Diagnóstico de joystick:
+- [ ] Sem controle: `java -jar target/AventuraIrmaosMiau-1.0-SNAPSHOT.jar --diagnostico-gamepad 0` mostra "1. Biblioteca: OK", "2. Joysticks detectados pelo sistema: 0" e a conclusão "nenhum joystick chegou ao GLFW"
+- [ ] Com o controle que falhou na 5D: anotar o que o item 2 mostra (nome, GUID, eixos/botões, "gamepad: SIM/NÃO") e a conclusão
+- [ ] Se "gamepad: NÃO": criar um mapeamento SDL com o GUID (docs/CONTROLES.md) e repetir; o item 4 deve dizer "aceito pelo GLFW" e o aparelho virar "gamepad: SIM"
+- [ ] Arquivo de mapeamento com lixo: o diagnóstico lista as linhas ignoradas e o jogo abre normalmente
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

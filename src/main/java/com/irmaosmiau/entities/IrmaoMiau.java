@@ -1495,6 +1495,19 @@ public void alternarDeitado() {
         return andando;
     }
 
+    /**
+     * Entrega 5E: leitura publica (somente leitura) para o ControladorAnimacoes
+     * escolher a animacao; nao muda nenhuma regra de movimento ou desenho.
+     */
+    public boolean estaAndando() {
+        return isAndando();
+    }
+
+    /** Entrega 5E: idem, para o taunt do idle. */
+    public boolean estaEmTaunt() {
+        return isTaunt();
+    }
+
     // =============================
     // OSCILAÇÃO IDLE ANTIGA
     // =============================

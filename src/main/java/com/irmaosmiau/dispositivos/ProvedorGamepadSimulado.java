@@ -14,6 +14,7 @@ public final class ProvedorGamepadSimulado implements ProvedorGamepads {
 
     private final Map<String, InfoGamepad> conectados = new LinkedHashMap<>();
     private final Map<String, EstadoGamepad> estados = new LinkedHashMap<>();
+    private final List<DispositivoDetectado> semMapeamento = new ArrayList<>();
 
     /** Conecta um gamepad simulado em repouso e devolve sua chave. */
     public synchronized InfoGamepad conectar(String chave, String identidade, String nome) {
@@ -21,6 +22,22 @@ public final class ProvedorGamepadSimulado implements ProvedorGamepads {
         conectados.put(chave, info);
         estados.put(chave, EstadoGamepad.repouso());
         return info;
+    }
+
+    /**
+     * Entrega 5E: joystick que o sistema mostra, mas sem mapeamento de
+     * gamepad (o jogo nao o usa; so o diagnostico o lista).
+     */
+    public synchronized void conectarSemMapeamento(int porta, String nome, String guid, int eixos, int botoes,
+            int direcionais) {
+        semMapeamento.add(new DispositivoDetectado(porta, nome, guid, false, null, eixos, botoes, direcionais));
+    }
+
+    @Override
+    public synchronized List<DispositivoDetectado> detectados() {
+        List<DispositivoDetectado> l = new ArrayList<>(ProvedorGamepads.super.detectados());
+        l.addAll(semMapeamento);
+        return List.copyOf(l);
     }
 
     public synchronized void desconectar(String chave) {
@@ -59,5 +76,6 @@ public final class ProvedorGamepadSimulado implements ProvedorGamepads {
     public synchronized void encerrar() {
         conectados.clear();
         estados.clear();
+        semMapeamento.clear();
     }
 }

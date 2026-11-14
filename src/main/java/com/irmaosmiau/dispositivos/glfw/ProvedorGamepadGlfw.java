@@ -7,7 +7,10 @@ import static org.lwjgl.glfw.GLFW.GLFW_JOYSTICK_LAST;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.glfwGetGamepadName;
 import static org.lwjgl.glfw.GLFW.glfwGetGamepadState;
+import static org.lwjgl.glfw.GLFW.glfwGetJoystickAxes;
+import static org.lwjgl.glfw.GLFW.glfwGetJoystickButtons;
 import static org.lwjgl.glfw.GLFW.glfwGetJoystickGUID;
+import static org.lwjgl.glfw.GLFW.glfwGetJoystickHats;
 import static org.lwjgl.glfw.GLFW.glfwGetJoystickName;
 import static org.lwjgl.glfw.GLFW.glfwGetVersionString;
 import static org.lwjgl.glfw.GLFW.glfwInit;
@@ -17,8 +20,10 @@ import static org.lwjgl.glfw.GLFW.glfwJoystickPresent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
+import static org.lwjgl.glfw.GLFW.glfwUpdateGamepadMappings;
 
 import com.irmaosmiau.dispositivos.BotaoGamepad;
+import com.irmaosmiau.dispositivos.DispositivoDetectado;
 import com.irmaosmiau.dispositivos.EixoGamepad;
 import com.irmaosmiau.dispositivos.EstadoGamepad;
 import com.irmaosmiau.dispositivos.InfoGamepad;
@@ -34,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWGamepadState;
+import org.lwjgl.system.MemoryUtil;
 
 /**
  * Gamepads fisicos via GLFW (LWJGL 3), Entrega 5D.
@@ -47,6 +53,11 @@ import org.lwjgl.glfw.GLFWGamepadState;
  * (layout padrao com os mapeamentos SDL embutidos no GLFW) e glfwTerminate.
  * A thread publica um mapa IMUTAVEL a cada leitura (~120 Hz); o jogo so le
  * esse mapa (campo volatile), sem bloquear a thread do Swing.
+ *
+ * Entrega 5E (diagnostico): tambem publica TODOS os joysticks presentes
+ * (glfwJoystickPresent), com ou sem mapeamento de gamepad
+ * (glfwJoystickIsGamepad), e aplica mapeamentos extras no formato SDL com
+ * glfwUpdateGamepadMappings (texto ja validado por ArquivoMapeamentos).
  */
 public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
 
@@ -56,14 +67,20 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
     private record Leitura(InfoGamepad info, EstadoGamepad estado) {
     }
 
+    private static final int LEITURAS_POR_DETECCAO = 30;   // ~0,25 s
+
     private volatile Map<String, Leitura> leituras = Map.of();
+    private volatile List<DispositivoDetectado> detectados = List.of();
+    private volatile Boolean mapeamentosAceitos;
+    private final String mapeamentos;
     private volatile boolean ativo = true;
     private volatile String erroInicio;
     private volatile String versao = "?";
     private final CountDownLatch iniciou = new CountDownLatch(1);
     private final Thread thread;
 
-    private ProvedorGamepadGlfw() {
+    private ProvedorGamepadGlfw(String mapeamentos) {
+        this.mapeamentos = mapeamentos;
         thread = new Thread(this, "irmaosmiau-gamepad");
         thread.setDaemon(true);
     }
@@ -74,7 +91,12 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
      * @throws IllegalStateException se o GLFW nao iniciar (o chamador usa o provedor ausente)
      */
     public static ProvedorGamepadGlfw iniciar() throws InterruptedException {
-        ProvedorGamepadGlfw p = new ProvedorGamepadGlfw();
+        return iniciar(null);
+    }
+
+    /** Idem, aplicando mapeamentos extras (formato SDL; null = so os embutidos). */
+    public static ProvedorGamepadGlfw iniciar(String mapeamentos) throws InterruptedException {
+        ProvedorGamepadGlfw p = new ProvedorGamepadGlfw(mapeamentos);
         p.thread.start();
         if (!p.iniciou.await(ESPERA_INICIO_S, TimeUnit.SECONDS)) {
             p.encerrar();
@@ -102,14 +124,27 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
                 return;
             }
             versao = glfwGetVersionString();
+            if (mapeamentos != null) {
+                java.nio.ByteBuffer texto = MemoryUtil.memUTF8(mapeamentos);
+                try {
+                    mapeamentosAceitos = glfwUpdateGamepadMappings(texto);
+                } finally {
+                    MemoryUtil.memFree(texto);
+                }
+            }
             try (GLFWGamepadState estado = GLFWGamepadState.calloc()) {
                 // Primeira leitura antes de liberar quem esta esperando o inicio.
                 glfwPollEvents();
                 leituras = ler(estado);
+                detectados = detectar();
                 iniciou.countDown();
+                int contador = 0;
                 while (ativo) {
                     glfwPollEvents();
                     leituras = ler(estado);
+                    if (++contador % LEITURAS_POR_DETECCAO == 0) {
+                        detectados = detectar();
+                    }
                     Thread.sleep(INTERVALO_MS);
                 }
             }
@@ -123,6 +158,7 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
             }
         } finally {
             leituras = Map.of();               // nada fica "pressionado" depois do fim
+            detectados = List.of();
             if (iniciado) {
                 glfwTerminate();
             }
@@ -140,6 +176,26 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
         } catch (Throwable ignorado) {
             // biblioteca nao carregou: nada a desfazer
         }
+    }
+
+    /** Todos os joysticks presentes, inclusive os sem mapeamento de gamepad. */
+    private static List<DispositivoDetectado> detectar() {
+        List<DispositivoDetectado> lista = new ArrayList<>();
+        for (int jid = GLFW_JOYSTICK_1; jid <= GLFW_JOYSTICK_LAST; jid++) {
+            if (!glfwJoystickPresent(jid)) {
+                continue;
+            }
+            boolean gamepad = glfwJoystickIsGamepad(jid);
+            java.nio.FloatBuffer eixos = glfwGetJoystickAxes(jid);
+            java.nio.ByteBuffer botoes = glfwGetJoystickButtons(jid);
+            java.nio.ByteBuffer hats = glfwGetJoystickHats(jid);
+            lista.add(new DispositivoDetectado(jid, glfwGetJoystickName(jid), glfwGetJoystickGUID(jid), gamepad,
+                    gamepad ? glfwGetGamepadName(jid) : null,
+                    eixos == null ? -1 : eixos.limit(),
+                    botoes == null ? -1 : botoes.limit(),
+                    hats == null ? -1 : hats.limit()));
+        }
+        return List.copyOf(lista);
     }
 
     private static Map<String, Leitura> ler(GLFWGamepadState estado) {
@@ -191,6 +247,16 @@ public final class ProvedorGamepadGlfw implements ProvedorGamepads, Runnable {
     public Optional<EstadoGamepad> estado(String chave) {
         Leitura l = leituras.get(chave);
         return l == null ? Optional.empty() : Optional.of(l.estado());
+    }
+
+    @Override
+    public List<DispositivoDetectado> detectados() {
+        return detectados;
+    }
+
+    @Override
+    public Optional<Boolean> mapeamentosAceitos() {
+        return Optional.ofNullable(mapeamentosAceitos);
     }
 
     @Override

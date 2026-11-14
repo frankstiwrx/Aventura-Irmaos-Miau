@@ -30,11 +30,12 @@ public final class DiagnosticoGamepad {
         ProvedorGamepads p = ServicoGamepads.iniciarFisico();
         int codigo = p.isDisponivel() ? 0 : 2;
         try {
-            System.out.println("Leitura de gamepad: " + (p.isDisponivel() ? "OK" : "INDISPONIVEL") + " - " + p.descricao());
-            List<InfoGamepad> lista = p.conectados();
-            System.out.println("Gamepads conectados: " + lista.size());
-            for (InfoGamepad g : lista) {
-                System.out.println("  " + g.chave() + " | " + g.nome() + " | " + g.identidade());
+            // Entrega 5E: presente x com mapeamento, contagens, GUID e motivo.
+            for (String linha : RelatorioDiagnostico.linhas(p, ServicoGamepads.statusMapeamentos())) {
+                System.out.println(linha);
+            }
+            if (segundos > 0) {
+                System.out.println("Lendo botões por " + segundos + " s (aperte os botões do controle)...");
             }
             MapaGamepad mapa = MapaGamepad.experimental();
             String ultimo = "";

@@ -308,3 +308,61 @@ que produzem para J1 e J2. Não abre o jogo nem grava nada.
 - Remapeamento de botões pela tela e navegação dos menus pelo gamepad.
 - Pulo curto sem botão; analógico direito sem uso.
 - Vibração.
+
+---
+
+# Entrega 5E — Diagnóstico de joystick e mapeamentos
+
+Pendência da 5D: um controle físico não foi reconhecido. **Ainda não houve teste com hardware;
+nada aqui afirma que o problema foi corrigido.** O diagnóstico agora mostra em que etapa o
+controle se perde.
+
+## O que o diagnóstico mostra
+
+```
+java -jar target/AventuraIrmaosMiau-1.0-SNAPSHOT.jar --diagnostico-gamepad 20
+```
+
+1. **Biblioteca**: GLFW inicializado (versão) ou o motivo da falha.
+2. **Joysticks detectados pelo sistema** (`glfwJoystickPresent`): porta, nome, **GUID**, número de
+   eixos, botões e direcionais e se há mapeamento de gamepad (`glfwJoystickIsGamepad`).
+3. **Gamepads utilizáveis no jogo**: só os que têm mapeamento.
+4. **Mapeamentos extras**: arquivo usado, linhas válidas/ignoradas e se o GLFW os aceitou.
+5. **Conclusão** com o próximo passo.
+
+| O diagnóstico diz | Significa | O que fazer |
+|---|---|---|
+| Biblioteca INDISPONIVEL | o GLFW não carregou | ver o motivo; o jogo segue no teclado |
+| 0 joysticks detectados | o Windows não entregou o aparelho ao GLFW | cabo/pareamento, `joy.cpl`, Steam Input/DS4Windows segurando o controle, modo XInput/DirectInput do controle |
+| detectado, gamepad: NÃO | o aparelho existe, mas o GLFW não sabe o layout dele | fornecer um mapeamento SDL (abaixo) |
+| gamepad: SIM | pronto | CONFIGURAÇÕES → CONTROLES → Gamepad |
+
+## Joystick sem mapeamento
+
+O GLFW aceita mapeamentos no formato do **SDL_GameControllerDB** (`glfwUpdateGamepadMappings`):
+
+```
+GUID,Nome,a:b0,b:b1,x:b2,y:b3,leftx:a0,lefty:a1,...,platform:Windows,
+```
+
+1. Rode o diagnóstico e anote o **GUID** do aparelho.
+2. Procure esse GUID no `gamecontrollerdb.txt` do projeto SDL_GameControllerDB, ou gere a linha com
+   uma ferramenta de mapeamento SDL. Se o GUID da base for diferente, use a linha trocando o GUID
+   pelo mostrado no diagnóstico.
+3. Salve as linhas num arquivo e indique-o de **uma** destas formas:
+   - `-Dirmaosmiau.gamepad.mapeamentos=C:\caminho\meus_mapeamentos.txt`, ou
+   - `gamecontrollerdb.txt` na pasta de dados (`%USERPROFILE%\.aventura-irmaos-miau\`).
+4. Rode o diagnóstico de novo: o item 4 diz quantas linhas valeram e se o GLFW aceitou; o aparelho
+   deve passar a "gamepad: SIM".
+
+Regras de segurança:
+- O jogo só **lê** esse arquivo; nunca cria nem altera.
+- Linhas mal formadas não chegam ao GLFW e aparecem no diagnóstico com o número da linha.
+- Arquivo ilegível ou sem linhas válidas é ignorado; a leitura de gamepad e o teclado continuam
+  funcionando.
+
+GLFW e SDL foram mantidos; nenhum driver HID novo. Só vale trocar a biblioteca se o diagnóstico com
+o aparelho real mostrar que o Windows o entrega e mesmo assim o GLFW não o enxerga.
+
+Observação: no Git Bash os acentos do diagnóstico podem aparecer trocados (página de código do
+console). No Prompt de Comando, no PowerShell e no NetBeans aparecem normalmente.
