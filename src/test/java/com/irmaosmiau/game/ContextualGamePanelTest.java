@@ -182,7 +182,7 @@ class ContextualGamePanelTest {
             ticks(1);
             gp("g1", r().com(BotaoGamepad.DPAD_ESQUERDA));                            // vazio
             ticks(1);
-            assertTrue(painel.montarEstadoHud().getMensagem().startsWith("J1: nada em D-pad ←"),
+            assertTrue(painel.montarEstadoHud().getMensagem().startsWith("J1: nada na camada 1 ←"),  // 5H
                     painel.montarEstadoHud().getMensagem());
             assertNull(s().getUltimaDisputa());
         });
@@ -243,10 +243,11 @@ class ContextualGamePanelTest {
             ticks(1);
             assertEquals(xb + 20, b.getX(), "arrasto continuo com LB + analogico");
             assertTrue(s().isInteracaoEstabelecida());
+            // 5H (pedido): arrasto automatico no Contextual; LT + LB nao o suspendem mais.
             gp("g1", r().com(BotaoGamepad.LB).com(BotaoGamepad.GATILHO_ESQ).comEixo(EixoGamepad.ESQ_X, 1f));
-            ticks(1);
-            assertEquals(MotivoEncerramentoInteracao.MOVIMENTO, s().getUltimoMotivoEncerramento(),
-                    "com LT segurado o LB e camada 3: analogico vira caminhada e rompe (regra 3A)");
+            ticks(5);
+            assertTrue(s().isInteracaoEstabelecida(), "continua arrastando");
+            assertEquals(xb + 25, b.getX());
         });
     }
 
@@ -265,13 +266,19 @@ class ContextualGamePanelTest {
             ticks(1);
             q = painel.montarQuadroDpad(J1);
             assertEquals(CamadaComando.DOIS, q.camada());
-            assertEquals("LT + D-pad", q.nomeCamada());
+            assertEquals("LT + RS", q.nomeCamada());                     // 5H: analogico direito
             assertEquals("QUEDA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
+            // 5H (pedido): LB sozinho = camada 3; LT + LB = avancada (vazia).
+            gp("g1", r().com(BotaoGamepad.LB));
+            ticks(1);
+            q = painel.montarQuadroDpad(J1);
+            assertEquals("LB + RS", q.nomeCamada());
+            assertEquals("GUARDA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
             gp("g1", r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.LB));
             ticks(1);
             q = painel.montarQuadroDpad(J1);
-            assertEquals("LT + LB + D-pad", q.nomeCamada());
-            assertEquals("GUARDA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
+            assertEquals("LT + LB + RS", q.nomeCamada());
+            assertEquals("·", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA), "avancada: vazia");
             BufferedImage img = new BufferedImage(800, 450, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = img.createGraphics();
             painel.setSize(800, 450);

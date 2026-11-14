@@ -46,19 +46,21 @@ class ComandosContextuaisTest {
         assertEquals(Optional.of(p(CamadaComando.DOIS, D)), tick(true, false, D));
         tick(true, false);
         tick(true, true);
-        assertEquals(CamadaComando.TRES, r.getCamadaAtiva());
-        assertEquals(Optional.of(p(CamadaComando.TRES, E)), tick(true, true, E));
+        // 5H (pedido): LT + LB = camada avancada (4); a camada 3 passou a ser LB sozinho.
+        assertEquals(CamadaComando.QUATRO, r.getCamadaAtiva());
+        assertEquals(Optional.of(p(CamadaComando.QUATRO, E)), tick(true, true, E));
         tick(false, false);
         assertEquals(CamadaComando.UM, r.getCamadaAtiva());
     }
 
     @Test
     void prioridadeDasCombinacoesELbSozinhoNaoMudaCamada() {
-        assertEquals(Optional.of(p(CamadaComando.TRES, C)), tick(true, true, C), "LT+LB+dir antes de LT+dir");
+        // 5H (pedido): LT+LB = 4 (avancada), LT = 2, LB = 3, nada = 1.
+        assertEquals(Optional.of(p(CamadaComando.QUATRO, C)), tick(true, true, C), "LT+LB+dir antes de LT+dir");
         tick(false, false);
         assertEquals(Optional.of(p(CamadaComando.DOIS, C)), tick(true, false, C), "LT+dir antes de dir");
         tick(false, false);
-        assertEquals(Optional.of(p(CamadaComando.UM, C)), tick(false, true, C), "LB sozinho = camada 1");
+        assertEquals(Optional.of(p(CamadaComando.TRES, C)), tick(false, true, C), "LB sozinho = camada 3 (5H)");
     }
 
     @Test

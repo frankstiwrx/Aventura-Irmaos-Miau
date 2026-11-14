@@ -93,6 +93,20 @@ public final class MapaGamepad {
      * configuravel). No Classico o RB continua correndo quando segurado.
      */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
+        ConfigSlot c5g = padrao5G(slot, esquema);
+        if (esquema != EsquemaGamepad.CONTEXTUAL) {
+            return c5g;
+        }
+        // 5H: no Contextual o arrasto e automatico (aplicador + analogico esquerdo); o LB
+        // fica so como modificador da camada 3.
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(c5g.acoes());
+        a.remove(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
+        return new ConfigSlot(esquema, a, c5g.comandos());
+    }
+
+    /** Padroes da 5G (para reconhecer um gamepad.json nunca personalizado). */
+    public static ConfigSlot padrao5G(SlotJogador slot, EsquemaGamepad esquema) {
         ConfigSlot antigo = padraoAnterior(slot, esquema);
         Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
         a.putAll(antigo.acoes());
@@ -342,17 +356,20 @@ public final class MapaGamepad {
                 ativas.add(e.getKey());
             }
         }
-        if (c.esquema() == EsquemaGamepad.CONTEXTUAL) {
-            BotaoGamepad mod2 = c.comandos().get(ComandoGamepad.MODIFICADOR_CAMADA_2);
-            if (mod2 != null && estado.pressionado(mod2)) {
-                // LT segurado = compondo um comando de camada 2/3: o LB nao arrasta.
-                ativas.remove(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
-            }
-        }
         analogicoAtual.clear();
         analogicoAtual.addAll(LeitorAnalogico.direcoes(
                 estado.eixo(EixoGamepad.ESQ_X), estado.eixo(EixoGamepad.ESQ_Y), analogicoAnterior));
         ativas.addAll(analogicoAtual);
+        if (c.esquema() == EsquemaGamepad.CONTEXTUAL && slot.usa(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO)
+                && (analogicoAtual.contains(AcaoJogador.MOVER_ESQUERDA)
+                        || analogicoAtual.contains(AcaoJogador.MOVER_DIREITA))) {
+            /*
+             * 5H: arrasto AUTOMATICO. Andar para os lados com o analogico vale como
+             * "modo controle"; o GamePanel so arrasta se este lutador for o APLICADOR
+             * de uma pegada estabelecida (regra da 5B). Fora disso nada muda.
+             */
+            ativas.add(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
+        }
         return ativas;
     }
 

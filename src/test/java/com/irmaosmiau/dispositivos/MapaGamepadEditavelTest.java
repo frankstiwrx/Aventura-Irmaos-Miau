@@ -78,10 +78,12 @@ class MapaGamepadEditavelTest {
                 .com(BotaoGamepad.LB);
         EntradaContextual ent = m.entradaContextual(e, J1);
         assertEquals(Set.of(DirecaoTecnica.ESQUERDA), ent.direcoes());
-        assertEquals(CamadaComando.TRES, ent.camada());
+        assertEquals(CamadaComando.QUATRO, ent.camada(), "5H: LT + LB = camada avancada");
         assertEquals(Set.of(), acoes(m, J1, EstadoGamepad.repouso().com(BotaoGamepad.DPAD_ESQUERDA)),
                 "o D-pad nao anda no contextual");
-        assertEquals(Set.of(AcaoJogador.MOVER_ESQUERDA),
+        // 5H (pedido): no Contextual, andar para os lados tambem liga o "modo controle" (arrasto
+        // automatico); o GamePanel so arrasta se o lutador for o aplicador de uma pegada.
+        assertEquals(Set.of(AcaoJogador.MOVER_ESQUERDA, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO),
                 acoes(m, J1, EstadoGamepad.repouso().comEixo(EixoGamepad.ESQ_X, -1f)));
     }
 
@@ -90,8 +92,9 @@ class MapaGamepadEditavelTest {
         MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         EstadoGamepad arrasto = EstadoGamepad.repouso().com(BotaoGamepad.LB).comEixo(EixoGamepad.ESQ_X, 1f);
         assertTrue(acoes(m, J1, arrasto).contains(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO));
-        assertFalse(acoes(m, J1, arrasto.com(BotaoGamepad.GATILHO_ESQ))
-                .contains(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO), "LT+LB = camada 3, nao arrasto");
+        // 5H (pedido): no Contextual o arrasto e automatico com o analogico; LT/LB nao interferem.
+        assertTrue(acoes(m, J1, arrasto.com(BotaoGamepad.GATILHO_ESQ))
+                .contains(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO), "arrasto automatico mesmo com LT");
     }
 
     @Test

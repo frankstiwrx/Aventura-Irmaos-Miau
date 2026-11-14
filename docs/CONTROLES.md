@@ -501,3 +501,80 @@ modificadores no `MapaControles` (6 teclas, nunca 12), alimentando o mesmo resol
   que os novos padrões estão em RESTAURAR PADRÕES. O arquivo só muda ao salvar.
 - `MapaGamepad.experimental()` continua sendo o layout histórico da 5D (diagnóstico e testes antigos).
 - Teclado sem mudança: ESPAÇO pula alto, V pula curto.
+
+---
+
+# Entrega 5H — Analógico direito, camadas e arrasto automático (Contextual)
+
+O esquema **Clássico não mudou**. Tudo abaixo vale só para jogadores no **Contextual**.
+
+## Técnicas no analógico direito (RS)
+
+O polegar esquerdo fica no analógico esquerdo, que move; o direito escolhe as técnicas. Os dois
+funcionam ao mesmo tempo. O D-pad continua como alternativa e é remapeável como na 5F. RS e D-pad
+alimentam o **mesmo** `ResolvedorComandosContextuais` e o mesmo `RepertorioContextual`.
+
+`LeitorAnalogicoTecnicas`:
+
+| Parâmetro | Valor | Efeito |
+|---|---|---|
+| Zona morta radial | 0,25 | ruído de repouso não conta |
+| Ativar | 0,60 (normalizado) | só inclinação intencional |
+| Voltar ao neutro | 0,30 (normalizado) | histerese: precisa voltar ao centro para armar de novo |
+| Abertura de cada direção | ±30° do eixo | perto da diagonal (faixa de 30°) nada é escolhido até assentar num eixo |
+
+- **Uma técnica por inclinação.** Segurar não repete. Girar para outra direção sem voltar ao centro
+  não troca a direção.
+- **R3:** o clique do analógico direito desarma a leitura até ele voltar ao neutro, então a
+  oscilação do clique nunca vira técnica. R3 continua sendo o rolamento, na direção do analógico
+  **esquerdo**.
+- Pausa, perda de foco, desconexão, reconexão e reinício desarmam (precisa voltar ao neutro).
+- RS e D-pad juntos em direções diferentes não disparam nada.
+
+## Camadas (5H)
+
+| Combinação | Camada | Conteúdo hoje |
+|---|---|---|
+| RS (ou D-pad) | 1 | pegar · reforçar · desequilibrar · romper (existentes) |
+| LT + RS | 2 | reservadas da 5E (ex.: QUEDA*) |
+| LB + RS | 3 | reservadas da 5E (ex.: puxar GUARDA*) |
+| LT + LB + RS | avançada (4) | vazia (reservada) |
+
+Prioridade: os dois modificadores > um modificador > nenhum. Uma combinação nunca dispara ação de
+outra camada. Na 5F a camada 3 era LT + LB e o LB sozinho caía na camada 1; isso mudou a pedido.
+
+## Arrasto automático
+
+No Contextual, **andar para os lados com o analógico esquerdo** vale como "modo controle" (antes:
+segurar LB). O `GamePanel` só arrasta quando o jogador é o **aplicador** de uma pegada **estabelecida**,
+exatamente a regra da 5B. Por isso:
+- velocidade reduzida (1 px/tick), limites do dojo, linhas e orientação preservados, e o desgaste
+  extra de firmeza do arrasto (5B, nenhum custo novo);
+- o **receptor** andando continua rompendo a pegada (movimento/alcance), nunca arrasta o aplicador;
+- mudar de linha (cima/baixo) durante a pegada continua rompendo (regra 3A);
+- sem pegada, ou depois do rompimento, o analógico volta a ser caminhada normal na hora;
+- J1 e J2 têm cada um a sua fonte; hoje só o J1 aplica pegada (regra do motor).
+
+O LB fica livre para a camada 3. O "modo controle" continua remapeável: um botão atribuído a ele
+também funciona. No Clássico, nada mudou: LB + analógico arrasta e andar sem LB rompe.
+
+## Padrões e preferências salvas
+
+- Contextual 5H: igual ao da 5G, mas sem "modo controle" no LB (o arrasto é automático).
+- Um `gamepad.json` igual a um padrão antigo (5F ou 5G) e nunca personalizado passa ao padrão da 5H
+  **com aviso**. Personalizados ficam como estão; o analógico direito vale para eles também.
+
+## Planejamento: defesa alta e baixa (não implementado)
+
+Usos atuais do **Y**:
+- teclado: tecla Y = reforçar a pegada (J1), remapeável;
+- gamepad Clássico: Y/Triângulo = reforçar a pegada (J1);
+- gamepad Contextual: Y/Triângulo **livre** desde a 5G (o reforço está no RS ↑ quando aplicador).
+
+Proposta para quando existirem ataques altos e baixos reais:
+- Contextual: **Y segurado = defesa alta**; **LT + Y segurado = defesa baixa**. O LT só muda a
+  camada quando combinado com RS/D-pad, então LT + Y fica livre.
+- Seriam duas ações contínuas novas (`DEFESA_ALTA`, `DEFESA_BAIXA`) com tipo de acionamento
+  CONTÍNUA, resolvidas pelo motor contra o tipo do golpe recebido.
+- No Clássico o Y continua sendo o reforço; a defesa lá precisará de outro botão, a decidir.
+- Nada foi implementado: não existe defesa só visual, nem dano, hitbox ou colisão de golpes.

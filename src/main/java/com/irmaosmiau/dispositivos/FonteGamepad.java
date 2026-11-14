@@ -2,6 +2,7 @@ package com.irmaosmiau.dispositivos;
 
 import com.irmaosmiau.controles.AcaoJogador;
 import com.irmaosmiau.controles.CamadaComando;
+import com.irmaosmiau.controles.EntradaContextual;
 import com.irmaosmiau.controles.PosicaoComando;
 import com.irmaosmiau.controles.ResolvedorComandosContextuais;
 import com.irmaosmiau.controles.SlotJogador;
@@ -41,6 +42,8 @@ public final class FonteGamepad implements FonteAcoes {
     private boolean pausaTocada;
     private boolean travarNaProximaLeitura;
     private final ResolvedorComandosContextuais contextual = new ResolvedorComandosContextuais();
+    /** Entrega 5H: analogico direito = direcoes de tecnica (Contextual). */
+    private final LeitorAnalogicoTecnicas analogicoDireito = new LeitorAnalogicoTecnicas();
     private final boolean[] gatilhoApertado = new boolean[2];
     /** Entrega 5G: pulo decidido no instante do toque (normal ou alto) e mantido ate soltar. */
     private AcaoJogador puloEscolhido;
@@ -64,6 +67,7 @@ public final class FonteGamepad implements FonteAcoes {
             gatilhoApertado[0] = false;
             gatilhoApertado[1] = false;
             contextual.limpar();
+            analogicoDireito.desarmar();
         }
         Set<AcaoJogador> novas;
         boolean pausa;
@@ -94,6 +98,7 @@ public final class FonteGamepad implements FonteAcoes {
         if (estado != null && travarNaProximaLeitura) {
             trava.travarPressionados("");
             contextual.limpar();
+            analogicoDireito.desarmar();
             pausaSegurada = pausa;            // START segurado ao voltar nao pausa
             travarNaProximaLeitura = false;
         }
@@ -103,7 +108,7 @@ public final class FonteGamepad implements FonteAcoes {
         pausaSegurada = pausa;
         // Sem leitura nao alimenta o resolvedor: a limpeza continua exigindo uma soltura REAL do D-pad.
         if (estado != null) {
-            contextual.atualizar(mapa.entradaContextual(estado, slot));
+            contextual.atualizar(entradaContextual(estado));
         }
     }
 
@@ -145,6 +150,31 @@ public final class FonteGamepad implements FonteAcoes {
         return r;
     }
 
+    /**
+     * D-pad e modificadores (MapaGamepad) + analogico direito (5H). R3 e o
+     * clique do analogico direito: apertado, o analogico nao escolhe tecnica
+     * ate voltar ao neutro (oscilacao do clique nunca vira golpe).
+     */
+    private EntradaContextual entradaContextual(EstadoGamepad estado) {
+        EntradaContextual base = mapa.entradaContextual(estado, slot);
+        if (mapa.esquema(slot) != EsquemaGamepad.CONTEXTUAL) {
+            return base;
+        }
+        if (estado.pressionado(BotaoGamepad.R3)) {
+            analogicoDireito.desarmar();
+        }
+        com.irmaosmiau.controles.DirecaoTecnica d = analogicoDireito.atualizar(
+                estado.eixo(EixoGamepad.DIR_X), estado.eixo(EixoGamepad.DIR_Y));
+        if (d == null) {
+            return base;
+        }
+        java.util.Set<com.irmaosmiau.controles.DirecaoTecnica> dirs =
+                java.util.EnumSet.noneOf(com.irmaosmiau.controles.DirecaoTecnica.class);
+        dirs.addAll(base.direcoes());
+        dirs.add(d);
+        return new EntradaContextual(dirs, base.modificador2(), base.modificador3());
+    }
+
     /** Comando contextual deste toque (esquema CONTEXTUAL), uma unica vez. */
     public Optional<PosicaoComando> consumirComandoContextual() {
         return contextual.consumir();
@@ -158,6 +188,7 @@ public final class FonteGamepad implements FonteAcoes {
     /** Pausa/menu: esquece comandos pendentes; nada dispara ate soltar o D-pad. */
     public void limparContextual() {
         contextual.limpar();
+        analogicoDireito.desarmar();
     }
 
     public MapaGamepad getMapa() {
@@ -190,6 +221,7 @@ public final class FonteGamepad implements FonteAcoes {
     public void liberarTodas() {
         trava.travarPressionados("");
         contextual.limpar();
+        analogicoDireito.desarmar();
         pausaTocada = false;
         travarNaProximaLeitura = true;
     }

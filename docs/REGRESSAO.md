@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 532, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 551, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -239,6 +239,20 @@ Gamepad (Xbox):
 - [ ] CONTROLES → Editar: Gamepad → grupo "PULO ALTO": trocar o modificador por outro botão livre (ex.: Y no Contextual) e testar
 - [ ] Escolher LT como modificador no Contextual: pergunta se troca com a camada 2
 - [ ] Com um gamepad.json da 5F nunca personalizado: aviso de "padrões atualizados" ao abrir; personalizado: aviso de "mantidos"
+
+### Analógico direito e arrasto automático (Entrega 5H) — Xbox no Contextual
+
+- [ ] Andar com o analógico esquerdo e, perto do Preto, inclinar o direito para cima: PEGADA_1 sem soltar o esquerdo
+- [ ] Na pegada: RS → desequilibra; RS ↑ reforça; segurar inclinado não repete; girar sem voltar ao centro não dispara outra
+- [ ] Inclinar o RS de leve: nada; na diagonal exata: nada até assentar num lado
+- [ ] Segurar LT: a cruz mostra "LT + RS" (QUEDA*); LB sozinho: "LB + RS" (GUARDA*); LT + LB: "LT + LB + RS", vazia
+- [ ] D-pad continua funcionando como antes
+- [ ] Clicar R3 com o analógico esquerdo inclinado: rola para esse lado e nenhuma técnica dispara
+- [ ] Na pegada, só o analógico esquerdo para os lados: a dupla anda junta, devagar, até a borda do dojo, sem LB
+- [ ] Na pegada, analógico esquerdo para cima/baixo: rompe (como antes)
+- [ ] J2 no Xbox como receptor: andar rompe a pegada e não leva o J1
+- [ ] Clássico: tudo igual à 5G (LB + analógico arrasta; andar sem LB rompe; RS não faz nada)
+- [ ] Botões personalizados continuam; um gamepad.json da 5G não personalizado mostra aviso de padrões atualizados
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

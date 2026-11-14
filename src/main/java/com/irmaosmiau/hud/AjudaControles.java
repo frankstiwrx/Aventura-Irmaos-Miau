@@ -67,7 +67,7 @@ public final class AjudaControles {
         public String tecla(SlotJogador slot, AcaoJogador acao) {
             if (contextual(slot) && gamepad.botoes(slot, acao).isEmpty()
                     && AcoesContextuais.ACOES_DE_COMBATE.contains(acao)) {
-                return "D-pad (contexto)";
+                return "RS/D-pad (contexto)";
             }
             return gamepad(slot) ? gamepad.rotulo(slot, acao) : teclado.rotulo(slot, acao);
         }
@@ -143,7 +143,7 @@ public final class AjudaControles {
         for (AcaoJogador a : AcoesContextuais.disponiveis(papel, slot)) {
             java.util.Optional<PosicaoComando> pos = RepertorioContextual.posicaoDe(papel, a);
             if (r.contextual(slot) && pos.isPresent() && r.gamepad.botoes(slot, a).isEmpty()) {
-                partes.add("D-pad" + pos.get().direcao().getSeta() + " " + a.getVerbo());
+                partes.add("RS" + pos.get().direcao().getSeta() + " " + a.getVerbo());
             } else {
                 partes.add(comando(r, slot, a));
             }
@@ -225,9 +225,10 @@ public final class AjudaControles {
             String m2 = r.botaoCurto(slot, ComandoGamepad.MODIFICADOR_CAMADA_2);
             String m3 = r.botaoCurto(slot, ComandoGamepad.MODIFICADOR_CAMADA_3);
             lista.add(new Linha("TÉCNICAS (contextuais, 3 camadas)", null));
-            lista.add(new Linha("Camada 1", "D-pad"));
-            lista.add(new Linha("Camada 2", m2 + " + D-pad"));
-            lista.add(new Linha("Camada 3", m2 + " + " + m3 + " + D-pad"));
+            lista.add(new Linha("Camada 1 (analógico direito ou D-pad)", "RS"));
+            lista.add(new Linha("Camada 2", m2 + " + RS"));
+            lista.add(new Linha("Camada 3", m3 + " + RS"));
+            lista.add(new Linha("Camada avançada (reservada)", m2 + " + " + m3 + " + RS"));
         }
         if (r.gamepad(slot)) {
             lista.add(new Linha(GrupoAcao.SISTEMA.getTitulo(), null));

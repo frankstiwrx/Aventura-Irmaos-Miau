@@ -273,3 +273,12 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
   `registrarClasse` (classe → personagem, sem `instanceof` no runtime).
 - Gamepad: padrões novos (R3 rola, L3 deita, A pula, modificador + A = pulo alto) e o
   `ComandoGamepad.MODIFICADOR_PULO_ALTO`, decidido no toque pela `FonteGamepad`.
+
+## Analógico direito e arrasto automático (Entrega 5H)
+
+- `dispositivos.LeitorAnalogicoTecnicas`: analógico direito → direção de técnica (zona morta,
+  histerese, diagonais, uma por inclinação). A `FonteGamepad` junta essa direção ao D-pad e entrega ao
+  mesmo `ResolvedorComandosContextuais`.
+- `CamadaComando`: 1 (RS), 2 (LT), 3 (LB), 4 (LT + LB, avançada e reservada).
+- `MapaGamepad.acoesAtivas` (Contextual): andar para os lados também emite o "modo controle". O
+  `GamePanel` (regra da 5B) só arrasta o aplicador de uma pegada estabelecida.

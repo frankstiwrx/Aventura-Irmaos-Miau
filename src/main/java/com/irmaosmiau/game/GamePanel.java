@@ -1065,7 +1065,8 @@ public class GamePanel extends JPanel {
         java.util.Optional<CelulaContextual> c = RepertorioContextual.celula(
                 RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro), posicao);
         if (c.isEmpty()) {
-            feedback.mostrarInfo(slot.getSigla() + ": nada em " + nomeCamada(slot, posicao.camada())
+            feedback.mostrarInfo(slot.getSigla() + ": nada na camada " + posicao.camada().getNumero()
+                    + (posicao.camada() == CamadaComando.QUATRO ? " (avançada)" : "")
                     + " " + posicao.direcao().getSeta(), tick);
         } else if (c.get().isExecutavel()) {
             executarAcaoCombate(slot, c.get().acao());
@@ -1080,10 +1081,12 @@ public class GamePanel extends JPanel {
                 .map(b -> b.getRotulo().split("/")[0]).orElse("?");
         String m3 = mapaGamepad.botao(slot, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_3))
                 .map(b -> b.getRotulo().split("/")[0]).orElse("?");
+        // 5H: RS = analogico direito (o D-pad continua valendo como alternativa).
         return switch (camada) {
-            case UM -> "D-pad";
-            case DOIS -> m2 + " + D-pad";
-            case TRES -> m2 + " + " + m3 + " + D-pad";
+            case UM -> "RS";
+            case DOIS -> m2 + " + RS";
+            case TRES -> m3 + " + RS";
+            case QUATRO -> m2 + " + " + m3 + " + RS";
         };
     }
 

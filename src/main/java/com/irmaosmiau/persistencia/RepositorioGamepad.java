@@ -89,10 +89,14 @@ public final class RepositorioGamepad {
                 continue;
             }
             EsquemaGamepad e = lido.esquema(s);
-            if (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))) {
+            boolean padraoAntigo = lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
+                    || (lido.config(s).equals(MapaGamepad.padrao5G(s, e)) && !lido.config(s).equals(MapaGamepad.padraoDo(s, e)));
+            if (padraoAntigo) {
                 lido = lido.comEsquema(s, e);
                 avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"
-                        + " RB + A pulo alto). Salve em CONTROLES para gravar.");
+                        + " RB + A pulo alto" + (e == EsquemaGamepad.CONTEXTUAL
+                                ? "; técnicas no analógico direito, arrasto automático" : "")
+                        + "). Salve em CONTROLES para gravar.");
             } else if (lido.botao(s, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).isEmpty()) {
                 avisos.add(s.getSigla() + ": seus botões personalizados foram mantidos. Os novos padrões"
                         + " (R3 rola, L3 deita, RB + A pulo alto) estão em CONTROLES → RESTAURAR PADRÕES.");
