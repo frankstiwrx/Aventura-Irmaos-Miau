@@ -7,6 +7,12 @@ import com.irmaosmiau.controles.ProblemaControle;
 import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.controles.TeclaFisica;
 import com.irmaosmiau.dispositivos.AssociacaoDispositivos;
+import com.irmaosmiau.dispositivos.BotaoGamepad;
+import com.irmaosmiau.dispositivos.EstadoGamepad;
+import com.irmaosmiau.dispositivos.EsquemaGamepad;
+import com.irmaosmiau.dispositivos.FonteGamepad;
+import com.irmaosmiau.dispositivos.ItemGamepad;
+import com.irmaosmiau.dispositivos.MapaGamepad;
 import com.irmaosmiau.dispositivos.InfoGamepad;
 import com.irmaosmiau.dispositivos.ProvedorGamepads;
 import com.irmaosmiau.dispositivos.ServicoGamepads;
@@ -14,6 +20,7 @@ import com.irmaosmiau.dispositivos.TipoDispositivo;
 import com.irmaosmiau.persistencia.PersistenciaException;
 import com.irmaosmiau.preferencias.PreferenciasControles;
 import com.irmaosmiau.preferencias.PreferenciasDispositivos;
+import com.irmaosmiau.preferencias.PreferenciasGamepad;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -55,6 +62,11 @@ import javax.swing.JToggleButton;
  * - Entrega 5D: "Dispositivo" escolhe teclado ou gamepad para o jogador
  *   selecionado e mostra os gamepads conectados (atualizado a cada segundo).
  *   As teclas continuam valendo como reserva quando nao ha gamepad livre.
+ * - Entrega 5F: "Editar: Gamepad" lista os botoes do jogador no esquema
+ *   escolhido (Classico 5D ou Contextual experimental). Clicar e apertar o
+ *   botao real remapeia (gatilhos com limiar e histerese; o que ja estava
+ *   segurado e ignorado; ESC ou Start cancelam; Backspace deixa sem botao).
+ *   Durante a captura nenhuma tecla ou botao aciona a tela.
  */
 public final class ControlesPanel extends JPanel {
 
@@ -70,6 +82,34 @@ public final class ControlesPanel extends JPanel {
     private final JLabel situacaoGamepads = EstiloTelas.texto(" ", EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE);
     private final javax.swing.Timer relogioGamepads = new javax.swing.Timer(1000, e -> mostrarSituacaoGamepads());
     private boolean mostrandoDispositivo;
+
+    // Entrega 5F: botoes do gamepad.
+    enum ModoLista {
+        TECLAS("Teclas"),
+        GAMEPAD("Gamepad");
+
+        private final String rotulo;
+
+        ModoLista(String rotulo) {
+            this.rotulo = rotulo;
+        }
+
+        @Override
+        public String toString() {
+            return rotulo;
+        }
+    }
+
+    private final transient PreferenciasGamepad preferenciasGamepad;
+    private transient MapaGamepad edicaoGamepad;
+    private ModoLista modoLista = ModoLista.TECLAS;
+    private final JComboBox<ModoLista> seletorLista = new JComboBox<>(ModoLista.values());
+    private final JComboBox<EsquemaGamepad> seletorEsquema = new JComboBox<>(EsquemaGamepad.values());
+    private final Map<ItemGamepad, JButton> botoesGamepad = new java.util.LinkedHashMap<>();
+    private transient ItemGamepad capturandoBotao;
+    private final java.util.Set<BotaoGamepad> seguradosNaCaptura = java.util.EnumSet.noneOf(BotaoGamepad.class);
+    private final boolean[] gatilhoNaCaptura = new boolean[2];
+    private final javax.swing.Timer relogioCaptura = new javax.swing.Timer(16, e -> lerBotoesDaCaptura());
 
     private transient MapaControles edicao;
     private SlotJogador slotAtual = SlotJogador.JOGADOR_1;
@@ -95,6 +135,15 @@ public final class ControlesPanel extends JPanel {
     /** Entrega 5D: com a escolha de dispositivo de cada jogador. */
     public ControlesPanel(PreferenciasControles preferencias, PreferenciasDispositivos preferenciasDispositivos,
             ProvedorGamepads gamepads, Dialogos dialogos, Runnable aoVoltar) {
+        this(preferencias, preferenciasDispositivos, PreferenciasGamepad.global(), gamepads, dialogos, aoVoltar);
+    }
+
+    /** Entrega 5F: com os botoes do gamepad de cada jogador. */
+    public ControlesPanel(PreferenciasControles preferencias, PreferenciasDispositivos preferenciasDispositivos,
+            PreferenciasGamepad preferenciasGamepad, ProvedorGamepads gamepads, Dialogos dialogos,
+            Runnable aoVoltar) {
+        this.preferenciasGamepad = preferenciasGamepad;
+        this.edicaoGamepad = preferenciasGamepad.getAtual();
         this.preferenciasDispositivos = preferenciasDispositivos;
         this.gamepads = gamepads;
         this.edicaoDispositivos = preferenciasDispositivos.getAtual();
@@ -111,6 +160,7 @@ public final class ControlesPanel extends JPanel {
 
         List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
         avisos.addAll(preferenciasDispositivos.getAvisos());
+        avisos.addAll(preferenciasGamepad.getAvisos());
         if (!avisos.isEmpty()) {
             mostrarStatus(avisos.get(avisos.size() - 1), true);
         } else if (!edicao.isValido()) {
@@ -123,6 +173,16 @@ public final class ControlesPanel extends JPanel {
         salvar.addActionListener(e -> salvar());
         voltar.addActionListener(e -> voltar());
         dispositivo.addActionListener(e -> aoMudarDispositivo());
+        seletorLista.addActionListener(e -> {
+            if (!mostrandoDispositivo) {
+                selecionarModoLista((ModoLista) seletorLista.getSelectedItem());
+            }
+        });
+        seletorEsquema.addActionListener(e -> {
+            if (!mostrandoDispositivo) {
+                selecionarEsquema((EsquemaGamepad) seletorEsquema.getSelectedItem());
+            }
+        });
         mostrarDispositivo();
         mostrarSituacaoGamepads();
     }
@@ -146,16 +206,25 @@ public final class ControlesPanel extends JPanel {
         }
         botaoJogador1.setSelected(true);
         topo.add(slots, BorderLayout.EAST);
+        // Entrega 5F: a situacao dos gamepads sobe para a linha do titulo (a lista nao perde altura).
+        situacaoGamepads.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 6));
+        topo.add(situacaoGamepads, BorderLayout.CENTER);
 
-        // Entrega 5D: dispositivo do jogador selecionado.
-        JPanel linhaDispositivo = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Entrega 5D: dispositivo do jogador selecionado. 5F: lista e esquema do gamepad.
+        JPanel linhaDispositivo = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         linhaDispositivo.setOpaque(false);
         linhaDispositivo.add(EstiloTelas.rotulo("Dispositivo:"));
         dispositivo.setFont(EstiloTelas.NORMAL);
-        dispositivo.setPreferredSize(new Dimension(130, 24));
+        dispositivo.setPreferredSize(new Dimension(105, 24));
         linhaDispositivo.add(dispositivo);
-        situacaoGamepads.setPreferredSize(new Dimension(500, 24));
-        linhaDispositivo.add(situacaoGamepads);
+        linhaDispositivo.add(EstiloTelas.rotulo("  Editar:"));
+        seletorLista.setFont(EstiloTelas.NORMAL);
+        seletorLista.setPreferredSize(new Dimension(100, 24));
+        linhaDispositivo.add(seletorLista);
+        linhaDispositivo.add(EstiloTelas.rotulo("  Esquema do gamepad:"));
+        seletorEsquema.setFont(EstiloTelas.NORMAL);
+        seletorEsquema.setPreferredSize(new Dimension(185, 24));
+        linhaDispositivo.add(seletorEsquema);
 
         JPanel norte = new JPanel(new BorderLayout(0, 6));
         norte.setOpaque(false);
@@ -190,8 +259,13 @@ public final class ControlesPanel extends JPanel {
 
     /** Linhas do slot atual: titulo de grupo, depois "acao ........ [tecla]". */
     private void montarLista() {
+        if (modoLista == ModoLista.GAMEPAD) {
+            montarListaGamepad();
+            return;
+        }
         lista.removeAll();
         botoesTecla.clear();
+        botoesGamepad.clear();
         GridBagConstraints g = new GridBagConstraints();
         g.gridy = 0;
         g.insets = new Insets(2, 10, 2, 10);
@@ -237,7 +311,235 @@ public final class ControlesPanel extends JPanel {
         lista.repaint();
     }
 
+    // =====================================================
+    // LISTA DE BOTOES DO GAMEPAD (Entrega 5F)
+    // =====================================================
+    private void montarListaGamepad() {
+        lista.removeAll();
+        botoesTecla.clear();
+        botoesGamepad.clear();
+        GridBagConstraints g = new GridBagConstraints();
+        g.gridy = 0;
+        List<ItemGamepad> itens = edicaoGamepad.itens(slotAtual);
+        for (GrupoAcao grupo : GrupoAcao.values()) {
+            List<ItemGamepad> doGrupo = itens.stream()
+                    .filter(i -> i.acao() != null && i.acao().getGrupo() == grupo).collect(Collectors.toList());
+            g.gridy = linhasGamepad(g, grupo.getTitulo(), doGrupo);
+        }
+        List<ItemGamepad> comandos = itens.stream().filter(i -> i.comando() != null).collect(Collectors.toList());
+        g.gridy = linhasGamepad(g, "TÉCNICAS PELO D-PAD (camadas: D-pad · LT+D-pad · LT+LB+D-pad)", comandos);
+        g.gridx = 0;
+        g.weighty = 1;
+        lista.add(new JLabel(), g);
+        atualizarTeclas();
+        lista.revalidate();
+        lista.repaint();
+    }
+
+    private int linhasGamepad(GridBagConstraints g, String titulo, List<ItemGamepad> itens) {
+        if (itens.isEmpty()) {
+            return g.gridy;
+        }
+        g.gridx = 0;
+        g.gridwidth = 2;
+        g.weightx = 0;
+        g.fill = GridBagConstraints.NONE;
+        g.anchor = GridBagConstraints.WEST;
+        g.insets = new Insets(8, 6, 2, 10);
+        lista.add(EstiloTelas.texto(titulo, EstiloTelas.ROTULO, new Color(255, 214, 120)), g);
+        g.gridy++;
+        g.gridwidth = 1;
+        g.insets = new Insets(2, 16, 2, 10);
+        for (ItemGamepad item : itens) {
+            g.gridx = 0;
+            g.weightx = 1;
+            g.fill = GridBagConstraints.HORIZONTAL;
+            lista.add(EstiloTelas.texto(item.rotulo(), EstiloTelas.NORMAL, EstiloTelas.TEXTO), g);
+            g.gridx = 1;
+            g.weightx = 0;
+            g.fill = GridBagConstraints.NONE;
+            g.anchor = GridBagConstraints.EAST;
+            JButton b = EstiloTelas.botao("");
+            b.setPreferredSize(new Dimension(170, 24));
+            b.addActionListener(e -> iniciarCapturaGamepad(item));
+            botoesGamepad.put(item, b);
+            lista.add(b, g);
+            g.anchor = GridBagConstraints.WEST;
+            g.gridy++;
+        }
+        return g.gridy;
+    }
+
+    private void atualizarBotoesGamepad() {
+        List<MapaGamepad.Problema> problemas = edicaoGamepad.problemas();
+        for (Map.Entry<ItemGamepad, JButton> e : botoesGamepad.entrySet()) {
+            ItemGamepad item = e.getKey();
+            JButton b = e.getValue();
+            if (item.equals(capturandoBotao)) {
+                b.setText("aperte um botão…");
+                b.setForeground(new Color(150, 60, 0));
+                continue;
+            }
+            b.setText(edicaoGamepad.botao(slotAtual, item).map(BotaoGamepad::getRotulo).orElse("—"));
+            boolean comProblema = problemas.stream().anyMatch(p -> p.slot() == slotAtual
+                    && (p.item().equals(item) || item.equals(p.outro())));
+            b.setForeground(comProblema ? new Color(180, 30, 20) : Color.BLACK);
+        }
+    }
+
+    void selecionarModoLista(ModoLista modo) {
+        cancelarCaptura();
+        modoLista = modo == null ? ModoLista.TECLAS : modo;
+        mostrarDispositivo();
+        montarLista();
+        rolagem.getVerticalScrollBar().setValue(0);
+    }
+
+    void selecionarEsquema(EsquemaGamepad esquema) {
+        if (esquema == null || esquema == edicaoGamepad.esquema(slotAtual)) {
+            return;
+        }
+        cancelarCaptura();
+        edicaoGamepad = edicaoGamepad.comEsquema(slotAtual, esquema);
+        modoLista = ModoLista.GAMEPAD;
+        mostrarDispositivo();
+        montarLista();
+        mostrarStatus(slotAtual.getSigla() + ": esquema " + esquema.getRotulo() + " com os botões padrão dele"
+                + (esquema == EsquemaGamepad.CONTEXTUAL
+                        ? " (D-pad = técnicas; LT e LT+LB = camadas; agachar no B; RB livre)." : ".")
+                + " Alterações não salvas.", false);
+    }
+
+    // =====================================================
+    // CAPTURA DE BOTAO DO GAMEPAD (Entrega 5F)
+    // =====================================================
+    void iniciarCapturaGamepad(ItemGamepad item) {
+        cancelarCaptura();
+        capturandoBotao = item;
+        seguradosNaCaptura.clear();
+        seguradosNaCaptura.addAll(botoesSeguradosAgora());     // o que ja esta apertado e ignorado
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(captura);
+        relogioCaptura.start();
+        atualizarTeclas();
+        mostrarStatus("Aperte o botão do gamepad para " + slotAtual.getSigla() + " · " + item.rotulo()
+                + " (ESC ou Start cancelam; Backspace deixa sem botão)."
+                + (gamepads.conectados().isEmpty() ? " Nenhum gamepad conectado agora." : ""), false);
+    }
+
+    /** Botoes apertados em qualquer gamepad conectado (gatilhos com histerese). */
+    private java.util.Set<BotaoGamepad> botoesSeguradosAgora() {
+        java.util.Set<BotaoGamepad> s = java.util.EnumSet.noneOf(BotaoGamepad.class);
+        boolean[] gatilhos = new boolean[2];
+        for (InfoGamepad g : gamepads.conectados()) {
+            Optional<EstadoGamepad> e = gamepads.estado(g.chave());
+            if (e.isEmpty()) {
+                continue;
+            }
+            for (BotaoGamepad b : BotaoGamepad.values()) {
+                if (!b.isVirtual() && e.get().pressionado(b)) {
+                    s.add(b);
+                }
+            }
+            float lt = e.get().eixo(com.irmaosmiau.dispositivos.EixoGamepad.GATILHO_ESQ);
+            float rt = e.get().eixo(com.irmaosmiau.dispositivos.EixoGamepad.GATILHO_DIR);
+            gatilhos[0] |= gatilhoNaCaptura[0] ? lt >= FonteGamepad.LIMIAR_SOLTAR_GATILHO : lt >= EstadoGamepad.LIMIAR_GATILHO;
+            gatilhos[1] |= gatilhoNaCaptura[1] ? rt >= FonteGamepad.LIMIAR_SOLTAR_GATILHO : rt >= EstadoGamepad.LIMIAR_GATILHO;
+        }
+        gatilhoNaCaptura[0] = gatilhos[0];
+        gatilhoNaCaptura[1] = gatilhos[1];
+        if (gatilhos[0]) {
+            s.add(BotaoGamepad.GATILHO_ESQ);
+        }
+        if (gatilhos[1]) {
+            s.add(BotaoGamepad.GATILHO_DIR);
+        }
+        return s;
+    }
+
+    /** Timer da captura: o primeiro botao NOVO (apertado depois do inicio) vale. */
+    private void lerBotoesDaCaptura() {
+        if (capturandoBotao == null) {
+            relogioCaptura.stop();
+            return;
+        }
+        java.util.Set<BotaoGamepad> agora = botoesSeguradosAgora();
+        seguradosNaCaptura.retainAll(agora);                    // soltou: volta a valer
+        for (BotaoGamepad b : BotaoGamepad.values()) {
+            if (agora.contains(b) && !seguradosNaCaptura.contains(b)) {
+                receberBotao(b);
+                return;
+            }
+        }
+    }
+
+    /** Botao apertado durante a captura (tambem usado pelos testes). */
+    void receberBotao(BotaoGamepad botao) {
+        if (capturandoBotao == null) {
+            return;
+        }
+        ItemGamepad item = capturandoBotao;
+        if (botao == MapaGamepad.BOTAO_PAUSA) {
+            cancelarCaptura();
+            return;
+        }
+        if (MapaGamepad.RESERVADOS.contains(botao)) {
+            mostrarStatus(botao.getRotulo() + " é reservado ao sistema. Escolha outro (ESC cancela).", true);
+            return;
+        }
+        encerrarCaptura();
+        Optional<ItemGamepad> dono = Optional.empty();
+        for (ItemGamepad outro : edicaoGamepad.itens(slotAtual)) {
+            if (!outro.equals(item) && edicaoGamepad.botao(slotAtual, outro).orElse(null) == botao
+                    && !podemDividir(item, outro)) {
+                dono = Optional.of(outro);
+                break;
+            }
+        }
+        if (edicaoGamepad.botao(slotAtual, item).orElse(null) == botao) {
+            mostrarStatus("Botão mantido.", false);
+            return;
+        }
+        if (dono.isPresent()) {
+            boolean trocar = dialogos.confirmar(this, "Controles",
+                    "O botão " + botao.getRotulo() + " já é usado por " + slotAtual.getSigla() + " · "
+                    + dono.get().rotulo() + ".\n\nTrocar os botões entre as duas funções?");
+            if (!trocar) {
+                mostrarStatus("Nada mudou: " + botao.getRotulo() + " continua em " + dono.get().rotulo() + ".", false);
+                return;
+            }
+            edicaoGamepad = edicaoGamepad.trocandoSeNecessario(slotAtual, item, botao);
+            mostrarStatus("Botões trocados. " + dono.get().rotulo() + " agora usa "
+                    + edicaoGamepad.rotulo(slotAtual, dono.get()) + ". Alterações não salvas.", false);
+        } else {
+            edicaoGamepad = edicaoGamepad.comBotao(slotAtual, item, botao);
+            mostrarStatus(slotAtual.getSigla() + " · " + item.rotulo() + " = " + botao.getRotulo()
+                    + ". Alterações não salvas.", false);
+        }
+        atualizarTeclas();
+    }
+
+    private static boolean podemDividir(ItemGamepad a, ItemGamepad b) {
+        // Unica divisao permitida: arrasto (com o analogico) e modificador da camada 3 (com LT).
+        return (a.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
+                        && b.comando() == com.irmaosmiau.dispositivos.ComandoGamepad.MODIFICADOR_CAMADA_3)
+                || (b.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
+                        && a.comando() == com.irmaosmiau.dispositivos.ComandoGamepad.MODIFICADOR_CAMADA_3);
+    }
+
+    /** Backspace durante a captura: o item fica sem botao (ex.: tirar uma acao do RB defeituoso). */
+    void removerBotaoCapturado() {
+        if (capturandoBotao == null) {
+            return;
+        }
+        ItemGamepad item = capturandoBotao;
+        encerrarCaptura();
+        edicaoGamepad = edicaoGamepad.semBotao(slotAtual, item);
+        mostrarStatus(slotAtual.getSigla() + " · " + item.rotulo() + " ficou sem botão. Alterações não salvas.", false);
+        atualizarTeclas();
+    }
+
     private void atualizarTeclas() {
+        atualizarBotoesGamepad();
         List<ProblemaControle> problemas = edicao.problemas();
         for (Map.Entry<AcaoJogador, JButton> e : botoesTecla.entrySet()) {
             AcaoJogador a = e.getKey();
@@ -283,7 +585,7 @@ public final class ControlesPanel extends JPanel {
     }
 
     private void cancelarCaptura() {
-        if (capturando != null) {
+        if (capturando != null || capturandoBotao != null) {
             encerrarCaptura();
             mostrarStatus("Captura cancelada.", false);
         }
@@ -291,17 +593,28 @@ public final class ControlesPanel extends JPanel {
 
     private void encerrarCaptura() {
         capturando = null;
+        capturandoBotao = null;
+        relogioCaptura.stop();
         KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(captura);
         atualizarTeclas();
     }
 
     /** Durante a captura, consome todas as teclas da janela. */
     private boolean capturarEvento(KeyEvent e) {
-        if (capturando == null) {
+        if (capturando == null && capturandoBotao == null) {
             return false;
         }
         if (e.getID() == KeyEvent.KEY_PRESSED) {
-            receberTecla(e.getKeyCode());
+            if (capturandoBotao != null) {
+                // Captura de botao: o teclado so cancela (ESC) ou remove (Backspace).
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    cancelarCaptura();
+                } else if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE) {
+                    removerBotaoCapturado();
+                }
+            } else {
+                receberTecla(e.getKeyCode());
+            }
         }
         e.consume();
         return true;
@@ -361,15 +674,17 @@ public final class ControlesPanel extends JPanel {
         cancelarCaptura();
         edicao = MapaControles.padrao();
         edicaoDispositivos = AssociacaoDispositivos.padrao();
+        edicaoGamepad = MapaGamepad.padrao();
         mostrarDispositivo();
-        atualizarTeclas();
-        mostrarStatus("Controles padrão restaurados (os dois jogadores, no teclado). Clique em SALVAR para mantê-los.",
-                false);
+        montarLista();
+        mostrarStatus("Controles padrão restaurados (os dois jogadores, no teclado; gamepad no esquema Clássico)."
+                + " Clique em SALVAR para mantê-los.", false);
     }
 
     boolean temAlteracoesNaoSalvas() {
         return !edicao.equals(preferencias.getAtual())
-                || !edicaoDispositivos.equals(preferenciasDispositivos.getAtual());
+                || !edicaoDispositivos.equals(preferenciasDispositivos.getAtual())
+                || !edicaoGamepad.equals(preferenciasGamepad.getAtual());
     }
 
     // =====================================================
@@ -379,6 +694,9 @@ public final class ControlesPanel extends JPanel {
         mostrandoDispositivo = true;
         try {
             dispositivo.setSelectedItem(edicaoDispositivos.tipo(slotAtual));
+            seletorLista.setSelectedItem(modoLista);
+            seletorEsquema.setSelectedItem(edicaoGamepad.esquema(slotAtual));
+            seletorEsquema.setEnabled(modoLista == ModoLista.GAMEPAD);
         } finally {
             mostrandoDispositivo = false;
         }
@@ -414,9 +732,7 @@ public final class ControlesPanel extends JPanel {
                     ? "Nenhum gamepad conectado (" + gamepads.descricao() + ")."
                     : lista.size() + (lista.size() == 1 ? " gamepad: " : " gamepads: ") + nomes;
         }
-        if (texto.length() > 90) {
-            texto = texto.substring(0, 87) + "...";
-        }
+        situacaoGamepads.setToolTipText(texto);
         situacaoGamepads.setText(texto);
     }
 
@@ -433,9 +749,15 @@ public final class ControlesPanel extends JPanel {
             mostrarProblemas();
             return false;
         }
+        if (!edicaoGamepad.isValido()) {
+            mostrarStatus("Resolva antes de salvar: " + edicaoGamepad.problemas().stream()
+                    .map(MapaGamepad.Problema::descricao).collect(Collectors.joining("; ")), true);
+            return false;
+        }
         try {
             preferencias.salvar(edicao);
             preferenciasDispositivos.salvar(edicaoDispositivos);
+            preferenciasGamepad.salvar(edicaoGamepad);
             mostrarStatus("Controles salvos. Valem a partir da próxima partida.", false);
             status.setForeground(EstiloTelas.OK);
             return true;
@@ -461,6 +783,7 @@ public final class ControlesPanel extends JPanel {
             if (r == Dialogos.Resposta.NAO) {
                 edicao = preferencias.getAtual();
                 edicaoDispositivos = preferenciasDispositivos.getAtual();
+                edicaoGamepad = preferenciasGamepad.getAtual();
             }
         }
         aoVoltar.run();
@@ -479,9 +802,11 @@ public final class ControlesPanel extends JPanel {
     @Override
     public void removeNotify() {
         relogioGamepads.stop();
+        relogioCaptura.stop();
         // Saiu da tela no meio de uma captura: nada fica consumindo teclas.
         KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(captura);
         capturando = null;
+        capturandoBotao = null;
         super.removeNotify();
     }
 
@@ -490,6 +815,31 @@ public final class ControlesPanel extends JPanel {
     // =====================================================
     boolean capturarEventoParaTestes(KeyEvent e) {
         return capturarEvento(e);
+    }
+
+    MapaGamepad gamepadEmEdicao() {
+        return edicaoGamepad;
+    }
+
+    JButton botaoGamepad(ItemGamepad item) {
+        return botoesGamepad.get(item);
+    }
+
+    boolean isCapturandoBotao() {
+        return capturandoBotao != null;
+    }
+
+    JComboBox<ModoLista> seletorLista() {
+        return seletorLista;
+    }
+
+    JComboBox<EsquemaGamepad> seletorEsquema() {
+        return seletorEsquema;
+    }
+
+    /** Uma leitura do timer de captura (testes com gamepad simulado). */
+    void lerBotoesDaCapturaParaTestes() {
+        lerBotoesDaCaptura();
     }
 
     AssociacaoDispositivos dispositivosEmEdicao() {

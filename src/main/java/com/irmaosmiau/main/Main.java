@@ -6,12 +6,14 @@ import com.irmaosmiau.persistencia.DiretorioDados;
 import com.irmaosmiau.persistencia.RepositorioConfiguracoes;
 import com.irmaosmiau.persistencia.RepositorioControles;
 import com.irmaosmiau.persistencia.RepositorioDispositivos;
+import com.irmaosmiau.persistencia.RepositorioGamepad;
 import com.irmaosmiau.dispositivos.ServicoGamepads;
 import com.irmaosmiau.persistencia.ServicoPerfis;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.EscolhaLutador;
 import com.irmaosmiau.preferencias.PreferenciasControles;
 import com.irmaosmiau.preferencias.PreferenciasDispositivos;
+import com.irmaosmiau.preferencias.PreferenciasGamepad;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.selecao.OpcoesDeLutadores;
 import com.irmaosmiau.ui.ConfiguracoesPanel;
@@ -62,6 +64,8 @@ public class Main {
             PreferenciasControles controles = prepararControles();
             // Entrega 5D: teclado ou gamepad em cada slot (dispositivos.json).
             PreferenciasDispositivos dispositivos = prepararDispositivos();
+            // Entrega 5F: esquema e botoes do gamepad (gamepad.json).
+            PreferenciasGamepad gamepad = prepararGamepad();
 
             mostrarMenu(janela);
 
@@ -78,6 +82,7 @@ public class Main {
             java.util.List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
             avisos.addAll(controles.getAvisos());
             avisos.addAll(dispositivos.getAvisos());
+            avisos.addAll(gamepad.getAvisos());
             if (!avisos.isEmpty()) {
                 JOptionPane.showMessageDialog(
                         janela,
@@ -116,6 +121,14 @@ public class Main {
                 new RepositorioDispositivos(DiretorioDados.doUsuario()));
         PreferenciasDispositivos.instalarGlobal(dispositivos);
         return dispositivos;
+    }
+
+    /** Carrega gamepad.json (sem criar nada) e instala como mapeamento do jogo. */
+    static PreferenciasGamepad prepararGamepad() {
+        PreferenciasGamepad gamepad = PreferenciasGamepad.carregar(
+                new RepositorioGamepad(DiretorioDados.doUsuario()));
+        PreferenciasGamepad.instalarGlobal(gamepad);
+        return gamepad;
     }
 
     private static void mostrarMenu(JFrame janela) {

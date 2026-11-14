@@ -366,3 +366,109 @@ o aparelho real mostrar que o Windows o entrega e mesmo assim o GLFW não o enxe
 
 Observação: no Git Bash os acentos do diagnóstico podem aparecer trocados (página de código do
 console). No Prompt de Comando, no PowerShell e no NetBeans aparecem normalmente.
+
+---
+
+# Entrega 5F — Remapeamento do gamepad e comandos contextuais
+
+Contexto: o Xbox Wireless Controller foi validado fisicamente pelo desenvolvedor (XInput). O
+joystick USB genérico sem mapeamento continua pendente (não faz parte desta entrega).
+
+## Remapear botões do gamepad
+
+CONFIGURAÇÕES → CONTROLES → escolha o jogador → **Editar: Gamepad**.
+
+- A lista mostra cada ação (e, no esquema Contextual, as 4 direções de técnica e os 2 modificadores)
+  com o botão atual. Clique e **aperte o botão real** no controle.
+- Vale qualquer botão, direcional ou gatilho. Gatilho conta a partir de 0,5 e só solta abaixo de
+  0,35 (histerese). O que já estava apertado quando a captura começou é ignorado até ser solto.
+- **ESC** ou **Start** cancelam; **Backspace** deixa a ação **sem botão** (por exemplo, para tirar
+  o "correr" do RB defeituoso). Start/Options e Guide são reservados.
+- Botão já usado no mesmo jogador: a tela pergunta se deve **trocar**. Nenhum botão é obrigatório.
+- Durante a captura o teclado fica preso na tela: nenhuma tecla aciona botões do menu. Não há
+  partida aberta, então nada de combate dispara.
+- RESTAURAR PADRÕES volta teclado, dispositivos e gamepad (os dois no Clássico); SALVAR grava;
+  VOLTAR pergunta se deve salvar. Cada jogador tem os seus botões e o seu esquema.
+- Arquivo próprio **`gamepad.json`** (tipo `MAPEAMENTO_GAMEPAD_IRMAOS_MIAU`, versão 1). Não é o
+  `gamecontrollerdb.txt` (SDL), que só serve para o GLFW **reconhecer** joysticks genéricos.
+
+## Esquemas
+
+| | Clássico (5D) — padrão | Contextual (experimental) |
+|---|---|---|
+| Mover | D-pad e analógico | **só o analógico** (o D-pad vira técnicas) |
+| A/Cruz | pular | pular |
+| B/Bola | desequilibrar (J1) / romper (J2) | **agachar** |
+| X/Quadrado | pegada (J1) | correr |
+| Y/Triângulo | reforçar (J1) | rolar |
+| LB/L1 | arrasto (com o analógico) | arrasto (com o analógico) **e** modificador da camada 3 |
+| LT/L2 | agachar | **modificador da camada 2** |
+| RT/R2 | sprawl | sprawl |
+| RB/R1 | correr | **livre** |
+| L3 / R3 | rolar / deitar | deitar / pulo curto |
+| Back | respirar | respirar |
+| D-pad | mover | **técnicas por contexto** |
+| Start | pausa | pausa |
+
+Escolher o esquema troca os botões do jogador pelos padrões daquele esquema (depois é só remapear).
+Nada é migrado sozinho: quem já usava a 5D continua no Clássico.
+
+## As 12 posições (Contextual)
+
+| Camada | Combinação | Prioridade |
+|---|---|---|
+| 3 | LT + LB + direção | 1ª |
+| 2 | LT + direção | 2ª |
+| 1 | direção sozinha (LB sozinho também cai aqui) | 3ª |
+
+Regras do `ResolvedorComandosContextuais`:
+- Um toque produz **um** comando: dispara quando a direção acaba de ser apertada e é a única
+  segurada. Diagonais ou uma segunda direção com outra segurada não disparam nada.
+- Segurar não repete. Trocar LT/LB com a direção segurada não dispara outra coisa: é preciso soltar
+  e tocar de novo.
+- Pausa, perda de foco, desconexão e reconexão limpam o comando pendente; nada dispara até o D-pad
+  ser solto.
+- LT segurado suspende o arrasto do LB (LT+LB = camada 3). LB sozinho + analógico continua sendo o
+  arrasto contínuo da 5B.
+
+### O que cada posição faz hoje (`RepertorioContextual`)
+
+| Contexto | Camada 1 (executa de verdade) | Camadas 2 e 3 (reservadas, "*") |
+|---|---|---|
+| Livre (em pé) | ↑ PEGAR (PEGADA_1) | — |
+| Pegada, aplicador | ↑ REFORÇO · → DESEQUILIBRAR | LT+↑ QUEDA* · LT+LB+↑ GUARDA* (puxar) |
+| Pegada, receptor | ↓ ROMPER | LT+LB+↑ GUARDA* (puxar) |
+| Entrando (30 quadros) | nada | nada |
+
+- As ações executáveis passam pelo **mesmo** caminho das teclas H/T/Y/U
+  (`GamePanel.executarAcaoCombate`): custos, recargas, alcance, bloqueios e mensagens são os de sempre.
+- Reservadas vêm do `RepertorioPosicional` (5E). Ao serem apertadas, avisam
+  "QUEDA: ainda não disponível no jogo" e não mudam nada: posições de chão não são ativadas.
+- Posições vazias avisam "nada em …". Nenhuma técnica foi inventada para preencher posições.
+- O Jogador 2 ainda não aplica pegada (regra do motor), então livre ele não tem nada no D-pad.
+
+### Indicador no HUD
+
+Uma cruz pequena sob o painel de cada jogador que está no Contextual (y 66–128, 138 px), com a
+camada segurada ("J1 · LT + D-pad") e o que cada direção faz agora:
+- branco = disponível;
+- cinza = existe, mas não dá agora (recarga, alcance, firmeza cheia);
+- "*" = reservada;
+- "·" = vazia.
+
+A faixa de dicas mostra, por exemplo, "D-pad→ desequilibrar · D-pad↑ reforçar". A ajuda da pausa
+lista as 3 camadas com os botões configurados.
+
+## Teclado
+
+O sistema contextual recebe `EntradaContextual` (4 direções + 2 modificadores), sem saber de onde
+vem. Nesta entrega só o gamepad a produz; o teclado continua com H, T, U, Y e o arrasto, sem
+nenhuma tecla nova. Para o teclado usar as 12 posições no futuro: 4 ações de direção + 2
+modificadores no `MapaControles` (6 teclas, nunca 12), alimentando o mesmo resolvedor.
+
+## Limitações (5F)
+
+- Remapeamento só para gamepads reconhecidos (com mapeamento GLFW); o joystick genérico continua
+  dependendo de um mapeamento SDL (5E).
+- Os menus ainda não são navegáveis pelo gamepad.
+- Camadas 2 e 3 só têm transições reservadas até as posições de chão ganharem visual e lógica.

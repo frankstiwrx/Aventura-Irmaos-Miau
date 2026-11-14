@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 476, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 515, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -194,6 +194,31 @@ Diagnóstico de joystick:
 - [ ] Com o controle que falhou na 5D: anotar o que o item 2 mostra (nome, GUID, eixos/botões, "gamepad: SIM/NÃO") e a conclusão
 - [ ] Se "gamepad: NÃO": criar um mapeamento SDL com o GUID (docs/CONTROLES.md) e repetir; o item 4 deve dizer "aceito pelo GLFW" e o aparelho virar "gamepad: SIM"
 - [ ] Arquivo de mapeamento com lixo: o diagnóstico lista as linhas ignoradas e o jogo abre normalmente
+
+### Remapeamento do gamepad e comandos contextuais (Entrega 5F) — Xbox
+
+Remapeamento:
+- [ ] CONTROLES → Editar: Gamepad mostra os botões do Clássico (correr = RB/R1)
+- [ ] Clicar em "Correr" e apertar outro botão (ex.: R3): pergunta se troca; "Sim" troca com "Deitar"
+- [ ] Clicar e apertar LT ou RT só um pouco: nada; apertar até o fim: aceito
+- [ ] Clicar e segurar um botão desde antes: ignorado até soltar e apertar de novo
+- [ ] ESC e Start cancelam; Backspace deixa sem botão (tirar o RB de uso)
+- [ ] Durante a captura, ESPAÇO/ENTER e botões do controle não acionam a tela
+- [ ] SALVAR, fechar e abrir o jogo: os botões continuam; RESTAURAR PADRÕES volta ao Clássico
+- [ ] J2 tem os próprios botões e o próprio esquema
+
+Esquema Contextual (Dispositivo = Gamepad, Esquema = Contextual):
+- [ ] O D-pad não anda; o analógico anda e troca de linha; B agacha; RB não faz falta
+- [ ] Livre, perto do Preto: D-pad ↑ faz a PEGADA_1 (3 quadros, custo 3)
+- [ ] Na pegada: D-pad → desequilibra; D-pad ↑ reforça (uma vez por toque, mesmo segurando)
+- [ ] Segurar LT: a cruz mostra "LT + D-pad" e QUEDA*; LT + ↑ só avisa "ainda não disponível", sem cair no chão
+- [ ] LT + LB: a cruz mostra GUARDA*; nada de chão é ativado
+- [ ] Apertar →, depois segurar LT/LB sem soltar a direção: nenhum golpe novo
+- [ ] LB + analógico: arrasto como na 5B; LT + LB + analógico não arrasta
+- [ ] J1 no teclado e J2 no Xbox contextual: J2 rompe com D-pad ↓; H/T/U/Y do teclado iguais
+- [ ] Start pausa; D-pad na pausa não dispara nada ao voltar; Alt+Tab e desconectar também limpam
+- [ ] Treino com o Xbox contextual: técnicas do J1 funcionam; parceiro passivo; F5 reinicia
+- [ ] Voltar ao Clássico: D-pad anda de novo, sem cruz no HUD
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

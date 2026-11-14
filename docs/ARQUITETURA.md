@@ -252,3 +252,14 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
 - `GamePanel`, renderizadores, arrays e `SistemaCombate` não mudaram. `IrmaoMiau` ganhou só dois
   getters de leitura (`estaAndando`, `estaEmTaunt`).
 - Diagnóstico de joystick ampliado (presente × mapeado) e mapeamentos SDL extras, somente leitura.
+
+## Gamepad remapeável e comandos contextuais (Entrega 5F)
+
+- `MapaGamepad` agora é **editável por slot** (esquema CLASSICO ou CONTEXTUAL + botões), salvo em
+  `gamepad.json` (`PreferenciasGamepad`). O Clássico padrão é idêntico à 5D.
+- Contextual: `FonteGamepad` produz `EntradaContextual`; o `ResolvedorComandosContextuais`
+  (independente de aparelho) gera no máximo um `PosicaoComando` por toque. O `RepertorioContextual`
+  diz o que a posição faz no papel atual, e o `GamePanel` executa pelo mesmo `executarAcaoCombate`
+  das teclas. Transições de chão (5E) aparecem reservadas.
+- HUD: `hud.PainelDpadContextual` (cruz compacta por jogador). Tela: `ControlesPanel` em modo
+  "Editar: Gamepad".

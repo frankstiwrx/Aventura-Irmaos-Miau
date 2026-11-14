@@ -1,122 +1,350 @@
 package com.irmaosmiau.dispositivos;
 
 import com.irmaosmiau.controles.AcaoJogador;
+import com.irmaosmiau.controles.DirecaoTecnica;
+import com.irmaosmiau.controles.EntradaContextual;
 import com.irmaosmiau.controles.SlotJogador;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Botoes do gamepad -> acoes logicas da 5C (Entrega 5D).
+ * Botoes do gamepad -> acoes logicas e comandos, POR SLOT (Entregas 5D e 5F).
  *
- * ESQUEMA EXPERIMENTAL E PROVISORIO: os botoes abaixo NAO sao a decisao de
- * game design; estao todos aqui para serem trocados num lugar so. As regras
- * de combate continuam no SistemaCombate; o gamepad so produz acoes logicas.
+ * Cada slot tem um esquema (CLASSICO ou CONTEXTUAL) e suas proprias
+ * atribuicoes, editaveis em CONFIGURACOES -> CONTROLES e salvas em
+ * gamepad.json. Imutavel: cada alteracao devolve um novo mapa.
  *
- * Um botao pode listar acoes de slots diferentes (ex.: LESTE = desequilibrar
- * para quem usa o Jogador 1 e romper para o Jogador 2): cada slot so enxerga
- * as acoes que usa. E o embriao do botao de tecnica contextual.
+ * Regras de cada slot:
+ * - um botao aciona uma coisa so, com UMA excecao: no CONTEXTUAL o botao do
+ *   modo controle (arrasto, segurado com o analogico) pode ser tambem o
+ *   modificador da camada 3 (padrao LB): com o modificador da camada 2 (LT)
+ *   segurado ele vale como camada 3 e o arrasto fica suspenso;
+ * - Start/Options (pausa) e Guide sao reservados;
+ * - nenhum botao e obrigatorio (o RB, por exemplo, pode ficar sem uso);
+ * - o analogico esquerdo sempre move (zona morta e histerese em LeitorAnalogico).
  */
 public final class MapaGamepad {
 
-    private final Map<BotaoGamepad, List<AcaoJogador>> acoes;
-    private final BotaoGamepad botaoPausa;
-    private final boolean analogicoEsquerdoMove;
+    public static final BotaoGamepad BOTAO_PAUSA = BotaoGamepad.INICIAR;
+    public static final Set<BotaoGamepad> RESERVADOS = Set.of(BotaoGamepad.INICIAR, BotaoGamepad.GUIA);
 
-    private MapaGamepad(Map<BotaoGamepad, List<AcaoJogador>> acoes, BotaoGamepad botaoPausa,
-            boolean analogicoEsquerdoMove) {
-        for (Map.Entry<BotaoGamepad, List<AcaoJogador>> e : acoes.entrySet()) {
-            if (e.getKey() == botaoPausa && !e.getValue().isEmpty()) {
-                throw new IllegalArgumentException("O botao de pausa nao pode ter acao: " + e.getKey());
-            }
+    /** Configuracao de um slot. */
+    public record ConfigSlot(EsquemaGamepad esquema, Map<AcaoJogador, BotaoGamepad> acoes,
+            Map<ComandoGamepad, BotaoGamepad> comandos) {
+
+        public ConfigSlot {
+            acoes = Collections.unmodifiableMap(acoes.isEmpty()
+                    ? new EnumMap<>(AcaoJogador.class) : new EnumMap<>(acoes));
+            comandos = Collections.unmodifiableMap(comandos.isEmpty()
+                    ? new EnumMap<>(ComandoGamepad.class) : new EnumMap<>(comandos));
         }
-        for (SlotJogador s : SlotJogador.values()) {
-            Set<AcaoJogador> vistas = EnumSet.noneOf(AcaoJogador.class);
-            for (List<AcaoJogador> lista : acoes.values()) {
-                for (AcaoJogador a : lista) {
-                    if (s.usa(a) && !vistas.add(a)) {
-                        throw new IllegalArgumentException(s.getSigla() + ": " + a + " em dois botoes");
-                    }
-                }
-            }
-        }
-        this.acoes = acoes;
-        this.botaoPausa = botaoPausa;
-        this.analogicoEsquerdoMove = analogicoEsquerdoMove;
     }
 
-    /** Esquema provisorio da 5D (ver docs/CONTROLES.md). */
+    /** Problema de atribuicao. */
+    public record Problema(SlotJogador slot, ItemGamepad item, BotaoGamepad botao, ItemGamepad outro) {
+
+        public String descricao() {
+            return outro == null
+                    ? slot.getSigla() + " · " + item.rotulo() + ": " + botao.getRotulo() + " é reservado"
+                    : slot.getSigla() + " · " + botao.getRotulo() + " usado em " + item.rotulo() + " e "
+                            + outro.rotulo();
+        }
+    }
+
+    private final Map<SlotJogador, ConfigSlot> slots;
+
+    private MapaGamepad(Map<SlotJogador, ConfigSlot> slots) {
+        this.slots = Collections.unmodifiableMap(new EnumMap<>(slots));
+    }
+
+    // =====================================================
+    // PADROES
+    // =====================================================
+    /** Os dois slots no CLASSICO da 5D (exatamente o comportamento anterior). */
     public static MapaGamepad experimental() {
-        Map<BotaoGamepad, List<AcaoJogador>> m = new EnumMap<>(BotaoGamepad.class);
-        // Movimento: D-pad e analogico esquerdo (os dois somam, sem duplicar).
-        m.put(BotaoGamepad.DPAD_ESQUERDA, List.of(AcaoJogador.MOVER_ESQUERDA));
-        m.put(BotaoGamepad.DPAD_DIREITA, List.of(AcaoJogador.MOVER_DIREITA));
-        m.put(BotaoGamepad.DPAD_CIMA, List.of(AcaoJogador.MOVER_CIMA));
-        m.put(BotaoGamepad.DPAD_BAIXO, List.of(AcaoJogador.MOVER_BAIXO));
-        // Corpo.
-        m.put(BotaoGamepad.SUL, List.of(AcaoJogador.PULAR));
-        m.put(BotaoGamepad.GATILHO_ESQ, List.of(AcaoJogador.AGACHAR));
-        m.put(BotaoGamepad.RB, List.of(AcaoJogador.CORRER));
-        m.put(BotaoGamepad.L3, List.of(AcaoJogador.ROLAR));
-        m.put(BotaoGamepad.R3, List.of(AcaoJogador.DEITAR_LEVANTAR));
-        m.put(BotaoGamepad.VOLTAR, List.of(AcaoJogador.RESPIRAR));
-        m.put(BotaoGamepad.GATILHO_DIR, List.of(AcaoJogador.SPRAWL));
-        // Combate.
-        m.put(BotaoGamepad.OESTE, List.of(AcaoJogador.INICIAR_PEGADA));
-        m.put(BotaoGamepad.LESTE, List.of(AcaoJogador.TENTAR_DESEQUILIBRIO, AcaoJogador.ROMPIMENTO_TECNICO));
-        m.put(BotaoGamepad.NORTE, List.of(AcaoJogador.REFORCAR_PEGADA));
-        m.put(BotaoGamepad.LB, List.of(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO));
-        // PULO_CURTO fica sem botao no esquema provisorio; INICIAR = pausa.
-        return new MapaGamepad(m, BotaoGamepad.INICIAR, true);
+        return padrao();
+    }
+
+    public static MapaGamepad padrao() {
+        Map<SlotJogador, ConfigSlot> m = new EnumMap<>(SlotJogador.class);
+        for (SlotJogador s : SlotJogador.values()) {
+            m.put(s, padraoDo(s, EsquemaGamepad.CLASSICO));
+        }
+        return new MapaGamepad(m);
+    }
+
+    public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        Map<ComandoGamepad, BotaoGamepad> c = new EnumMap<>(ComandoGamepad.class);
+        if (esquema == EsquemaGamepad.CLASSICO) {
+            // Esquema provisorio da 5D, sem nenhuma mudanca.
+            a.put(AcaoJogador.MOVER_ESQUERDA, BotaoGamepad.DPAD_ESQUERDA);
+            a.put(AcaoJogador.MOVER_DIREITA, BotaoGamepad.DPAD_DIREITA);
+            a.put(AcaoJogador.MOVER_CIMA, BotaoGamepad.DPAD_CIMA);
+            a.put(AcaoJogador.MOVER_BAIXO, BotaoGamepad.DPAD_BAIXO);
+            a.put(AcaoJogador.PULAR, BotaoGamepad.SUL);
+            a.put(AcaoJogador.AGACHAR, BotaoGamepad.GATILHO_ESQ);
+            a.put(AcaoJogador.CORRER, BotaoGamepad.RB);
+            a.put(AcaoJogador.ROLAR, BotaoGamepad.L3);
+            a.put(AcaoJogador.DEITAR_LEVANTAR, BotaoGamepad.R3);
+            a.put(AcaoJogador.RESPIRAR, BotaoGamepad.VOLTAR);
+            a.put(AcaoJogador.SPRAWL, BotaoGamepad.GATILHO_DIR);
+            a.put(AcaoJogador.INICIAR_PEGADA, BotaoGamepad.OESTE);
+            a.put(AcaoJogador.TENTAR_DESEQUILIBRIO, BotaoGamepad.LESTE);
+            a.put(AcaoJogador.ROMPIMENTO_TECNICO, BotaoGamepad.LESTE);
+            a.put(AcaoJogador.REFORCAR_PEGADA, BotaoGamepad.NORTE);
+            a.put(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, BotaoGamepad.LB);
+        } else {
+            // Contextual: D-pad = tecnicas; LT/LB = camadas; agachar no B; RB livre.
+            a.put(AcaoJogador.PULAR, BotaoGamepad.SUL);
+            a.put(AcaoJogador.AGACHAR, BotaoGamepad.LESTE);
+            a.put(AcaoJogador.CORRER, BotaoGamepad.OESTE);
+            a.put(AcaoJogador.ROLAR, BotaoGamepad.NORTE);
+            a.put(AcaoJogador.DEITAR_LEVANTAR, BotaoGamepad.L3);
+            a.put(AcaoJogador.PULO_CURTO, BotaoGamepad.R3);
+            a.put(AcaoJogador.RESPIRAR, BotaoGamepad.VOLTAR);
+            a.put(AcaoJogador.SPRAWL, BotaoGamepad.GATILHO_DIR);
+            a.put(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, BotaoGamepad.LB);
+            c.put(ComandoGamepad.TECNICA_CIMA, BotaoGamepad.DPAD_CIMA);
+            c.put(ComandoGamepad.TECNICA_DIREITA, BotaoGamepad.DPAD_DIREITA);
+            c.put(ComandoGamepad.TECNICA_BAIXO, BotaoGamepad.DPAD_BAIXO);
+            c.put(ComandoGamepad.TECNICA_ESQUERDA, BotaoGamepad.DPAD_ESQUERDA);
+            c.put(ComandoGamepad.MODIFICADOR_CAMADA_2, BotaoGamepad.GATILHO_ESQ);
+            c.put(ComandoGamepad.MODIFICADOR_CAMADA_3, BotaoGamepad.LB);
+        }
+        a.keySet().removeIf(acao -> !slot.usa(acao));
+        return new ConfigSlot(esquema, a, c);
+    }
+
+    // =====================================================
+    // CONSULTAS
+    // =====================================================
+    public ConfigSlot config(SlotJogador slot) {
+        return slots.get(slot);
+    }
+
+    public EsquemaGamepad esquema(SlotJogador slot) {
+        return slots.get(slot).esquema();
     }
 
     public BotaoGamepad getBotaoPausa() {
-        return botaoPausa;
-    }
-
-    /** Acoes seguradas agora por este slot (botoes + analogico, sem repeticao). */
-    public Set<AcaoJogador> acoesAtivas(EstadoGamepad estado, SlotJogador slot, Set<AcaoJogador> analogicoAnterior,
-            Set<AcaoJogador> analogicoAtual) {
-        Set<AcaoJogador> ativas = EnumSet.noneOf(AcaoJogador.class);
-        for (Map.Entry<BotaoGamepad, List<AcaoJogador>> e : acoes.entrySet()) {
-            if (estado.pressionado(e.getKey())) {
-                for (AcaoJogador a : e.getValue()) {
-                    if (slot.usa(a)) {
-                        ativas.add(a);
-                    }
-                }
-            }
-        }
-        analogicoAtual.clear();
-        if (analogicoEsquerdoMove) {
-            analogicoAtual.addAll(LeitorAnalogico.direcoes(
-                    estado.eixo(EixoGamepad.ESQ_X), estado.eixo(EixoGamepad.ESQ_Y), analogicoAnterior));
-            ativas.addAll(analogicoAtual);
-        }
-        return ativas;
-    }
-
-    /** Botoes que acionam a acao neste slot. */
-    public List<BotaoGamepad> botoes(SlotJogador slot, AcaoJogador acao) {
-        List<BotaoGamepad> lista = new ArrayList<>();
-        if (!slot.usa(acao)) {
-            return lista;
-        }
-        for (Map.Entry<BotaoGamepad, List<AcaoJogador>> e : acoes.entrySet()) {
-            if (e.getValue().contains(acao)) {
-                lista.add(e.getKey());
-            }
-        }
-        return Collections.unmodifiableList(lista);
+        return BOTAO_PAUSA;
     }
 
     public boolean isAnalogicoEsquerdoMove() {
-        return analogicoEsquerdoMove;
+        return true;
+    }
+
+    public Optional<BotaoGamepad> botao(SlotJogador slot, ItemGamepad item) {
+        ConfigSlot c = slots.get(slot);
+        return Optional.ofNullable(item.acao() != null ? c.acoes().get(item.acao()) : c.comandos().get(item.comando()));
+    }
+
+    /** Itens editaveis do slot no esquema atual. */
+    public List<ItemGamepad> itens(SlotJogador slot) {
+        List<ItemGamepad> l = new ArrayList<>();
+        for (AcaoJogador a : slot.acoes()) {
+            boolean movimentoNoContextual = esquema(slot) == EsquemaGamepad.CONTEXTUAL && isMovimento(a);
+            if (!movimentoNoContextual) {
+                l.add(ItemGamepad.de(a));
+            }
+        }
+        if (esquema(slot) == EsquemaGamepad.CONTEXTUAL) {
+            for (ComandoGamepad c : ComandoGamepad.values()) {
+                l.add(ItemGamepad.de(c));
+            }
+        }
+        return l;
+    }
+
+    private static boolean isMovimento(AcaoJogador a) {
+        return a == AcaoJogador.MOVER_ESQUERDA || a == AcaoJogador.MOVER_DIREITA
+                || a == AcaoJogador.MOVER_CIMA || a == AcaoJogador.MOVER_BAIXO;
+    }
+
+    /** Quem usa o botao no slot (primeiro encontrado). */
+    public Optional<ItemGamepad> quemUsa(SlotJogador slot, BotaoGamepad b) {
+        for (ItemGamepad i : todosItensComBotao(slot).keySet()) {
+            if (todosItensComBotao(slot).get(i) == b) {
+                return Optional.of(i);
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Map<ItemGamepad, BotaoGamepad> todosItensComBotao(SlotJogador slot) {
+        Map<ItemGamepad, BotaoGamepad> m = new LinkedHashMap<>();
+        slots.get(slot).acoes().forEach((a, b) -> m.put(ItemGamepad.de(a), b));
+        slots.get(slot).comandos().forEach((c, b) -> m.put(ItemGamepad.de(c), b));
+        return m;
+    }
+
+    private static boolean parPermitido(ItemGamepad x, ItemGamepad y) {
+        return (x.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO && y.comando() == ComandoGamepad.MODIFICADOR_CAMADA_3)
+                || (y.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
+                        && x.comando() == ComandoGamepad.MODIFICADOR_CAMADA_3);
+    }
+
+    public List<Problema> problemas() {
+        List<Problema> l = new ArrayList<>();
+        for (SlotJogador s : SlotJogador.values()) {
+            Map<ItemGamepad, BotaoGamepad> m = todosItensComBotao(s);
+            List<ItemGamepad> vistos = new ArrayList<>();
+            for (Map.Entry<ItemGamepad, BotaoGamepad> e : m.entrySet()) {
+                if (RESERVADOS.contains(e.getValue())) {
+                    l.add(new Problema(s, e.getKey(), e.getValue(), null));
+                }
+                for (ItemGamepad anterior : vistos) {
+                    if (m.get(anterior) == e.getValue() && !parPermitido(anterior, e.getKey())) {
+                        l.add(new Problema(s, e.getKey(), e.getValue(), anterior));
+                    }
+                }
+                vistos.add(e.getKey());
+            }
+        }
+        return l;
+    }
+
+    public boolean isValido() {
+        return problemas().isEmpty();
+    }
+
+    // =====================================================
+    // EDICAO (sempre um novo mapa)
+    // =====================================================
+    private MapaGamepad com(SlotJogador slot, ConfigSlot c) {
+        Map<SlotJogador, ConfigSlot> m = new EnumMap<>(slots);
+        m.put(slot, c);
+        return new MapaGamepad(m);
+    }
+
+    /** Troca o esquema do slot: o slot volta aos botoes padrao desse esquema. */
+    public MapaGamepad comEsquema(SlotJogador slot, EsquemaGamepad esquema) {
+        return com(slot, padraoDo(slot, esquema));
+    }
+
+    public MapaGamepad comPadroesDo(SlotJogador slot) {
+        return comEsquema(slot, esquema(slot));
+    }
+
+    public MapaGamepad comConfig(SlotJogador slot, ConfigSlot config) {
+        return com(slot, config);
+    }
+
+    public MapaGamepad comBotao(SlotJogador slot, ItemGamepad item, BotaoGamepad botao) {
+        exigirItem(slot, item);
+        ConfigSlot c = slots.get(slot);
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(c.acoes());
+        Map<ComandoGamepad, BotaoGamepad> k = new EnumMap<>(ComandoGamepad.class);
+        k.putAll(c.comandos());
+        if (item.acao() != null) {
+            if (botao == null) {
+                a.remove(item.acao());
+            } else {
+                a.put(item.acao(), botao);
+            }
+        } else if (botao == null) {
+            k.remove(item.comando());
+        } else {
+            k.put(item.comando(), botao);
+        }
+        return com(slot, new ConfigSlot(c.esquema(), a, k));
+    }
+
+    public MapaGamepad semBotao(SlotJogador slot, ItemGamepad item) {
+        return comBotao(slot, item, null);
+    }
+
+    /** Atribui; quem usava o botao no MESMO slot recebe o botao antigo deste item (troca). */
+    public MapaGamepad trocandoSeNecessario(SlotJogador slot, ItemGamepad item, BotaoGamepad botao) {
+        Optional<BotaoGamepad> antigo = botao(slot, item);
+        MapaGamepad novo = comBotao(slot, item, botao);
+        for (ItemGamepad outro : todosItensComBotao(slot).keySet()) {
+            if (!outro.equals(item) && botao(slot, outro).orElse(null) == botao && !parPermitido(outro, item)) {
+                novo = antigo.isPresent() ? novo.comBotao(slot, outro, antigo.get()) : novo.semBotao(slot, outro);
+            }
+        }
+        return novo;
+    }
+
+    private void exigirItem(SlotJogador slot, ItemGamepad item) {
+        if (item.acao() != null && !slot.usa(item.acao())) {
+            throw new IllegalArgumentException(slot.getNome() + " nao usa " + item.acao());
+        }
+        if (item.comando() != null && esquema(slot) != EsquemaGamepad.CONTEXTUAL) {
+            throw new IllegalArgumentException("Comandos de tecnica so existem no esquema contextual.");
+        }
+    }
+
+    // =====================================================
+    // LEITURA (FonteGamepad, uma vez por tick)
+    // =====================================================
+    /** Acoes seguradas agora pelo slot (botoes + analogico, sem repeticao). */
+    public Set<AcaoJogador> acoesAtivas(EstadoGamepad estado, SlotJogador slot, Set<AcaoJogador> analogicoAnterior,
+            Set<AcaoJogador> analogicoAtual) {
+        ConfigSlot c = slots.get(slot);
+        Set<AcaoJogador> ativas = EnumSet.noneOf(AcaoJogador.class);
+        for (Map.Entry<AcaoJogador, BotaoGamepad> e : c.acoes().entrySet()) {
+            if (slot.usa(e.getKey()) && estado.pressionado(e.getValue())) {
+                ativas.add(e.getKey());
+            }
+        }
+        if (c.esquema() == EsquemaGamepad.CONTEXTUAL) {
+            BotaoGamepad mod2 = c.comandos().get(ComandoGamepad.MODIFICADOR_CAMADA_2);
+            if (mod2 != null && estado.pressionado(mod2)) {
+                // LT segurado = compondo um comando de camada 2/3: o LB nao arrasta.
+                ativas.remove(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
+            }
+        }
+        analogicoAtual.clear();
+        analogicoAtual.addAll(LeitorAnalogico.direcoes(
+                estado.eixo(EixoGamepad.ESQ_X), estado.eixo(EixoGamepad.ESQ_Y), analogicoAnterior));
+        ativas.addAll(analogicoAtual);
+        return ativas;
+    }
+
+    /** Direcoes de tecnica e modificadores segurados (NADA no esquema classico). */
+    public EntradaContextual entradaContextual(EstadoGamepad estado, SlotJogador slot) {
+        ConfigSlot c = slots.get(slot);
+        if (c.esquema() != EsquemaGamepad.CONTEXTUAL) {
+            return EntradaContextual.NADA;
+        }
+        Set<DirecaoTecnica> dirs = EnumSet.noneOf(DirecaoTecnica.class);
+        for (ComandoGamepad k : ComandoGamepad.values()) {
+            BotaoGamepad b = c.comandos().get(k);
+            if (k.getDirecao() != null && b != null && estado.pressionado(b)) {
+                dirs.add(k.getDirecao());
+            }
+        }
+        return new EntradaContextual(dirs, segurado(c, ComandoGamepad.MODIFICADOR_CAMADA_2, estado),
+                segurado(c, ComandoGamepad.MODIFICADOR_CAMADA_3, estado));
+    }
+
+    private static boolean segurado(ConfigSlot c, ComandoGamepad k, EstadoGamepad e) {
+        BotaoGamepad b = c.comandos().get(k);
+        return b != null && e.pressionado(b);
+    }
+
+    // =====================================================
+    // ROTULOS
+    // =====================================================
+    /** Botoes que acionam a acao neste slot (0 ou 1). */
+    public List<BotaoGamepad> botoes(SlotJogador slot, AcaoJogador acao) {
+        if (!slot.usa(acao)) {
+            return List.of();
+        }
+        BotaoGamepad b = slots.get(slot).acoes().get(acao);
+        return b == null ? List.of() : List.of(b);
     }
 
     /** Rotulo curto para ajuda e HUD ("B/Bola", "D-pad ← / analógico", "—"). */
@@ -125,11 +353,31 @@ public final class MapaGamepad {
         for (BotaoGamepad b : botoes(slot, acao)) {
             partes.add(b.getRotulo());
         }
-        boolean movimento = acao == AcaoJogador.MOVER_ESQUERDA || acao == AcaoJogador.MOVER_DIREITA
-                || acao == AcaoJogador.MOVER_CIMA || acao == AcaoJogador.MOVER_BAIXO;
-        if (movimento && analogicoEsquerdoMove && slot.usa(acao)) {
+        if (isMovimento(acao) && slot.usa(acao)) {
             partes.add("analógico");
         }
         return partes.isEmpty() ? "—" : String.join(" / ", partes);
+    }
+
+    public String rotulo(SlotJogador slot, ItemGamepad item) {
+        if (item.acao() != null) {
+            return rotulo(slot, item.acao());
+        }
+        return botao(slot, item).map(BotaoGamepad::getRotulo).orElse("—");
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof MapaGamepad m && slots.equals(m.slots);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(slots);
+    }
+
+    @Override
+    public String toString() {
+        return "MapaGamepad" + slots;
     }
 }

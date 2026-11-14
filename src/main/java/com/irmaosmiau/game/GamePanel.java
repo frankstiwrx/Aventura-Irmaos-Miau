@@ -14,6 +14,14 @@ import com.irmaosmiau.controles.DetectorToques;
 import com.irmaosmiau.controles.MapaControles;
 import com.irmaosmiau.controles.PapelCombate;
 import com.irmaosmiau.controles.SlotJogador;
+import com.irmaosmiau.controles.CamadaComando;
+import com.irmaosmiau.controles.CelulaContextual;
+import com.irmaosmiau.controles.PosicaoComando;
+import com.irmaosmiau.controles.RepertorioContextual;
+import com.irmaosmiau.dispositivos.ComandoGamepad;
+import com.irmaosmiau.dispositivos.ItemGamepad;
+import com.irmaosmiau.hud.PainelDpadContextual;
+import com.irmaosmiau.preferencias.PreferenciasGamepad;
 import com.irmaosmiau.conteudo.CarregadorConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoInvalidoException;
@@ -225,7 +233,8 @@ public class GamePanel extends JPanel {
             };
     // Entrega 5D: gamepads ligados aos slots desta partida.
     private SessaoDispositivos dispositivos;
-    private final MapaGamepad mapaGamepad = MapaGamepad.experimental();
+    // Entrega 5F: esquema e botoes salvos (gamepad.json) ou o Classico da 5D.
+    private final MapaGamepad mapaGamepad = PreferenciasGamepad.global().getAtual();
 
     private boolean fimDeJogo;
     private String mensagemFim = "";
@@ -512,6 +521,8 @@ public class GamePanel extends JPanel {
         }
 
         if (pausado) {
+            // Entrega 5F: nada do D-pad contextual fica pendente durante a pausa.
+            dispositivos.limparContextual();
 
             repaint();
             return;
@@ -543,6 +554,8 @@ public class GamePanel extends JPanel {
         } else {
 
             atualizarJogadorPrincipal();
+            // Sem motor de combate no modo individual: comandos contextuais nao tem efeito.
+            dispositivos.consumirComandoContextual(SlotJogador.JOGADOR_1);
         }
 
         tick++;
@@ -1018,6 +1031,56 @@ public class GamePanel extends JPanel {
                 }
             }
         }
+
+        // Entrega 5F: D-pad contextual (3 camadas), pelo mesmo caminho das teclas.
+        for (SlotJogador slot : SlotJogador.values()) {
+            dispositivos.consumirComandoContextual(slot).ifPresent(p -> executarComandoContextual(slot, p));
+        }
+    }
+
+    /** Uma das 12 posicoes: executa a acao existente, ou avisa que esta vazia/reservada. */
+    private void executarComandoContextual(SlotJogador slot, PosicaoComando posicao) {
+        if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+            return;                                     // parceiro passivo
+        }
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
+        java.util.Optional<CelulaContextual> c = RepertorioContextual.celula(
+                RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro), posicao);
+        if (c.isEmpty()) {
+            feedback.mostrarInfo(slot.getSigla() + ": nada em " + nomeCamada(slot, posicao.camada())
+                    + " " + posicao.direcao().getSeta(), tick);
+        } else if (c.get().isExecutavel()) {
+            executarAcaoCombate(slot, c.get().acao());
+        } else {
+            feedback.mostrarInfo(c.get().rotulo() + ": ainda não disponível no jogo", tick);
+        }
+    }
+
+    /** "D-pad", "LT + D-pad", "LT + LB + D-pad" com os botoes configurados. */
+    String nomeCamada(SlotJogador slot, CamadaComando camada) {
+        String m2 = mapaGamepad.botao(slot, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2))
+                .map(b -> b.getRotulo().split("/")[0]).orElse("?");
+        String m3 = mapaGamepad.botao(slot, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_3))
+                .map(b -> b.getRotulo().split("/")[0]).orElse("?");
+        return switch (camada) {
+            case UM -> "D-pad";
+            case DOIS -> m2 + " + D-pad";
+            case TRES -> m2 + " + " + m3 + " + D-pad";
+        };
+    }
+
+    /** Entrega 5F: cruz do D-pad do slot (null se o slot nao usa o contextual agora). */
+    PainelDpadContextual.Quadro montarQuadroDpad(SlotJogador slot) {
+        if (sistemaCombate == null || !dispositivos.usaContextualAgora(slot)
+                || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+            return null;
+        }
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
+        CamadaComando camada = dispositivos.camadaAtiva(slot);
+        return PainelDpadContextual.montar(slot.getSigla(), camada, nomeCamada(slot, camada),
+                RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro));
     }
 
     /** Uma acao de combate pedida por um slot, encaminhada ao SistemaCombate. */
@@ -1869,6 +1932,16 @@ public class GamePanel extends JPanel {
         // HUD DO JOGADOR E DEBUG
         // =========================
         hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
+
+        // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
+        PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
+        if (dpad1 != null) {
+            PainelDpadContextual.desenhar(g2, 10, dpad1);
+        }
+        PainelDpadContextual.Quadro dpad2 = montarQuadroDpad(SlotJogador.JOGADOR_2);
+        if (dpad2 != null) {
+            PainelDpadContextual.desenhar(g2, LARGURA - 10 - PainelDpadContextual.LARGURA, dpad2);
+        }
 
         if (debugVisivel) {
             desenharCamadaDebug(g2);

@@ -5,6 +5,11 @@ import com.irmaosmiau.controles.AcoesContextuais;
 import com.irmaosmiau.controles.GrupoAcao;
 import com.irmaosmiau.controles.MapaControles;
 import com.irmaosmiau.controles.PapelCombate;
+import com.irmaosmiau.controles.PosicaoComando;
+import com.irmaosmiau.controles.RepertorioContextual;
+import com.irmaosmiau.dispositivos.ComandoGamepad;
+import com.irmaosmiau.dispositivos.EsquemaGamepad;
+import com.irmaosmiau.dispositivos.ItemGamepad;
 import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.dispositivos.MapaGamepad;
 
@@ -54,8 +59,21 @@ public final class AjudaControles {
             return gamepad != null && noGamepad.contains(slot);
         }
 
+        /** Entrega 5F: slot num gamepad no esquema CONTEXTUAL (tecnicas pelo D-pad). */
+        public boolean contextual(SlotJogador slot) {
+            return gamepad(slot) && gamepad.esquema(slot) == EsquemaGamepad.CONTEXTUAL;
+        }
+
         public String tecla(SlotJogador slot, AcaoJogador acao) {
+            if (contextual(slot) && gamepad.botoes(slot, acao).isEmpty()
+                    && AcoesContextuais.ACOES_DE_COMBATE.contains(acao)) {
+                return "D-pad (contexto)";
+            }
             return gamepad(slot) ? gamepad.rotulo(slot, acao) : teclado.rotulo(slot, acao);
+        }
+
+        String botaoCurto(SlotJogador slot, ComandoGamepad c) {
+            return gamepad.botao(slot, ItemGamepad.de(c)).map(b -> b.getRotulo().split("/")[0]).orElse("—");
         }
 
         public String movimento(SlotJogador slot) {
@@ -123,7 +141,12 @@ public final class AjudaControles {
     public static String agora(Rotulos r, SlotJogador slot, PapelCombate papel) {
         List<String> partes = new ArrayList<>();
         for (AcaoJogador a : AcoesContextuais.disponiveis(papel, slot)) {
-            partes.add(comando(r, slot, a));
+            java.util.Optional<PosicaoComando> pos = RepertorioContextual.posicaoDe(papel, a);
+            if (r.contextual(slot) && pos.isPresent() && r.gamepad.botoes(slot, a).isEmpty()) {
+                partes.add("D-pad" + pos.get().direcao().getSeta() + " " + a.getVerbo());
+            } else {
+                partes.add(comando(r, slot, a));
+            }
         }
         return String.join(" · ", partes);
     }
@@ -197,6 +220,14 @@ public final class AjudaControles {
                 lista.add(new Linha(g.getTitulo(), null));
                 lista.addAll(doGrupo);
             }
+        }
+        if (r.contextual(slot)) {
+            String m2 = r.botaoCurto(slot, ComandoGamepad.MODIFICADOR_CAMADA_2);
+            String m3 = r.botaoCurto(slot, ComandoGamepad.MODIFICADOR_CAMADA_3);
+            lista.add(new Linha("TÉCNICAS (contextuais, 3 camadas)", null));
+            lista.add(new Linha("Camada 1", "D-pad"));
+            lista.add(new Linha("Camada 2", m2 + " + D-pad"));
+            lista.add(new Linha("Camada 3", m2 + " + " + m3 + " + D-pad"));
         }
         if (r.gamepad(slot)) {
             lista.add(new Linha(GrupoAcao.SISTEMA.getTitulo(), null));

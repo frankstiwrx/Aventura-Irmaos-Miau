@@ -1,5 +1,7 @@
 package com.irmaosmiau.dispositivos;
 
+import com.irmaosmiau.controles.CamadaComando;
+import com.irmaosmiau.controles.PosicaoComando;
 import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.input.InputHandler;
 
@@ -34,6 +36,7 @@ import java.util.Set;
 public final class SessaoDispositivos {
 
     private final ProvedorGamepads provedor;
+    private final MapaGamepad mapa;
     private final InputHandler input;
     private final Map<SlotJogador, FonteGamepad> fontes = new EnumMap<>(SlotJogador.class);
     private final Map<SlotJogador, InfoGamepad> vinculos = new EnumMap<>(SlotJogador.class);
@@ -50,6 +53,7 @@ public final class SessaoDispositivos {
     public SessaoDispositivos(AssociacaoDispositivos associacao, ProvedorGamepads provedor,
             InputHandler input, Collection<SlotJogador> emJogo, MapaGamepad mapa) {
         this.provedor = provedor;
+        this.mapa = mapa;
         this.input = input;
         for (SlotJogador s : SlotJogador.values()) {
             if (emJogo.contains(s) && associacao.tipo(s) == TipoDispositivo.GAMEPAD) {
@@ -178,5 +182,41 @@ public final class SessaoDispositivos {
 
     public Optional<FonteGamepad> fonte(SlotJogador slot) {
         return Optional.ofNullable(fontes.get(slot));
+    }
+
+    // =====================================================
+    // COMANDOS CONTEXTUAIS (Entrega 5F)
+    // =====================================================
+    /** O slot esta num gamepad AGORA e no esquema CONTEXTUAL. */
+    public boolean usaContextualAgora(SlotJogador slot) {
+        return usaGamepadAgora(slot) && mapa.esquema(slot) == EsquemaGamepad.CONTEXTUAL;
+    }
+
+    /** Comando das 12 posicoes deste toque (vazio se nada, ou se o slot nao esta no contextual). */
+    public Optional<PosicaoComando> consumirComandoContextual(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        if (f == null || !usaContextualAgora(slot)) {
+            if (f != null) {
+                f.consumirComandoContextual();
+            }
+            return Optional.empty();
+        }
+        return f.consumirComandoContextual();
+    }
+
+    public CamadaComando camadaAtiva(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        return f == null ? CamadaComando.UM : f.camadaAtiva();
+    }
+
+    /** Pausa/fim: nada pendente; o D-pad precisa ser solto antes do proximo comando. */
+    public void limparContextual() {
+        for (FonteGamepad f : fontes.values()) {
+            f.limparContextual();
+        }
+    }
+
+    public MapaGamepad getMapa() {
+        return mapa;
     }
 }
