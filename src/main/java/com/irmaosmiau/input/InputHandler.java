@@ -4,6 +4,7 @@ import com.irmaosmiau.controles.AcaoJogador;
 import com.irmaosmiau.controles.MapaControles;
 import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.controles.TeclaFisica;
+import com.irmaosmiau.dispositivos.FonteAcoes;
 
 import java.awt.event.ActionEvent;
 import java.util.EnumMap;
@@ -32,6 +33,11 @@ import javax.swing.KeyStroke;
  *   depois de solta;
  * - getters especificos (isPegada1, isPretoRompimento...), agora apenas
  *   atalhos para {@link #isAtiva(SlotJogador, AcaoJogador)}.
+ *
+ * Entrega 5D: cada slot pode ter tambem uma FONTE externa (gamepad). A acao
+ * vale se vier do teclado do slot OU da fonte; quando um gamepad assume o
+ * slot, o teclado daquele slot e desligado para dois dispositivos nao
+ * agirem no mesmo jogador. Teclado e gamepad passam pela mesma trava.
  */
 public class InputHandler {
 
@@ -52,6 +58,8 @@ public class InputHandler {
     private final MapaControles mapa;
     private final Map<SlotJogador, Set<AcaoJogador>> pressionadas = new EnumMap<>(SlotJogador.class);
     private final TravaComandos trava = new TravaComandos();
+    private final Map<SlotJogador, FonteAcoes> fontes = new EnumMap<>(SlotJogador.class);
+    private final Set<SlotJogador> tecladoDesligado = EnumSet.noneOf(SlotJogador.class);
 
     // =====================================================
     // CONFIGURACAO DOS KEY BINDINGS
@@ -131,7 +139,47 @@ public class InputHandler {
     // =====================================================
     /** A acao esta segurada agora e nao esta travada por um bloqueio de combate. */
     public boolean isAtiva(SlotJogador slot, AcaoJogador acao) {
-        return pressionadas.get(slot).contains(acao) && trava.isLivre(slot.comando(acao));
+        return isAtivaNoTeclado(slot, acao) || isAtivaNaFonte(slot, acao);
+    }
+
+    /** Somente o teclado (respeita o teclado desligado do slot). */
+    public boolean isAtivaNoTeclado(SlotJogador slot, AcaoJogador acao) {
+        return !tecladoDesligado.contains(slot)
+                && pressionadas.get(slot).contains(acao) && trava.isLivre(slot.comando(acao));
+    }
+
+    private boolean isAtivaNaFonte(SlotJogador slot, AcaoJogador acao) {
+        FonteAcoes f = fontes.get(slot);
+        return f != null && f.isAtiva(acao);
+    }
+
+    // =====================================================
+    // FONTES EXTERNAS (Entrega 5D)
+    // =====================================================
+    /** Liga (ou com null desliga) a fonte externa do slot. */
+    public void conectarFonte(SlotJogador slot, FonteAcoes fonte) {
+        if (fonte == null) {
+            fontes.remove(slot);
+        } else {
+            fontes.put(slot, fonte);
+        }
+    }
+
+    /**
+     * Liga/desliga as teclas do slot. Desligado, o teclado continua sendo
+     * acompanhado (soltar uma tecla e registrado), so nao age; ao religar,
+     * o que estiver segurado fica travado ate ser solto.
+     */
+    public void setTecladoAtivo(SlotJogador slot, boolean ativo) {
+        if (ativo && tecladoDesligado.remove(slot)) {
+            trava.travarPressionados(slot.getPrefixoComando());
+        } else if (!ativo) {
+            tecladoDesligado.add(slot);
+        }
+    }
+
+    public boolean isTecladoAtivo(SlotJogador slot) {
+        return !tecladoDesligado.contains(slot);
     }
 
     /**
@@ -143,6 +191,9 @@ public class InputHandler {
             s.clear();
         }
         trava.soltarTodos();
+        for (FonteAcoes f : fontes.values()) {
+            f.liberarTodas();
+        }
     }
 
     // =====================================================
@@ -155,11 +206,20 @@ public class InputHandler {
      */
     public void travarComandosPressionadosBranco() {
         trava.travarPressionados(PREFIXO_BRANCO);
+        travarFonte(SlotJogador.JOGADOR_1);
+    }
+
+    private void travarFonte(SlotJogador slot) {
+        FonteAcoes f = fontes.get(slot);
+        if (f != null) {
+            f.travarPressionadas();
+        }
     }
 
     /** Igual a {@link #travarComandosPressionadosBranco()}, para o Preto. */
     public void travarComandosPressionadosPreto() {
         trava.travarPressionados(PREFIXO_PRETO);
+        travarFonte(SlotJogador.JOGADOR_2);
     }
 
     // =====================================================

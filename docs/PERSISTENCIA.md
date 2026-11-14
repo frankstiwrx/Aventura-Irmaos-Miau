@@ -8,6 +8,7 @@ Infraestrutura da 4B, ligada aos menus na 4C e **jogável na 4D** (perfis escolh
 ~/.aventura-irmaos-miau/            (Windows: C:\Users\<voce>\.aventura-irmaos-miau\)
   configuracoes.json
   controles.json                    (Entrega 5C; formato em CONTROLES.md)
+  dispositivos.json                 (Entrega 5D; teclado ou gamepad por jogador; ver CONTROLES.md)
   perfis/
     <id-do-perfil>.json
 ```

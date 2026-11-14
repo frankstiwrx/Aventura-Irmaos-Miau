@@ -5,10 +5,13 @@ import com.irmaosmiau.cenario.RegistroCenarios;
 import com.irmaosmiau.persistencia.DiretorioDados;
 import com.irmaosmiau.persistencia.RepositorioConfiguracoes;
 import com.irmaosmiau.persistencia.RepositorioControles;
+import com.irmaosmiau.persistencia.RepositorioDispositivos;
+import com.irmaosmiau.dispositivos.ServicoGamepads;
 import com.irmaosmiau.persistencia.ServicoPerfis;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.EscolhaLutador;
 import com.irmaosmiau.preferencias.PreferenciasControles;
+import com.irmaosmiau.preferencias.PreferenciasDispositivos;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.selecao.OpcoesDeLutadores;
 import com.irmaosmiau.ui.ConfiguracoesPanel;
@@ -28,7 +31,18 @@ import javax.swing.SwingUtilities;
 
 public class Main {
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
+
+        /*
+         * Entrega 5D: "java -jar <jogo>.jar --diagnostico-gamepad [segundos]"
+         * testa a leitura de gamepad pelo terminal, sem abrir o jogo. Pelo
+         * -jar o manifesto libera o acesso nativo (sem avisos do JDK).
+         */
+        if (args.length > 0 && args[0].equals("--diagnostico-gamepad")) {
+            com.irmaosmiau.dispositivos.DiagnosticoGamepad.main(
+                    java.util.Arrays.copyOfRange(args, 1, args.length));
+            return;
+        }
 
         SwingUtilities.invokeLater(() -> {
 
@@ -46,13 +60,24 @@ public class Main {
             PreferenciasJogo preferencias = prepararPreferencias();
             // Entrega 5C: controles salvos (controles.json) antes da primeira partida.
             PreferenciasControles controles = prepararControles();
+            // Entrega 5D: teclado ou gamepad em cada slot (dispositivos.json).
+            PreferenciasDispositivos dispositivos = prepararDispositivos();
 
             mostrarMenu(janela);
 
             janela.setVisible(true);
 
+            /*
+             * Entrega 5D: leitura de gamepad (GLFW, thread propria) so depois
+             * que a janela Swing existe. Qualquer falha = jogo so com teclado.
+             * Ao fechar a janela (EXIT_ON_CLOSE) a leitura e encerrada.
+             */
+            ServicoGamepads.iniciarFisico();
+            Runtime.getRuntime().addShutdownHook(new Thread(ServicoGamepads::encerrar, "encerrar-gamepad"));
+
             java.util.List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
             avisos.addAll(controles.getAvisos());
+            avisos.addAll(dispositivos.getAvisos());
             if (!avisos.isEmpty()) {
                 JOptionPane.showMessageDialog(
                         janela,
@@ -83,6 +108,14 @@ public class Main {
                 new RepositorioControles(DiretorioDados.doUsuario()));
         PreferenciasControles.instalarGlobal(controles);
         return controles;
+    }
+
+    /** Carrega dispositivos.json (sem criar nada) e instala como escolha do jogo. */
+    static PreferenciasDispositivos prepararDispositivos() {
+        PreferenciasDispositivos dispositivos = PreferenciasDispositivos.carregar(
+                new RepositorioDispositivos(DiretorioDados.doUsuario()));
+        PreferenciasDispositivos.instalarGlobal(dispositivos);
+        return dispositivos;
     }
 
     private static void mostrarMenu(JFrame janela) {

@@ -55,6 +55,7 @@ personagens ──► entities                          (Entrega 2; ainda não u
 | `hud` | HUD do jogador (painéis, estado da interação, feedback) | `HudCombate`, `DadosLutadorHud`, `FeedbackCombate` |
 | `audio` | Música em loop e efeitos WAV do classpath; silencioso se faltar arquivo ou som | `ServicoAudio`, `AudioJogo`, `CarregadorSom`, `SaidaAudio`, `SaidaJavaSound` |
 | `treino` | Sessão de treino independente de Swing (jogador x parceiro) | `SessaoTreino`, `ConfiguracaoTreino`, `ComportamentoParceiro` |
+| `dispositivos` (5D) | Gamepad: provedores (GLFW, simulado, ausente), estado, esquema experimental de botões, analógico, fonte de ações por slot e sessão de dispositivos da partida; ver [CONTROLES.md](CONTROLES.md) | `ProvedorGamepads`, `ServicoGamepads`, `MapaGamepad`, `FonteGamepad`, `SessaoDispositivos`, `glfw.ProvedorGamepadGlfw` |
 | `preferencias` | Ponto único das preferências em execução: aplica no áudio, salva, F4/F9/F10 (4C); controles (5C) | `PreferenciasJogo`, `PreferenciasControles` |
 | `selecao` | Opções de lutador por slot: oficial + perfis da base (4D) | `OpcoesDeLutadores` |
 | `combate` (5A) | Disputas técnicas determinísticas e ações durante a pegada; ver [COMBATE_AVANCADO.md](COMBATE_AVANCADO.md) | `ResolvedorDisputa`, `TipoDisputa`, `ResultadoAcaoTecnica` |
@@ -226,3 +227,15 @@ Tecla física → `AcaoJogador` (via `MapaControles`) → `InputHandler.isAtiva(
 - Janela sem foco solta todas as teclas.
 
 Detalhes, regras de conflito, como adicionar ações e o plano das ações contextuais: [CONTROLES.md](CONTROLES.md).
+
+## Gamepad (Entrega 5D)
+
+Dispositivo → `ProvedorGamepads` → `EstadoGamepad` (imutável) → `FonteGamepad` (ações lógicas,
+mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → `GamePanel` → motor.
+
+- Única dependência de produção: LWJGL 3.4.3 (GLFW), BSD-3; JAR único via `maven-shade-plugin`.
+- `ProvedorGamepadGlfw` carregado por reflexão; qualquer falha = só teclado.
+- Leitura numa thread própria; o jogo só lê o último estado publicado (nada bloqueia o Swing).
+- `GamePanel.atualizar()` chama `SessaoDispositivos.atualizar()` no início de cada tick, inclusive
+  pausado (Start = pausa); foco perdido/ganho chega à sessão pelo `WindowFocusListener` da 5C.
+- `dispositivos.json` próprio; nenhum formato anterior mudou.

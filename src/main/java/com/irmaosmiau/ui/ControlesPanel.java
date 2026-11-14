@@ -6,8 +6,14 @@ import com.irmaosmiau.controles.MapaControles;
 import com.irmaosmiau.controles.ProblemaControle;
 import com.irmaosmiau.controles.SlotJogador;
 import com.irmaosmiau.controles.TeclaFisica;
+import com.irmaosmiau.dispositivos.AssociacaoDispositivos;
+import com.irmaosmiau.dispositivos.InfoGamepad;
+import com.irmaosmiau.dispositivos.ProvedorGamepads;
+import com.irmaosmiau.dispositivos.ServicoGamepads;
+import com.irmaosmiau.dispositivos.TipoDispositivo;
 import com.irmaosmiau.persistencia.PersistenciaException;
 import com.irmaosmiau.preferencias.PreferenciasControles;
+import com.irmaosmiau.preferencias.PreferenciasDispositivos;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -45,6 +52,9 @@ import javax.swing.JToggleButton;
  * - Tecla ja usada (inclusive pelo outro jogador): pergunta se deve trocar.
  * - As mudancas sao uma copia: so valem nas partidas depois de SALVAR.
  *   VOLTAR com alteracoes pergunta salvar / descartar / cancelar.
+ * - Entrega 5D: "Dispositivo" escolhe teclado ou gamepad para o jogador
+ *   selecionado e mostra os gamepads conectados (atualizado a cada segundo).
+ *   As teclas continuam valendo como reserva quando nao ha gamepad livre.
  */
 public final class ControlesPanel extends JPanel {
 
@@ -53,6 +63,13 @@ public final class ControlesPanel extends JPanel {
     private final transient PreferenciasControles preferencias;
     private final transient Dialogos dialogos;
     private final transient Runnable aoVoltar;
+    private final transient PreferenciasDispositivos preferenciasDispositivos;
+    private final transient ProvedorGamepads gamepads;
+    private transient AssociacaoDispositivos edicaoDispositivos;
+    private final JComboBox<TipoDispositivo> dispositivo = new JComboBox<>(TipoDispositivo.values());
+    private final JLabel situacaoGamepads = EstiloTelas.texto(" ", EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE);
+    private final javax.swing.Timer relogioGamepads = new javax.swing.Timer(1000, e -> mostrarSituacaoGamepads());
+    private boolean mostrandoDispositivo;
 
     private transient MapaControles edicao;
     private SlotJogador slotAtual = SlotJogador.JOGADOR_1;
@@ -72,6 +89,15 @@ public final class ControlesPanel extends JPanel {
     private final transient KeyEventDispatcher captura = this::capturarEvento;
 
     public ControlesPanel(PreferenciasControles preferencias, Dialogos dialogos, Runnable aoVoltar) {
+        this(preferencias, PreferenciasDispositivos.global(), ServicoGamepads.global(), dialogos, aoVoltar);
+    }
+
+    /** Entrega 5D: com a escolha de dispositivo de cada jogador. */
+    public ControlesPanel(PreferenciasControles preferencias, PreferenciasDispositivos preferenciasDispositivos,
+            ProvedorGamepads gamepads, Dialogos dialogos, Runnable aoVoltar) {
+        this.preferenciasDispositivos = preferenciasDispositivos;
+        this.gamepads = gamepads;
+        this.edicaoDispositivos = preferenciasDispositivos.getAtual();
         this.preferencias = preferencias;
         this.dialogos = dialogos;
         this.aoVoltar = aoVoltar;
@@ -83,7 +109,8 @@ public final class ControlesPanel extends JPanel {
         montar();
         montarLista();
 
-        List<String> avisos = preferencias.getAvisos();
+        List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
+        avisos.addAll(preferenciasDispositivos.getAvisos());
         if (!avisos.isEmpty()) {
             mostrarStatus(avisos.get(avisos.size() - 1), true);
         } else if (!edicao.isValido()) {
@@ -95,6 +122,9 @@ public final class ControlesPanel extends JPanel {
         restaurar.addActionListener(e -> restaurarPadroes());
         salvar.addActionListener(e -> salvar());
         voltar.addActionListener(e -> voltar());
+        dispositivo.addActionListener(e -> aoMudarDispositivo());
+        mostrarDispositivo();
+        mostrarSituacaoGamepads();
     }
 
     // =====================================================
@@ -116,7 +146,22 @@ public final class ControlesPanel extends JPanel {
         }
         botaoJogador1.setSelected(true);
         topo.add(slots, BorderLayout.EAST);
-        add(topo, BorderLayout.NORTH);
+
+        // Entrega 5D: dispositivo do jogador selecionado.
+        JPanel linhaDispositivo = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        linhaDispositivo.setOpaque(false);
+        linhaDispositivo.add(EstiloTelas.rotulo("Dispositivo:"));
+        dispositivo.setFont(EstiloTelas.NORMAL);
+        dispositivo.setPreferredSize(new Dimension(130, 24));
+        linhaDispositivo.add(dispositivo);
+        situacaoGamepads.setPreferredSize(new Dimension(500, 24));
+        linhaDispositivo.add(situacaoGamepads);
+
+        JPanel norte = new JPanel(new BorderLayout(0, 6));
+        norte.setOpaque(false);
+        norte.add(topo, BorderLayout.NORTH);
+        norte.add(linhaDispositivo, BorderLayout.SOUTH);
+        add(norte, BorderLayout.NORTH);
 
         lista.setOpaque(false);
         rolagem.setOpaque(false);
@@ -220,6 +265,7 @@ public final class ControlesPanel extends JPanel {
         cancelarCaptura();
         slotAtual = slot;
         (slot == SlotJogador.JOGADOR_1 ? botaoJogador1 : botaoJogador2).setSelected(true);
+        mostrarDispositivo();
         montarLista();
         rolagem.getVerticalScrollBar().setValue(0);
     }
@@ -314,12 +360,70 @@ public final class ControlesPanel extends JPanel {
     void restaurarPadroes() {
         cancelarCaptura();
         edicao = MapaControles.padrao();
+        edicaoDispositivos = AssociacaoDispositivos.padrao();
+        mostrarDispositivo();
         atualizarTeclas();
-        mostrarStatus("Controles padrão restaurados (os dois jogadores). Clique em SALVAR para mantê-los.", false);
+        mostrarStatus("Controles padrão restaurados (os dois jogadores, no teclado). Clique em SALVAR para mantê-los.",
+                false);
     }
 
     boolean temAlteracoesNaoSalvas() {
-        return !edicao.equals(preferencias.getAtual());
+        return !edicao.equals(preferencias.getAtual())
+                || !edicaoDispositivos.equals(preferenciasDispositivos.getAtual());
+    }
+
+    // =====================================================
+    // DISPOSITIVO (Entrega 5D)
+    // =====================================================
+    private void mostrarDispositivo() {
+        mostrandoDispositivo = true;
+        try {
+            dispositivo.setSelectedItem(edicaoDispositivos.tipo(slotAtual));
+        } finally {
+            mostrandoDispositivo = false;
+        }
+    }
+
+    private void aoMudarDispositivo() {
+        if (mostrandoDispositivo) {
+            return;
+        }
+        selecionarDispositivo((TipoDispositivo) dispositivo.getSelectedItem());
+    }
+
+    void selecionarDispositivo(TipoDispositivo tipo) {
+        if (tipo == null || tipo == edicaoDispositivos.tipo(slotAtual)) {
+            return;
+        }
+        edicaoDispositivos = edicaoDispositivos.com(slotAtual, tipo);
+        mostrarDispositivo();
+        mostrarStatus(tipo == TipoDispositivo.GAMEPAD
+                ? slotAtual.getSigla() + " usará um gamepad (esquema experimental); sem gamepad livre, "
+                        + "as teclas abaixo continuam valendo. Alterações não salvas."
+                : slotAtual.getSigla() + " usará o teclado. Alterações não salvas.", false);
+    }
+
+    void mostrarSituacaoGamepads() {
+        String texto;
+        if (!gamepads.isDisponivel()) {
+            texto = "Gamepad indisponível: " + gamepads.descricao() + " (o teclado funciona normalmente).";
+        } else {
+            List<InfoGamepad> lista = gamepads.conectados();
+            String nomes = lista.stream().map(InfoGamepad::nome).collect(Collectors.joining(", "));
+            texto = lista.isEmpty()
+                    ? "Nenhum gamepad conectado (" + gamepads.descricao() + ")."
+                    : lista.size() + (lista.size() == 1 ? " gamepad: " : " gamepads: ") + nomes;
+        }
+        if (texto.length() > 90) {
+            texto = texto.substring(0, 87) + "...";
+        }
+        situacaoGamepads.setText(texto);
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        relogioGamepads.start();
     }
 
     /** @return true se gravou */
@@ -331,6 +435,7 @@ public final class ControlesPanel extends JPanel {
         }
         try {
             preferencias.salvar(edicao);
+            preferenciasDispositivos.salvar(edicaoDispositivos);
             mostrarStatus("Controles salvos. Valem a partir da próxima partida.", false);
             status.setForeground(EstiloTelas.OK);
             return true;
@@ -355,6 +460,7 @@ public final class ControlesPanel extends JPanel {
             }
             if (r == Dialogos.Resposta.NAO) {
                 edicao = preferencias.getAtual();
+                edicaoDispositivos = preferenciasDispositivos.getAtual();
             }
         }
         aoVoltar.run();
@@ -372,6 +478,7 @@ public final class ControlesPanel extends JPanel {
 
     @Override
     public void removeNotify() {
+        relogioGamepads.stop();
         // Saiu da tela no meio de uma captura: nada fica consumindo teclas.
         KeyboardFocusManager.getCurrentKeyboardFocusManager().removeKeyEventDispatcher(captura);
         capturando = null;
@@ -383,6 +490,18 @@ public final class ControlesPanel extends JPanel {
     // =====================================================
     boolean capturarEventoParaTestes(KeyEvent e) {
         return capturarEvento(e);
+    }
+
+    AssociacaoDispositivos dispositivosEmEdicao() {
+        return edicaoDispositivos;
+    }
+
+    JComboBox<TipoDispositivo> seletorDispositivo() {
+        return dispositivo;
+    }
+
+    String textoSituacaoGamepads() {
+        return situacaoGamepads.getText();
     }
 
     MapaControles mapaEmEdicao() {

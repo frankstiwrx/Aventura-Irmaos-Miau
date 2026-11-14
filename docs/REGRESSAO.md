@@ -9,8 +9,11 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 404, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 447, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
+
+`mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
+e `java -jar … --diagnostico-gamepad 0`.
 
 ```bash
 git diff --stat -- src/main/java/com/irmaosmiau/entities src/main/java/com/irmaosmiau/editor src/main/java/com/irmaosmiau/combate/RegistroAnimacoesCombate.java
@@ -152,6 +155,30 @@ R rolar, F deitar, G sprawl, **H pegada 1**. Preto: setas, N, M, K, B, L, O, J, 
 - [ ] RESTAURAR PADRÕES + SALVAR volta tudo ao original
 - [ ] Editar `controles.json` à mão com lixo: o jogo abre com aviso e controles padrão; o arquivo só vira `.corrompido-…` ao salvar
 - [ ] Modo individual (Branco ou Preto) usa as teclas do Jogador 1
+
+### Gamepad (Entrega 5D) — ver CONTROLES.md
+
+Sem controle conectado:
+- [ ] `java -jar target/AventuraIrmaosMiau-1.0-SNAPSHOT.jar --diagnostico-gamepad 5`: "Leitura de gamepad: OK - GLFW …", "Gamepads conectados: 0", sem WARNING
+- [ ] O jogo abre e todos os modos funcionam só com teclado, como na 5C; a pasta de dados não ganha arquivos só por jogar
+- [ ] CONFIGURAÇÕES → CONTROLES: linha "Dispositivo" mostra "Nenhum gamepad conectado (GLFW …)"
+- [ ] J2 em Gamepad + SALVAR; Os Dois: HUD avisa "J2: nenhum gamepad livre · usando o teclado" e as setas funcionam
+- [ ] Rodar com `-Dirmaosmiau.gamepad=desligado`: a linha mostra o motivo; tudo funciona no teclado
+
+Com um controle (Xbox e/ou PlayStation; USB e Bluetooth):
+- [ ] Diagnóstico por 20 s: o controle aparece com nome; cada botão mostra o rótulo e as ações esperadas
+- [ ] J2 em Gamepad: Os Dois → HUD "J2: GAMEPAD · <nome>"; analógico/D-pad movem o Preto; setas não movem
+- [ ] J1 em Gamepad: analógico anda e troca de linha; ruído em repouso não move; OESTE (X/Quadrado) faz a PEGADA_1 (3 quadros, custo 3, firmeza)
+- [ ] LESTE (B/Bola) desequilibra (J1) / rompe (J2); NORTE (Y/Triângulo) reforça uma vez por toque
+- [ ] LB/L1 segurado + analógico: arrasto conjunto; analógico sem LB rompe a pegada
+- [ ] Segurar o analógico durante os 30 quadros da pegada: ninguém sai andando sozinho
+- [ ] Start pausa e despausa; com a ajuda aberta, Start fecha a ajuda
+- [ ] Desconectar o cabo/Bluetooth andando: o lutador para na hora, "GAMEPAD DESCONECTADO · teclado ativo", teclado assume
+- [ ] Reconectar segurando um botão: nada dispara até soltar; "GAMEPAD CONECTADO"
+- [ ] Alt+Tab segurando o analógico: ao voltar, nada anda sozinho
+- [ ] Dois controles com J1 e J2 em Gamepad: cada um controla um jogador; nunca os dois
+- [ ] Treino com gamepad: Y/T/arrasto funcionam; parceiro passivo; F5 reinicia
+- [ ] Fechar o jogo com o controle conectado: o processo termina sem travar
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

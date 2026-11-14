@@ -26,10 +26,14 @@ import com.irmaosmiau.hud.AjudaControles;
 import com.irmaosmiau.hud.DadosLutadorHud;
 import com.irmaosmiau.hud.FeedbackCombate;
 import com.irmaosmiau.hud.HudCombate;
+import com.irmaosmiau.dispositivos.MapaGamepad;
+import com.irmaosmiau.dispositivos.ServicoGamepads;
+import com.irmaosmiau.dispositivos.SessaoDispositivos;
 import com.irmaosmiau.input.InputHandler;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.EscolhaLutador;
 import com.irmaosmiau.preferencias.PreferenciasControles;
+import com.irmaosmiau.preferencias.PreferenciasDispositivos;
 import com.irmaosmiau.preferencias.PreferenciasJogo;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
 import com.irmaosmiau.treino.SessaoTreino;
@@ -211,7 +215,17 @@ public class GamePanel extends JPanel {
                 public void windowLostFocus(java.awt.event.WindowEvent e) {
                     liberarTeclas();
                 }
+
+                @Override
+                public void windowGainedFocus(java.awt.event.WindowEvent e) {
+                    if (dispositivos != null) {
+                        dispositivos.setFocado(true);
+                    }
+                }
             };
+    // Entrega 5D: gamepads ligados aos slots desta partida.
+    private SessaoDispositivos dispositivos;
+    private final MapaGamepad mapaGamepad = MapaGamepad.experimental();
 
     private boolean fimDeJogo;
     private String mensagemFim = "";
@@ -414,6 +428,17 @@ public class GamePanel extends JPanel {
         input
                 = new InputHandler(this, PreferenciasControles.global().getAtual());
 
+        // Entrega 5D: teclado e/ou gamepad por slot. So os slots em campo:
+        // no treino e no modo individual, apenas o Jogador 1.
+        dispositivos = new SessaoDispositivos(
+                PreferenciasDispositivos.global().getAtual(),
+                ServicoGamepads.global(),
+                input,
+                modoDoisMiaus && !modoTreino
+                        ? List.of(SlotJogador.JOGADOR_1, SlotJogador.JOGADOR_2)
+                        : List.of(SlotJogador.JOGADOR_1),
+                mapaGamepad);
+
         // =========================
         // PAUSA
         // =========================
@@ -475,6 +500,15 @@ public class GamePanel extends JPanel {
 
         if (fimDeJogo) {
             return;
+        }
+
+        // Entrega 5D: gamepads (conexao, desconexao, leitura e Start = pausa).
+        dispositivos.atualizar();
+        for (String aviso : dispositivos.consumirMensagens()) {
+            feedback.mostrarInfo(aviso, tick);
+        }
+        if (dispositivos.consumirPausa()) {
+            alternarPausa();
         }
 
         if (pausado) {
@@ -1439,19 +1473,22 @@ public class GamePanel extends JPanel {
 
     /** Conteudo da ajuda: colunas por jogador, acoes uteis agora e atalhos do sistema. */
     PainelAjudaControles.Conteudo montarAjudaControles() {
-        MapaControles mapa = input.getMapa();
+        AjudaControles.Rotulos mapa = rotulos();
         List<PainelAjudaControles.Coluna> colunas = new java.util.ArrayList<>();
         List<String> agora = new java.util.ArrayList<>();
         if (modoDoisMiaus && !modoTreino) {
-            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 1 · " + jogadorBranco.getNome(),
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 1 · " + jogadorBranco.getNome()
+                    + dispositivoNoTitulo(SlotJogador.JOGADOR_1),
                     AjudaControles.linhas(mapa, SlotJogador.JOGADOR_1)));
-            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 2 · " + jogadorPreto.getNome(),
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR 2 · " + jogadorPreto.getNome()
+                    + dispositivoNoTitulo(SlotJogador.JOGADOR_2),
                     AjudaControles.linhas(mapa, SlotJogador.JOGADOR_2)));
             adicionarAgora(agora, "J1", mapa, SlotJogador.JOGADOR_1, jogadorBranco);
             adicionarAgora(agora, "J2", mapa, SlotJogador.JOGADOR_2, jogadorPreto);
         } else {
             IrmaoMiau jogador = modoDoisMiaus ? jogadorBranco : jogadorPrincipal;
-            colunas.add(new PainelAjudaControles.Coluna("JOGADOR · " + jogador.getNome(),
+            colunas.add(new PainelAjudaControles.Coluna("JOGADOR · " + jogador.getNome()
+                    + dispositivoNoTitulo(SlotJogador.JOGADOR_1),
                     AjudaControles.linhas(mapa, SlotJogador.JOGADOR_1)));
             if (modoDoisMiaus) {
                 adicionarAgora(agora, "J1", mapa, SlotJogador.JOGADOR_1, jogadorBranco);
@@ -1461,7 +1498,22 @@ public class GamePanel extends JPanel {
                 modoTreino ? "Parceiro de treino passivo." : "");
     }
 
-    private void adicionarAgora(List<String> agora, String sigla, MapaControles mapa,
+    /** Entrega 5D: teclas ou botoes, conforme o dispositivo que controla cada slot AGORA. */
+    AjudaControles.Rotulos rotulos() {
+        java.util.Set<SlotJogador> noGamepad = java.util.EnumSet.noneOf(SlotJogador.class);
+        for (SlotJogador s : SlotJogador.values()) {
+            if (dispositivos.usaGamepadAgora(s)) {
+                noGamepad.add(s);
+            }
+        }
+        return new AjudaControles.Rotulos(input.getMapa(), mapaGamepad, noGamepad);
+    }
+
+    private String dispositivoNoTitulo(SlotJogador slot) {
+        return dispositivos.usaGamepadAgora(slot) ? " · GAMEPAD" : "";
+    }
+
+    private void adicionarAgora(List<String> agora, String sigla, AjudaControles.Rotulos mapa,
             SlotJogador slot, IrmaoMiau lutador) {
         String texto = AjudaControles.agora(mapa, slot, PapelCombate.de(sistemaCombate, lutador));
         if (!texto.isEmpty()) {
@@ -1471,6 +1523,9 @@ public class GamePanel extends JPanel {
 
     /** Entrega 5C: janela sem foco = nenhuma tecla continua segurada. */
     private void liberarTeclas() {
+        if (dispositivos != null) {
+            dispositivos.setFocado(false);
+        }
         input.liberarTodas();
     }
 
@@ -2114,20 +2169,20 @@ public class GamePanel extends JPanel {
                     DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
                     DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
             );
-            dica = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, input.getMapa(),
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, rotulos(),
                     PapelCombate.de(sistemaCombate, jogadorBranco), PapelCombate.de(sistemaCombate, jogadorPreto));
         } else if (modoDoisMiaus) {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorBranco, "J1"),
                     DadosLutadorHud.de(jogadorPreto, "J2")
             );
-            dica = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, input.getMapa(),
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, rotulos(),
                     PapelCombate.de(sistemaCombate, jogadorBranco), PapelCombate.de(sistemaCombate, jogadorPreto));
         } else {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorPrincipal, "JOGADOR")
             );
-            dica = AjudaControles.dicaHud(AjudaControles.Modo.INDIVIDUAL, input.getMapa(),
+            dica = AjudaControles.dicaHud(AjudaControles.Modo.INDIVIDUAL, rotulos(),
                     PapelCombate.LIVRE, PapelCombate.LIVRE);
         }
 
@@ -2280,6 +2335,14 @@ public class GamePanel extends JPanel {
     /** Entrega 5C: o mesmo que acontece quando a janela perde o foco. */
     void simularPerdaDeFocoParaTestes() {
         liberarTeclas();
+    }
+
+    SessaoDispositivos getSessaoDispositivos() {
+        return dispositivos;
+    }
+
+    void simularFocoDeVoltaParaTestes() {
+        dispositivos.setFocado(true);
     }
 
     MapaControles getMapaControles() {

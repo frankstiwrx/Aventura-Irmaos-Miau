@@ -1,0 +1,182 @@
+package com.irmaosmiau.dispositivos;
+
+import com.irmaosmiau.controles.SlotJogador;
+import com.irmaosmiau.input.InputHandler;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
+/**
+ * Dispositivos de UMA partida (Entrega 5D): liga gamepads aos slots que
+ * escolheram GAMEPAD e cuida do ciclo de vida a cada tick.
+ *
+ * Regras (explicitas e previsiveis):
+ * - slots resolvidos em ordem (Jogador 1, depois Jogador 2); cada um recebe o
+ *   primeiro gamepad conectado que NAO esteja com o outro slot: um gamepad
+ *   nunca controla os dois jogadores;
+ * - enquanto um gamepad controla o slot, o teclado daquele slot fica
+ *   desligado (dois dispositivos nao agem no mesmo jogador);
+ * - sem gamepad livre (ou sem suporte), o slot usa o teclado e o jogador e avisado;
+ * - desconectou: todas as acoes do gamepad sao soltas na hora, o teclado do
+ *   slot volta e o jogador e avisado;
+ * - reconectou (ou outro gamepad livre apareceu): o slot volta a usar o
+ *   gamepad, preferindo o mesmo aparelho; botoes ja segurados nesse momento
+ *   ficam travados ate serem soltos;
+ * - janela sem foco: o gamepad e ignorado; ao voltar o foco, o que estiver
+ *   segurado fica travado ate ser solto.
+ */
+public final class SessaoDispositivos {
+
+    private final ProvedorGamepads provedor;
+    private final InputHandler input;
+    private final Map<SlotJogador, FonteGamepad> fontes = new EnumMap<>(SlotJogador.class);
+    private final Map<SlotJogador, InfoGamepad> vinculos = new EnumMap<>(SlotJogador.class);
+    private final Map<SlotJogador, String> identidadeAnterior = new EnumMap<>(SlotJogador.class);
+    private final Set<SlotJogador> avisadoSemGamepad = EnumSet.noneOf(SlotJogador.class);
+    private final List<String> mensagens = new ArrayList<>();
+    private boolean focado = true;
+    private boolean pausaPedida;
+
+    /**
+     * @param emJogo slots que existem nesta partida (o treino e o modo
+     *               individual usam so o Jogador 1)
+     */
+    public SessaoDispositivos(AssociacaoDispositivos associacao, ProvedorGamepads provedor,
+            InputHandler input, Collection<SlotJogador> emJogo, MapaGamepad mapa) {
+        this.provedor = provedor;
+        this.input = input;
+        for (SlotJogador s : SlotJogador.values()) {
+            if (emJogo.contains(s) && associacao.tipo(s) == TipoDispositivo.GAMEPAD) {
+                FonteGamepad f = new FonteGamepad(s, mapa);
+                fontes.put(s, f);
+                input.conectarFonte(s, f);
+            }
+        }
+        atualizar();
+    }
+
+    /** Uma vez por tick do jogo (inclusive pausado, para o botao de pausa). */
+    public void atualizar() {
+        if (fontes.isEmpty()) {
+            return;
+        }
+        // 1) Quem perdeu o gamepad.
+        for (SlotJogador s : fontes.keySet()) {
+            InfoGamepad v = vinculos.get(s);
+            if (v != null && provedor.estado(v.chave()).isEmpty()) {
+                vinculos.remove(s);
+                identidadeAnterior.put(s, v.identidade());
+                FonteGamepad f = fontes.get(s);
+                f.atualizar(null);
+                f.travarNaProximaLeitura();
+                input.setTecladoAtivo(s, true);
+                // O aviso de desconexao ja diz que o teclado assumiu; nao repetir "nenhum gamepad livre".
+                avisadoSemGamepad.add(s);
+                mensagens.add(s.getSigla() + ": GAMEPAD DESCONECTADO · teclado ativo");
+            }
+        }
+        // 2) Quem esta sem gamepad tenta um livre.
+        List<InfoGamepad> conectados = provedor.conectados();
+        for (SlotJogador s : fontes.keySet()) {
+            if (vinculos.containsKey(s)) {
+                continue;
+            }
+            Optional<InfoGamepad> livre = escolherLivre(s, conectados);
+            if (livre.isPresent()) {
+                vincular(s, livre.get());
+            } else if (avisadoSemGamepad.add(s)) {
+                mensagens.add(s.getSigla() + ": nenhum gamepad livre · usando o teclado");
+            }
+        }
+        // 3) Leitura.
+        for (Map.Entry<SlotJogador, FonteGamepad> e : fontes.entrySet()) {
+            InfoGamepad v = vinculos.get(e.getKey());
+            if (v == null) {
+                continue;
+            }
+            EstadoGamepad estado = focado ? provedor.estado(v.chave()).orElse(null) : null;
+            e.getValue().atualizar(estado);
+            if (e.getValue().consumirPausa()) {
+                pausaPedida = true;
+            }
+        }
+    }
+
+    private Optional<InfoGamepad> escolherLivre(SlotJogador slot, List<InfoGamepad> conectados) {
+        List<InfoGamepad> livres = new ArrayList<>();
+        for (InfoGamepad g : conectados) {
+            boolean ocupado = vinculos.values().stream().anyMatch(v -> v.chave().equals(g.chave()));
+            if (!ocupado) {
+                livres.add(g);
+            }
+        }
+        String anterior = identidadeAnterior.get(slot);
+        if (anterior != null) {
+            for (InfoGamepad g : livres) {
+                if (anterior.equals(g.identidade())) {
+                    return Optional.of(g);
+                }
+            }
+        }
+        return livres.stream().findFirst();
+    }
+
+    private void vincular(SlotJogador slot, InfoGamepad gamepad) {
+        boolean reconexao = identidadeAnterior.containsKey(slot) || avisadoSemGamepad.contains(slot);
+        vinculos.put(slot, gamepad);
+        avisadoSemGamepad.remove(slot);
+        FonteGamepad f = fontes.get(slot);
+        f.travarNaProximaLeitura();
+        input.setTecladoAtivo(slot, false);
+        mensagens.add(slot.getSigla() + ": " + (reconexao ? "GAMEPAD CONECTADO" : "GAMEPAD") + " · " + gamepad.nome());
+    }
+
+    /** Janela ganhou/perdeu o foco. */
+    public void setFocado(boolean agora) {
+        if (agora == focado) {
+            return;
+        }
+        focado = agora;
+        for (FonteGamepad f : fontes.values()) {
+            if (agora) {
+                f.travarNaProximaLeitura();
+            } else {
+                f.atualizar(null);
+                f.liberarTodas();
+            }
+        }
+    }
+
+    /** true uma vez por toque no botao de pausa de qualquer gamepad em uso. */
+    public boolean consumirPausa() {
+        boolean p = pausaPedida;
+        pausaPedida = false;
+        return p;
+    }
+
+    /** Avisos novos (conexao/desconexao) para o HUD; a lista e esvaziada. */
+    public List<String> consumirMensagens() {
+        List<String> m = List.copyOf(mensagens);
+        mensagens.clear();
+        return m;
+    }
+
+    /** Gamepad controlando o slot agora (vazio = teclado). */
+    public Optional<InfoGamepad> gamepadDo(SlotJogador slot) {
+        return Optional.ofNullable(vinculos.get(slot));
+    }
+
+    public boolean usaGamepadAgora(SlotJogador slot) {
+        return vinculos.containsKey(slot);
+    }
+
+    public Optional<FonteGamepad> fonte(SlotJogador slot) {
+        return Optional.ofNullable(fontes.get(slot));
+    }
+}

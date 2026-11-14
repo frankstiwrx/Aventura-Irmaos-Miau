@@ -6,14 +6,20 @@ import com.irmaosmiau.controles.GrupoAcao;
 import com.irmaosmiau.controles.MapaControles;
 import com.irmaosmiau.controles.PapelCombate;
 import com.irmaosmiau.controles.SlotJogador;
+import com.irmaosmiau.dispositivos.MapaGamepad;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Textos de ajuda gerados a partir dos controles CONFIGURADOS (Entrega 5C):
  * nenhuma letra fixa no codigo do HUD. Com os controles padrao, o modo
  * individual mostra exatamente a mesma faixa de antes.
+ *
+ * Entrega 5D: o slot que estiver usando um gamepad mostra os botoes do
+ * esquema experimental (MapaGamepad) no lugar das teclas.
  */
 public final class AjudaControles {
 
@@ -34,11 +40,41 @@ public final class AjudaControles {
         }
     }
 
+    /**
+     * De onde vem o rotulo de cada acao: teclas do slot ou, para os slots em
+     * {@code noGamepad}, botoes do gamepad.
+     */
+    public record Rotulos(MapaControles teclado, MapaGamepad gamepad, Set<SlotJogador> noGamepad) {
+
+        public static Rotulos soTeclado(MapaControles teclado) {
+            return new Rotulos(teclado, null, EnumSet.noneOf(SlotJogador.class));
+        }
+
+        public boolean gamepad(SlotJogador slot) {
+            return gamepad != null && noGamepad.contains(slot);
+        }
+
+        public String tecla(SlotJogador slot, AcaoJogador acao) {
+            return gamepad(slot) ? gamepad.rotulo(slot, acao) : teclado.rotulo(slot, acao);
+        }
+
+        public String movimento(SlotJogador slot) {
+            return gamepad(slot) ? "analógico" : AjudaControles.movimento(teclado, slot);
+        }
+
+        public String arrasto(SlotJogador slot) {
+            if (gamepad(slot)) {
+                return tecla(slot, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO) + "+analógico";
+            }
+            return AjudaControles.arrasto(teclado, slot);
+        }
+    }
+
     private AjudaControles() {
     }
 
     // =====================================================
-    // PEDACOS
+    // PEDACOS (teclado)
     // =====================================================
     public static String tecla(MapaControles mapa, SlotJogador slot, AcaoJogador acao) {
         return mapa.rotulo(slot, acao);
@@ -69,17 +105,25 @@ public final class AjudaControles {
 
     /** "TECLA verbo" de uma acao (o arrasto mostra a combinacao). */
     public static String comando(MapaControles mapa, SlotJogador slot, AcaoJogador acao) {
+        return comando(Rotulos.soTeclado(mapa), slot, acao);
+    }
+
+    public static String comando(Rotulos r, SlotJogador slot, AcaoJogador acao) {
         if (acao == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO) {
-            return arrasto(mapa, slot) + " " + acao.getVerbo();
+            return r.arrasto(slot) + " " + acao.getVerbo();
         }
-        return tecla(mapa, slot, acao) + " " + acao.getVerbo();
+        return r.tecla(slot, acao) + " " + acao.getVerbo();
     }
 
     /** Acoes de combate uteis agora, com as teclas configuradas. Vazio = nenhuma. */
     public static String agora(MapaControles mapa, SlotJogador slot, PapelCombate papel) {
+        return agora(Rotulos.soTeclado(mapa), slot, papel);
+    }
+
+    public static String agora(Rotulos r, SlotJogador slot, PapelCombate papel) {
         List<String> partes = new ArrayList<>();
         for (AcaoJogador a : AcoesContextuais.disponiveis(papel, slot)) {
-            partes.add(comando(mapa, slot, a));
+            partes.add(comando(r, slot, a));
         }
         return String.join(" · ", partes);
     }
@@ -88,21 +132,26 @@ public final class AjudaControles {
     // FAIXA DE DICAS DO HUD (uma linha, contextual)
     // =====================================================
     public static String dicaHud(Modo modo, MapaControles mapa, PapelCombate papelJ1, PapelCombate papelJ2) {
+        return dicaHud(modo, Rotulos.soTeclado(mapa), papelJ1, papelJ2);
+    }
+
+    public static String dicaHud(Modo modo, Rotulos r, PapelCombate papelJ1, PapelCombate papelJ2) {
         SlotJogador j1 = SlotJogador.JOGADOR_1;
+        String pausa = r.gamepad(j1) ? "Start/ESC pausa" : "ESC pausa";
         switch (modo) {
             case INDIVIDUAL:
-                return movimento(mapa, j1) + " mover · "
-                        + tecla(mapa, j1, AcaoJogador.CORRER) + " correr · "
-                        + tecla(mapa, j1, AcaoJogador.PULAR) + " pular · "
-                        + tecla(mapa, j1, AcaoJogador.PULO_CURTO) + " pulo curto · "
-                        + tecla(mapa, j1, AcaoJogador.AGACHAR) + " agachar · ESC pausa · F4 cenário";
+                return r.movimento(j1) + " mover · "
+                        + r.tecla(j1, AcaoJogador.CORRER) + " correr · "
+                        + r.tecla(j1, AcaoJogador.PULAR) + " pular · "
+                        + r.tecla(j1, AcaoJogador.PULO_CURTO) + " pulo curto · "
+                        + r.tecla(j1, AcaoJogador.AGACHAR) + " agachar · " + pausa + " · F4 cenário";
             case TREINO:
-                return juntar(movimento(mapa, j1) + " · " + tecla(mapa, j1, AcaoJogador.PULAR) + " pular",
-                        agora(mapa, j1, papelJ1), "F5 reiniciar · ESC pausa/controles");
+                return juntar(r.movimento(j1) + " · " + r.tecla(j1, AcaoJogador.PULAR) + " pular",
+                        agora(r, j1, papelJ1), "F5 reiniciar · " + pausa + "/controles");
             default:
                 SlotJogador j2 = SlotJogador.JOGADOR_2;
-                return "J1: " + juntar(movimento(mapa, j1), agora(mapa, j1, papelJ1))
-                        + "   J2: " + juntar(movimento(mapa, j2), agora(mapa, j2, papelJ2))
+                return "J1: " + juntar(r.movimento(j1), agora(r, j1, papelJ1))
+                        + "   J2: " + juntar(r.movimento(j2), agora(r, j2, papelJ2))
                         + "   ESC pausa/controles · F3 · F4";
         }
     }
@@ -122,15 +171,25 @@ public final class AjudaControles {
     // =====================================================
     /** Todas as acoes do slot, agrupadas, com as teclas configuradas. */
     public static List<Linha> linhas(MapaControles mapa, SlotJogador slot) {
+        return linhas(Rotulos.soTeclado(mapa), slot);
+    }
+
+    /** Idem, com os botoes do gamepad se o slot estiver usando um (5D). */
+    public static List<Linha> linhas(Rotulos r, SlotJogador slot) {
         List<Linha> lista = new ArrayList<>();
         for (GrupoAcao g : GrupoAcao.values()) {
             List<Linha> doGrupo = new ArrayList<>();
             for (AcaoJogador a : slot.acoes()) {
                 if (a.getGrupo() == g) {
-                    String t = a == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
-                            ? tecla(mapa, slot, a) + " (+" + tecla(mapa, slot, AcaoJogador.MOVER_ESQUERDA)
-                                    + "/" + tecla(mapa, slot, AcaoJogador.MOVER_DIREITA) + ")"
-                            : tecla(mapa, slot, a);
+                    String t;
+                    if (a == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO) {
+                        t = r.gamepad(slot)
+                                ? r.tecla(slot, a) + " (+analógico)"
+                                : r.tecla(slot, a) + " (+" + r.tecla(slot, AcaoJogador.MOVER_ESQUERDA)
+                                        + "/" + r.tecla(slot, AcaoJogador.MOVER_DIREITA) + ")";
+                    } else {
+                        t = r.tecla(slot, a);
+                    }
                     doGrupo.add(new Linha(a.getRotulo(), t));
                 }
             }
@@ -138,6 +197,10 @@ public final class AjudaControles {
                 lista.add(new Linha(g.getTitulo(), null));
                 lista.addAll(doGrupo);
             }
+        }
+        if (r.gamepad(slot)) {
+            lista.add(new Linha(GrupoAcao.SISTEMA.getTitulo(), null));
+            lista.add(new Linha("Pausar / continuar", r.gamepad().getBotaoPausa().getRotulo()));
         }
         return lista;
     }
