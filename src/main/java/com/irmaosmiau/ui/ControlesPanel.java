@@ -326,7 +326,11 @@ public final class ControlesPanel extends JPanel {
                     .filter(i -> i.acao() != null && i.acao().getGrupo() == grupo).collect(Collectors.toList());
             g.gridy = linhasGamepad(g, grupo.getTitulo(), doGrupo);
         }
-        List<ItemGamepad> comandos = itens.stream().filter(i -> i.comando() != null).collect(Collectors.toList());
+        List<ItemGamepad> puloAlto = itens.stream()
+                .filter(i -> i.comando() != null && !i.comando().isSoContextual()).collect(Collectors.toList());
+        g.gridy = linhasGamepad(g, "PULO ALTO (segure o modificador e aperte o botão do pulo)", puloAlto);
+        List<ItemGamepad> comandos = itens.stream()
+                .filter(i -> i.comando() != null && i.comando().isSoContextual()).collect(Collectors.toList());
         g.gridy = linhasGamepad(g, "TÉCNICAS PELO D-PAD (camadas: D-pad · LT+D-pad · LT+LB+D-pad)", comandos);
         g.gridx = 0;
         g.weighty = 1;
@@ -406,7 +410,8 @@ public final class ControlesPanel extends JPanel {
         montarLista();
         mostrarStatus(slotAtual.getSigla() + ": esquema " + esquema.getRotulo() + " com os botões padrão dele"
                 + (esquema == EsquemaGamepad.CONTEXTUAL
-                        ? " (D-pad = técnicas; LT e LT+LB = camadas; agachar no B; RB livre)." : ".")
+                        ? " (D-pad = técnicas; LT e LT+LB = camadas; agachar no B; RB + A = pulo alto)."
+                        : " (A pula; RB + A pulo alto; R3 rola; L3 deita).")
                 + " Alterações não salvas.", false);
     }
 
@@ -508,8 +513,11 @@ public final class ControlesPanel extends JPanel {
                 return;
             }
             edicaoGamepad = edicaoGamepad.trocandoSeNecessario(slotAtual, item, botao);
-            mostrarStatus("Botões trocados. " + dono.get().rotulo() + " agora usa "
-                    + edicaoGamepad.rotulo(slotAtual, dono.get()) + ". Alterações não salvas.", false);
+            mostrarStatus(edicaoGamepad.botao(slotAtual, dono.get()).isPresent()
+                    ? "Botões trocados. " + dono.get().rotulo() + " agora usa "
+                            + edicaoGamepad.rotulo(slotAtual, dono.get()) + ". Alterações não salvas."
+                    : dono.get().rotulo() + " ficou sem botão (o botão antigo é dividido com outra função)."
+                            + " Escolha um botão para ele. Alterações não salvas.", false);
         } else {
             edicaoGamepad = edicaoGamepad.comBotao(slotAtual, item, botao);
             mostrarStatus(slotAtual.getSigla() + " · " + item.rotulo() + " = " + botao.getRotulo()
@@ -519,11 +527,7 @@ public final class ControlesPanel extends JPanel {
     }
 
     private static boolean podemDividir(ItemGamepad a, ItemGamepad b) {
-        // Unica divisao permitida: arrasto (com o analogico) e modificador da camada 3 (com LT).
-        return (a.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
-                        && b.comando() == com.irmaosmiau.dispositivos.ComandoGamepad.MODIFICADOR_CAMADA_3)
-                || (b.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
-                        && a.comando() == com.irmaosmiau.dispositivos.ComandoGamepad.MODIFICADOR_CAMADA_3);
+        return MapaGamepad.podemDividir(a, b);
     }
 
     /** Backspace durante a captura: o item fica sem botao (ex.: tirar uma acao do RB defeituoso). */

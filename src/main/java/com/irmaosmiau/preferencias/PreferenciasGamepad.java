@@ -30,7 +30,9 @@ public final class PreferenciasGamepad {
     public static PreferenciasGamepad carregar(RepositorioGamepad repositorio) {
         PreferenciasGamepad p = new PreferenciasGamepad(repositorio, MapaGamepad.padrao());
         try {
-            p.atual = repositorio.carregar();
+            RepositorioGamepad.Leitura l = repositorio.carregarComAvisos();
+            p.atual = l.mapa();
+            p.avisos.addAll(l.avisos());
         } catch (PersistenciaException ex) {
             p.arquivoProblematico = ex.getMotivo() != PersistenciaException.Motivo.ERRO_DE_ARQUIVO;
             p.avisos.add("Não foi possível usar os botões de gamepad salvos; esquema Clássico em uso. "

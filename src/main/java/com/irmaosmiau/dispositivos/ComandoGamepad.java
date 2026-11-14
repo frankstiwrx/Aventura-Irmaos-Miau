@@ -14,7 +14,12 @@ public enum ComandoGamepad {
     /** Segurado: camada 2 (padrao LT). */
     MODIFICADOR_CAMADA_2("Modificador camada 2", null),
     /** Segurado junto com o da camada 2: camada 3 (padrao LB). */
-    MODIFICADOR_CAMADA_3("Modificador camada 3 (com o da 2)", null);
+    MODIFICADOR_CAMADA_3("Modificador camada 3 (com o da 2)", null),
+    /**
+     * Entrega 5G: segurado ao apertar o botao do pulo normal = pulo alto
+     * (padrao RB + A). Existe nos dois esquemas.
+     */
+    MODIFICADOR_PULO_ALTO("Modificador do pulo alto (+ botão do pulo)", null);
 
     private final String rotulo;
     private final DirecaoTecnica direcao;
@@ -26,6 +31,11 @@ public enum ComandoGamepad {
 
     public String getRotulo() {
         return rotulo;
+    }
+
+    /** So o esquema CONTEXTUAL usa (direcoes e camadas); o do pulo alto vale nos dois. */
+    public boolean isSoContextual() {
+        return this != MODIFICADOR_PULO_ALTO;
     }
 
     /** Direcao (so os 4 de tecnica). */

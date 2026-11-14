@@ -1,0 +1,17 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "teste.gato_futuro.movimento_chao",
+  "estado": "MOVIMENTO_CHAO",
+  "rig": "miau_v1",
+  "uso": "INDIVIDUAL",
+  "loop": true,
+  "duracaoQuadroMs": 100,
+  "sequencia": [0, 1],
+  "deslocamentoVisual": { "x": 0, "y": 70 },
+  "origem": "SOMENTE TESTE (Entrega 5G): personagem futuro de rig compativel, nao e um lutador do jogo",
+  "quadros": [
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 34, 0, 0, 6, -11, -31, -16, -18, 24, -36, 58, 6, 8, 15, 15, -19, 5, -33, 15] },
+    { "pose": [261, 4, 7, 1, 0, 0, 0, 0, 0, 18, -88, 10, 0, 0, 12, -2, -10, -5, -2, 10, -20, 40, 4, 6, 10, 10, -10, 3, -20, 10] }
+  ]
+}

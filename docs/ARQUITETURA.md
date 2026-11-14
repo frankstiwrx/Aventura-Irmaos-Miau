@@ -263,3 +263,13 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
   das teclas. Transições de chão (5E) aparecem reservadas.
 - HUD: `hud.PainelDpadContextual` (cruz compacta por jogador). Tela: `ControlesPanel` em modo
   "Editar: Gamepad".
+
+## Animações no runtime e ergonomia do gamepad (Entrega 5G)
+
+- `animacao.AnimadorPartida` liga o `ControladorAnimacoes` à partida (uma chamada por tick lógico no
+  `GamePanel`). Animações JSON do perfil são desenhadas pelo renderizador do próprio personagem
+  (canal de pose da PEGADA_1); o resto continua legado. Detalhes em [ANIMACOES.md](ANIMACOES.md).
+- `PerfisAnimacoes.global()`/`paraJogo` (catálogo tolerante a JSON ausente/inválido) e
+  `registrarClasse` (classe → personagem, sem `instanceof` no runtime).
+- Gamepad: padrões novos (R3 rola, L3 deita, A pula, modificador + A = pulo alto) e o
+  `ComandoGamepad.MODIFICADOR_PULO_ALTO`, decidido no toque pela `FonteGamepad`.

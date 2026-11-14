@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 515, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 532, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -219,6 +219,26 @@ Esquema Contextual (Dispositivo = Gamepad, Esquema = Contextual):
 - [ ] Start pausa; D-pad na pausa não dispara nada ao voltar; Alt+Tab e desconectar também limpam
 - [ ] Treino com o Xbox contextual: técnicas do J1 funcionam; parceiro passivo; F5 reinicia
 - [ ] Voltar ao Clássico: D-pad anda de novo, sem cruz no HUD
+
+### Animações JSON ativas e ergonomia do gamepad (Entrega 5G)
+
+Animações (teclado ou Xbox, Os Dois e Treino):
+- [ ] Deitar (F / L3) e rastejar para os dois lados: mesma aparência e ritmo de antes, sem "salto" ao começar e ao parar
+- [ ] Rastejar e pausar (ESC/Start): a pose congela; ao voltar, continua
+- [ ] Rastejar e mudar de linha (W/S): a profundidade e o desenho continuam certos
+- [ ] Levantar enquanto rasteja: volta a ficar em pé normalmente
+- [ ] Caminhada, corrida, pulo, agachar, rolamento e sprawl iguais à 5F
+- [ ] PEGADA_1 (3 quadros, pose final), T/U/Y, firmeza e arrasto iguais à 5F
+- [ ] Treino: F5 durante o rastejar reinicia normalmente
+- [ ] O console do NetBeans não mostra mensagens de `[animacoes]` (os JSON estão no JAR/recursos)
+
+Gamepad (Xbox):
+- [ ] A = pulo normal; RB + A = pulo alto (mais alto, mais fôlego); segurar não repete
+- [ ] A primeiro e depois RB: só o pulo normal
+- [ ] R3 com o analógico inclinado = rolamento; L3 = deitar/levantar (Clássico e Contextual)
+- [ ] CONTROLES → Editar: Gamepad → grupo "PULO ALTO": trocar o modificador por outro botão livre (ex.: Y no Contextual) e testar
+- [ ] Escolher LT como modificador no Contextual: pergunta se troca com a camada 2
+- [ ] Com um gamepad.json da 5F nunca personalizado: aviso de "padrões atualizados" ao abrir; personalizado: aviso de "mantidos"
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

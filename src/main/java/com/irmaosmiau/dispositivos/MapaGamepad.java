@@ -69,11 +69,16 @@ public final class MapaGamepad {
     // =====================================================
     // PADROES
     // =====================================================
-    /** Os dois slots no CLASSICO da 5D (exatamente o comportamento anterior). */
+    /** O layout HISTORICO da 5D (os dois slots no Classico antigo: A = pulo alto, L3 rola). */
     public static MapaGamepad experimental() {
-        return padrao();
+        Map<SlotJogador, ConfigSlot> m = new EnumMap<>(SlotJogador.class);
+        for (SlotJogador s : SlotJogador.values()) {
+            m.put(s, padraoAnterior(s, EsquemaGamepad.CLASSICO));
+        }
+        return new MapaGamepad(m);
     }
 
+    /** Padrao atual (5G): os dois slots no Classico. */
     public static MapaGamepad padrao() {
         Map<SlotJogador, ConfigSlot> m = new EnumMap<>(SlotJogador.class);
         for (SlotJogador s : SlotJogador.values()) {
@@ -82,7 +87,28 @@ public final class MapaGamepad {
         return new MapaGamepad(m);
     }
 
+    /**
+     * Padroes da 5G: R3 rola e L3 deita/levanta (o polegar esquerdo fica no
+     * analogico); A = pulo normal; RB + A = pulo alto (modificador
+     * configuravel). No Classico o RB continua correndo quando segurado.
+     */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
+        ConfigSlot antigo = padraoAnterior(slot, esquema);
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(antigo.acoes());
+        Map<ComandoGamepad, BotaoGamepad> c = new EnumMap<>(ComandoGamepad.class);
+        c.putAll(antigo.comandos());
+        a.remove(AcaoJogador.PULAR);                       // pulo alto = modificador + botao do pulo
+        a.put(AcaoJogador.PULO_CURTO, BotaoGamepad.SUL);
+        a.put(AcaoJogador.ROLAR, BotaoGamepad.R3);
+        a.put(AcaoJogador.DEITAR_LEVANTAR, BotaoGamepad.L3);
+        c.put(ComandoGamepad.MODIFICADOR_PULO_ALTO, BotaoGamepad.RB);
+        a.keySet().removeIf(acao -> !slot.usa(acao));
+        return new ConfigSlot(esquema, a, c);
+    }
+
+    /** Padroes da 5D/5F (usados para reconhecer um gamepad.json nunca personalizado). */
+    public static ConfigSlot padraoAnterior(SlotJogador slot, EsquemaGamepad esquema) {
         Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
         Map<ComandoGamepad, BotaoGamepad> c = new EnumMap<>(ComandoGamepad.class);
         if (esquema == EsquemaGamepad.CLASSICO) {
@@ -158,8 +184,8 @@ public final class MapaGamepad {
                 l.add(ItemGamepad.de(a));
             }
         }
-        if (esquema(slot) == EsquemaGamepad.CONTEXTUAL) {
-            for (ComandoGamepad c : ComandoGamepad.values()) {
+        for (ComandoGamepad c : ComandoGamepad.values()) {
+            if (!c.isSoContextual() || esquema(slot) == EsquemaGamepad.CONTEXTUAL) {
                 l.add(ItemGamepad.de(c));
             }
         }
@@ -188,10 +214,22 @@ public final class MapaGamepad {
         return m;
     }
 
+    /**
+     * Pares que podem dividir um botao: arrasto (com o analogico) e camada 3
+     * (com LT); correr (segurado) e modificador do pulo alto (RB + A = pulo
+     * alto correndo).
+     */
+    public static boolean podemDividir(ItemGamepad x, ItemGamepad y) {
+        return par(x, y, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, ComandoGamepad.MODIFICADOR_CAMADA_3)
+                || par(x, y, AcaoJogador.CORRER, ComandoGamepad.MODIFICADOR_PULO_ALTO);
+    }
+
+    private static boolean par(ItemGamepad x, ItemGamepad y, AcaoJogador a, ComandoGamepad c) {
+        return (x.acao() == a && y.comando() == c) || (y.acao() == a && x.comando() == c);
+    }
+
     private static boolean parPermitido(ItemGamepad x, ItemGamepad y) {
-        return (x.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO && y.comando() == ComandoGamepad.MODIFICADOR_CAMADA_3)
-                || (y.acao() == AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO
-                        && x.comando() == ComandoGamepad.MODIFICADOR_CAMADA_3);
+        return podemDividir(x, y);
     }
 
     public List<Problema> problemas() {
@@ -271,7 +309,12 @@ public final class MapaGamepad {
         MapaGamepad novo = comBotao(slot, item, botao);
         for (ItemGamepad outro : todosItensComBotao(slot).keySet()) {
             if (!outro.equals(item) && botao(slot, outro).orElse(null) == botao && !parPermitido(outro, item)) {
-                novo = antigo.isPresent() ? novo.comBotao(slot, outro, antigo.get()) : novo.semBotao(slot, outro);
+                MapaGamepad trocado = antigo.isPresent() ? novo.comBotao(slot, outro, antigo.get()) : novo.semBotao(slot, outro);
+                // O botao antigo pode estar dividido (ex.: RB = correr + pulo alto): se a troca
+                // criaria conflito, o outro item fica sem botao (nunca um mapa invalido).
+                boolean outroEmConflito = trocado.problemas().stream()
+                        .anyMatch(pr -> pr.slot() == slot && (pr.item().equals(outro) || outro.equals(pr.outro())));
+                novo = outroEmConflito ? novo.semBotao(slot, outro) : trocado;
             }
         }
         return novo;
@@ -281,7 +324,7 @@ public final class MapaGamepad {
         if (item.acao() != null && !slot.usa(item.acao())) {
             throw new IllegalArgumentException(slot.getNome() + " nao usa " + item.acao());
         }
-        if (item.comando() != null && esquema(slot) != EsquemaGamepad.CONTEXTUAL) {
+        if (item.comando() != null && item.comando().isSoContextual() && esquema(slot) != EsquemaGamepad.CONTEXTUAL) {
             throw new IllegalArgumentException("Comandos de tecnica so existem no esquema contextual.");
         }
     }
@@ -347,8 +390,15 @@ public final class MapaGamepad {
         return b == null ? List.of() : List.of(b);
     }
 
-    /** Rotulo curto para ajuda e HUD ("B/Bola", "D-pad ← / analógico", "—"). */
+    /** Rotulo curto para ajuda e HUD ("B/Bola", "D-pad ← / analógico", "RB/R1 + A/Cruz", "—"). */
     public String rotulo(SlotJogador slot, AcaoJogador acao) {
+        if (acao == AcaoJogador.PULAR && botoes(slot, acao).isEmpty()) {
+            Optional<BotaoGamepad> mod = botao(slot, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
+            List<BotaoGamepad> pulo = botoes(slot, AcaoJogador.PULO_CURTO);
+            if (mod.isPresent() && !pulo.isEmpty()) {
+                return mod.get().getRotulo() + " + " + pulo.get(0).getRotulo();
+            }
+        }
         List<String> partes = new ArrayList<>();
         for (BotaoGamepad b : botoes(slot, acao)) {
             partes.add(b.getRotulo());

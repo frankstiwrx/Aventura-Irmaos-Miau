@@ -38,6 +38,12 @@ import java.util.stream.Collectors;
  * Jogador ausente = padrao CLASSICO. Item ausente = sem botao (nenhum botao e
  * obrigatorio). Nomes desconhecidos e conflitos sao erro: o arquivo nao e
  * alterado e os padroes sao usados.
+ *
+ * Entrega 5G (novos padroes: R3 rola, L3 deita, A = pulo normal, RB + A =
+ * pulo alto): um jogador cujo arquivo ainda e EXATAMENTE o padrao antigo
+ * (nunca personalizado) passa para o padrao novo, com aviso. Um jogador
+ * personalizado fica como esta, com aviso de que ha padroes novos.
+ * O arquivo so muda quando o jogador salvar.
  */
 public final class RepositorioGamepad {
 
@@ -60,10 +66,39 @@ public final class RepositorioGamepad {
         return arquivo;
     }
 
+    /** Mapa lido + avisos de atualizacao de padroes (5G). */
+    public record Leitura(MapaGamepad mapa, java.util.List<String> avisos) {
+    }
+
     /** Sem arquivo = os dois no CLASSICO (nada e criado). */
     public MapaGamepad carregar() {
+        return carregarComAvisos().mapa();
+    }
+
+    public Leitura carregarComAvisos() {
         Optional<ObjetoJson> doc = armazenamento.ler(arquivo, TIPO, VERSAO_ESQUEMA);
-        return doc.map(this::converter).orElseGet(MapaGamepad::padrao);
+        if (doc.isEmpty()) {
+            return new Leitura(MapaGamepad.padrao(), java.util.List.of());
+        }
+        MapaGamepad lido = converter(doc.get());
+        java.util.List<String> avisos = new java.util.ArrayList<>();
+        java.util.Set<String> noArquivo = doc.get().contem("jogadores")
+                ? doc.get().objeto("jogadores").chaves() : java.util.Set.of();
+        for (SlotJogador s : SlotJogador.values()) {
+            if (!noArquivo.contains(s.getIdArquivo())) {
+                continue;
+            }
+            EsquemaGamepad e = lido.esquema(s);
+            if (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))) {
+                lido = lido.comEsquema(s, e);
+                avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"
+                        + " RB + A pulo alto). Salve em CONTROLES para gravar.");
+            } else if (lido.botao(s, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).isEmpty()) {
+                avisos.add(s.getSigla() + ": seus botões personalizados foram mantidos. Os novos padrões"
+                        + " (R3 rola, L3 deita, RB + A pulo alto) estão em CONTROLES → RESTAURAR PADRÕES.");
+            }
+        }
+        return new Leitura(lido, java.util.List.copyOf(avisos));
     }
 
     public void salvar(MapaGamepad mapa) {
@@ -118,7 +153,7 @@ public final class RepositorioGamepad {
                         ComandoGamepad c = constante(ComandoGamepad.class, nome);
                         if (a != null && s.usa(a)) {
                             acoes.put(a, botao);
-                        } else if (c != null && esquema == EsquemaGamepad.CONTEXTUAL) {
+                        } else if (c != null && (!c.isSoContextual() || esquema == EsquemaGamepad.CONTEXTUAL)) {
                             comandos.put(c, botao);
                         } else {
                             throw b.erro(nome, "item desconhecido para " + id + " no esquema " + esquema);

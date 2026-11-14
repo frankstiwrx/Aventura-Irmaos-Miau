@@ -21,6 +21,9 @@ import com.irmaosmiau.controles.RepertorioContextual;
 import com.irmaosmiau.dispositivos.ComandoGamepad;
 import com.irmaosmiau.dispositivos.ItemGamepad;
 import com.irmaosmiau.hud.PainelDpadContextual;
+import com.irmaosmiau.animacao.AnimadorPartida;
+import com.irmaosmiau.animacao.ControladorAnimacoes;
+import com.irmaosmiau.animacao.PerfisAnimacoes;
 import com.irmaosmiau.preferencias.PreferenciasGamepad;
 import com.irmaosmiau.conteudo.CarregadorConteudoCombate;
 import com.irmaosmiau.conteudo.ConteudoCombate;
@@ -235,6 +238,15 @@ public class GamePanel extends JPanel {
     private SessaoDispositivos dispositivos;
     // Entrega 5F: esquema e botoes salvos (gamepad.json) ou o Classico da 5D.
     private final MapaGamepad mapaGamepad = PreferenciasGamepad.global().getAtual();
+
+    /*
+     * Entrega 5G: animacoes modulares no runtime. Escolhe a animacao de cada
+     * lutador pelo estado e, quando o perfil tem uma JSON (hoje: movimento no
+     * chao), entrega os quadros ao renderizador do proprio personagem; senao
+     * o desenho legado continua. Atualizado uma vez por tick logico.
+     */
+    private final AnimadorPartida animador = new AnimadorPartida(
+            new ControladorAnimacoes(PerfisAnimacoes.global()), INTERVALO_GAME_LOOP_MS);
 
     private boolean fimDeJogo;
     private String mensagemFim = "";
@@ -557,6 +569,11 @@ public class GamePanel extends JPanel {
             // Sem motor de combate no modo individual: comandos contextuais nao tem efeito.
             dispositivos.consumirComandoContextual(SlotJogador.JOGADOR_1);
         }
+
+        // Entrega 5G: depois do movimento e do combate deste tick (nao move ninguem).
+        animador.atualizar(
+                modoDoisMiaus ? List.of(jogadorBranco, jogadorPreto) : List.of(jogadorPrincipal),
+                sistemaCombate, deslocandoConjunto, tick);
 
         tick++;
         verificarFimDeJogo();
@@ -2408,6 +2425,10 @@ public class GamePanel extends JPanel {
     /** Entrega 5C: o mesmo que acontece quando a janela perde o foco. */
     void simularPerdaDeFocoParaTestes() {
         liberarTeclas();
+    }
+
+    AnimadorPartida getAnimador() {
+        return animador;
     }
 
     SessaoDispositivos getSessaoDispositivos() {

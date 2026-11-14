@@ -1,4 +1,4 @@
-# Animações — Entrega 5E
+# Animações — Entregas 5E e 5G
 
 ## Camadas
 
@@ -91,3 +91,72 @@ modalidade.
   5B, 1 px/tick), não pelo tempo. Parado, os pés não andam; o arrasto mais rápido acelera os passos.
 - Sem animação de arrasto cadastrada, o fallback é a pose final transladada (5B), testado com
   as poses aprovadas da PEGADA_1.
+
+---
+
+# Entrega 5G — Animações JSON ativas nas partidas
+
+## O que roda pelo JSON agora
+
+| Animação | Fonte no jogo | Prova |
+|---|---|---|
+| Movimento no chão do **Branco** (rastejar) | **JSON** `branco_movimento_chao.json` | teste de integração no `GamePanel` real: a pose desenhada é o quadro do JSON, pixel a pixel igual ao legado |
+| Movimento no chão do **Preto** | **JSON** `preto_movimento_chao.json` | idem |
+| Deitado parado | legado (é o quadro 1 do mesmo array/JSON) | sem salto ao começar/parar |
+| Caminhada, corrida, idle, taunt, agachado, pulo | legado (procedural) | inalterado |
+| Rolamento, sprawl | legado (arrays interpolados) | inalterado |
+| PEGADA_1 e arrasto | conjunta do MiauStudio (inalterada) | poses aprovadas conferidas em teste |
+
+## Como funciona (`animacao.AnimadorPartida`)
+
+Uma chamada por **tick lógico** no `GamePanel.atualizar()`, depois do movimento e do combate:
+
+1. `ControladorAnimacoes.estadoVisual` lê o lutador e o combate (só leitura).
+2. O perfil do personagem (`PerfisAnimacoes.global()`, por classe → id de personagem) devolve a
+   animação daquele estado.
+3. **JSON** → o quadro sai do tempo da própria animação (150 ms por quadro, sequência ping-pong
+   `0,1,2,3,4,3,2,1`), contado em ticks desde que o estado começou (16 ms por tick). A pose vai para
+   o renderizador do próprio Branco/Preto pelo canal de pose da PEGADA_1
+   (`ReprodutorPoseJson` → `desenharPoseMiauStudio`, deslocamento Y 70 como no legado).
+4. **Legado**, ou JSON ausente/inválido → solta a pose e o código antigo desenha.
+
+Garantias:
+- **Não move ninguém.** x, y e linha seguem as regras do jogo; teste compara o trajeto
+  tick a tick com e sem JSON.
+- **Nunca passa por cima do combate.** Se o `SistemaCombate` tem a pose (PEGADA_1/arrasto), o
+  animador não aplica nem limpa nada.
+- **Começo e fim coerentes.** Começar a rastejar mostra o 1º quadro, igual ao deitado parado. Parar,
+  levantar, entrar em pegada ou perder o foco soltam a pose na hora.
+- **Pausa.** O relógio lógico para, e o quadro congela e continua de onde estava.
+- **Mudança de direção.** A mesma animação continua (o espelhamento é do `GamePanel`, como antes).
+- **Reinício do treino (F5).** Os lutadores novos começam do zero e os antigos são esquecidos.
+
+## Fallback e diagnóstico
+
+`PerfisAnimacoes.global()` carrega o catálogo do jogo **uma vez** (`CatalogoAnimacoes.paraJogo`).
+JSON ausente ou inválido não entra no catálogo; o perfil fica com a animação legada daquele estado e
+o motivo vai **uma única vez** para o `System.err`, por exemplo:
+`[animacoes] /conteudo/animacoes/individuais/branco_movimento_chao.json ausente: ... usa o desenho legado.`
+Nada é logado por quadro nem por partida.
+
+## Inspeção (testes)
+
+`GamePanel.getAnimador().origem(lutador)` → `OrigemVisual(fonte, idAnimacao, quadro, estado)`.
+Os testes `AnimacoesRuntimeGamePanelTest` usam isso para provar que o quadro desenhado vem do JSON
+e **falham** se a ligação for removida (sem o animador no `GamePanel`, ou com o perfil sem o JSON).
+
+## Personagem futuro
+
+O runtime não testa "Branco"/"Preto": `PerfisAnimacoes.registrarClasse(Classe, id)` + um perfil
+(`baseadoEm` + `comAnimacao`) bastam. Testado com uma subclasse **só de teste** e uma animação JSON
+própria de rig `miau_v1`.
+
+## Próximas evoluções sugeridas
+
+1. Taunt (arrays do MiauStudio, tempo fixo) pelo mesmo caminho, com teste de paridade.
+2. Rolamento e sprawl: estender o formato com "quadro por progresso" (são interpolados por progresso,
+   não por tempo) antes de migrar.
+3. Um canal de pose de **animação** separado do de combate, quando houver animações que convivam com
+   a pegada.
+4. Caminhada e corrida próprias em JSON (com `SincronizadorPassos`, por distância) para personagens
+   novos; Branco e Preto continuam procedurais.

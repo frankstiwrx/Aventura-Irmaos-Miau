@@ -33,7 +33,12 @@ class MapaGamepadEditavelTest {
         MapaGamepad m = MapaGamepad.padrao();
         assertEquals(EsquemaGamepad.CLASSICO, m.esquema(J1));
         assertEquals(EsquemaGamepad.CLASSICO, m.esquema(J2));
-        assertEquals(MapaGamepad.experimental(), m);
+        // 5G (pedido do desenvolvedor): o padrao do Classico mudou (A pula, RB + A pulo alto,
+        // R3 rola, L3 deita). O layout historico da 5D continua em experimental().
+        assertEquals(BotaoGamepad.SUL, MapaGamepad.experimental().botao(J1, ItemGamepad.de(AcaoJogador.PULAR)).orElseThrow());
+        assertEquals(BotaoGamepad.L3, MapaGamepad.experimental().botao(J1, ItemGamepad.de(AcaoJogador.ROLAR)).orElseThrow());
+        assertEquals(BotaoGamepad.SUL, m.botao(J1, ItemGamepad.de(AcaoJogador.PULO_CURTO)).orElseThrow());
+        assertEquals(BotaoGamepad.R3, m.botao(J1, ItemGamepad.de(AcaoJogador.ROLAR)).orElseThrow());
         assertEquals(BotaoGamepad.OESTE, m.botao(J1, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA)).orElseThrow());
         assertEquals(BotaoGamepad.LESTE, m.botao(J2, ItemGamepad.de(AcaoJogador.ROMPIMENTO_TECNICO)).orElseThrow());
         assertEquals(BotaoGamepad.RB, m.botao(J1, ItemGamepad.de(AcaoJogador.CORRER)).orElseThrow());
@@ -49,7 +54,9 @@ class MapaGamepadEditavelTest {
             MapaGamepad m = MapaGamepad.padrao().comEsquema(s, EsquemaGamepad.CONTEXTUAL);
             assertTrue(m.isValido(), m.problemas().toString());
             for (ItemGamepad i : m.itens(s)) {
-                assertFalse(m.botao(s, i).orElse(null) == BotaoGamepad.RB, "RB nao e usado: " + i);
+                // 5G: o RB so e o modificador OPCIONAL do pulo alto (A sozinho pula; tecnicas nao usam RB).
+                assertFalse(m.botao(s, i).orElse(null) == BotaoGamepad.RB
+                        && i.comando() != ComandoGamepad.MODIFICADOR_PULO_ALTO, "RB nao e usado: " + i);
             }
             assertEquals(BotaoGamepad.LESTE, m.botao(s, ItemGamepad.de(AcaoJogador.AGACHAR)).orElseThrow());
             assertEquals(BotaoGamepad.GATILHO_ESQ, m.botao(s, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2)).orElseThrow());
@@ -57,7 +64,9 @@ class MapaGamepadEditavelTest {
             assertEquals(BotaoGamepad.DPAD_CIMA, m.botao(s, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA)).orElseThrow());
         }
         // No classico, o RB pode ficar livre: correr vai para outro botao e nada e obrigatorio.
-        MapaGamepad semRb = MapaGamepad.padrao().semBotao(J1, ItemGamepad.de(AcaoJogador.CORRER));
+        // 5G: o RB tambem e o modificador (opcional) do pulo alto; tirando os dois, o RB fica livre.
+        MapaGamepad semRb = MapaGamepad.padrao().semBotao(J1, ItemGamepad.de(AcaoJogador.CORRER))
+                .semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
         assertTrue(semRb.isValido());
         assertTrue(semRb.quemUsa(J1, BotaoGamepad.RB).isEmpty());
     }
@@ -94,7 +103,10 @@ class MapaGamepadEditavelTest {
         MapaGamepad t = MapaGamepad.padrao().trocandoSeNecessario(J1, ItemGamepad.de(AcaoJogador.CORRER), BotaoGamepad.SUL);
         assertTrue(t.isValido());
         assertEquals(BotaoGamepad.SUL, t.botao(J1, ItemGamepad.de(AcaoJogador.CORRER)).orElseThrow());
-        assertEquals(BotaoGamepad.RB, t.botao(J1, ItemGamepad.de(AcaoJogador.PULAR)).orElseThrow(), "trocados");
+        // 5G: o SUL agora e o pulo normal; o RB antigo do correr e dividido com o pulo alto,
+        // entao o pulo normal fica sem botao (nunca um mapa invalido).
+        assertTrue(t.botao(J1, ItemGamepad.de(AcaoJogador.PULO_CURTO)).isEmpty(), "trocados sem conflito");
+        assertEquals(BotaoGamepad.RB, t.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).orElseThrow());
         assertEquals(MapaGamepad.padrao().config(J2), t.config(J2), "slots independentes");
 
         assertFalse(MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(AcaoJogador.PULAR), BotaoGamepad.INICIAR).isValido());

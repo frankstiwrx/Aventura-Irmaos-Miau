@@ -42,6 +42,8 @@ public final class FonteGamepad implements FonteAcoes {
     private boolean travarNaProximaLeitura;
     private final ResolvedorComandosContextuais contextual = new ResolvedorComandosContextuais();
     private final boolean[] gatilhoApertado = new boolean[2];
+    /** Entrega 5G: pulo decidido no instante do toque (normal ou alto) e mantido ate soltar. */
+    private AcaoJogador puloEscolhido;
 
     /** Gatilho conta como apertado ate cair abaixo deste valor (histerese). */
     public static final float LIMIAR_SOLTAR_GATILHO = 0.35f;
@@ -66,6 +68,7 @@ public final class FonteGamepad implements FonteAcoes {
         Set<AcaoJogador> novas;
         boolean pausa;
         if (estado == null) {
+            puloEscolhido = null;
             novas = EnumSet.noneOf(AcaoJogador.class);
             analogico = EnumSet.noneOf(AcaoJogador.class);
             pausa = false;
@@ -73,6 +76,7 @@ public final class FonteGamepad implements FonteAcoes {
             Set<AcaoJogador> analogicoAtual = EnumSet.noneOf(AcaoJogador.class);
             novas = mapa.acoesAtivas(estado, slot, analogico, analogicoAtual);
             analogico = analogicoAtual;
+            escolherPulo(estado, novas);
             pausa = estado.pressionado(mapa.getBotaoPausa());
         }
 
@@ -100,6 +104,32 @@ public final class FonteGamepad implements FonteAcoes {
         // Sem leitura nao alimenta o resolvedor: a limpeza continua exigindo uma soltura REAL do D-pad.
         if (estado != null) {
             contextual.atualizar(mapa.entradaContextual(estado, slot));
+        }
+    }
+
+    /**
+     * Botao do pulo normal + modificador do pulo alto (padrao RB + A): o tipo
+     * e decidido quando o botao do pulo e apertado e fica ate ele ser solto.
+     * Assim RB + A da SO o pulo alto, e apertar/soltar o RB no meio nao
+     * dispara outro pulo.
+     */
+    private void escolherPulo(EstadoGamepad estado, Set<AcaoJogador> novas) {
+        java.util.List<BotaoGamepad> pulo = mapa.botoes(slot, AcaoJogador.PULO_CURTO);
+        java.util.Optional<BotaoGamepad> mod = mapa.botao(slot, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
+        if (pulo.isEmpty() || mod.isEmpty()) {
+            puloEscolhido = null;
+            return;
+        }
+        boolean apertado = estado.pressionado(pulo.get(0));
+        if (!apertado) {
+            puloEscolhido = null;
+        } else if (puloEscolhido == null) {
+            puloEscolhido = estado.pressionado(mod.get()) && slot.usa(AcaoJogador.PULAR)
+                    ? AcaoJogador.PULAR : AcaoJogador.PULO_CURTO;
+        }
+        novas.remove(AcaoJogador.PULO_CURTO);
+        if (puloEscolhido != null) {
+            novas.add(puloEscolhido);
         }
     }
 

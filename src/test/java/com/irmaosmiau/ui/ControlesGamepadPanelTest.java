@@ -87,13 +87,15 @@ class ControlesGamepadPanelTest {
             assertEquals("aperte um botão…", b.getText());
             tela.lerBotoesDaCapturaParaTestes();
             assertTrue(tela.isCapturandoBotao(), "nada apertado: continua esperando");
-            dialogos.confirmacoes.add(true);                 // R3 era "deitar": trocar
+            dialogos.confirmacoes.add(true);                 // 5G: R3 agora e "rolar": trocar
             sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.R3));
             tela.lerBotoesDaCapturaParaTestes();
             assertFalse(tela.isCapturandoBotao());
             assertEquals(BotaoGamepad.R3, botao(correr));
-            assertEquals(BotaoGamepad.RB, botao(ItemGamepad.de(AcaoJogador.DEITAR_LEVANTAR)), "trocados");
-            assertTrue(dialogos.perguntas.get(0).contains("Deitar"), dialogos.perguntas.get(0));
+            // 5G: o RB e dividido com o pulo alto; rolar nao pode dividi-lo e fica sem botao (avisado).
+            assertEquals(null, botao(ItemGamepad.de(AcaoJogador.ROLAR)), "trocados sem conflito");
+            assertTrue(tela.textoStatus().contains("ficou sem botão"), tela.textoStatus());
+            assertTrue(dialogos.perguntas.get(0).contains("Rolar"), dialogos.perguntas.get(0));
             assertEquals("R3", tela.botaoGamepad(correr).getText());
         });
     }
@@ -117,7 +119,8 @@ class ControlesGamepadPanelTest {
             tela.lerBotoesDaCapturaParaTestes();
             assertFalse(tela.isCapturandoBotao());
             assertEquals(BotaoGamepad.GATILHO_DIR, botao(correr));
-            assertEquals(BotaoGamepad.RB, botao(ItemGamepad.de(AcaoJogador.SPRAWL)), "trocados");
+            // 5G: RB dividido com o pulo alto: sprawl fica sem botao em vez de criar conflito.
+            assertEquals(null, botao(ItemGamepad.de(AcaoJogador.SPRAWL)), "trocados sem conflito");
             assertTrue(dialogos.perguntas.get(0).contains("LT/L2") || dialogos.perguntas.get(0).contains("RT/R2"));
         });
     }

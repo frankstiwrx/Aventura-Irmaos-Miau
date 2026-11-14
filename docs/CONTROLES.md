@@ -472,3 +472,32 @@ modificadores no `MapaControles` (6 teclas, nunca 12), alimentando o mesmo resol
   dependendo de um mapeamento SDL (5E).
 - Os menus ainda não são navegáveis pelo gamepad.
 - Camadas 2 e 3 só têm transições reservadas até as posições de chão ganharem visual e lógica.
+
+---
+
+# Entrega 5G — Ergonomia do gamepad
+
+| Botão | Antes (5F) | Agora (5G), Clássico e Contextual |
+|---|---|---|
+| A/Cruz | pulo alto (Clássico) / pulo (Contextual) | **pulo normal** (`pularCurto`, custo 3,5) |
+| RB + A | — | **pulo alto** (o `pular` que já existia, custo 8) |
+| R3 | deitar/levantar (Clássico) / pulo curto (Contextual) | **rolamento** (com o analógico inclinado) |
+| L3 | rolamento (Clássico) / deitar (Contextual) | **deitar/levantar** |
+| Y/Triângulo (Contextual) | rolar | livre |
+
+- O jogo já tinha os dois pulos: `pular()` (alto) e `pularCurto()`. Nada de física nova.
+- **Modificador do pulo alto** é um item da tela CONTROLES → Editar: Gamepad (grupo "PULO ALTO"),
+  nos dois esquemas. Pode ser qualquer botão livre; conflitos com as camadas do D-pad (LT/LB) são
+  detectados como os demais. Sem modificador, A é sempre o pulo normal. "Pular" (alto) também pode
+  ganhar um botão próprio.
+- O tipo de pulo é decidido **no instante em que o A é apertado** e vale até soltar. RB + A dá **só**
+  o pulo alto; apertar ou soltar o RB no meio não dispara outro pulo; segurar não repete.
+- No Clássico o RB continua sendo "correr" quando segurado (dividir o RB entre correr e pulo alto é
+  permitido: RB + A = pulo alto correndo). Para deixar o RB totalmente livre, tire o botão dos dois.
+- Numa troca, se o botão antigo é dividido (RB) e o outro item não pode dividi-lo, esse item fica
+  **sem botão** e a tela avisa. O mapa nunca fica inválido.
+- **Preferências salvas:** um `gamepad.json` igual ao padrão antigo (nunca personalizado) passa para
+  os padrões novos **com aviso** ao abrir o jogo. Um personalizado é mantido como está, com aviso de
+  que os novos padrões estão em RESTAURAR PADRÕES. O arquivo só muda ao salvar.
+- `MapaGamepad.experimental()` continua sendo o layout histórico da 5D (diagnóstico e testes antigos).
+- Teclado sem mudança: ESPAÇO pula alto, V pula curto.

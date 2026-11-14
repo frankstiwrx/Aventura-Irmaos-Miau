@@ -36,9 +36,62 @@ public final class CatalogoAnimacoes {
         return porId.values();
     }
 
-    /** Legadas do Branco e do Preto + JSON migradas + conjuntas. */
+    /** Legadas do Branco e do Preto + JSON migradas + conjuntas (JSON ausente = erro). */
     public static CatalogoAnimacoes padrao() {
         CatalogoAnimacoes c = new CatalogoAnimacoes();
+        registrarLegadas(c);
+        c.registrar(DefinicaoAnimacao.json("branco.movimento_chao.json", RECURSO_BRANCO_CHAO,
+                CarregadorAnimacaoJson.doRecurso(RECURSO_BRANCO_CHAO)));
+        c.registrar(DefinicaoAnimacao.json("preto.movimento_chao.json", RECURSO_PRETO_CHAO,
+                CarregadorAnimacaoJson.doRecurso(RECURSO_PRETO_CHAO)));
+        registrarConjuntas(c);
+        return c;
+    }
+
+    /** As animacoes JSON migradas: id no catalogo -> recurso (Entrega 5G). */
+    public static final java.util.Map<String, String> JSON_MIGRADAS = java.util.Map.of(
+            "branco.movimento_chao.json", RECURSO_BRANCO_CHAO,
+            "preto.movimento_chao.json", RECURSO_PRETO_CHAO);
+
+    /**
+     * Entrega 5G: catalogo do JOGO, tolerante. Um JSON ausente ou invalido NAO
+     * derruba a partida: ele simplesmente nao entra no catalogo (o perfil
+     * continua com a animacao legada) e o motivo vai UMA vez para o aviso.
+     *
+     * @param leitor recurso -> texto (null = ausente)
+     */
+    public static CatalogoAnimacoes paraJogo(java.util.function.Function<String, String> leitor,
+            java.util.function.Consumer<String> aviso) {
+        CatalogoAnimacoes c = new CatalogoAnimacoes();
+        registrarLegadas(c);
+        for (String id : new java.util.TreeSet<>(JSON_MIGRADAS.keySet())) {
+            String recurso = JSON_MIGRADAS.get(id);
+            try {
+                String texto = leitor.apply(recurso);
+                if (texto == null) {
+                    aviso.accept("[animacoes] " + recurso + " ausente: " + id + " usa o desenho legado.");
+                    continue;
+                }
+                c.registrar(DefinicaoAnimacao.json(id, recurso, CarregadorAnimacaoJson.ler(texto, recurso)));
+            } catch (RuntimeException ex) {
+                aviso.accept("[animacoes] " + recurso + " invalido (" + ex.getMessage() + "): " + id
+                        + " usa o desenho legado.");
+            }
+        }
+        registrarConjuntas(c);
+        return c;
+    }
+
+    /** Le um recurso do classpath (null se nao existir). */
+    public static String lerRecurso(String caminho) {
+        try (java.io.InputStream in = CatalogoAnimacoes.class.getResourceAsStream(caminho)) {
+            return in == null ? null : new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException ex) {
+            return null;
+        }
+    }
+
+    private static void registrarLegadas(CatalogoAnimacoes c) {
         for (String p : new String[]{"branco", "preto"}) {
             String classe = p.equals("branco") ? "IrmaoMiauBranco" : "IrmaoMiauPreto";
             c.registrar(DefinicaoAnimacao.legada(p + ".parado.legada", EstadoVisual.PARADO,
@@ -62,10 +115,9 @@ public final class CatalogoAnimacoes {
             c.registrar(DefinicaoAnimacao.legada(p + ".movimento_chao.legada", EstadoVisual.MOVIMENTO_CHAO,
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO"));
         }
-        c.registrar(DefinicaoAnimacao.json("branco.movimento_chao.json", RECURSO_BRANCO_CHAO,
-                CarregadorAnimacaoJson.doRecurso(RECURSO_BRANCO_CHAO)));
-        c.registrar(DefinicaoAnimacao.json("preto.movimento_chao.json", RECURSO_PRETO_CHAO,
-                CarregadorAnimacaoJson.doRecurso(RECURSO_PRETO_CHAO)));
+    }
+
+    private static void registrarConjuntas(CatalogoAnimacoes c) {
         // Conjuntas: a PEGADA_1 continua com o MiauStudio + RegistroAnimacoesCombate.
         c.registrar(DefinicaoAnimacao.legada("pegada_1.entrada", EstadoVisual.PEGADA_ENTRADA,
                 "RegistroAnimacoesCombate:pegada_1_entrada (/conteudo/miaustudio/PEGADA_1.json, 30 quadros)"));
@@ -73,6 +125,5 @@ public final class CatalogoAnimacoes {
                 "RegistroAnimacoesCombate:pegada_1_entrada, ultimo quadro (pose final persistente)"));
         c.registrar(DefinicaoAnimacao.legada("arrasto_conjunto.legado", EstadoVisual.ARRASTO_CONJUNTO,
                 "pose final da PEGADA_1 transladada pelo SistemaCombate.deslocarPegadaControlada (5B)"));
-        return c;
     }
 }
