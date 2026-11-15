@@ -62,6 +62,8 @@ public final class MenuPrincipalPanel extends JPanel {
         }
         branco.setViradoParaDireita(true);
         preto.setViradoParaDireita(false);
+        ArteMenus.apresentacao(branco);
+        ArteMenus.apresentacao(preto);
     }
 
     @Override
@@ -79,8 +81,8 @@ public final class MenuPrincipalPanel extends JPanel {
 
     void tick() {
         tempoMs += 16;
-        branco.atualizar(false, false);
-        preto.atualizar(false, false);
+        branco.atualizarApresentacao();                  // 5M.3: pose fixa, so a piscada
+        preto.atualizarApresentacao();
         repaint();
     }
 
@@ -101,6 +103,10 @@ public final class MenuPrincipalPanel extends JPanel {
         g.setColor(ArteMenus.BRANCO);
         ArteMenus.centralizado(g, "↑↓ escolher · ENTER / A confirmar · JOGAR = luta entre 2 jogadores", 400, 433);
         g.dispose();
+    }
+
+    IrmaoMiau[] lutadores() {
+        return new IrmaoMiau[] {branco, preto};
     }
 
     JButton botao(String texto) {

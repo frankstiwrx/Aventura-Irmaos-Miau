@@ -189,6 +189,17 @@ public final class ArteMenus {
     }
 
     /**
+     * 5M.3: o lutador da tela fica na postura neutra fixa (sem idle de
+     * combate e sem taunt). Devolve o proprio lutador.
+     */
+    public static IrmaoMiau apresentacao(IrmaoMiau l) {
+        if (!l.isPoseDeApresentacao()) {
+            l.entrarEmPoseDeApresentacao();
+        }
+        return l;
+    }
+
+    /**
      * Mesmo traco que o rig oficial usa na cabeca (IrmaoMiauBranco/Preto e
      * MiauStudio): max(1, 1.5 * escala), pontas arredondadas.
      */

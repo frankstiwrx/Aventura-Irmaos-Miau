@@ -9,10 +9,10 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 746, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 765, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
-`mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
+`mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 3 testes): manifesto, DLLs do GLFW
 e `java -jar … --diagnostico-gamepad 0`.
 
 ```bash
@@ -337,6 +337,16 @@ Gamepad (Xbox):
 - [ ] Relógio no topo; ESC pausa e o relógio para; ao zerar: FIM "TEMPO ESGOTADO" + vantagem/empate
 - [ ] TENTAR NOVAMENTE repete mapa e tempo; SELECIONAR PERSONAGENS volta à grade
 - [ ] Treino, F5, F3, F6, as quatro pegadas e os dois esquemas do Xbox continuam iguais
+
+### Poses fixas, treino na grade e tipografia (Entrega 5M.3)
+
+- [ ] Abertura, menu e prévias da seleção: gatos parados na postura neutra (sem guarda balançando nem taunt), só piscam
+- [ ] Na luta, depois de ~7 s parado, o taunt continua aparecendo; o idle de combate também
+- [ ] TREINO → grade "TREINO: ESCOLHA SEU LUTADOR": um cursor só (WASD ou setas, qualquer gamepad)
+- [ ] Painel da direita = PARCEIRO (passivo); escolher o Preto deixa o Branco de parceiro
+- [ ] Linhas MAPA / PARCEIRO / INÍCIO; sem TEMPO nem DIFICULDADE; TREINAR! não espera o J2
+- [ ] O treino abre no mapa e no início escolhidos; F5, pausa, TENTAR NOVAMENTE e SELECIONAR PERSONAGENS (volta à grade de treino)
+- [ ] Configurações, Controles e Personagens personalizados: título em letreiro amarelo, textos sem corte, acentos ok
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

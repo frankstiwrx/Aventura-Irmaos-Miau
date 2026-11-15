@@ -47,6 +47,17 @@ class JarExecutavelIT {
         }
     }
 
+    /** 5M.3: as telas novas e a tipografia comum vao no JAR (fontes do sistema; nada externo). */
+    @Test
+    void telasDeMenuDentroDoJar() throws Exception {
+        try (JarFile j = new JarFile(jar().toFile())) {
+            for (String c : new String[] {"AberturaPanel", "MenuPrincipalPanel", "SelecaoPartidaPanel", "ArteMenus",
+                "EstiloTelas", "ConfiguracoesPanel", "PerfisPanel", "ControlesPanel"}) {
+                assertNotNull(j.getEntry("com/irmaosmiau/ui/" + c + ".class"), c + " no JAR");
+            }
+        }
+    }
+
     @Test
     void diagnosticoDeGamepadRodaPeloJar() throws Exception {
         String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();

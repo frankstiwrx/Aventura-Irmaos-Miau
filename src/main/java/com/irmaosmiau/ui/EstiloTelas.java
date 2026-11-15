@@ -27,10 +27,17 @@ final class EstiloTelas {
     static final Color OK = new Color(140, 220, 140);
     static final Color DESTAQUE = new Color(176, 44, 40);
 
-    static final Font TITULO = new Font("Arial", Font.BOLD, 22);
-    static final Font ROTULO = new Font("Arial", Font.BOLD, 13);
+    /*
+     * 5M.3: mesma tipografia dos menus novos (ArteMenus): titulos em letreiro
+     * (amarelo com contorno azul-escuro), rotulos em negrito 13, textos 13 e
+     * dicas 11. So muda a apresentacao do texto; layouts e controles iguais.
+     */
+    static final Font TITULO = new Font("Arial", Font.BOLD, 24);
+    static final Font ROTULO = ArteMenus.TEXTO;
     static final Font NORMAL = new Font("Arial", Font.PLAIN, 13);
-    static final Font PEQUENA = new Font("Arial", Font.PLAIN, 11);
+    static final Font PEQUENA = ArteMenus.PEQUENO;
+    /** Cabecalhos de grupo (ex.: grupos de acoes nos controles). */
+    static final Color SUBTITULO = ArteMenus.AMARELO;
 
     private EstiloTelas() {
     }
@@ -47,10 +54,29 @@ final class EstiloTelas {
         g2.dispose();
     }
 
+    /** 5M.3: titulo em letreiro, alinhado a esquerda como antes (o texto do JLabel nao muda). */
     static JLabel titulo(String texto) {
-        JLabel l = new JLabel(texto);
+        JLabel l = new JLabel(texto) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void paintComponent(Graphics g0) {
+                Graphics2D g = ArteMenus.suave(g0);
+                java.awt.FontMetrics fm = g.getFontMetrics(getFont());
+                int largura = fm.stringWidth(getText());
+                int base = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
+                ArteMenus.letreiro(g, getText(), 3 + largura / 2, base, getFont(), ArteMenus.AMARELO);
+                g.dispose();
+            }
+
+            @Override
+            public java.awt.Dimension getPreferredSize() {
+                java.awt.Dimension d = super.getPreferredSize();
+                return new java.awt.Dimension(d.width + 8, d.height + 6);       // folga do contorno
+            }
+        };
         l.setFont(TITULO);
-        l.setForeground(TEXTO);
+        l.setForeground(ArteMenus.AMARELO);
         return l;
     }
 

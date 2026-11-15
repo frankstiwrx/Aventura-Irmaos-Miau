@@ -55,6 +55,8 @@ public final class AberturaPanel extends JPanel implements TelaNavegavel {
         setFocusable(true);
         branco.setViradoParaDireita(true);
         preto.setViradoParaDireita(false);
+        ArteMenus.apresentacao(branco);
+        ArteMenus.apresentacao(preto);
         for (String k : new String[] {"ENTER", "SPACE"}) {
             getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed " + k), "continuar");
         }
@@ -90,8 +92,8 @@ public final class AberturaPanel extends JPanel implements TelaNavegavel {
     /** Um passo de tempo (timer da tela; tambem usado pelos testes). */
     void tick(long ms) {
         tempoMs += ms;
-        branco.atualizar(false, false);
-        preto.atualizar(false, false);
+        branco.atualizarApresentacao();                  // 5M.3: pose fixa, so a piscada
+        preto.atualizarApresentacao();
         lerGamepads();
         repaint();
     }

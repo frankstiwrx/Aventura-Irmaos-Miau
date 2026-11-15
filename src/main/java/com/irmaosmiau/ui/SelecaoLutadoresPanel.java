@@ -332,6 +332,13 @@ public final class SelecaoLutadoresPanel extends JPanel {
         return inicioDaSessao;
     }
 
+    /** 5M.3: a selecao nova do treino guarda aqui o inicio escolhido (memoria da sessao). */
+    public static synchronized void lembrarInicioDaSessao(com.irmaosmiau.entities.InicioLuta inicio) {
+        if (inicio != null) {
+            inicioDaSessao = inicio;
+        }
+    }
+
     /** Testes: volta ao padrao. */
     static synchronized void reiniciarInicioDaSessao() {
         inicioDaSessao = com.irmaosmiau.entities.InicioLuta.PADRAO_TELAS;

@@ -360,3 +360,16 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
 - `GamePanel.configurarPartida(idCenario, segundos)`: aplica o mapa e o limite de tempo (só em JOGAR;
   no treino é ignorado). O relógio conta ticks de luta ativa (pausa e fim de jogo não chegam ao contador);
   ao zerar, `fimDeJogo` com "TEMPO ESGOTADO · VANTAGEM: Jn NOME" ou "EMPATE" (condicionamento proporcional).
+
+## Poses fixas, treino na grade e tipografia (Entrega 5M.3)
+
+- `IrmaoMiau.entrarEmPoseDeApresentacao()` (idle `NENHUM`, sem relógio de taunt) e `atualizarApresentacao()`
+  (só a piscada). As telas de menu usam `ArteMenus.apresentacao(l)` e nunca chamam `atualizar(...)`; a luta
+  nunca entra nesse modo, então idle e taunt de combate seguem iguais.
+- `SelecaoPartidaPanel.treino(...)` (`Modo.TREINO`): um cursor (todos os comandos e gamepads vão para o J1),
+  painel direito = parceiro passivo (padrão: o outro irmão oficial; pode ser qualquer opção, como antes),
+  linhas MAPA / PARCEIRO / INÍCIO. O `Main` monta a `ConfiguracaoTreino` com mapa, parceiro e início, e
+  guarda o início na sessão (`SelecaoLutadoresPanel.lembrarInicioDaSessao`). A seleção antiga fica no projeto,
+  fora do fluxo.
+- `EstiloTelas` usa a tipografia de `ArteMenus`: título em letreiro (Arial Bold 24, amarelo com contorno),
+  rótulos `ArteMenus.TEXTO`, dicas `ArteMenus.PEQUENO`, cabeçalhos de grupo `SUBTITULO` (amarelo).

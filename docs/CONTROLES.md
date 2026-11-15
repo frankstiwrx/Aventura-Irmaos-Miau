@@ -894,3 +894,6 @@ mais fraco naquilo. O Branco continua desequilibrando o Preto de primeira (difer
 
 Na seleção, ESC volta ao menu. Cada tecla age uma vez por aperto. Com o J1 pronto, ↑/↓ escolhem
 MAPA / TEMPO / LUTAR e ←/→ mudam o valor; só o J1 configura a partida.
+
+Treino (5M.3): a mesma grade, com um cursor só: W A S D ou setas, ESPAÇO/H/ENTER/END confirmam, Q ou
+BACKSPACE voltam, e qualquer gamepad conectado guia o J1. ↑/↓ escolhem MAPA / PARCEIRO / INÍCIO / TREINAR!.

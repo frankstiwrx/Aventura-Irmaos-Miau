@@ -185,14 +185,26 @@ public class Main {
         mostrarSelecaoTreino(janela, OpcoesDeLutadores.padrao());
     }
 
+    /**
+     * Entrega 5M.3: o TREINO usa a selecao em grade nova (modo TREINO): so o
+     * J1 escolhe; parceiro passivo, mapa e inicio sao linhas de configuracao.
+     * O inicio continua lembrado na sessao (como na selecao antiga).
+     */
     private static void mostrarSelecaoTreino(JFrame janela, OpcoesDeLutadores opcoes) {
 
-        trocarTela(janela, new SelecaoLutadoresPanel(
+        trocarTela(janela, com.irmaosmiau.ui.SelecaoPartidaPanel.treino(
+                CatalogoPersonagens.padrao(),
                 opcoes,
-                true,
-                (tipo, jogador, parceiro) -> iniciarTreino(janela, jogador, parceiro,
-                        SelecaoLutadoresPanel.inicioDaSessao()),
-                () -> mostrarMenu(janela)
+                RegistroCenarios.padrao(),
+                PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao()),
+                SelecaoLutadoresPanel.inicioDaSessao(),
+                (jogador, parceiro, cenario, inicio) -> {
+                    SelecaoLutadoresPanel.lembrarInicioDaSessao(inicio);
+                    iniciarTreino(janela, jogador, parceiro, inicio, cenario);
+                },
+                () -> mostrarMenu(janela),
+                ServicoGamepads::global,
+                () -> PreferenciasDispositivos.global().getAtual()
         ));
     }
 
@@ -201,11 +213,12 @@ public class Main {
      * @param parceiro escolha do slot Preto (null = Preto oficial)
      */
     private static void iniciarTreino(JFrame janela, EscolhaLutador jogador, EscolhaLutador parceiro,
-            com.irmaosmiau.entities.InicioLuta inicio) {
+            com.irmaosmiau.entities.InicioLuta inicio, String cenarioEscolhido) {
 
-        // Treino no cenario preferido (se ainda existir).
-        String cenario = PreferenciasJogo.global()
-                .cenarioValido(RegistroCenarios.padrao());
+        // 5M.3: o mapa escolhido na selecao; se sumir, o cenario preferido.
+        String cenario = cenarioEscolhido != null && RegistroCenarios.padrao().contem(cenarioEscolhido)
+                ? cenarioEscolhido
+                : PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao());
 
         ConfiguracaoTreino configuracao = ConfiguracaoTreino.padrao().comCenario(cenario);
         if (jogador != null) {
@@ -221,7 +234,7 @@ public class Main {
                 configuracao,
                 () -> mostrarMenu(janela),
                 () -> mostrarSelecaoTreino(janela, OpcoesDeLutadores.padrao()),
-                () -> iniciarTreino(janela, jogador, parceiro, inicio)
+                () -> iniciarTreino(janela, jogador, parceiro, inicio, cenario)
         );
 
         trocarTela(janela, treino);

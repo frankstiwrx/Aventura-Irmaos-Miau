@@ -1527,6 +1527,42 @@ public void alternarDeitado() {
         return poseIdle;
     }
 
+    // =============================
+    // 5M.3: POSE DE APRESENTACAO (MENUS)
+    // =============================
+    private boolean poseDeApresentacao;
+
+    /**
+     * 5M.3: deixa o lutador na postura neutra fixa das telas de menu: sem
+     * idle de combate e sem taunt. Quem usa nao chama atualizar(...) (que
+     * avanca o relogio de idle/taunt); chama atualizarApresentacao(), que so
+     * cuida da piscada. A luta nunca chama isto.
+     */
+    public void entrarEmPoseDeApresentacao() {
+        poseDeApresentacao = true;
+        estadoIdle = EstadoIdle.NENHUM;
+        poseIdle = 0;
+    }
+
+    public boolean isPoseDeApresentacao() {
+        return poseDeApresentacao;
+    }
+
+    /** 5M.3 (testes): finge que o lutador esta parado ha mais tempo (para chegar ao taunt). */
+    void envelhecerAtividadeParaTestes(long ms) {
+        ultimaAtividade -= ms;
+    }
+
+    /** 5M.3: idle de combate em pe ativo (somente leitura, para testes e diagnostico). */
+    public boolean estaEmIdleDeCombate() {
+        return estadoIdle == EstadoIdle.EM_PE || estadoIdle == EstadoIdle.AGACHADO;
+    }
+
+    /** 5M.3: um passo de tempo na apresentacao: so a piscada (o corpo nao muda). */
+    public void atualizarApresentacao() {
+        atualizarPiscar();
+    }
+
     protected boolean isIdleEmPe() {
 
         return estadoIdle

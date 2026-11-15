@@ -10,6 +10,7 @@ import com.irmaosmiau.dispositivos.LeitorNavegacao.Comando;
 import com.irmaosmiau.dispositivos.ProvedorGamepads;
 import com.irmaosmiau.dispositivos.TipoDispositivo;
 import com.irmaosmiau.entities.AtributosLutador;
+import com.irmaosmiau.entities.InicioLuta;
 import com.irmaosmiau.entities.IrmaoMiau;
 import com.irmaosmiau.personagens.CatalogoPersonagens;
 import com.irmaosmiau.personagens.DefinicaoPersonagem;
@@ -71,6 +72,15 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         void iniciar(EscolhaLutador j1, EscolhaLutador j2, String idCenario, int segundosLimite);
     }
 
+    /** 5M.3: o que fazer quando o J1 confirma TREINAR (parceiro passivo, mapa e inicio). */
+    @FunctionalInterface
+    public interface AoIniciarTreino {
+        void iniciar(EscolhaLutador jogador, EscolhaLutador parceiro, String idCenario, InicioLuta inicio);
+    }
+
+    /** 5M.3: a mesma tela serve a luta (2 jogadores) e o treino (so o J1 escolhe). */
+    public enum Modo { PARTIDA, TREINO }
+
     public static final int COLUNAS = 5;
     public static final int LINHAS = 3;
     static final int CELULA = 56;
@@ -85,7 +95,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     public enum Fase { ESCOLHENDO, PERFIL, PRONTO }
 
     /** Linhas de configuracao (o J1 navega quando esta pronto). */
-    enum Linha { MAPA, TEMPO, DIFICULDADE, LUTAR }
+    enum Linha { MAPA, TEMPO, DIFICULDADE, PARCEIRO, INICIO, LUTAR }
 
     private static final class Jogador {
         int cursor;
@@ -100,6 +110,12 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     private final transient List<DefinicaoPersonagem> elenco = new ArrayList<>();
     private final transient OpcoesDeLutadores opcoes;
     private final transient AoIniciar aoIniciar;
+    private final transient AoIniciarTreino aoIniciarTreino;
+    private final Modo modo;
+    /* 5M.3 (treino): parceiros possiveis (oficiais + perfis), o escolhido e o inicio. */
+    private final transient List<EscolhaLutador> parceiros = new ArrayList<>();
+    private int parceiro;
+    private int inicio;
     private final transient Runnable aoVoltar;
     private final transient Supplier<ProvedorGamepads> provedor;
     private final transient Supplier<AssociacaoDispositivos> associacao;
@@ -119,11 +135,37 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     public SelecaoPartidaPanel(CatalogoPersonagens catalogo, OpcoesDeLutadores opcoes, RegistroCenarios cenarios,
             String idCenarioInicial, AoIniciar aoIniciar, Runnable aoVoltar,
             Supplier<ProvedorGamepads> provedor, Supplier<AssociacaoDispositivos> associacao) {
-        if (catalogo == null || opcoes == null || cenarios == null || aoIniciar == null) {
+        this(Modo.PARTIDA, catalogo, opcoes, cenarios, idCenarioInicial, aoIniciar, null, null, aoVoltar, provedor,
+                associacao);
+    }
+
+    /**
+     * 5M.3: a selecao do TREINO. So o J1 escolhe (teclado do J1 ou do J2 e
+     * qualquer gamepad movem o mesmo cursor); o parceiro passivo, o mapa e o
+     * inicio (de joelhos / em pe) sao linhas de configuracao. Sem TEMPO nem
+     * DIFICULDADE.
+     */
+    public static SelecaoPartidaPanel treino(CatalogoPersonagens catalogo, OpcoesDeLutadores opcoes,
+            RegistroCenarios cenarios, String idCenarioInicial, InicioLuta inicioInicial, AoIniciarTreino aoIniciar,
+            Runnable aoVoltar, Supplier<ProvedorGamepads> provedor, Supplier<AssociacaoDispositivos> associacao) {
+        if (aoIniciar == null) {
+            throw new IllegalArgumentException("Acao de inicio do treino e obrigatoria.");
+        }
+        return new SelecaoPartidaPanel(Modo.TREINO, catalogo, opcoes, cenarios, idCenarioInicial, null, aoIniciar,
+                inicioInicial, aoVoltar, provedor, associacao);
+    }
+
+    private SelecaoPartidaPanel(Modo modo, CatalogoPersonagens catalogo, OpcoesDeLutadores opcoes,
+            RegistroCenarios cenarios, String idCenarioInicial, AoIniciar aoIniciar, AoIniciarTreino aoIniciarTreino,
+            InicioLuta inicioInicial, Runnable aoVoltar, Supplier<ProvedorGamepads> provedor,
+            Supplier<AssociacaoDispositivos> associacao) {
+        if (catalogo == null || opcoes == null || cenarios == null || (aoIniciar == null && aoIniciarTreino == null)) {
             throw new IllegalArgumentException("Catalogo, opcoes, cenarios e acao de inicio sao obrigatorios.");
         }
+        this.modo = modo;
         this.opcoes = opcoes;
         this.aoIniciar = aoIniciar;
+        this.aoIniciarTreino = aoIniciarTreino;
         this.aoVoltar = aoVoltar;
         this.provedor = provedor;
         this.associacao = associacao;
@@ -137,6 +179,14 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             Jogador j = new Jogador();
             j.cursor = Math.min(s.ordinal(), elenco.size() - 1);    // J1 no 1o, J2 no 2o
             jogadores.put(s, j);
+        }
+        if (modo == Modo.TREINO) {
+            for (DefinicaoPersonagem d : elenco) {
+                parceiros.addAll(opcoes.paraBase(d.getId()).getValor());
+            }
+            inicio = Math.max(0, List.of(InicioLuta.values()).indexOf(
+                    inicioInicial == null ? InicioLuta.PADRAO_TELAS : inicioInicial));
+            parceiroPadrao();
         }
         setPreferredSize(new Dimension(800, 450));
         setFocusable(true);
@@ -202,6 +252,12 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             }
         }
         List<InfoGamepad> conectados = p.conectados();
+        if (modo == Modo.TREINO) {
+            comGamepad.clear();                                 // treino: todo gamepad move o J1
+            for (int i = 0; i < conectados.size(); i++) {
+                comGamepad.add(SlotJogador.JOGADOR_1);
+            }
+        }
         for (int i = 0; i < conectados.size() && i < comGamepad.size(); i++) {
             InfoGamepad g = conectados.get(i);
             EstadoGamepad e = p.estado(g.chave()).orElse(null);
@@ -219,6 +275,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     void comandar(SlotJogador slot, Comando c) {
         if (iniciada) {
             return;
+        }
+        if (modo == Modo.TREINO) {
+            slot = SlotJogador.JOGADOR_1;                       // treino: um cursor so
         }
         Jogador j = jogadores.get(slot);
         switch (j.fase) {
@@ -247,6 +306,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 j.fase = j.perfis.size() > 1 ? Fase.PERFIL : Fase.PRONTO;
                 if (j.fase == Fase.PRONTO && slot == SlotJogador.JOGADOR_1) {
                     linhaJ1 = Linha.LUTAR;
+                    parceiroPadrao();
                 }
             }
             case VOLTAR -> voltarAoMenu();
@@ -263,6 +323,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 j.fase = Fase.PRONTO;
                 if (j == jogadores.get(SlotJogador.JOGADOR_1)) {
                     linhaJ1 = Linha.LUTAR;
+                    parceiroPadrao();
                 }
             }
             case VOLTAR -> j.fase = Fase.ESCOLHENDO;
@@ -287,7 +348,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             case CONFIRMAR -> {
                 if (linhaJ1 != Linha.LUTAR) {
                     linhaJ1 = Linha.LUTAR;
-                } else if (jogadores.get(SlotJogador.JOGADOR_2).fase != Fase.PRONTO) {
+                } else if (modo == Modo.PARTIDA && jogadores.get(SlotJogador.JOGADOR_2).fase != Fase.PRONTO) {
                     avisoAguardandoAte = tempoMs + 900;
                 } else {
                     iniciar();
@@ -300,7 +361,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
 
     /** DIFICULDADE e pulada: indisponivel enquanto nao houver IA. */
     private Linha linhaVizinha(int passo) {
-        Linha[] ordem = {Linha.MAPA, Linha.TEMPO, Linha.LUTAR};
+        Linha[] ordem = modo == Modo.TREINO
+                ? new Linha[] {Linha.MAPA, Linha.PARCEIRO, Linha.INICIO, Linha.LUTAR}
+                : new Linha[] {Linha.MAPA, Linha.TEMPO, Linha.LUTAR};
         int i = java.util.Arrays.asList(ordem).indexOf(linhaJ1);
         return ordem[Math.max(0, Math.min(ordem.length - 1, i + passo))];
     }
@@ -310,7 +373,28 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             mapa = Math.floorMod(mapa + passo, mapas.size());
         } else if (linhaJ1 == Linha.TEMPO) {
             tempo = Math.floorMod(tempo + passo, TEMPOS.length);
+        } else if (linhaJ1 == Linha.PARCEIRO && !parceiros.isEmpty()) {
+            parceiro = Math.floorMod(parceiro + passo, parceiros.size());
+        } else if (linhaJ1 == Linha.INICIO) {
+            inicio = Math.floorMod(inicio + passo, InicioLuta.values().length);
         }
+    }
+
+    /** Como no treino antigo: o parceiro e o outro irmao oficial (pode ser trocado depois). */
+    private void parceiroPadrao() {
+        if (modo != Modo.TREINO || parceiros.isEmpty()) {
+            return;
+        }
+        EscolhaLutador j = escolha(SlotJogador.JOGADOR_1);
+        String outro = j != null && CatalogoPersonagens.ID_PRETO.equals(j.getIdBase())
+                ? CatalogoPersonagens.ID_BRANCO : CatalogoPersonagens.ID_PRETO;
+        for (int i = 0; i < parceiros.size(); i++) {
+            if (parceiros.get(i).isOficial() && outro.equals(parceiros.get(i).getIdBase())) {
+                parceiro = i;
+                return;
+            }
+        }
+        parceiro = 0;
     }
 
     private void iniciar() {
@@ -319,6 +403,11 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
         iniciada = true;
         timer.stop();
+        if (modo == Modo.TREINO) {
+            aoIniciarTreino.iniciar(escolha(SlotJogador.JOGADOR_1), escolha(SlotJogador.JOGADOR_2), mapas.get(mapa),
+                    InicioLuta.values()[inicio]);
+            return;
+        }
         aoIniciar.iniciar(escolha(SlotJogador.JOGADOR_1), escolha(SlotJogador.JOGADOR_2), mapas.get(mapa),
                 TEMPOS[tempo]);
     }
@@ -336,6 +425,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
 
     /** Escolha confirmada (ou em escolha) do jogador; null num espaco bloqueado. */
     EscolhaLutador escolha(SlotJogador slot) {
+        if (modo == Modo.TREINO && slot == SlotJogador.JOGADOR_2) {
+            return parceiros.isEmpty() ? null : parceiros.get(parceiro);       // o parceiro passivo
+        }
         Jogador j = jogadores.get(slot);
         if (j.fase != Fase.ESCOLHENDO && !j.perfis.isEmpty()) {
             return j.perfis.get(j.perfil);
@@ -392,9 +484,10 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             boolean esq = s == SlotJogador.JOGADOR_1;
             j.previa = e.criarLutador(esq ? 88 : 648, 108, 0.7);
             j.previa.setViradoParaDireita(esq);
+            ArteMenus.apresentacao(j.previa);
             j.idPrevia = id;
         }
-        j.previa.atualizar(false, false);
+        j.previa.atualizarApresentacao();                // 5M.3: pose fixa, so a piscada
     }
 
     // =====================================================
@@ -415,7 +508,8 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         for (int x = -450; x < 800; x += 36) {
             g.fillPolygon(new int[] {x, x + 18, x + 468, x + 450}, new int[] {0, 0, 450, 450}, 4);
         }
-        ArteMenus.letreiro(g, "ESCOLHA SEU LUTADOR", 400, 44, new Font("Arial", Font.BOLD, 26), ArteMenus.AMARELO);
+        ArteMenus.letreiro(g, modo == Modo.TREINO ? "TREINO: ESCOLHA SEU LUTADOR" : "ESCOLHA SEU LUTADOR", 400, 44,
+                new Font("Arial", Font.BOLD, 26), ArteMenus.AMARELO);
 
         painelJogador(g, SlotJogador.JOGADOR_1, 10);
         painelJogador(g, SlotJogador.JOGADOR_2, 570);
@@ -444,7 +538,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         Rectangle r1 = celula(jogadores.get(SlotJogador.JOGADOR_1).cursor);
         Rectangle r2 = celula(jogadores.get(SlotJogador.JOGADOR_2).cursor);
         cursor(g, r1, -4, ArteMenus.J1, "1", true, jogadores.get(SlotJogador.JOGADOR_1).fase);
-        cursor(g, r2, 2, ArteMenus.J2, "2", false, jogadores.get(SlotJogador.JOGADOR_2).fase);
+        if (modo == Modo.PARTIDA) {                             // treino: so o cursor do J1
+            cursor(g, r2, 2, ArteMenus.J2, "2", false, jogadores.get(SlotJogador.JOGADOR_2).fase);
+        }
     }
 
     private void cursor(Graphics2D g, Rectangle r, int d, Color cor, String rotulo, boolean esquerda, Fase fase) {
@@ -486,6 +582,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         IrmaoMiau l = retratos.computeIfAbsent(d.getId() + "@" + r.x + "," + r.y,
                 k -> EscolhaLutador.oficial(d).criarLutador(r.x + r.width / 2 - 25, r.y + 2, 0.62));
         l.setViradoParaDireita(true);
+        ArteMenus.apresentacao(l);
         Graphics2D g = (Graphics2D) g0.create();
         g.clip(new java.awt.geom.RoundRectangle2D.Double(r.x, r.y, r.width, r.height, 8, 8));
         ArteMenus.desenharLutador(g, l);
@@ -500,17 +597,20 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         g.setColor(cor);
         g.setStroke(new BasicStroke(2.5f));
         g.drawRoundRect(x, 56, 220, 386, 14, 14);
+        boolean parceiroTreino = modo == Modo.TREINO && s == SlotJogador.JOGADOR_2;
         g.setFont(new Font("Arial", Font.BOLD, 20));
-        g.drawString(s == SlotJogador.JOGADOR_1 ? "J1" : "J2", x + 10, 80);
+        g.drawString(parceiroTreino ? "PARCEIRO" : s == SlotJogador.JOGADOR_1 ? "J1" : "J2", x + 10, 80);
         g.setFont(new Font("Arial", Font.BOLD, 12));
-        g.setColor(j.fase == Fase.PRONTO ? ArteMenus.AMARELO : ArteMenus.BRANCO);
-        String fase = j.fase == Fase.PRONTO ? "PRONTO!" : j.fase == Fase.PERFIL ? "ESCOLHA O PERFIL" : "ESCOLHENDO";
+        g.setColor(j.fase == Fase.PRONTO || parceiroTreino ? ArteMenus.AMARELO : ArteMenus.BRANCO);
+        String fase = parceiroTreino ? "PASSIVO"
+                : j.fase == Fase.PRONTO ? "PRONTO!" : j.fase == Fase.PERFIL ? "ESCOLHA O PERFIL" : "ESCOLHENDO";
         g.drawString(fase, x + 210 - g.getFontMetrics().stringWidth(fase), 78);
 
         // previa
         g.setColor(new Color(255, 255, 255, 30));
         g.fillOval(x + 40, 268, 140, 18);
-        DefinicaoPersonagem d = personagemEm(j.cursor);
+        EscolhaLutador e = escolha(s);
+        DefinicaoPersonagem d = parceiroTreino ? (e == null ? null : e.getBase()) : personagemEm(j.cursor);
         if (j.previa != null) {
             ArteMenus.desenharLutador(g, j.previa);
         } else {
@@ -531,13 +631,15 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
 
         // nome, estilo, perfil e atributos (dados reais do catalogo/perfil)
-        EscolhaLutador e = escolha(s);
         g.setColor(ArteMenus.BRANCO);
         g.setFont(new Font("Arial", Font.BOLD, 16));
         ArteMenus.centralizado(g, d == null ? "???" : nomeExibido(d), x + 110, 304);
         g.setFont(ArteMenus.PEQUENO);
         ArteMenus.centralizado(g, d == null ? "Em breve" : "Estilo: " + d.getEstilo(), x + 110, 319);
-        if (e != null && j.perfis.size() > 1 && j.fase != Fase.ESCOLHENDO) {
+        if (parceiroTreino && e != null && !e.isOficial()) {
+            g.setColor(ArteMenus.BRANCO);
+            ArteMenus.centralizado(g, "Perfil: " + e.getNome(), x + 110, 333);
+        } else if (!parceiroTreino && e != null && j.perfis.size() > 1 && j.fase != Fase.ESCOLHENDO) {
             g.setColor(j.fase == Fase.PERFIL ? ArteMenus.AMARELO : ArteMenus.BRANCO);
             ArteMenus.centralizado(g, (j.fase == Fase.PERFIL ? "< " : "") + "Perfil: " + e.getNome()
                     + (j.fase == Fase.PERFIL ? " >" : ""), x + 110, 333);
@@ -575,17 +677,24 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         boolean j1Pronto = jogadores.get(SlotJogador.JOGADOR_1).fase == Fase.PRONTO;
         g.setColor(ArteMenus.AZUL_PAINEL);
         g.fillRoundRect(240, 258, 320, 184, 14, 14);
+        boolean treino = modo == Modo.TREINO;
         linha(g, Linha.MAPA, "MAPA", nomesMapas.get(mapa), 284, mapas.size() > 1, j1Pronto);
-        linha(g, Linha.TEMPO, "TEMPO", textoTempo(TEMPOS[tempo]), 316, true, j1Pronto);
-        linha(g, Linha.DIFICULDADE, "DIFICULDADE", "EM BREVE", 348, false, j1Pronto);
+        if (treino) {
+            linha(g, Linha.PARCEIRO, "PARCEIRO", textoParceiro(), 316, parceiros.size() > 1, j1Pronto);
+            linha(g, Linha.INICIO, "INÍCIO", InicioLuta.values()[inicio].getRotulo().toUpperCase(Locale.ROOT), 348,
+                    true, j1Pronto);
+        } else {
+            linha(g, Linha.TEMPO, "TEMPO", textoTempo(TEMPOS[tempo]), 316, true, j1Pronto);
+            linha(g, Linha.DIFICULDADE, "DIFICULDADE", "EM BREVE", 348, false, j1Pronto);
+        }
 
         boolean focoLutar = j1Pronto && linhaJ1 == Linha.LUTAR;
-        boolean prontos = j1Pronto && jogadores.get(SlotJogador.JOGADOR_2).fase == Fase.PRONTO;
+        boolean prontos = j1Pronto && (treino || jogadores.get(SlotJogador.JOGADOR_2).fase == Fase.PRONTO);
         g.setColor(focoLutar ? new Color(255, 206, 46, 235) : new Color(30, 70, 150));
         g.fillRoundRect(320, 364, 160, 34, 12, 12);
         g.setFont(new Font("Arial", Font.BOLD, 18));
         g.setColor(focoLutar ? ArteMenus.AZUL_ESCURO : new Color(170, 190, 230));
-        ArteMenus.centralizado(g, "LUTAR!", 400, 388);
+        ArteMenus.centralizado(g, treino ? "TREINAR!" : "LUTAR!", 400, 388);
 
         g.setFont(ArteMenus.PEQUENO);
         g.setColor(ArteMenus.BRANCO);
@@ -593,6 +702,10 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         if (avisoAguardandoAte > tempoMs) {
             g.setColor(ArteMenus.AMARELO);
             dica = "AGUARDANDO O J2 FICAR PRONTO";
+        } else if (treino && j1Pronto) {
+            dica = "cima/baixo escolhe · lados mudam · confirme TREINAR!";
+        } else if (treino) {
+            dica = "Escolha seu lutador · o parceiro fica parado";
         } else if (prontos) {
             dica = "J1: confirme LUTAR! para começar";
         } else if (j1Pronto) {
@@ -603,12 +716,23 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         ArteMenus.centralizado(g, dica, 400, 416);
         g.setColor(new Color(190, 205, 235));
         g.setFont(new Font("Arial", Font.PLAIN, 9));
-        ArteMenus.centralizado(g, "J1 WASD·ESPAÇO·Q   J2 setas·ENTER·BACKSPACE   ESC menu", 400, 433);
+        ArteMenus.centralizado(g, treino ? "WASD/setas · ESPAÇO/ENTER confirma · Q volta · ESC menu"
+                : "J1 WASD·ESPAÇO·Q   J2 setas·ENTER·BACKSPACE   ESC menu", 400, 433);
     }
 
     /** Triangulo de seta (as fontes padrao nem sempre tem os caracteres de seta). */
     private static void seta(Graphics2D g, int cx, int cy, int lado) {
         g.fillPolygon(new int[] {cx + 5 * lado, cx - 5 * lado, cx - 5 * lado}, new int[] {cy, cy - 6, cy + 6}, 3);
+    }
+
+    /** Nome curto do parceiro: "MIAU PRETO" ou o nome do perfil. */
+    private String textoParceiro() {
+        EscolhaLutador e = parceiros.isEmpty() ? null : parceiros.get(parceiro);
+        if (e == null) {
+            return "-";
+        }
+        String t = e.isOficial() ? nomeExibido(e.getBase()) : e.getNome().toUpperCase(Locale.ROOT);
+        return t.length() > 16 ? t.substring(0, 15) + "…" : t;
     }
 
     static String textoTempo(int s) {
@@ -626,6 +750,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         g.drawString(rotulo, 262, y);
         boolean habilitado = l != Linha.DIFICULDADE;
         g.setColor(!habilitado ? new Color(140, 150, 175) : foco ? ArteMenus.AMARELO : ArteMenus.BRANCO);
+        if (g.getFontMetrics().stringWidth(valor) > 110) {
+            g.setFont(new Font("Arial", Font.BOLD, 11));         // 5M.3: nomes longos cabem entre as setas
+        }
         ArteMenus.centralizado(g, valor, 462, y);
         g.setColor(setas && habilitado ? (foco ? ArteMenus.AMARELO : ArteMenus.BRANCO) : new Color(90, 105, 140));
         seta(g, 392, y - 5, -1);
@@ -649,6 +776,14 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
 
     int tempoAtual() {
         return TEMPOS[tempo];
+    }
+
+    Modo modo() {
+        return modo;
+    }
+
+    InicioLuta inicioAtual() {
+        return InicioLuta.values()[inicio];
     }
 
     boolean mapaTemOpcoes() {

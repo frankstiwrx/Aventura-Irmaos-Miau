@@ -279,7 +279,7 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
             g.gridwidth = 2;
             g.anchor = GridBagConstraints.WEST;
             g.insets = new Insets(8, 6, 2, 10);
-            JLabel titulo = EstiloTelas.texto(grupo.getTitulo(), EstiloTelas.ROTULO, new Color(255, 214, 120));
+            JLabel titulo = EstiloTelas.texto(grupo.getTitulo(), EstiloTelas.ROTULO, EstiloTelas.SUBTITULO);
             lista.add(titulo, g);
             g.gridy++;
             g.gridwidth = 1;
@@ -350,7 +350,7 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
         g.fill = GridBagConstraints.NONE;
         g.anchor = GridBagConstraints.WEST;
         g.insets = new Insets(8, 6, 2, 10);
-        lista.add(EstiloTelas.texto(titulo, EstiloTelas.ROTULO, new Color(255, 214, 120)), g);
+        lista.add(EstiloTelas.texto(titulo, EstiloTelas.ROTULO, EstiloTelas.SUBTITULO), g);
         g.gridy++;
         g.gridwidth = 1;
         g.insets = new Insets(2, 16, 2, 10);
