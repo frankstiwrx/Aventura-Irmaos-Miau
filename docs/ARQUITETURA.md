@@ -403,3 +403,21 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
   + estado de acrobacia no `IrmaoMiau` (evasão de pegada no ar, como o pulo).
 - `GamePanel.manterNaArena` (todo movimento livre) e `impedirAtravessarNaAcrobacia`.
 - `animacao.BibliotecaMovimentos`, `AnimadorMovimentos`, `VersaoMovimentos` (F7).
+
+
+## R3 contextual, teclado-controle e modificadores (Entrega 5O.1)
+
+- `GamePanel.mobilidadeContextual`: ROLAR (R3) + direção → em pé `TipoAcrobacia.pelaDirecao` (diagonal:
+  vale o componente horizontal = mortal); de joelhos/deitado `IrmaoMiau.iniciarRolamento` (deitado com
+  `MULTIPLICADOR_ROLAMENTO_DEITADO` = 0,6: mesma distância, mais tempo; custo 4,0 em qualquer postura).
+- `GamePanel.respirandoPeloModificador`: RT sem direção = a respiração de sempre; guarda e sprawl vencem.
+- `controles.LayoutTecladoControle` + `dispositivos.TecladoControle`: teclas → `EstadoGamepad`; a
+  `SessaoDispositivos` alimenta a `FonteGamepad` do J2 com ele quando não há gamepad vinculado.
+  `usaControleAgora` = gamepad real ou teclado-controle; `usaGamepadAgora` continua só o real.
+- `FonteGamepad.comSelectComoRb`: Select livre no slot (`MapaGamepad.selectValeComoRb`) vira RB antes do
+  mapeamento; `botaoFisico` lê a leitura crua (F3: `fis`, `sel`, `log`).
+- `controles.ResolvedorModificadores`: tabela única de combinações (ativas e reservadas) com prioridade;
+  `FamiliaTecnica.dosModificadores` delega a ela.
+- Guarda andando: `DefesaCorporal.MULTIPLICADOR_VELOCIDADE` (0,5) em `moverPersonagem`, diagonal
+  normalizada, sem corrida; custo = caminhada × `CustosFolego.FATOR_DISTANCIA_GUARDA` (1,0), sem recuperar.
+- `animacao.AssentamentoMovimentos`: assenta rolamentos e sprawl no tatame por classe de personagem (cache).

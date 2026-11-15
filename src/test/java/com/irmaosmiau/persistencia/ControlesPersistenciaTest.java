@@ -46,9 +46,10 @@ class ControlesPersistenciaTest {
 
     private static MapaControles remapeado() {
         return MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("P"))
-                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("CONTROL"))
-                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD0"));
+                // 5O.1 (pedido): P e do teclado-controle do J2 e CTRL/NUM 0 viraram padroes do J1.
+                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("COMMA"))
+                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("SEMICOLON"))
+                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD3"));
     }
 
     private long copiasCorrompidas() throws Exception {
@@ -77,7 +78,8 @@ class ControlesPersistenciaTest {
         String json = Files.readString(arquivo());
         assertTrue(json.contains("\"CONTROLES_IRMAOS_MIAU\""), json);
         assertTrue(json.contains("\"versaoEsquema\""), json);
-        assertTrue(json.contains("\"INICIAR_PEGADA\": \"P\"") || json.contains("\"INICIAR_PEGADA\":\"P\""), json);
+        assertTrue(json.contains("\"INICIAR_PEGADA\": \"COMMA\"") || json.contains("\"INICIAR_PEGADA\":\"COMMA\""),
+                json);                                         // 5O.1 (pedido): P -> COMMA
         assertFalse(Files.exists(tmp.resolve(RepositorioConfiguracoes.NOME_ARQUIVO)),
                 "configuracoes.json nao e tocado");
 
@@ -146,9 +148,9 @@ class ControlesPersistenciaTest {
     void arquivoAntigoSemUmaAcaoRecebeOPadraoQuandoLivre() throws Exception {
         // Arquivo "de antes" do reforco: sem REFORCAR_PEGADA no jogador1.
         escrever("{\"tipo\":\"CONTROLES_IRMAOS_MIAU\",\"versaoEsquema\":1,\"jogadores\":{\"jogador1\":"
-                + "{\"INICIAR_PEGADA\":\"P\"}}}");
+                + "{\"INICIAR_PEGADA\":\"COMMA\"}}}");   // 5O.1 (pedido): P e do teclado-controle do J2
         RepositorioControles.Leitura l = repo().carregar();
-        assertEquals("P", l.mapa().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
+        assertEquals(",", l.mapa().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
         assertEquals("Y", l.mapa().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.REFORCAR_PEGADA));
         assertTrue(l.mapa().isValido());
         assertTrue(l.avisos().isEmpty());
@@ -172,7 +174,7 @@ class ControlesPersistenciaTest {
     @Test
     void mapaComConflitoNuncaEGravado() throws Exception {
         MapaControles ruim = MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.PULAR, t("A"));
+                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.PULAR, t("NUMPAD4"));   // 5O.1 (pedido): A -> NUM 4
         assertThrows(IllegalArgumentException.class, () -> repo().salvar(ruim));
         PreferenciasControles p = PreferenciasControles.carregar(repo());
         assertThrows(IllegalArgumentException.class, () -> p.salvar(ruim));

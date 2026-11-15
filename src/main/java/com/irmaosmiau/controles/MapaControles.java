@@ -49,6 +49,28 @@ public final class MapaControles {
         return new MapaControles(m);
     }
 
+    /**
+     * 5O.1: os padroes da 5O (antes do teclado-controle do J2), para reconhecer
+     * um controles.json nunca personalizado e atualiza-lo sozinho.
+     */
+    public static MapaControles padrao5O() {
+        MapaControles m = padrao();
+        String[][] j1 = {{"MOVER_ESQUERDA", "A"}, {"MOVER_DIREITA", "D"}, {"MOVER_CIMA", "W"}, {"MOVER_BAIXO", "S"},
+            {"CORRER", "Z"}, {"DEITAR_LEVANTAR", "F"}, {"INICIAR_PEGADA", "H"}, {"TENTAR_DESEQUILIBRIO", "T"},
+            {"MODO_DESLOCAMENTO_CONTROLADO", "SHIFT"}, {"SPRAWL", "G"}};
+        Map<SlotJogador, Map<AcaoJogador, TeclaFisica>> t = m.copia();
+        for (String[] par : j1) {
+            t.get(SlotJogador.JOGADOR_1).put(AcaoJogador.valueOf(par[0]), TeclaFisica.exigir(par[1]));
+        }
+        t.get(SlotJogador.JOGADOR_2).put(AcaoJogador.PEGADA_3, TeclaFisica.exigir("NUMPAD8"));
+        return new MapaControles(t);
+    }
+
+    /** O slot esta exatamente como nos padroes da 5O? */
+    public boolean slotIgualAo5O(SlotJogador slot) {
+        return teclas.get(slot).equals(padrao5O().teclas.get(slot));
+    }
+
     /** Mapa sem nenhuma tecla (base do carregamento de arquivos). */
     public static MapaControles semTeclas() {
         return new MapaControles(vazio());
@@ -179,6 +201,11 @@ public final class MapaControles {
                 }
                 if (t.isReservada()) {
                     lista.add(new ProblemaControle(ProblemaControle.Tipo.TECLA_RESERVADA, s, a, t, null, null));
+                }
+                // 5O.1: as teclas do teclado-controle (J2) nao servem a quem usa teclas soltas.
+                SlotJogador dono = LayoutTecladoControle.donoDaTecla(t);
+                if (dono != null && dono != s) {
+                    lista.add(new ProblemaControle(ProblemaControle.Tipo.TECLA_DO_CONTROLE, s, a, t, dono, null));
                 }
                 Atribuicao anterior = vistas.putIfAbsent(t, new Atribuicao(s, a));
                 if (anterior != null) {

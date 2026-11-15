@@ -654,6 +654,14 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
             mostrarStatus(tecla.getRotulo() + " é reservada ao sistema. Escolha outra (ESC cancela).", true);
             return;
         }
+        // 5O.1: as teclas do teclado-controle do J2 (WASD, setas, K/L/J/I...) nao servem ao outro jogador.
+        com.irmaosmiau.controles.SlotJogador doControle =
+                com.irmaosmiau.controles.LayoutTecladoControle.donoDaTecla(tecla);
+        if (doControle != null && doControle != slotAtual) {
+            mostrarStatus(tecla.getRotulo() + " é do teclado-controle do " + doControle.getSigla()
+                    + ". Escolha outra (ESC cancela).", true);
+            return;
+        }
         encerrarCaptura();
 
         Optional<MapaControles.Atribuicao> dono = edicao.quemUsa(tecla);

@@ -19,6 +19,24 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5D: associacao de dispositivos aos slots e ciclo de vida (gamepad simulado). */
 class SessaoDispositivosTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    {
+        // o InputHandler deste teste e criado num campo (antes do @BeforeEach)
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
     private static final List<SlotJogador> OS_DOIS = List.of(J1, J2);
@@ -57,7 +75,7 @@ class SessaoDispositivosTest {
         assertEquals("g1", s.gamepadDo(J2).orElseThrow().chave());
         assertEquals(List.of("J2: GAMEPAD · Controle A"), s.consumirMensagens());
 
-        tecla("pressed D");
+        tecla("pressed NUMPAD6");                            // 5O.1 (pedido): D -> NUM 6
         tecla("pressed LEFT");                               // seta do J2: teclado do J2 desligado
         sim.definir("g1", EstadoGamepad.repouso().comEixo(EixoGamepad.ESQ_X, -1f));
         s.atualizar();
@@ -129,7 +147,7 @@ class SessaoDispositivosTest {
         assertFalse(input.isDireita() || input.isCorrer(), "nenhuma acao continua presa");
         assertEquals(List.of("J1: GAMEPAD DESCONECTADO · teclado ativo"), s.consumirMensagens());
         assertTrue(input.isTecladoAtivo(J1));
-        tecla("pressed A");
+        tecla("pressed NUMPAD4");                            // 5O.1 (pedido): A -> NUM 4
         assertTrue(input.isEsquerda(), "o jogador continua pelo teclado");
     }
 
@@ -211,7 +229,7 @@ class SessaoDispositivosTest {
             assertTrue(p.descricao().contains("desligado"), p.descricao());
             SessaoDispositivos s = new SessaoDispositivos(com(J1, TipoDispositivo.GAMEPAD), p, input,
                     OS_DOIS, MapaGamepad.experimental());
-            tecla("pressed D");
+            tecla("pressed NUMPAD6");                            // 5O.1 (pedido): D -> NUM 6
             s.atualizar();
             assertTrue(input.isDireita(), "teclado continua");
         } finally {

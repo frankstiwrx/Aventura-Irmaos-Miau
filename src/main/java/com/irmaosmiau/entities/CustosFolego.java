@@ -55,6 +55,12 @@ public final class CustosFolego {
      */
     public static final double GUARDA_ENTRADA = 0.3;
     public static final double GUARDA_TROCA = 0.15;
+    /**
+     * 5O.1: andar com a guarda cobra a caminhada normal proporcional a distancia
+     * vezes este fator (1,0 = o mesmo custo por pixel de andar; como a guarda anda
+     * a metade, custa a metade por segundo). Nunca recupera folego enquanto anda.
+     */
+    public static final double FATOR_DISTANCIA_GUARDA = 1.0;
 
     // ---------------- Transicoes de postura (custo unico por transicao)
     public static final double AJOELHAR = 0.5;            // em pe -> ajoelhado

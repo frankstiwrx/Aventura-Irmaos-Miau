@@ -15,7 +15,7 @@ public enum FamiliaTecnica {
     DEFESAS("DEFESAS"),
     /** RB + direcao: quedas e transicoes (reservado; nada executa ainda). */
     PROJECOES("QUEDAS E TRANSIÇÕES"),
-    /** Y + direcao do movimento: acrobacias (le o analogico ESQUERDO, nao o RS). */
+    /** Acrobacias (5O.1: R3 + direcao do movimento em pe; nao usa o RS). */
     ACROBACIAS("ACROBACIAS");
 
     private final String rotulo;
@@ -28,12 +28,20 @@ public enum FamiliaTecnica {
         return rotulo;
     }
 
-    /** Familia da direcao da tecnica pelos modificadores segurados (RT antes de RB). */
+    /**
+     * Familia da direcao da tecnica pelos modificadores segurados (RT antes de RB).
+     * 5O.1: decidido pela tabela de {@link ResolvedorModificadores}.
+     */
     public static FamiliaTecnica dosModificadores(boolean defesa, boolean projecao) {
+        java.util.Set<ResolvedorModificadores.Modificador> m =
+                java.util.EnumSet.noneOf(ResolvedorModificadores.Modificador.class);
         if (defesa) {
-            return DEFESAS;
+            m.add(ResolvedorModificadores.Modificador.RT);
         }
-        return projecao ? PROJECOES : PEGADAS;
+        if (projecao) {
+            m.add(ResolvedorModificadores.Modificador.RB);
+        }
+        return ResolvedorModificadores.familia(m);
     }
 
     /** Uma escolha: familia + direcao (uma por inclinacao/toque). */

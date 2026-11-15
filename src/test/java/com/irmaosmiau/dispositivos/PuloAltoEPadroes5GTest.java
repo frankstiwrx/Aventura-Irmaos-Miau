@@ -66,7 +66,7 @@ class PuloAltoEPadroes5GTest {
     @Test
     void modificadorConfiguravelSemConflitoComAsCamadas() {
         MapaGamepad ctx = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
-                .semBotao(J1, ItemGamepad.de(AcaoJogador.ACROBACIA))          // 5O (pedido): Y era livre
+                // 5O.1 (pedido): o Y voltou a ficar livre no Contextual (acrobacia = R3 + direcao em pe).
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.NORTE);
         assertTrue(ctx.isValido(), "Y esta livre no contextual");
         FonteGamepad f = new FonteGamepad(J1, ctx);

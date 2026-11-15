@@ -14,7 +14,9 @@ public record ProblemaControle(Tipo tipo, SlotJogador slot, AcaoJogador acao,
         /** ESC ou F1..F12. */
         TECLA_RESERVADA,
         /** Acao sem tecla (ex.: acao nova cuja tecla padrao ja estava em uso). */
-        SEM_TECLA
+        SEM_TECLA,
+        /** 5O.1: tecla do teclado-controle de outro jogador (ex.: W do J2). */
+        TECLA_DO_CONTROLE
     }
 
     public String descricao() {
@@ -24,6 +26,8 @@ public record ProblemaControle(Tipo tipo, SlotJogador slot, AcaoJogador acao,
                     + outroSlot.getSigla() + " · " + outraAcao.getRotulo();
             case TECLA_RESERVADA -> "Tecla " + tecla.getRotulo() + " é reservada ao sistema (" + quem + ")";
             case SEM_TECLA -> quem + " está sem tecla";
+            case TECLA_DO_CONTROLE -> "Tecla " + tecla.getRotulo() + " é do teclado-controle do " + outroSlot.getSigla()
+                    + " (" + quem + ")";
         };
     }
 }

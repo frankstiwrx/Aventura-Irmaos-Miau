@@ -127,6 +127,9 @@ public final class RepositorioControles {
                 if (acoes != null) {
                     for (String nomeAcao : acoes.chaves()) {
                         AcaoJogador a = acaoPorNome(nomeAcao);
+                        if (a == AcaoJogador.ACROBACIA) {
+                            continue;                     // 5O.1: obsoleta (acrobacia agora e R3 + direcao)
+                        }
                         if (a == null || !s.usa(a)) {
                             throw acoes.erro(nomeAcao, "acao desconhecida para " + s.getIdArquivo());
                         }
@@ -143,15 +146,39 @@ public final class RepositorioControles {
                 }
             }
 
+            // 5O.1: slot nunca personalizado (padroes da 5O) recebe os padroes novos; teclas do
+            // teclado-controle do J2 usadas pelo J1 personalizado ficam livres (o J1 escolhe outra).
+            List<String> avisos = new ArrayList<>();
+            for (SlotJogador s : SlotJogador.values()) {
+                if (mapa.slotIgualAo5O(s) && !mapa.doSlot(s).equals(MapaControles.padrao().doSlot(s))) {
+                    mapa = mapa.comPadroesDo(s);
+                    faltando.removeIf(f -> f.slot() == s);
+                    avisos.add(s.getSigla() + ": teclas padrão atualizadas (5O.1"
+                            + (s == SlotJogador.JOGADOR_1 ? ": movimento no teclado numérico 8/4/5/6" : "")
+                            + "). Salve em CONTROLES para gravar.");
+                }
+            }
             List<ProblemaControle> problemas = mapa.problemas().stream()
-                    .filter(p -> p.tipo() != ProblemaControle.Tipo.SEM_TECLA).toList();
+                    .filter(p -> p.tipo() != ProblemaControle.Tipo.SEM_TECLA
+                            && p.tipo() != ProblemaControle.Tipo.TECLA_DO_CONTROLE).toList();
             if (!problemas.isEmpty()) {
                 throw new IllegalArgumentException(problemas.stream()
                         .map(ProblemaControle::descricao).collect(Collectors.joining("; ")));
             }
+            for (SlotJogador s : SlotJogador.values()) {
+                for (java.util.Map.Entry<AcaoJogador, TeclaFisica> e : mapa.doSlot(s).entrySet()) {
+                    SlotJogador dono = com.irmaosmiau.controles.LayoutTecladoControle.donoDaTecla(e.getValue());
+                    if (dono != null && dono != s) {
+                        mapa = mapa.semTecla(s, e.getKey());
+                        avisos.add(s.getSigla() + " · " + e.getKey().getRotulo() + ": a tecla "
+                                + e.getValue().getRotulo() + " agora é do teclado-controle do " + dono.getSigla()
+                                + ". Escolha outra em CONTROLES.");
+                    }
+                }
+            }
+
 
             // Acoes ausentes (arquivo antigo): padrao se a tecla estiver livre.
-            List<String> avisos = new ArrayList<>();
             for (AcaoFaltando f : faltando) {
                 TeclaFisica padrao = MapaControles.teclaPadrao(f.slot(), f.acao());
                 if (mapa.quemUsa(padrao).isEmpty()) {

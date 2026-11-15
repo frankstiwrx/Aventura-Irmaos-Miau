@@ -518,3 +518,27 @@ mesma nas duas versões; só o desenho muda). Rig incompatível = nada aplicado 
 nada novo. Variante específica = outro arquivo e uma linha na biblioteca. Para editar no MiauStudio: abrir
 um projeto INDIVIDUAL com os mesmos 30 valores e copiar os quadros para o arquivo (o MiauStudio ainda não
 exporta este formato diretamente).
+
+
+# Entrega 5O.1 — Rolamento e sprawl mais baixos, guarda andando
+
+- **Rolamentos experimentais** (`rolamento_frente/tras/lateral_5o.json`): o corpo vira uma **bola**
+  (joelhos no peito, cabeça encolhida) e gira de 30 em 30 graus perto do tatame. Durante o giro a altura
+  fica no máximo a de quem está de joelhos e, na média, ~0,6 da altura em pé (antes o corpo invertido com
+  as pernas esticadas parecia um mortal). O fim do giro usa 360° (não "desenrola" ao contrário).
+- **Sprawl experimental** (`sprawl_5o.json`): entrada → projeção das pernas → **proteção em prancha**
+  (tronco e quadril perto do tatame, antebraço apoiando) → recuperação. Na proteção a altura é ~0,6 da
+  altura em pé (antes ~0,77), um pouco acima da de quem está deitado.
+- **Assentamento por personagem** (`AssentamentoMovimentos`): os `deslocamentosY` do arquivo foram medidos
+  no Branco; o Preto tem outras proporções. Na primeira vez, cada movimento de chão é desenhado num lutador
+  de rascunho da mesma classe (4 amostras entre quadros) e o ponto mais baixo é encostado no tatame. Erro
+  medido: até 3 px nos dois irmãos. Personagem futuro sem o construtor (x, y, escala): valem os números do
+  arquivo.
+- **Rolamento de joelhos/deitado**: começa na pose da postura, entra na bola e termina de novo na postura
+  (`BORDA_POSTURA_ROLAMENTO`); a postura lógica não muda. Deitado, o mesmo desenho, mais lento.
+- **Guarda andando**: braços, tronco e cabeça são os da guarda; só as pernas dão passos curtos alternados
+  (`FASE_PASSO_POR_TICK`), com rampa de 5 ticks para começar/parar (sem tranco) e 1 px de cabeça.
+- **Originais preservados**: com o **F7 em ORIGINAL** continuam os arrays Java de sempre
+  (`ROLAMENTO_MIAUSTUDIO`, `SPRAWL_MIAUSTUDIO`). Limitação: o rolamento ORIGINAL de joelhos/deitado usa o
+  desenho em pé de sempre. O F6 não mudou.
+- O laboratório de medição (desenho real, topo/base em pixels) virou o teste `Alturas51Test`.

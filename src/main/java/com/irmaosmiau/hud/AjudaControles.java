@@ -110,6 +110,9 @@ public final class AjudaControles {
         if (c.equals("UP") && e.equals("LEFT") && b.equals("DOWN") && d.equals("RIGHT")) {
             return "setas";
         }
+        if (c.equals("NUMPAD8") && e.equals("NUMPAD4") && b.equals("NUMPAD5") && d.equals("NUMPAD6")) {
+            return "NUM 8456";                             // 5O.1: padrao do J1
+        }
         return tecla(mapa, slot, AcaoJogador.MOVER_CIMA) + "/" + tecla(mapa, slot, AcaoJogador.MOVER_ESQUERDA)
                 + "/" + tecla(mapa, slot, AcaoJogador.MOVER_BAIXO) + "/" + tecla(mapa, slot, AcaoJogador.MOVER_DIREITA);
     }

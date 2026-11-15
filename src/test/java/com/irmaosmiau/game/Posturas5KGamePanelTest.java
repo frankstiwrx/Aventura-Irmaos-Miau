@@ -43,6 +43,19 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5K (testes 1-16, 17, 23, 24, 35) no GamePanel real. */
 class Posturas5KGamePanelTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private static final int JANELA = GamePanel.JANELA_DUPLO_CLIQUE_TICKS;
 
     private GamePanel painel;

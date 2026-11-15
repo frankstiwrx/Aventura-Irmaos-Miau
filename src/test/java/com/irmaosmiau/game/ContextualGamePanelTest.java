@@ -211,14 +211,14 @@ class ContextualGamePanelTest {
     void receptorRompePeloDpadEDoisJogadoresIndependentes() throws Exception {
         naEdt(() -> {
             criar(contextual(J2), false, J2);              // J1 no teclado, J2 no Xbox contextual
-            tecla("pressed D");
+            tecla("pressed NUMPAD6");   // 5O.1 (pedido): D -> NUM 6
             for (int i = 0; i < 200 && !s().podeTentarAcao(painel.getLutador1(), painel.getLutador2(), "pegada_1"); i++) {
                 ticks(1);
             }
-            tecla("released D");
-            tecla("pressed H");
+            tecla("released NUMPAD6");
+            tecla("pressed 2");         // 5O.1 (pedido): H -> 2
             ticks(1);
-            tecla("released H");
+            tecla("released 2");
             ticks(31);
             assertTrue(s().isInteracaoEstabelecida());
             PainelDpadContextual.Quadro q2 = painel.montarQuadroDpad(J2);

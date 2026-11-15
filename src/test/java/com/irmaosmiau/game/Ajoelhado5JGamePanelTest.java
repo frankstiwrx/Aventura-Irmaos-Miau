@@ -117,10 +117,15 @@ class Ajoelhado5JGamePanelTest {
         l.ajoelhar();
         l.pular();
         l.pularCurto();
-        l.iniciarRolamento(com.irmaosmiau.entities.Direcao.DIREITA);
         l.iniciarSprawl();
         l.setCorrendo(true);
-        assertFalse(l.isPulando() || l.isRolando() || l.isFazendoSprawl() || l.isCorrendo());
+        assertFalse(l.isPulando() || l.isFazendoSprawl() || l.isCorrendo());
+        // 5O.1 (pedido): de joelhos AGORA rola (R3 contextual); a postura fica.
+        l.iniciarRolamento(com.irmaosmiau.entities.Direcao.DIREITA);
+        assertTrue(l.isRolando());
+        for (int i = 0; i < 40 && l.isRolando(); i++) {
+            l.atualizar(false, false);
+        }
         assertTrue(l.isAjoelhado(), "comandos incompativeis sao ignorados (comportamento seguro)");
         l.alternarDeitado();
         assertFalse(l.isAjoelhado(), "F (deitar/levantar) levanta");

@@ -40,6 +40,19 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5L-B/C (testes 11-13, 20-25) no GamePanel real: comandos das pegadas e a fuga de quadril. */
 class ComandosPegadasEChao5LGamePanelTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private GamePanel painel;
     private ProvedorGamepadSimulado sim;
 
@@ -170,7 +183,7 @@ class ComandosPegadasEChao5LGamePanelTest {
             var mapa = painel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
             assertEquals("brancoPegada2Pressionada", mapa.get(KeyStroke.getKeyStroke("pressed 6")));
             assertEquals("brancoPegada4Pressionada", mapa.get(KeyStroke.getKeyStroke("pressed 8")));
-            assertEquals("pretoPegada3Pressionada", mapa.get(KeyStroke.getKeyStroke("pressed NUMPAD8")));
+            assertEquals("pretoPegada3Pressionada", mapa.get(KeyStroke.getKeyStroke("pressed NUMPAD2")));   // 5O.1 (pedido): NUM 8 virou cima do J1
             ticks(1);
             encostar();
             toque("brancoPegada4");

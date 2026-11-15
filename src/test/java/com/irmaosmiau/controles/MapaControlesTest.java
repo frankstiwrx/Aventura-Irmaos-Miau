@@ -18,16 +18,30 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5C: modelo de acoes logicas, padroes, remapeamento e conflitos. */
 class MapaControlesTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     /** As teclas que existiam no InputHandler antes da 5C (comando -> tecla). */
     static final Map<String, String> TECLAS_ANTERIORES = new LinkedHashMap<>();
 
     static {
         String[][] tabela = {
-            {"brancoEsquerda", "A"}, {"brancoDireita", "D"}, {"brancoCima", "W"}, {"brancoBaixo", "S"},
-            {"brancoPular", "SPACE"}, {"brancoAgachar", "C"}, {"brancoCorrer", "Z"},
+            {"brancoEsquerda", "NUMPAD4"}, {"brancoDireita", "NUMPAD6"}, {"brancoCima", "NUMPAD8"},
+            {"brancoBaixo", "NUMPAD5"},
+            {"brancoPular", "SPACE"}, {"brancoAgachar", "C"}, {"brancoCorrer", "NUMPAD0"},
             {"brancoPularCurto", "V"}, {"brancoRespirar", "X"}, {"brancoRolar", "R"},
-            {"brancoDeitar", "F"}, {"brancoSprawl", "G"}, {"brancoPegada1", "H"},
-            {"brancoDesequilibrio", "T"}, {"brancoReforco", "Y"}, {"brancoControle", "SHIFT"},
+            {"brancoDeitar", "1"}, {"brancoSprawl", "MINUS"}, {"brancoPegada1", "2"},
+            {"brancoDesequilibrio", "0"}, {"brancoReforco", "Y"}, {"brancoControle", "CONTROL"},
             {"pretoEsquerda", "LEFT"}, {"pretoDireita", "RIGHT"}, {"pretoCima", "UP"}, {"pretoBaixo", "DOWN"},
             {"pretoPular", "N"}, {"pretoAgachar", "M"}, {"pretoCorrer", "K"}, {"pretoPularCurto", "B"},
             {"pretoRespirar", "L"}, {"pretoRolar", "O"}, {"pretoDeitar", "J"}, {"pretoSprawl", "I"},
@@ -38,10 +52,14 @@ class MapaControlesTest {
             {"pretoControle", "DELETE"},
             // 5L (pedido): as pegadas 2-4.
             {"brancoPegada2", "6"}, {"brancoPegada3", "7"}, {"brancoPegada4", "8"},
-            {"pretoPegada2", "NUMPAD7"}, {"pretoPegada3", "NUMPAD8"}, {"pretoPegada4", "NUMPAD9"},
+            {"pretoPegada2", "NUMPAD7"}, {"pretoPegada3", "NUMPAD2"}, {"pretoPegada4", "NUMPAD9"},
             // 5O (pedido): equivalentes de teclado do RT (defesas), RB (quedas) e Y (acrobacia).
-            {"brancoModDefesa", "3"}, {"brancoModProjecao", "4"}, {"brancoAcrobacia", "9"},
-            {"pretoModDefesa", "INSERT"}, {"pretoModProjecao", "HOME"}, {"pretoAcrobacia", "NUMPAD5"},
+            {"brancoModDefesa", "3"}, {"brancoModProjecao", "4"},
+            {"pretoModDefesa", "INSERT"}, {"pretoModProjecao", "HOME"},
+            // 5O.1 (pedido): o J2 no teclado virou teclado-controle (WASD/setas/K/L/J/I/O/P/SHIFT...), entao
+            // o J1 saiu dessas teclas: movimento NUM 8/4/5/6, correr NUM 0, deitar 1, pegada 1 = 2,
+            // desequilibrar 0, modo controle CTRL, sprawl "-"; J2 (teclas livres) pegada 3 = NUM 2;
+            // acrobacia saiu do 9/NUM 5 (agora R3 + direcao em pe).
         };
         for (String[] l : tabela) {
             TECLAS_ANTERIORES.put(l[0], l[1]);
@@ -66,8 +84,9 @@ class MapaControlesTest {
         assertTrue(p.ehPadrao());
         // 5I (pedido): antes 16 (J1) e 13 (J2); agora os dois slots tem as 17 acoes.
         // 5L (pedido): + 3 pegadas (antes 17). 5O (pedido): + 3 (modificadores de familia e acrobacia).
-        assertEquals(23, SlotJogador.JOGADOR_1.acoes().size());
-        assertEquals(23, SlotJogador.JOGADOR_2.acoes().size());
+        // 5O.1 (pedido): - 1 (a acrobacia saiu do Y/9 e foi para o R3), antes 23.
+        assertEquals(22, SlotJogador.JOGADOR_1.acoes().size());
+        assertEquals(22, SlotJogador.JOGADOR_2.acoes().size());
     }
 
     @Test
@@ -89,17 +108,17 @@ class MapaControlesTest {
         assertEquals(MapaControles.padrao().doSlot(SlotJogador.JOGADOR_2), m.doSlot(SlotJogador.JOGADOR_2));
         assertTrue(m.isValido());
         assertFalse(m.ehPadrao());
-        assertEquals("H", MapaControles.padrao().tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA)
+        assertEquals("2", MapaControles.padrao().tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA)   // 5O.1 (pedido)
                 .orElseThrow().getNome(), "imutavel");
     }
 
     @Test
     void remapearOPretoNaoMexeNoBranco() {
         MapaControles m = MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD0"))
+                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD3"))   // 5O.1 (pedido): NUM 0 = correr J1
                 .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.MOVER_ESQUERDA, t("COMMA"));
         assertEquals(MapaControles.padrao().doSlot(SlotJogador.JOGADOR_1), m.doSlot(SlotJogador.JOGADOR_1));
-        assertEquals("NUM 0", m.rotulo(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO));
+        assertEquals("NUM 3", m.rotulo(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO));
         assertTrue(m.isValido());
     }
 
@@ -119,15 +138,15 @@ class MapaControlesTest {
     @Test
     void conflitosNoMesmoJogadorEEntreOsDois() {
         MapaControles mesmo = MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("D"));
+                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("NUMPAD6"));   // 5O.1 (pedido): D -> NUM 6
         List<ProblemaControle> p1 = mesmo.problemas();
         assertEquals(1, p1.size());
         assertEquals(ProblemaControle.Tipo.TECLA_REPETIDA, p1.get(0).tipo());
         assertEquals(AcaoJogador.MOVER_DIREITA, p1.get(0).outraAcao());
-        assertTrue(p1.get(0).descricao().contains("D"), p1.get(0).descricao());
+        assertTrue(p1.get(0).descricao().contains("NUM 6"), p1.get(0).descricao());
 
         MapaControles entre = MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.PULAR, t("A"));
+                .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.PULAR, t("NUMPAD4"));   // 5O.1 (pedido): A -> NUM 4
         ProblemaControle p2 = entre.problemas().get(0);
         assertEquals(SlotJogador.JOGADOR_1, p2.outroSlot());
         assertEquals(SlotJogador.JOGADOR_2, p2.slot());
@@ -137,7 +156,7 @@ class MapaControlesTest {
     @Test
     void modificadorEMovimentoNaoPodemDividirATecla() {
         MapaControles m = MapaControles.padrao()
-                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("A"));
+                .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("NUMPAD4"));   // 5O.1 (pedido)
         assertEquals(ProblemaControle.Tipo.TECLA_REPETIDA, m.problemas().get(0).tipo());
         // Qualquer tecla livre serve de modificador (nao precisa ser SHIFT).
         assertTrue(MapaControles.padrao()
@@ -149,9 +168,9 @@ class MapaControlesTest {
     @Test
     void trocaAutomaticaNuncaCriaRepeticao() {
         MapaControles m = MapaControles.padrao()
-                .trocandoSeNecessario(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("D"));
-        assertEquals("D", m.tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA).orElseThrow().getNome());
-        assertEquals("H", m.tecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA).orElseThrow().getNome());
+                .trocandoSeNecessario(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("NUMPAD6"));   // 5O.1 (pedido)
+        assertEquals("NUMPAD6", m.tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA).orElseThrow().getNome());
+        assertEquals("2", m.tecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA).orElseThrow().getNome());
         assertTrue(m.isValido());
 
         MapaControles entre = MapaControles.padrao()

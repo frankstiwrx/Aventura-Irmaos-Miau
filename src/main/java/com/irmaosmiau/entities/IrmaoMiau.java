@@ -172,9 +172,22 @@ private int framesRolamento = 0;
 
 private static final int DURACAO_ROLAMENTO = 22;
 
-private static final double CUSTO_ROLAMENTO = 6.0;
+/* 5O.1: o rolamento tecnico custa menos que a estrela (5,0) e o mortal (7,0). Antes: 6,0. */
+private static final double CUSTO_ROLAMENTO = 4.0;
 
 private static final double VELOCIDADE_ROLAMENTO = 7.0;
+
+/**
+ * 5O.1: multiplicador CENTRAL da velocidade do rolamento a partir de deitado
+ * (rolar do chao e mais dificil): a mesma distancia, em mais tempo. De joelhos
+ * e em pe = 1,0 (a velocidade de sempre).
+ */
+public static final double MULTIPLICADOR_ROLAMENTO_DEITADO = 0.6;
+
+/* Duracao e velocidade do rolamento EM ANDAMENTO (decididas no inicio). */
+private int duracaoRolamentoAtual = DURACAO_ROLAMENTO;
+private double velocidadeRolamentoAtual = VELOCIDADE_ROLAMENTO;
+private EstadoCorporal posturaDoRolamento = EstadoCorporal.EM_PE;
 
     private double faseRespiracao = 0.0;
 
@@ -291,21 +304,14 @@ private EstadoCorporal estadoCorporal =
         return;
     }
 
-    // 5J: de joelhos nao rola (levante primeiro).
-    if (isAjoelhado()) {
-        return;
-    }
-
     /*
-     * Não rola no ar.
+     * Não rola no ar, mudando de postura, em acrobacia nem preso numa pegada
+     * (o GamePanel ja barra o receptor preso).
+     * 5O.1: de joelhos e deitado AGORA rolam (R3 contextual); a postura fica.
      */
-    if (pulando) {
+    if (pulando || transicaoAtiva != null || acrobacia != null || bloqueadoPorAnimacaoCombate) {
         return;
     }
-    
-    if (isDeitado()) {
-    return;
-}
 
     /*
      * Precisa possuir fôlego suficiente.
@@ -344,7 +350,35 @@ direcaoRolamento = direcao;
 
 framesRolamento = 0;
 
+posturaDoRolamento = estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
+double mult = posturaDoRolamento == EstadoCorporal.DEITADO ? MULTIPLICADOR_ROLAMENTO_DEITADO : 1.0;
+duracaoRolamentoAtual = (int) Math.round(DURACAO_ROLAMENTO / mult);
+// mesma distancia de sempre (22 x 7 px), so mais devagar deitado
+velocidadeRolamentoAtual = VELOCIDADE_ROLAMENTO * DURACAO_ROLAMENTO / (double) duracaoRolamentoAtual;
+defesa.interromper();
+
 rolando = true;
+}
+
+/** 5O.1: custo do rolamento tecnico (o mesmo em qualquer postura). */
+public static double custoRolamento() {
+    return CUSTO_ROLAMENTO;
+}
+
+/** 5O.1: duracao do rolamento em andamento (ticks): maior a partir de deitado. */
+public int getDuracaoRolamentoAtual() {
+    return duracaoRolamentoAtual;
+}
+
+/** 5O.1: duracao do rolamento a partir de uma postura (ticks). */
+public static int duracaoRolamento(EstadoCorporal postura) {
+    return postura == EstadoCorporal.DEITADO
+            ? (int) Math.round(DURACAO_ROLAMENTO / MULTIPLICADOR_ROLAMENTO_DEITADO) : DURACAO_ROLAMENTO;
+}
+
+/** 5O.1: postura em que o rolamento em andamento comecou (e termina). */
+public EstadoCorporal getPosturaDoRolamento() {
+    return posturaDoRolamento;
 }
     
     // =============================
@@ -774,7 +808,8 @@ if (
 } else if (deslocouNesteTick > 0) {
 
     // Entrega 5K: andar (em pe, de joelhos ou deitado) gasta pouco e nao recupera.
-    gastarEnergia(CustosFolego.caminhada(deslocouNesteTick, calcularVelocidadeSemEfeitos(), estadoCorporal));
+    gastarEnergia(CustosFolego.caminhada(deslocouNesteTick, calcularVelocidadeSemEfeitos(), estadoCorporal)
+            * (defesa.isAtiva() ? CustosFolego.FATOR_DISTANCIA_GUARDA : 1.0));   // 5O.1: guarda andando
 
 } else if (esforcou) {
 
@@ -1118,7 +1153,7 @@ if (
     }
 
     double velocidade =
-            VELOCIDADE_ROLAMENTO;
+            velocidadeRolamentoAtual;
 
     /*
      * Na diagonal dividimos a velocidade
@@ -1201,7 +1236,7 @@ if (
 
     if (
             framesRolamento
-            >= DURACAO_ROLAMENTO
+            >= duracaoRolamentoAtual
     ) {
 
         finalizarRolamento();
@@ -1816,7 +1851,8 @@ public void alternarDeitado() {
                 == EstadoIdle.TAUNT;
     }
 
-    protected boolean isAndando() {
+    /** 5O.1: publico (passos da guarda andando). */
+    public boolean isAndando() {
 
         return andando;
     }
@@ -2697,7 +2733,7 @@ public void alternarDeitado() {
     return Math.min(
             1.0,
             (double) framesRolamento
-            / DURACAO_ROLAMENTO
+            / duracaoRolamentoAtual
     );
 }
     

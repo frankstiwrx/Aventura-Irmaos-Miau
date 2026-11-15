@@ -930,3 +930,86 @@ Ctrl+Alt): J1 **3** = defesas, **4** = quedas, **9** + WASD = acrobacia; J2 **IN
 
 Acrobacias (direção relativa ao corpo): para onde olha = mortal para a frente; para trás = mortal para
 trás; fundo/frente da tela = estrela para a esquerda/direita do corpo.
+
+
+# Entrega 5O.1 — R3 contextual, RT respira, Select = RB e teclado-controle do J2
+
+O que mudou em relação à 5O (o resto continua igual):
+
+| Comando | 5O | 5O.1 |
+|---|---|---|
+| R3 + direção (J1 teclado: R + direção) | rolamento técnico (só em pé) | **em pé: acrobacia** · **de joelhos: rolamento** · **deitado: rolamento mais lento** |
+| Y + direção (J1 teclado: 9) | acrobacia | **nada** (Y livre; no Clássico o Y continua sendo o **reforço** da pegada) |
+| RT sozinho (J1: 3; J2: P) | nada | **respirar** (sustentado; a mesma mecânica de antes) |
+| RT + RS | guardas e sprawl | igual (a defesa vence a respiração) |
+| Select / View | respirar | **RB lógico** (pulo alto com A, quedas com o RS, corrida no Clássico) |
+| Start | pausa | pausa (sem mudança) |
+| Guarda segurada | o lutador ficava parado | anda a **50%** (`DefesaCorporal.MULTIPLICADOR_VELOCIDADE`), sem corrida |
+
+## Teclado do J2 = um controle (`controles.LayoutTecladoControle`)
+
+O J2 no teclado não usa mais "teclas soltas": cada tecla faz o papel de um botão do Xbox e passa pelo
+**mesmo caminho do gamepad** (`TecladoControle` → `FonteGamepad` → `MapaGamepad` do J2, esquema Clássico
+ou Contextual). Teclado e Xbox fazem exatamente a mesma coisa.
+
+| Xbox | Teclado J2 |
+|---|---|
+| Analógico esquerdo ↑ ↓ ← → | W S A D |
+| Analógico direito ↑ ↓ ← → | setas ↑ ↓ ← → |
+| A / B / X / Y | K / L / J / I |
+| L3 / R3 | Z / M |
+| D-pad ↑ → ↓ ← | T / H / G / F |
+| RB / RT / LB / LT | O / P / E / Q |
+| Start / Select | ENTER / SHIFT |
+
+- **P** = RT: sozinho respira; com uma seta = defesas. **O** ou **SHIFT** = RB lógico.
+- **ENTER** só **abre** a pausa; com a pausa aberta, o ENTER confirma o item do menu (não alterna duas vezes).
+- Os dois SHIFTs valem como Select (o Swing não separa esquerdo/direito nos atalhos).
+- Voltar às teclas livres configuráveis do J2 (as de antes): `-Dirmaosmiau.teclado.j2=livre`.
+
+## Teclado do J1 (colisões resolvidas com a menor mudança)
+
+O J2 passou a usar W A S D, setas, K L J I, Z M, T H G F, O P E Q, ENTER e SHIFT. Só as teclas do J1 que
+batiam nessas mudaram:
+
+| Ação do J1 | 5O | 5O.1 |
+|---|---|---|
+| Mover ↑ ← ↓ → | W A S D | **NUM 8 / NUM 4 / NUM 5 / NUM 6** |
+| Correr | Z | **NUM 0** |
+| Deitar / levantar | F | **1** |
+| Pegada 1 | H | **2** |
+| Desequilibrar | T | **0** |
+| Modo controle (arrasto) | SHIFT | **CTRL** |
+| Sprawl direto | G | **-** (o sprawl também sai em 3 + 7, RT + baixo) |
+| Acrobacia | 9 | (removida: R + direção em pé) |
+
+Sem mudança: ESPAÇO, V, C, R, X, Y, 3, 4, 5, 6, 7, 8. Nas teclas livres do J2 (modo `livre`), a pegada 3
+passou de NUM 8 para NUM 2. Regra nova: nenhuma tecla do J1 pode ser uma tecla do teclado-controle do J2
+(`ProblemaControle.Tipo.TECLA_DO_CONTROLE`; a tela de CONTROLES recusa). Um `controles.json` nunca
+personalizado da 5O é atualizado sozinho; num J1 personalizado, só a ação que usava uma tecla do J2 fica
+sem tecla, com aviso. O `gamepad.json` padrão da 5O também é atualizado (Select livre); a ação ACROBACIA
+salva em arquivos antigos é ignorada.
+
+## Famílias por modificadores (`controles.ResolvedorModificadores`)
+
+| Combinação | Família | Situação |
+|---|---|---|
+| (nenhum) + RS | pegadas | ativa |
+| RT + RS | defesas | ativa (prioridade 1) |
+| RB (ou Select) + RS | quedas e transições | ativa, técnicas reservadas ("EM BREVE") |
+| LT + RS, LB + RS | — | reservadas (LT/LB continuam agachar/arrasto e as camadas) |
+| RT + LB, RT + LT, LT + LB | — | reservadas |
+| RT + LT + LB | — | reservada especial (três botões nunca são o padrão) |
+
+Vale a combinação **ativa** mais específica contida no que está segurado; empate = prioridade. As
+reservadas nunca disparam nada e não mudam as ativas (RT + LB continua sendo defesas).
+
+## Custos e velocidades (5O.1)
+
+| Movimento | Fôlego | Tempo |
+|---|---|---|
+| Rolamento técnico (joelhos ou deitado) | **4,0** (antes 6,0) | 22 ticks de joelhos; 37 deitado (×0,6 de velocidade, mesma distância) |
+| Estrela | 5,0 | 30 ticks |
+| Mortal para a frente / trás | 7,0 | 32 / 34 ticks |
+| Sprawl | 4,0 + recarga de 30 ticks | 26 ticks |
+| Guarda | 0,3 para entrar, 0,15 para trocar; não recupera | andando: caminhada × 1,0 (a metade por segundo) |

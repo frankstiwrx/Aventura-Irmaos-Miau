@@ -561,6 +561,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (dispositivos.consumirPausa()) {
             alternarPausa();
         }
+        // 5O.1: ENTER (Start do teclado-controle) so abre a pausa; aberta, o ENTER confirma o menu.
+        if (dispositivos.consumirPausaTeclado() && !pausado) {
+            alternarPausa();
+        }
 
         if (pausado) {
             // Entrega 5F: nada do D-pad contextual fica pendente durante a pausa.
@@ -733,7 +737,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isRespirar();
+                = input.isRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_1, jogadorPrincipal);
 
         jogadorPrincipal.setRespirando(
                 respirando
@@ -765,9 +769,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                             input.isBaixo()
                     );
 
-            jogadorPrincipal.iniciarRolamento(
-                    direcao
-            );
+            // 5O.1: R3 contextual pela postura (em pe = acrobacia; joelhos/deitado = rolamento).
+            mobilidadeContextual(SlotJogador.JOGADOR_1, jogadorPrincipal, direcao);
         }
 
         // =========================
@@ -852,7 +855,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
         boolean preso = receptorPreso(jogadorBranco);
-        boolean travado = travadoPorFamilia(SlotJogador.JOGADOR_1, jogadorBranco);   // 5O
         boolean agachando = !preso && input.isAgachar();
 
         // =========================
@@ -865,7 +867,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isRespirar();
+                = input.isRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_1, jogadorBranco);
 
         jogadorBranco.setRespirando(
                 respirando
@@ -874,7 +876,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // CORRIDA
         // =========================
-        boolean correndo = !preso && input.isCorrer() && !agachando && !respirando;
+        boolean correndo = !preso && input.isCorrer() && !agachando && !respirando
+                && !jogadorBranco.getDefesa().isAtiva();   // 5O.1: guarda nao corre
 
         jogadorBranco.setCorrendo(
                 correndo
@@ -893,9 +896,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                             input.isBaixo()
                     );
 
-            jogadorBranco.iniciarRolamento(
-                    direcao
-            );
+            mobilidadeContextual(SlotJogador.JOGADOR_1, jogadorBranco, direcao);   // 5O.1
         }
 
         // =========================
@@ -943,10 +944,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         moverPersonagem(
                 jogadorBranco,
-                !preso && !travado && !conjunto && input.isEsquerda(),
-                !preso && !travado && !conjunto && input.isDireita(),
-                !preso && !travado && !conjunto && input.isCima(),
-                !preso && !travado && !conjunto && input.isBaixo(),
+                !preso && !conjunto && input.isEsquerda(),
+                !preso && !conjunto && input.isDireita(),
+                !preso && !conjunto && input.isCima(),
+                !preso && !conjunto && input.isBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -1003,7 +1004,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
         boolean preso = receptorPreso(jogadorPreto);
-        boolean travado = travadoPorFamilia(SlotJogador.JOGADOR_2, jogadorPreto);     // 5O
         boolean agachando = !preso && input.isPretoAgachar();
 
         // =========================
@@ -1015,7 +1015,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isPretoRespirar();
+                = input.isPretoRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_2, jogadorPreto);
 
         jogadorPreto.setRespirando(
                 respirando
@@ -1024,7 +1024,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // CORRIDA
         // =========================
-        boolean correndo = !preso && input.isPretoCorrer() && !agachando && !respirando;
+        boolean correndo = !preso && input.isPretoCorrer() && !agachando && !respirando
+                && !jogadorPreto.getDefesa().isAtiva();    // 5O.1: guarda nao corre
 
         jogadorPreto.setCorrendo(
                 correndo
@@ -1043,9 +1044,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                             input.isPretoBaixo()
                     );
 
-            jogadorPreto.iniciarRolamento(
-                    direcao
-            );
+            mobilidadeContextual(SlotJogador.JOGADOR_2, jogadorPreto, direcao);    // 5O.1
         }
 
         // =========================
@@ -1092,10 +1091,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         moverPersonagem(
                 jogadorPreto,
-                !preso && !travado && !conjunto && input.isPretoEsquerda(),
-                !preso && !travado && !conjunto && input.isPretoDireita(),
-                !preso && !travado && !conjunto && input.isPretoCima(),
-                !preso && !travado && !conjunto && input.isPretoBaixo(),
+                !preso && !conjunto && input.isPretoEsquerda(),
+                !preso && !conjunto && input.isPretoDireita(),
+                !preso && !conjunto && input.isPretoCima(),
+                !preso && !conjunto && input.isPretoBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -1249,7 +1248,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private int xAntesDoTick2;
     private final java.util.Map<SlotJogador, com.irmaosmiau.controles.FamiliaTecnica> familiaAtual =
             new java.util.EnumMap<>(SlotJogador.class);
-    private final java.util.Map<SlotJogador, Boolean> acrobaciaAnterior = new java.util.EnumMap<>(SlotJogador.class);
     private final java.util.Map<SlotJogador, String> ultimoMotivoFamilia = new java.util.EnumMap<>(SlotJogador.class);
 
     /** Familia que o slot esta escolhendo agora (HUD, F3 e testes). */
@@ -1267,14 +1265,23 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 in.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA), in.isAtiva(s, AcaoJogador.MODIFICADOR_PROJECAO));
     }
 
-    /** Guarda segurada, ou Y segurado com o lutador livre: os pes ficam (sem andar). */
-    private boolean travadoPorFamilia(SlotJogador slot, IrmaoMiau l) {
-        if (sistemaCombate == null || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+    /**
+     * 5O.1: RT (modificador de defesas; teclado 3 / P) SEM direcao de tecnica =
+     * respirar (a mesma mecanica de sempre, sustentada). Com uma direcao, a defesa
+     * tem prioridade: guarda ativa (ou saindo) e sprawl nunca respiram, entao nao
+     * ha recuperacao gratuita durante a defesa.
+     */
+    boolean respirandoPeloModificador(SlotJogador slot, IrmaoMiau l) {
+        if (!input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA) || l.getDefesa().isAtiva()
+                || l.isFazendoSprawl() || dispositivos.direcaoFamiliaGamepad(slot) != null) {
             return false;
         }
-        boolean livre = !sistemaCombate.estaEmInteracao()
-                || (sistemaCombate.getAplicadorInteracao() != l && sistemaCombate.getReceptorInteracao() != l);
-        return l.getDefesa().isSegurada() || (livre && input.isAtiva(slot, AcaoJogador.ACROBACIA));
+        for (AcaoJogador a : ACOES_PEGADA) {
+            if (input.isAtiva(slot, a)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** As quatro teclas/botoes de pegada como direcoes da tecnica (mesma ordem do RS). */
@@ -1326,7 +1333,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     dispositivos.consumirEscolhaFamilia(slot);
             if (fam == com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
                 ator.getDefesa().soltar();
-                tentarAcrobacia(slot, ator);
                 continue;
             }
             for (AcaoJogador a : ACOES_PEGADA) {
@@ -1349,7 +1355,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     feedback.mostrarInfo(slot.getSigla() + ": QUEDAS E TRANSIÇÕES · " + m, tick);
                 }
             }
-            acrobaciaAnterior.put(slot, input.isAtiva(slot, AcaoJogador.ACROBACIA));
         }
     }
 
@@ -1407,26 +1412,34 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
     }
 
-    /** Y + direcao do movimento (relativa ao corpo), uma vez quando os dois comecam juntos. */
-    private void tentarAcrobacia(SlotJogador slot, IrmaoMiau ator) {
-        boolean y = input.isAtiva(slot, AcaoJogador.ACROBACIA);
-        int dx = (input.isAtiva(slot, AcaoJogador.MOVER_DIREITA) ? 1 : 0)
-                - (input.isAtiva(slot, AcaoJogador.MOVER_ESQUERDA) ? 1 : 0);
-        int dy = (input.isAtiva(slot, AcaoJogador.MOVER_BAIXO) ? 1 : 0)
-                - (input.isAtiva(slot, AcaoJogador.MOVER_CIMA) ? 1 : 0);
-        boolean pedido = y && (dx != 0 || dy != 0);
-        boolean antes = Boolean.TRUE.equals(acrobaciaAnterior.get(slot));
-        acrobaciaAnterior.put(slot, pedido);
-        if (!pedido || antes) {
+    /**
+     * 5O.1: R3 (acao ROLAR) + direcao = mobilidade CONTEXTUAL pela postura.
+     * - em pe: acrobacia pela direcao relativa ao corpo (para onde olha =
+     *   mortal para a frente; contraria = mortal para tras; fundo/frente da
+     *   tela = estrela). Diagonal: vale o componente horizontal (mortal),
+     *   regra deterministica de TipoAcrobacia.pelaDirecao;
+     * - de joelhos: rolamento tecnico (velocidade de sempre);
+     * - deitado: rolamento tecnico mais lento (MULTIPLICADOR_ROLAMENTO_DEITADO).
+     * O rolamento usa a versao do F7 (ORIGINAL ou EXPERIMENTAL 5O).
+     */
+    void mobilidadeContextual(SlotJogador slot, IrmaoMiau l, Direcao d) {
+        if (d == null) {
             return;
         }
-        com.irmaosmiau.entities.TipoAcrobacia t = com.irmaosmiau.entities.TipoAcrobacia.pelaDirecao(dx, dy,
-                ator.isViradoParaDireita());
-        String motivo = com.irmaosmiau.combate.ResolvedorFamilias.motivoComumPublico(ator, sistemaCombate);
-        if (motivo == null) {
-            motivo = ator.motivoSemAcrobacia(t);
+        if (l.isAjoelhado() || l.isDeitado()) {
+            l.iniciarRolamento(d);
+            return;
         }
-        if (motivo == null && ator.iniciarAcrobacia(t)) {
+        int dx = d.name().contains("DIREITA") ? 1 : d.name().contains("ESQUERDA") ? -1 : 0;
+        int dy = d.name().startsWith("CIMA") ? -1 : d.name().startsWith("BAIXO") ? 1 : 0;
+        com.irmaosmiau.entities.TipoAcrobacia t = com.irmaosmiau.entities.TipoAcrobacia.pelaDirecao(dx, dy,
+                l.isViradoParaDireita());
+        String motivo = sistemaCombate == null ? null
+                : com.irmaosmiau.combate.ResolvedorFamilias.motivoComumPublico(l, sistemaCombate);
+        if (motivo == null) {
+            motivo = l.motivoSemAcrobacia(t);
+        }
+        if (motivo == null && l.iniciarAcrobacia(t)) {
             ultimoMotivoFamilia.put(slot, "-");
         } else {
             ultimoMotivoFamilia.put(slot, motivo);
@@ -1565,6 +1578,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private String nomeModificador(SlotJogador slot, AcaoJogador mod) {
         if (dispositivos.usaGamepadAgora(slot)) {
             return mapaGamepad.botao(slot, ItemGamepad.de(mod)).map(b -> b.getRotulo().split("/")[0]).orElse("?");
+        }
+        if (dispositivos.usaTecladoControleAgora(slot)) {             // 5O.1: P = RT, O/SHIFT = RB
+            return mapaGamepad.botao(slot, ItemGamepad.de(mod))
+                    .map(b -> com.irmaosmiau.controles.LayoutTecladoControle.teclaDo(slot, b.name())
+                            + (b == com.irmaosmiau.dispositivos.BotaoGamepad.RB && mapaGamepad.selectValeComoRb(slot)
+                                    ? "/" + com.irmaosmiau.controles.LayoutTecladoControle.teclaDo(slot, "VOLTAR") : ""))
+                    .orElse("?");
         }
         return input.getMapa().tecla(slot, mod).map(com.irmaosmiau.controles.TeclaFisica::getRotulo).orElse("?");
     }
@@ -1706,6 +1726,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     // =====================================================
     // 8. MOVIMENTO GENÉRICO
     // =====================================================
+    /** 1/raiz(2): a diagonal da guarda andando percorre a mesma distancia por tick. */
+    static final double DIAGONAL = 0.7071067811865476;
+
     private void moverPersonagem(
             IrmaoMiau personagem,
             boolean esquerda,
@@ -1723,6 +1746,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (personagem.isRolando()
                 || personagem.isFazendoSprawl()) {
             return;
+        }
+        // 5O.1: com uma guarda segurada ele anda a MULTIPLICADOR_VELOCIDADE (50%), sem corrida.
+        boolean guarda = personagem.getDefesa().isAtiva();
+        if (guarda) {
+            correndo = false;
+            respirando = false;
         }
         double velocidadeAtual;
 
@@ -1774,6 +1803,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
          */
         double deslocamento
                 = velocidadeAtual;
+        if (guarda) {
+            deslocamento *= com.irmaosmiau.entities.DefesaCorporal.MULTIPLICADOR_VELOCIDADE;
+            if ((esquerda ^ direita) && (cima ^ baixo)) {
+                deslocamento *= DIAGONAL;                 // diagonal normalizada: sem ganho de velocidade
+            }
+        }
 
         // =========================
         // MOVIMENTO HORIZONTAL
@@ -2165,7 +2200,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     AjudaControles.Rotulos rotulos() {
         java.util.Set<SlotJogador> noGamepad = java.util.EnumSet.noneOf(SlotJogador.class);
         for (SlotJogador s : SlotJogador.values()) {
-            if (dispositivos.usaGamepadAgora(s)) {
+            if (dispositivos.usaControleAgora(s)) {          // 5O.1: teclado-controle mostra os botoes
                 noGamepad.add(s);
             }
         }
@@ -2173,7 +2208,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     private String dispositivoNoTitulo(SlotJogador slot) {
-        return dispositivos.usaGamepadAgora(slot) ? " · GAMEPAD" : "";
+        return dispositivos.usaGamepadAgora(slot) ? " · GAMEPAD"
+                : dispositivos.usaTecladoControleAgora(slot) ? " · TECLADO-CONTROLE" : "";
     }
 
     private void adicionarAgora(List<String> agora, String sigla, AjudaControles.Rotulos mapa,
@@ -3032,18 +3068,23 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     /** 5O: RB no gamepad (botao fisico) x modificador logico das quedas (RB ou a tecla 4/HOME). */
+    /** 5O/5O.1: RB fisico, Select fisico e RB LOGICO (RB, Select livre ou a tecla do modificador). */
     private String diagnosticoRb() {
         StringBuilder sb = new StringBuilder("RB");
         for (SlotJogador s : SlotJogador.values()) {
-            String fisico = dispositivos.fonte(s).filter(f -> dispositivos.usaGamepadAgora(s))
-                    .map(f -> f.temLeitura() ? (f.botaoFisico(com.irmaosmiau.dispositivos.BotaoGamepad.RB) ? "SIM" : "nao")
-                            : "sem leitura")
-                    .orElse("-");
+            java.util.Optional<com.irmaosmiau.dispositivos.FonteGamepad> f = dispositivos.fonte(s)
+                    .filter(x -> dispositivos.usaControleAgora(s));
+            String rb = f.map(x -> x.temLeitura() ? (x.botaoFisico(com.irmaosmiau.dispositivos.BotaoGamepad.RB)
+                    ? "SIM" : "nao") : "sem leitura").orElse("-");
+            String sel = f.map(x -> x.temLeitura() ? (x.botaoFisico(com.irmaosmiau.dispositivos.BotaoGamepad.VOLTAR)
+                    ? "SIM" : "nao") : "sem leitura").orElse("-");
             boolean logico = input.isAtiva(s, AcaoJogador.MODIFICADOR_PROJECAO);
-            sb.append(' ').append(s.getSigla()).append(" fis:").append(fisico).append(" log:").append(logico ? "SIM" : "nao");
+            sb.append(' ').append(s.getSigla()).append(" fis:").append(rb).append(" sel:").append(sel)
+                    .append(" log:").append(logico ? "SIM" : "nao");
         }
         return sb.toString();
     }
+
 
     private static String defesaDe(IrmaoMiau l) {
         if (l.isFazendoSprawl()) {

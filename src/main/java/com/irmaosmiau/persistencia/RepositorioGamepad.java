@@ -93,7 +93,8 @@ public final class RepositorioGamepad {
             boolean padraoAntigo = !ehAtual && (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5G(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5H(s, e))
-                    || lido.config(s).equals(MapaGamepad.padrao5N(s, e)));
+                    || lido.config(s).equals(MapaGamepad.padrao5N(s, e))
+                    || lido.config(s).equals(MapaGamepad.padrao5O(s, e)));
             if (padraoAntigo) {
                 lido = lido.comEsquema(s, e);
                 avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"
@@ -162,6 +163,9 @@ public final class RepositorioGamepad {
                         BotaoGamepad botao = valor(BotaoGamepad.class, b.texto(nome), b, nome);
                         AcaoJogador a = constante(AcaoJogador.class, nome);
                         ComandoGamepad c = constante(ComandoGamepad.class, nome);
+                        if (a == AcaoJogador.ACROBACIA) {
+                            continue;                     // 5O.1: obsoleta (acrobacia = R3 + direcao em pe)
+                        }
                         if (a != null && s.usa(a)) {
                             acoes.put(a, botao);
                         } else if (c != null && (!c.isSoContextual() || esquema == EsquemaGamepad.CONTEXTUAL)) {

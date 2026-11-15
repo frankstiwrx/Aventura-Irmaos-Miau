@@ -328,6 +328,8 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
     // complemento 1-4, 15-16: rolamento R3/R + direcao: as 8 direcoes no experimental; mecanica igual nas duas versoes
     @Test
     void rolamentoNasOitoDirecoes() throws Exception {
+        // 5O.1 (pedido): o R3 + direcao EM PE virou acrobacia; o rolamento tecnico sai de joelhos
+        // (e deitado, mais lento). O teste das 8 direcoes passa a partir de joelhos.
         String[][] dirs = {{"brancoDireita"}, {"brancoEsquerda"}, {"brancoCima"}, {"brancoBaixo"},
             {"brancoCima", "brancoDireita"}, {"brancoBaixo", "brancoDireita"}, {"brancoCima", "brancoEsquerda"},
             {"brancoBaixo", "brancoEsquerda"}};
@@ -338,7 +340,7 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
                 double[][] fim = new double[2][];
                 for (VersaoMovimentos v : VersaoMovimentos.values()) {
                     VersaoMovimentos.definir(v);
-                    novo(InicioLuta.EM_PE);
+                    novo(InicioLuta.DE_JOELHOS);
                     for (String k : dirs[i]) {
                         tecla(k, true);
                     }
@@ -349,7 +351,8 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
                     ticks(5);
                     assertTrue(j1().isRolando());
                     if (v == VersaoMovimentos.EXPERIMENTAL_5O) {
-                        assertEquals("rolamento_5o:" + esperado[i], desenho(j1()), String.join("+", dirs[i]));
+                        assertEquals("rolamento_5o:" + esperado[i] + ":AJOELHADO", desenho(j1()),
+                                String.join("+", dirs[i]));
                     } else {
                         assertNull(desenho(j1()), "original preservado");
                     }

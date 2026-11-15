@@ -45,6 +45,11 @@ public final class SessaoDispositivos {
     private final List<String> mensagens = new ArrayList<>();
     private boolean focado = true;
     private boolean pausaPedida;
+    /** 5O.1: teclado-controle por slot (J2 no teclado = um Xbox de teclas). */
+    private final Map<SlotJogador, TecladoControle> teclados = new EnumMap<>(SlotJogador.class);
+    /** 5O.1: slots no TECLADO cuja fonte e so o teclado-controle (nunca pegam um gamepad). */
+    private final Set<SlotJogador> soTeclado = EnumSet.noneOf(SlotJogador.class);
+    private boolean pausaPedidaTeclado;
 
     /**
      * @param emJogo slots que existem nesta partida (o treino e o modo
@@ -56,10 +61,18 @@ public final class SessaoDispositivos {
         this.mapa = mapa;
         this.input = input;
         for (SlotJogador s : SlotJogador.values()) {
-            if (emJogo.contains(s) && associacao.tipo(s) == TipoDispositivo.GAMEPAD) {
+            if (!emJogo.contains(s)) {
+                continue;
+            }
+            input.tecladoControle(s).ifPresent(t -> teclados.put(s, t));
+            boolean gamepad = associacao.tipo(s) == TipoDispositivo.GAMEPAD;
+            if (gamepad || teclados.containsKey(s)) {
                 FonteGamepad f = new FonteGamepad(s, mapa);
                 fontes.put(s, f);
                 input.conectarFonte(s, f);
+                if (!gamepad) {
+                    soTeclado.add(s);
+                }
             }
         }
         atualizar();
@@ -72,6 +85,9 @@ public final class SessaoDispositivos {
         }
         // 1) Quem perdeu o gamepad.
         for (SlotJogador s : fontes.keySet()) {
+            if (soTeclado.contains(s)) {
+                continue;
+            }
             InfoGamepad v = vinculos.get(s);
             if (v != null && provedor.estado(v.chave()).isEmpty()) {
                 vinculos.remove(s);
@@ -88,7 +104,7 @@ public final class SessaoDispositivos {
         // 2) Quem esta sem gamepad tenta um livre.
         List<InfoGamepad> conectados = provedor.conectados();
         for (SlotJogador s : fontes.keySet()) {
-            if (vinculos.containsKey(s)) {
+            if (vinculos.containsKey(s) || soTeclado.contains(s)) {
                 continue;
             }
             Optional<InfoGamepad> livre = escolherLivre(s, conectados);
@@ -101,13 +117,20 @@ public final class SessaoDispositivos {
         // 3) Leitura.
         for (Map.Entry<SlotJogador, FonteGamepad> e : fontes.entrySet()) {
             InfoGamepad v = vinculos.get(e.getKey());
-            if (v == null) {
+            TecladoControle t = teclados.get(e.getKey());
+            if (v == null && t == null) {
                 continue;
             }
-            EstadoGamepad estado = focado ? provedor.estado(v.chave()).orElse(null) : null;
+            // 5O.1: sem gamepad vinculado, o teclado-controle do slot alimenta a mesma fonte.
+            EstadoGamepad estado = !focado ? null
+                    : v != null ? provedor.estado(v.chave()).orElse(null) : t.estado();
             e.getValue().atualizar(estado);
             if (e.getValue().consumirPausa()) {
-                pausaPedida = true;
+                if (v != null) {
+                    pausaPedida = true;
+                } else {
+                    pausaPedidaTeclado = true;
+                }
             }
         }
     }
@@ -164,6 +187,26 @@ public final class SessaoDispositivos {
         return p;
     }
 
+    /**
+     * 5O.1: ENTER (Start do teclado-controle) uma vez. So ABRE a pausa: com a
+     * pausa aberta, o ENTER confirma o item do menu (nao pode alternar duas vezes).
+     */
+    public boolean consumirPausaTeclado() {
+        boolean p = pausaPedidaTeclado;
+        pausaPedidaTeclado = false;
+        return p;
+    }
+
+    /** 5O.1: o slot esta no teclado-controle agora (sem gamepad vinculado)? */
+    public boolean usaTecladoControleAgora(SlotJogador slot) {
+        return teclados.containsKey(slot) && fontes.containsKey(slot) && !vinculos.containsKey(slot);
+    }
+
+    /** 5O.1: o slot e lido como CONTROLE agora (gamepad real ou teclado-controle). */
+    public boolean usaControleAgora(SlotJogador slot) {
+        return usaGamepadAgora(slot) || usaTecladoControleAgora(slot);
+    }
+
     /** Avisos novos (conexao/desconexao) para o HUD; a lista e esvaziada. */
     public List<String> consumirMensagens() {
         List<String> m = List.copyOf(mensagens);
@@ -189,7 +232,7 @@ public final class SessaoDispositivos {
     // =====================================================
     /** O slot esta num gamepad AGORA e no esquema CONTEXTUAL. */
     public boolean usaContextualAgora(SlotJogador slot) {
-        return usaGamepadAgora(slot) && mapa.esquema(slot) == EsquemaGamepad.CONTEXTUAL;
+        return usaControleAgora(slot) && mapa.esquema(slot) == EsquemaGamepad.CONTEXTUAL;
     }
 
     /** Comando das 12 posicoes deste toque (vazio se nada, ou se o slot nao esta no contextual). */
@@ -207,7 +250,7 @@ public final class SessaoDispositivos {
     /** Entrega 5L: RS do esquema CLASSICO (vazio fora do gamepad ou no Contextual). */
     public Optional<com.irmaosmiau.controles.DirecaoTecnica> consumirPegadaClassica(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
-        if (f == null || !usaGamepadAgora(slot)) {
+        if (f == null || !usaControleAgora(slot)) {
             return Optional.empty();
         }
         return f.consumirPegadaClassica();
@@ -216,20 +259,20 @@ public final class SessaoDispositivos {
     /** 5O: familia escolhida pelos modificadores no gamepad do slot (PEGADAS sem gamepad). */
     public com.irmaosmiau.controles.FamiliaTecnica familiaGamepad(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
-        return f == null || !usaGamepadAgora(slot) ? com.irmaosmiau.controles.FamiliaTecnica.PEGADAS
+        return f == null || !usaControleAgora(slot) ? com.irmaosmiau.controles.FamiliaTecnica.PEGADAS
                 : f.familiaAtiva();
     }
 
     /** 5O: direcao do RS segurada na familia (null se nenhuma). */
     public com.irmaosmiau.controles.DirecaoTecnica direcaoFamiliaGamepad(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
-        return f == null || !usaGamepadAgora(slot) ? null : f.direcaoFamiliaSegurada();
+        return f == null || !usaControleAgora(slot) ? null : f.direcaoFamiliaSegurada();
     }
 
     /** 5O: escolha (familia + direcao) do RS desde a ultima consulta. */
     public Optional<com.irmaosmiau.controles.FamiliaTecnica.Escolha> consumirEscolhaFamilia(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
-        if (f == null || !usaGamepadAgora(slot)) {
+        if (f == null || !usaControleAgora(slot)) {
             return Optional.empty();
         }
         return f.consumirEscolhaFamilia();

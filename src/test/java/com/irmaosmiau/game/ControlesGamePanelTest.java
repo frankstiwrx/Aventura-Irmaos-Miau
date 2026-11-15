@@ -36,6 +36,19 @@ import org.junit.jupiter.api.Test;
  */
 class ControlesGamePanelTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private GamePanel painel;
 
     @AfterEach
@@ -108,19 +121,19 @@ class ControlesGamePanelTest {
             criar(null, false);
             assertEquals(MapaControles.padrao(), painel.getMapaControles());
             double folego = painel.getLutador1().getFolegoAtual();
-            estabelecerPegada("D", "H");
+            estabelecerPegada("NUMPAD6", "2");   // 5O.1 (pedido): teclas novas do J1
             assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0, "custo 3 uma vez");
-            toqueFisico("T");
+            toqueFisico("0");                            // 5O.1 (pedido): T -> 0
             assertTrue(painel.getLutador2().getEfeitos().isAtivo(EfeitosTemporarios.Tipo.DESEQUILIBRIO));
             String dica = painel.montarEstadoHud().getDicaControles();
-            assertTrue(dica.contains("T desequilibrar") && dica.contains("Y reforçar")
-                    && dica.contains("SHIFT+A/D arrastar") && dica.contains("U romper"), dica);
+            assertTrue(dica.contains("0 desequilibrar") && dica.contains("Y reforçar")   // 5O.1 (pedido)
+                    && dica.contains("CTRL+NUM 4/NUM 6 arrastar") && dica.contains("U romper"), dica);
         });
         naEdt(() -> {
             PreferenciasControles.instalarGlobal(null);
             GamePanel individual = new GamePanel(TipoPersonagem.PRETO, () -> { }, () -> { }, () -> { });
             individual.pararLoopParaTestes();
-            assertEquals("WASD mover · Z correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário",
+            assertEquals("NUM 8456 mover · NUM 0 correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário",
                     individual.montarEstadoHud().getDicaControles(), "faixa do modo individual inalterada");
         });
     }
@@ -132,9 +145,9 @@ class ControlesGamePanelTest {
     void pegada1ComTeclaPersonalizada() throws Exception {
         naEdt(() -> {
             criar(MapaControles.padrao().comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("P")), false);
-            assertNull(mapeado("pressed H"), "H nao faz mais nada");
+            assertNull(mapeado("pressed 2"), "2 nao faz mais nada");   // 5O.1 (pedido): H -> 2
             double folego = painel.getLutador1().getFolegoAtual();
-            estabelecerPegada("D", "P");
+            estabelecerPegada("NUMPAD6", "P");   // 5O.1 (pedido)
             assertEquals("pegada_1", sistema().getIdAcaoInteracao());
             assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0);
             assertTrue(painel.montarEstadoHud().getEstadoInteracao().startsWith("PEGADA 1 · FIRMEZA"));
@@ -148,10 +161,10 @@ class ControlesGamePanelTest {
                     .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.TENTAR_DESEQUILIBRIO, t("Q"))
                     .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.REFORCAR_PEGADA, t("E"))
                     .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("P")), false);
-            assertNull(mapeado("pressed T"));
+            assertNull(mapeado("pressed 0"));            // 5O.1 (pedido): T -> 0
             assertNull(mapeado("pressed Y"));
             assertNull(mapeado("pressed U"));
-            estabelecerPegada("D", "H");
+            estabelecerPegada("NUMPAD6", "2");   // 5O.1 (pedido): teclas novas do J1
 
             toqueFisico("Q");
             assertEquals(TipoDisputa.DESEQUILIBRIO, sistema().getUltimaDisputa().getTipo());
@@ -172,29 +185,30 @@ class ControlesGamePanelTest {
     void arrastoComModificadorEMovimentoRemapeados() throws Exception {
         naEdt(() -> {
             criar(MapaControles.padrao()
-                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("CONTROL"))
-                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_ESQUERDA, t("NUMPAD4"))
-                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA, t("NUMPAD6")), false);
-            estabelecerPegada("NUMPAD6", "H");
+                    // 5O.1 (pedido): CTRL e NUM 4/6 viraram os padroes do J1; o remapeamento usa SHIFT e , .
+                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("SHIFT"))
+                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_ESQUERDA, t("SEMICOLON"))
+                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA, t("PERIOD")), false);
+            estabelecerPegada("PERIOD", "2");
             IrmaoMiau b = painel.getLutador1();
             IrmaoMiau p = painel.getLutador2();
             int xb = b.getX();
             int distancia = p.getX() - b.getX();
 
-            fisica("ctrl pressed CONTROL");
-            fisica("ctrl pressed NUMPAD6");
+            fisica("shift pressed SHIFT");
+            fisica("shift pressed PERIOD");
             ticks(20);
             assertEquals("DESLOCAMENTO CONTROLADO", painel.montarEstadoHud().getMensagem());
-            fisica("released CONTROL");
-            fisica("released NUMPAD6");
+            fisica("released SHIFT");
+            fisica("released PERIOD");
             assertEquals(xb + 20, b.getX());
             assertEquals(distancia, p.getX() - b.getX());
             assertTrue(sistema().isInteracaoEstabelecida());
-            assertNull(mapeado("shift pressed SHIFT"), "SHIFT nao arrasta mais");
+            assertNull(mapeado("ctrl pressed CONTROL"), "CTRL nao arrasta mais");
 
-            fisica("pressed NUMPAD6");                  // sem o modificador: caminhada normal
+            fisica("pressed PERIOD");                   // sem o modificador: caminhada normal
             ticks(1);
-            fisica("released NUMPAD6");
+            fisica("released PERIOD");
             assertEquals(MotivoEncerramentoInteracao.MOVIMENTO, sistema().getUltimoMotivoEncerramento());
         });
     }
@@ -216,7 +230,7 @@ class ControlesGamePanelTest {
             assertTrue(painel.getLutador1().getX() - x > andou, "continua andando enquanto segura");
             fisica("released NUMPAD6");
 
-            estabelecerPegada("NUMPAD6", "H");
+            estabelecerPegada("NUMPAD6", "2");   // 5O.1 (pedido): H -> 2
             ticks(300);
             double f = sistema().getFirmeza();
             fisica("pressed E");
@@ -236,7 +250,7 @@ class ControlesGamePanelTest {
             for (int i = 0; i < 200 && !sistema().podeTentarAcao(painel.getLutador1(), painel.getLutador2(), "pegada_1"); i++) {
                 ticks(1);
             }
-            toqueFisico("H");                           // ainda segurando a direita
+            toqueFisico("2");                           // ainda segurando a direita (5O.1: H -> 2)
             ticks(40);
             assertTrue(sistema().isInteracaoEstabelecida(), "TravaComandos: ninguem sai andando sozinho");
             fisica("released NUMPAD6");
@@ -250,7 +264,7 @@ class ControlesGamePanelTest {
     void perdaDeFocoSoltaAsTeclas() throws Exception {
         naEdt(() -> {
             criar(null, false);
-            fisica("pressed D");
+            fisica("pressed NUMPAD6");                  // 5O.1 (pedido): D -> NUM 6
             fisica("pressed LEFT");
             ticks(5);
             painel.simularPerdaDeFocoParaTestes();
@@ -259,7 +273,7 @@ class ControlesGamePanelTest {
             ticks(20);
             assertEquals(xb, painel.getLutador1().getX(), "Branco parou");
             assertEquals(xp, painel.getLutador2().getX(), "Preto parou");
-            fisica("pressed D");
+            fisica("pressed NUMPAD6");
             ticks(5);
             assertTrue(painel.getLutador1().getX() > xb, "volta a responder");
         });
@@ -273,9 +287,9 @@ class ControlesGamePanelTest {
         naEdt(() -> {
             criar(MapaControles.padrao()
                     .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("P"))
-                    .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD0")), true);
-            estabelecerPegada("D", "P");
-            toqueFisico("NUMPAD0");                      // tecla do J2: ignorada no treino
+                    .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO, t("NUMPAD3")), true);   // 5O.1 (pedido): NUM 0 virou correr do J1
+            estabelecerPegada("NUMPAD6", "P");   // 5O.1 (pedido)
+            toqueFisico("NUMPAD3");                      // tecla do J2: ignorada no treino
             ticks(50);
             assertNull(sistema().getUltimaDisputa(), "parceiro nao defende");
             assertTrue(painel.montarEstadoHud().getDicaControles().contains("F5 reiniciar"));
@@ -313,13 +327,13 @@ class ControlesGamePanelTest {
             criar(MapaControles.padrao()
                     .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA, t("P"))
                     .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.TENTAR_DESEQUILIBRIO, t("Q"))
-                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("CONTROL")), false);
+                    .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("SHIFT")), false);   // 5O.1 (pedido): CTRL virou padrao
             String livre = painel.montarEstadoHud().getDicaControles();
-            assertTrue(livre.contains("P pegar") && !livre.contains("H "), livre);
+            assertTrue(livre.contains("P pegar") && !livre.contains("2 pegar"), livre);
 
-            estabelecerPegada("D", "P");
+            estabelecerPegada("NUMPAD6", "P");   // 5O.1 (pedido)
             String agora = painel.montarEstadoHud().getDicaControles();
-            assertTrue(agora.contains("Q desequilibrar") && agora.contains("CTRL+A/D arrastar")
+            assertTrue(agora.contains("Q desequilibrar") && agora.contains("SHIFT+NUM 4/NUM 6 arrastar")
                     && agora.contains("U romper"), agora);
 
             painel.getActionMap().get("alternarPausa").actionPerformed(null);
@@ -331,7 +345,7 @@ class ControlesGamePanelTest {
                     .map(l -> l.texto() + "=" + l.tecla()).collect(Collectors.joining("|"));
             assertTrue(j1.contains("Iniciar pegada (PEGADA 1)=P"), j1);
             assertTrue(j1.contains("Desequilibrar (na pegada)=Q"), j1);
-            assertTrue(j1.contains("=CTRL (+A/D)"), j1);
+            assertTrue(j1.contains("=SHIFT (+NUM 4/NUM 6)"), j1);   // 5O.1 (pedido)
             assertTrue(c.agora().contains("J1: Q desequilibrar") && c.agora().contains("J2: U romper"), c.agora());
 
             // ESC fecha a ajuda e continua pausado; ESC de novo despausa.

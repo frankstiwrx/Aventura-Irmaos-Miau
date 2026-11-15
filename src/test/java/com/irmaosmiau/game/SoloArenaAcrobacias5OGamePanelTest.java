@@ -174,7 +174,10 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
             toque("brancoPegada3");
             segurar(new String[] {}, 40);
             tecla("brancoModDefesa", false);
-            segurar(new String[] {"brancoAcrobacia", "brancoEsquerda"}, 60);   // mortal para tras contra a parede
+            // 5O.1 (pedido): acrobacia = R3 (rolar) + direcao em pe (antes Y/9 + direcao)
+            tecla("brancoEsquerda", true);
+            toque("brancoRolar");
+            segurar(new String[] {"brancoEsquerda"}, 60);                      // mortal para tras contra a parede
             assertEquals(MIN, j1().getX());
         });
     }
@@ -200,7 +203,8 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
     // =====================================================
     // ACROBACIAS
     // =====================================================
-    // Y (9) + direcao relativa ao corpo; custo; recarga; segurado nao repete
+    // 5O.1 (pedido): R3 (R / rolar) + direcao relativa ao corpo, em pe (antes Y/9); custo; recarga;
+    // segurado nao repete
     @Test
     void acrobaciasPelaDirecaoDoCorpo() throws Exception {
         String[][] casos = {{"brancoDireita", "MORTAL_FRENTE"}, {"brancoEsquerda", "MORTAL_TRAS"},
@@ -210,8 +214,8 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
                 novo(InicioLuta.EM_PE);
                 segurar(new String[] {"brancoEsquerda"}, 30);           // espaco para o mortal para a frente
                 double f = j1().getFolegoAtual();
-                tecla("brancoAcrobacia", true);
                 tecla(c[0], true);
+                tecla("brancoRolar", true);
                 ticks(2);
                 TipoAcrobacia t = TipoAcrobacia.valueOf(c[1]);
                 assertEquals(t, j1().getAcrobacia(), c[0]);
@@ -222,50 +226,52 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
                 ticks(40);
                 assertFalse(j1().isEmAcrobacia(), "segurado nao repete");
                 tecla(c[0], false);
-                tecla("brancoAcrobacia", false);
+                tecla("brancoRolar", false);
             }
             // J2 olhando para a esquerda: para a esquerda = para a frente
             novo(InicioLuta.EM_PE);
-            tecla("pretoAcrobacia", true);
             tecla("pretoEsquerda", true);
+            tecla("pretoRolar", true);
             ticks(2);
             assertEquals(TipoAcrobacia.MORTAL_FRENTE, j2().getAcrobacia());
         });
     }
 
-    // Recarga, sem folego, agarrado e de joelhos: nao sai; Y sozinho nao faz nada
+    // Recarga e agarrado: nao sai; R3 sozinho nao faz nada.
+    // 5O.1 (pedido): de joelhos, R3 + direcao agora ROLA (antes: recusada "SO EM PE").
     @Test
     void acrobaciaRecusadaQuandoNaoCabe() throws Exception {
         naEdt(() -> {
             novo(InicioLuta.EM_PE);
-            tecla("brancoAcrobacia", true);
+            tecla("brancoRolar", true);
             ticks(5);
-            assertFalse(j1().isEmAcrobacia(), "Y sozinho");
+            assertFalse(j1().isEmAcrobacia(), "R3 sozinho");
+            tecla("brancoRolar", false);
+            ticks(1);
             tecla("brancoCima", true);
-            ticks(2);
+            toque("brancoRolar");
+            assertTrue(j1().isEmAcrobacia());
             tecla("brancoCima", false);
             ticks(TipoAcrobacia.ESTRELA_ESQUERDA.getDuracaoTicks() + 1);
             tecla("brancoBaixo", true);
-            ticks(1);
+            toque("brancoRolar");
             assertFalse(j1().isEmAcrobacia(), "na recarga");
             assertEquals("EM RECUPERACAO", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
             tecla("brancoBaixo", false);
-            tecla("brancoAcrobacia", false);
 
             novo(InicioLuta.DE_JOELHOS);
-            tecla("brancoAcrobacia", true);
             tecla("brancoCima", true);
-            ticks(2);
+            toque("brancoRolar");
             assertNull(j1().getAcrobacia());
-            assertEquals("SÓ EM PÉ", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
+            assertTrue(j1().isRolando(), "de joelhos: rolamento tecnico");
+            assertTrue(j1().isAjoelhado(), "continua de joelhos");
+            tecla("brancoCima", false);
 
             novo(InicioLuta.EM_PE);
             j1Pega(1);
-            tecla("pretoAcrobacia", true);
             tecla("pretoCima", true);
-            ticks(2);
-            assertFalse(j2().isEmAcrobacia(), "sem fuga gratuita da pegada");
-            assertEquals("PERSONAGEM AGARRADO", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_2));
+            toque("pretoRolar");
+            assertFalse(j2().isEmAcrobacia() || j2().isRolando(), "sem fuga gratuita da pegada");
             assertTrue(s().isInteracaoEstabelecida());
         });
     }
@@ -279,8 +285,8 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
             emPe(j2());
             ticks(2);
             int lado = Integer.signum(j1().getX() - j2().getX());
-            tecla("brancoAcrobacia", true);
             tecla("brancoDireita", true);
+            tecla("brancoRolar", true);                                // 5O.1 (pedido): R3 em vez de Y
             boolean viuNoAr = false;
             for (int i = 0; i < 40; i++) {
                 ticks(1);

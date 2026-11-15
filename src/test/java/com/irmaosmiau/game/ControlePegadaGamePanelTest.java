@@ -29,6 +29,19 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5B no GamePanel real: SHIFT+A/D, Y, HUD, treino, F5 e encaixe visual. */
 class ControlePegadaGamePanelTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private GamePanel painel;
 
     private void naEdt(Runnable r) throws Exception {
@@ -97,15 +110,17 @@ class ControlePegadaGamePanelTest {
         naEdt(() -> {
             painel = novo(false);
             InputMap m = painel.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-            assertNotNull(m.get(KeyStroke.getKeyStroke("shift pressed SHIFT")), "SHIFT liga o controle");
-            assertNotNull(m.get(KeyStroke.getKeyStroke("released SHIFT")), "soltar SHIFT desliga");
+            // 5O.1 (pedido): o modo controle do J1 passou de SHIFT para CTRL (SHIFT e o Select do J2).
+            assertNotNull(m.get(KeyStroke.getKeyStroke("ctrl pressed CONTROL")), "CTRL liga o controle");
+            assertNotNull(m.get(KeyStroke.getKeyStroke("released CONTROL")), "soltar CTRL desliga");
             assertEquals("brancoReforcoPressionada", m.get(KeyStroke.getKeyStroke("pressed Y")));
             // Com SHIFT segurado, todas as teclas continuam funcionando.
-            for (String t : new String[]{"A", "D", "W", "S", "SPACE", "H", "T", "Y", "LEFT", "U"}) {
-                assertNotNull(m.get(KeyStroke.getKeyStroke("shift pressed " + t)), t);
-                assertNotNull(m.get(KeyStroke.getKeyStroke("shift released " + t)), t);
+            for (String t : new String[]{"NUMPAD4", "NUMPAD6", "NUMPAD8", "NUMPAD5", "SPACE", "2", "0", "Y", "LEFT",
+                "U"}) {
+                assertNotNull(m.get(KeyStroke.getKeyStroke("ctrl pressed " + t)), t);
+                assertNotNull(m.get(KeyStroke.getKeyStroke("ctrl released " + t)), t);
                 assertEquals(m.get(KeyStroke.getKeyStroke("pressed " + t)),
-                        m.get(KeyStroke.getKeyStroke("shift pressed " + t)), t);
+                        m.get(KeyStroke.getKeyStroke("ctrl pressed " + t)), t);
             }
         });
     }

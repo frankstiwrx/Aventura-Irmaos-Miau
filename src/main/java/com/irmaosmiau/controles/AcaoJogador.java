@@ -29,13 +29,13 @@ public enum AcaoJogador {
 
     // ---------------- MOVIMENTO ----------------
     MOVER_ESQUERDA("Esquerda", "Mover para a esquerda", "esquerda",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "A", "LEFT"),
+            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "NUMPAD4", "LEFT"),
     MOVER_DIREITA("Direita", "Mover para a direita", "direita",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "D", "RIGHT"),
+            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "NUMPAD6", "RIGHT"),
     MOVER_CIMA("Cima", "Mover para cima (linha de trás)", "cima",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "W", "UP"),
+            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "NUMPAD8", "UP"),
     MOVER_BAIXO("Baixo", "Mover para baixo (linha da frente)", "baixo",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "S", "DOWN"),
+            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "NUMPAD5", "DOWN"),
     PULAR("Pular", "Pular", "pular",
             GrupoAcao.MOVIMENTO, TipoAcionamento.TOQUE, "SPACE", "N"),
     PULO_CURTO("PularCurto", "Pulo curto", "pulo curto",
@@ -43,34 +43,34 @@ public enum AcaoJogador {
     AGACHAR("Agachar", "Agachar", "agachar",
             GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "C", "M"),
     CORRER("Correr", "Correr", "correr",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "Z", "K"),
-    ROLAR("Rolar", "Rolar", "rolar",
+            GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "NUMPAD0", "K"),
+    ROLAR("Rolar", "Rolar / acrobacia (+ direção)", "rolar",
             GrupoAcao.MOVIMENTO, TipoAcionamento.TOQUE, "R", "O"),
     DEITAR_LEVANTAR("Deitar", "Deitar / levantar", "deitar",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.TOQUE, "F", "J"),
+            GrupoAcao.MOVIMENTO, TipoAcionamento.TOQUE, "1", "J"),
     RESPIRAR("Respirar", "Respirar (recuperar fôlego)", "respirar",
             GrupoAcao.MOVIMENTO, TipoAcionamento.CONTINUA, "X", "L"),
 
     // ---------------- COMBATE ----------------
     INICIAR_PEGADA("Pegada1", "Iniciar pegada (PEGADA 1)", "pegar",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "H", "END"),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "2", "END"),
     TENTAR_DESEQUILIBRIO("Desequilibrio", "Desequilibrar (na pegada)", "desequilibrar",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "T", "PAGE_DOWN"),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "0", "PAGE_DOWN"),
     REFORCAR_PEGADA("Reforco", "Reforçar a pegada", "reforçar",
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "Y", "PAGE_UP"),
     MODO_DESLOCAMENTO_CONTROLADO("Controle", "Modo controle (+ direções = conduzir a dupla)", "arrastar",
-            GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "SHIFT", "DELETE"),
+            GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "CONTROL", "DELETE"),
     // Entrega 5L: as outras tres pegadas (RS -> / ↓ / <- no gamepad, livre).
     PEGADA_2("Pegada2", "Pegada cruzada (PEGADA 2)", "cruzada",
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "6", "NUMPAD7"),
     PEGADA_3("Pegada3", "Pegada nas duas mangas (PEGADA 3)", "mangas",
-            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "7", "NUMPAD8"),
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "7", "NUMPAD2"),
     PEGADA_4("Pegada4", "Pegada gola e nuca (PEGADA 4)", "nuca",
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "8", "NUMPAD9"),
 
     // ---------------- DEFESA ----------------
     SPRAWL("Sprawl", "Sprawl", "sprawl",
-            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "G", "I"),
+            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "MINUS", "I"),
     ROMPIMENTO_TECNICO("Rompimento", "Romper a pegada (rompimento técnico)", "romper",
             GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "5", "U"),
     // ---------------- ENTREGA 5O: FAMILIAS DE TECNICAS ----------------
@@ -81,13 +81,17 @@ public enum AcaoJogador {
      * INSERT/HOME (J2) - ALT foi evitado de proposito (no Windows abre o menu da
      * janela e o AltGr do ABNT2 e Ctrl+Alt).
      */
-    MODIFICADOR_DEFESA("ModDefesa", "Defesas (segure + direção da técnica)", "defesas",
+    MODIFICADOR_DEFESA("ModDefesa", "Defesas (segure + direção) · sozinho: respirar", "defesas",
             GrupoAcao.DEFESA, TipoAcionamento.MODIFICADOR, "3", "INSERT"),
     MODIFICADOR_PROJECAO("ModProjecao", "Quedas e transições (segure; em preparação)", "quedas",
             GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "4", "HOME"),
-    /** Acrobacia: segure + direcao do MOVIMENTO (Y + analogico esquerdo no gamepad). */
-    ACROBACIA("Acrobacia", "Acrobacia (segure + direção do movimento)", "acrobacia",
-            GrupoAcao.MOVIMENTO, TipoAcionamento.MODIFICADOR, "9", "NUMPAD5");
+    /**
+     * OBSOLETA desde a 5O.1 (nenhum slot usa): as acrobacias sairam do Y/9 e
+     * passaram para o R3 (ROLAR) + direcao em pe. A constante fica so para
+     * reconhecer arquivos antigos (controles.json / gamepad.json da 5O).
+     */
+    ACROBACIA("Acrobacia", "Acrobacia (obsoleta: R3 + direção em pé)", "acrobacia",
+            GrupoAcao.MOVIMENTO, TipoAcionamento.MODIFICADOR, null, null);
 
     private final String sufixoComando;
     private final String rotulo;

@@ -26,11 +26,11 @@ class AjudaControlesTest {
     @Test
     void padroesGeramAsMesmasDicasDeAntes() {
         MapaControles p = MapaControles.padrao();
-        assertEquals("WASD mover · Z correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário",
+        assertEquals("NUM 8456 mover · NUM 0 correr · ESPAÇO pular · V pulo curto · C agachar · ESC pausa · F4 cenário",
                 AjudaControles.dicaHud(AjudaControles.Modo.INDIVIDUAL, p, PapelCombate.LIVRE, PapelCombate.LIVRE));
-        assertEquals("WASD", AjudaControles.movimento(p, SlotJogador.JOGADOR_1));
+        assertEquals("NUM 8456", AjudaControles.movimento(p, SlotJogador.JOGADOR_1));   // 5O.1 (pedido): teclas novas do J1
         assertEquals("setas", AjudaControles.movimento(p, SlotJogador.JOGADOR_2));
-        assertEquals("SHIFT+A/D", AjudaControles.arrasto(p, SlotJogador.JOGADOR_1));
+        assertEquals("CTRL+NUM 4/NUM 6", AjudaControles.arrasto(p, SlotJogador.JOGADOR_1));   // 5O.1 (pedido): teclas novas do J1
     }
 
     @Test
@@ -39,14 +39,14 @@ class AjudaControlesTest {
         String livre = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.LIVRE, PapelCombate.LIVRE);
         // 5I (pedido): antes "J2: setas" (o J2 nao aplicava pegada).
-        assertEquals("J1: WASD · H pegar   J2: setas · END pegar   ESC pausa/controles · F3 · F4", livre);
+        assertEquals("J1: NUM 8456 · 2 pegar   J2: setas · END pegar   ESC pausa/controles · F3 · F4", livre);
         String pegada = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.APLICADOR, PapelCombate.RECEPTOR);
-        assertEquals("J1: WASD · T desequilibrar · Y reforçar · SHIFT+A/D arrastar   J2: setas · U romper"
+        assertEquals("J1: NUM 8456 · 0 desequilibrar · Y reforçar · CTRL+NUM 4/NUM 6 arrastar   J2: setas · U romper"
                 + "   ESC pausa/controles · F3 · F4", pegada);
         String entrando = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, p,
                 PapelCombate.ENTRANDO, PapelCombate.ENTRANDO);
-        assertEquals("WASD · ESPAÇO pular · F5 reiniciar · ESC pausa/controles", entrando);
+        assertEquals("NUM 8456 · ESPAÇO pular · F5 reiniciar · ESC pausa/controles", entrando);
     }
 
     @Test
@@ -56,9 +56,9 @@ class AjudaControlesTest {
                 .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_CIMA, t("I"))
                 .comTecla(SlotJogador.JOGADOR_2, AcaoJogador.SPRAWL, t("NUMPAD1"))
                 .comTecla(SlotJogador.JOGADOR_1, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, t("Q"));
-        assertEquals("I/A/S/D", AjudaControles.movimento(m, SlotJogador.JOGADOR_1));
+        assertEquals("I/NUM 4/NUM 5/NUM 6", AjudaControles.movimento(m, SlotJogador.JOGADOR_1));
         assertEquals("P pegar", AjudaControles.agora(m, SlotJogador.JOGADOR_1, PapelCombate.LIVRE));
-        assertEquals("T desequilibrar · Y reforçar · Q+A/D arrastar",
+        assertEquals("0 desequilibrar · Y reforçar · Q+NUM 4/NUM 6 arrastar",
                 AjudaControles.agora(m, SlotJogador.JOGADOR_1, PapelCombate.APLICADOR));
 
         List<AjudaControles.Linha> linhas = AjudaControles.linhas(m, SlotJogador.JOGADOR_1);
@@ -69,7 +69,7 @@ class AjudaControlesTest {
         assertFalse(linhas.stream().anyMatch(l -> "H".equals(l.tecla())), "H nao aparece mais");
         // 5I (pedido): antes 16 + 3; o J1 ganhou o rompimento. 5L (pedido): + 3 pegadas.
         // 5O (pedido): + 3 (modificador de defesas, de quedas e acrobacia).
-        assertEquals(23 + 3, linhas.size(), "23 acoes + MOVIMENTO, COMBATE, DEFESA");
+        assertEquals(22 + 3, linhas.size(), "22 acoes + MOVIMENTO, COMBATE, DEFESA");   // 5O.1 (pedido): sem a acrobacia (Y/9)
         assertTrue(AjudaControles.linhas(m, SlotJogador.JOGADOR_2)
                 .contains(new AjudaControles.Linha("Sprawl", "NUM 1")));
     }

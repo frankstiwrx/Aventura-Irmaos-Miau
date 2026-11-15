@@ -78,7 +78,7 @@ class ControlesPanelTest {
                 assertNotNull(tela.botaoTecla(a), a.name());
                 assertEquals(MapaControles.padrao().rotulo(SlotJogador.JOGADOR_1, a), tela.botaoTecla(a).getText());
             }
-            assertEquals("H", tela.botaoTecla(AcaoJogador.INICIAR_PEGADA).getText());
+            assertEquals("2", tela.botaoTecla(AcaoJogador.INICIAR_PEGADA).getText());   // 5O.1 (pedido): H -> 2
             tela.selecionarSlot(SlotJogador.JOGADOR_2);
             assertEquals("U", tela.botaoTecla(AcaoJogador.ROMPIMENTO_TECNICO).getText());
             assertEquals("←", tela.botaoTecla(AcaoJogador.MOVER_ESQUERDA).getText());
@@ -94,16 +94,17 @@ class ControlesPanelTest {
             tela.botaoTecla(AcaoJogador.INICIAR_PEGADA).doClick();
             assertTrue(tela.isCapturando());
             assertEquals("pressione uma tecla…", tela.botaoTecla(AcaoJogador.INICIAR_PEGADA).getText());
-            tela.receberTecla(KeyEvent.VK_P);
+            // 5O.1 (pedido): P e do teclado-controle do J2 (recusada); a tecla livre usada e a VIRGULA.
+            tela.receberTecla(KeyEvent.VK_COMMA);
             assertFalse(tela.isCapturando());
-            assertEquals("P", tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
-            assertEquals("H", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA),
+            assertEquals(",", tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
+            assertEquals("2", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA),
                     "nada vale antes de SALVAR");
             assertFalse(Files.exists(repo().getArquivo()));
             assertTrue(tela.salvar());
-            assertEquals("P", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
+            assertEquals(",", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
         });
-        assertEquals("P", PreferenciasControles.carregar(repo()).getAtual()
+        assertEquals(",", PreferenciasControles.carregar(repo()).getAtual()
                 .rotulo(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA), "persistido");
     }
 
@@ -113,10 +114,26 @@ class ControlesPanelTest {
         naEdt(() -> {
             tela.selecionarSlot(SlotJogador.JOGADOR_2);
             tela.iniciarCaptura(AcaoJogador.ROMPIMENTO_TECNICO);
-            tela.receberTecla(KeyEvent.VK_NUMPAD0);
-            assertEquals("NUM 0", tecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO));
+            tela.receberTecla(KeyEvent.VK_NUMPAD3);                   // 5O.1 (pedido): NUM 0 = correr do J1
+            assertEquals("NUM 3", tecla(SlotJogador.JOGADOR_2, AcaoJogador.ROMPIMENTO_TECNICO));
             assertEquals(MapaControles.padrao().doSlot(SlotJogador.JOGADOR_1),
                     tela.mapaEmEdicao().doSlot(SlotJogador.JOGADOR_1));
+        });
+    }
+
+    // 5O.1: as teclas do teclado-controle do J2 sao recusadas para o J1 (nunca a mesma tecla nos dois).
+    @Test
+    void teclaDoTecladoControleDoJ2RecusadaNoJ1() throws Exception {
+        abrir();
+        naEdt(() -> {
+            for (int k : new int[] {KeyEvent.VK_W, KeyEvent.VK_P, KeyEvent.VK_SHIFT, KeyEvent.VK_UP, KeyEvent.VK_ENTER}) {
+                tela.iniciarCaptura(AcaoJogador.PULAR);
+                tela.receberTecla(k);
+                assertTrue(tela.isCapturando(), "recusada: " + k);
+                assertTrue(tela.textoStatus().contains("teclado-controle do J2"), tela.textoStatus());
+                tela.receberTecla(KeyEvent.VK_ESCAPE);
+            }
+            assertEquals(MapaControles.padrao(), tela.mapaEmEdicao());
         });
     }
 
@@ -141,25 +158,25 @@ class ControlesPanelTest {
     void conflitoPerguntaETrocaSoSeConfirmar() throws Exception {
         abrir();
         naEdt(() -> {
-            // J1 pegada <- D (ja e "direita" do J1): recusar a troca nao muda nada.
+            // J1 pegada <- NUM 6 (ja e "direita" do J1): recusar a troca nao muda nada. 5O.1 (pedido): D -> NUM 6.
             dialogos.confirmacoes.add(false);
             tela.iniciarCaptura(AcaoJogador.INICIAR_PEGADA);
-            tela.receberTecla(KeyEvent.VK_D);
+            tela.receberTecla(KeyEvent.VK_NUMPAD6);
             assertEquals(MapaControles.padrao(), tela.mapaEmEdicao());
             assertTrue(dialogos.perguntas.get(0).contains("J1 · Mover para a direita"), dialogos.perguntas.get(0));
 
             dialogos.confirmacoes.add(true);
             tela.iniciarCaptura(AcaoJogador.INICIAR_PEGADA);
-            tela.receberTecla(KeyEvent.VK_D);
-            assertEquals("D", tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
-            assertEquals("H", tecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA), "trocadas");
+            tela.receberTecla(KeyEvent.VK_NUMPAD6);
+            assertEquals("NUM 6", tecla(SlotJogador.JOGADOR_1, AcaoJogador.INICIAR_PEGADA));
+            assertEquals("2", tecla(SlotJogador.JOGADOR_1, AcaoJogador.MOVER_DIREITA), "trocadas");
             assertTrue(tela.mapaEmEdicao().isValido());
 
-            // Entre os jogadores (mesmo teclado): J2 pular <- A (esquerda do J1).
+            // Entre os jogadores (mesmo teclado): J2 pular <- NUM 4 (esquerda do J1).
             tela.selecionarSlot(SlotJogador.JOGADOR_2);
             dialogos.confirmacoes.add(false);
             tela.iniciarCaptura(AcaoJogador.PULAR);
-            tela.receberTecla(KeyEvent.VK_A);
+            tela.receberTecla(KeyEvent.VK_NUMPAD4);
             assertTrue(dialogos.perguntas.get(2).contains("J1 · Mover para a esquerda"), dialogos.perguntas.get(2));
             assertEquals("N", tecla(SlotJogador.JOGADOR_2, AcaoJogador.PULAR));
         });
@@ -188,12 +205,12 @@ class ControlesPanelTest {
         abrir();
         naEdt(() -> {
             tela.iniciarCaptura(AcaoJogador.PULAR);
-            tela.receberTecla(KeyEvent.VK_P);
+            tela.receberTecla(KeyEvent.VK_COMMA);                       // 5O.1 (pedido): P -> ,
             tela.restaurarPadroes();
             assertEquals(MapaControles.padrao(), tela.mapaEmEdicao());
 
             tela.iniciarCaptura(AcaoJogador.PULAR);
-            tela.receberTecla(KeyEvent.VK_P);
+            tela.receberTecla(KeyEvent.VK_COMMA);
             dialogos.respostas.add(Dialogos.Resposta.CANCELAR);
             tela.voltar();
             assertEquals(0, voltou.get(), "cancelar fica na tela");
@@ -210,11 +227,11 @@ class ControlesPanelTest {
         abrir();
         naEdt(() -> {
             tela.iniciarCaptura(AcaoJogador.CORRER);
-            tela.receberTecla(KeyEvent.VK_Q);
+            tela.receberTecla(KeyEvent.VK_PERIOD);                      // 5O.1 (pedido): Q e do J2 (LT)
             dialogos.respostas.add(Dialogos.Resposta.SIM);
             tela.voltar();
             assertEquals(1, voltou.get());
-            assertEquals("Q", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.CORRER));
+            assertEquals(".", prefs.getAtual().rotulo(SlotJogador.JOGADOR_1, AcaoJogador.CORRER));
         });
         assertTrue(Files.exists(repo().getArquivo()));
     }

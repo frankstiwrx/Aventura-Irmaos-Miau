@@ -94,8 +94,41 @@ public final class MapaGamepad {
      */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
         // 5I: os dois slots usam todas as acoes de combate (papel vem da luta).
+        return transformar51(padrao5O(slot, esquema));
+    }
+
+    /** Padroes da 5O (antes da 5O.1), para reconhecer um gamepad.json nunca personalizado. */
+    public static ConfigSlot padrao5O(SlotJogador slot, EsquemaGamepad esquema) {
         return transformar5O(transformar5H(transformar5G(layoutBase(slot, esquema, slot::usa), slot::usa)),
                 slot::usa);
+    }
+
+    /**
+     * 5O.1: Select/View deixa de respirar (respirar = RT sozinho) e fica LIVRE:
+     * livre, ele vale como RB logico (ver {@link #ALTERNATIVA_RB}). O Y deixa de
+     * fazer acrobacia (acrobacia = R3 + direcao em pe); no Classico o Y continua
+     * reforcando a pegada.
+     */
+    private static ConfigSlot transformar51(ConfigSlot c5o) {
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(c5o.acoes());
+        if (a.get(AcaoJogador.RESPIRAR) == BotaoGamepad.VOLTAR) {
+            a.remove(AcaoJogador.RESPIRAR);
+        }
+        a.remove(AcaoJogador.ACROBACIA);
+        return new ConfigSlot(c5o.esquema(), a, c5o.comandos());
+    }
+
+    /**
+     * 5O.1: Select/View e uma alternativa ao RB (pulo alto, quedas, corrida no
+     * Classico) enquanto estiver livre no slot. O RB continua valendo; Start
+     * continua sendo a pausa.
+     */
+    public static final BotaoGamepad ALTERNATIVA_RB = BotaoGamepad.VOLTAR;
+
+    /** O Select esta livre no slot (entao vale como RB)? */
+    public boolean selectValeComoRb(SlotJogador slot) {
+        return quemUsa(slot, ALTERNATIVA_RB).isEmpty();
     }
 
     /** Padroes da 5H a 5N (antes das familias da 5O), para reconhecer um gamepad.json nunca personalizado. */

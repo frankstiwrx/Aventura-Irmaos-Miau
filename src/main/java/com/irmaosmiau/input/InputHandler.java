@@ -60,6 +60,9 @@ public class InputHandler {
     private final TravaComandos trava = new TravaComandos();
     private final Map<SlotJogador, FonteAcoes> fontes = new EnumMap<>(SlotJogador.class);
     private final Set<SlotJogador> tecladoDesligado = EnumSet.noneOf(SlotJogador.class);
+    /** 5O.1: slots cujo teclado e um CONTROLE (layout fixo); as teclas soltas deles nao sao ligadas. */
+    private final Map<SlotJogador, com.irmaosmiau.dispositivos.TecladoControle> tecladosControle =
+            new EnumMap<>(SlotJogador.class);
 
     // =====================================================
     // CONFIGURACAO DOS KEY BINDINGS
@@ -87,10 +90,57 @@ public class InputHandler {
 
         for (SlotJogador slot : SlotJogador.values()) {
             pressionadas.put(slot, EnumSet.noneOf(AcaoJogador.class));
+            boolean controle = com.irmaosmiau.controles.LayoutTecladoControle.usa(slot);
             for (AcaoJogador acao : slot.acoes()) {
-                mapearAcao(inputMap, actionMap, slot, acao, mapa.tecla(slot, acao));
+                // 5O.1: no teclado-controle as teclas soltas do slot nao sao ligadas (o comando continua no ActionMap).
+                mapearAcao(inputMap, actionMap, slot, acao, controle ? Optional.empty() : mapa.tecla(slot, acao));
+            }
+            if (controle) {
+                mapearTecladoControle(inputMap, actionMap, slot);
             }
         }
+    }
+
+    /**
+     * 5O.1: cada tecla do layout vira um botao/analogico do controle virtual do
+     * slot (comandos "<prefixo>Controle<TECLA>Pressionada/Solta").
+     */
+    private void mapearTecladoControle(InputMap inputMap, ActionMap actionMap, SlotJogador slot) {
+        com.irmaosmiau.dispositivos.TecladoControle tc = new com.irmaosmiau.dispositivos.TecladoControle(slot);
+        tecladosControle.put(slot, tc);
+        for (String tecla : tc.teclas()) {
+            String nome = comandoTecladoControle(slot, tecla);
+            for (String mod : COMBINACOES_MODIFICADORES) {
+                inputMap.put(KeyStroke.getKeyStroke(mod + "pressed " + tecla), nome + "Pressionada");
+                inputMap.put(KeyStroke.getKeyStroke(mod + "released " + tecla), nome + "Solta");
+            }
+            actionMap.put(nome + "Pressionada", new AbstractAction() {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    tc.pressionar(tecla);
+                }
+            });
+            actionMap.put(nome + "Solta", new AbstractAction() {
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    tc.soltar(tecla);
+                }
+            });
+        }
+    }
+
+    /** Nome do comando de uma tecla do teclado-controle (ex.: "pretoControleW"). */
+    public static String comandoTecladoControle(SlotJogador slot, String tecla) {
+        return slot.getPrefixoComando() + "Controle" + tecla;
+    }
+
+    /** 5O.1: teclado-controle do slot (vazio = teclas soltas). */
+    public Optional<com.irmaosmiau.dispositivos.TecladoControle> tecladoControle(SlotJogador slot) {
+        return Optional.ofNullable(tecladosControle.get(slot));
     }
 
     private void mapearAcao(InputMap inputMap, ActionMap actionMap, SlotJogador slot,
@@ -191,6 +241,7 @@ public class InputHandler {
             s.clear();
         }
         trava.soltarTodos();
+        tecladosControle.values().forEach(com.irmaosmiau.dispositivos.TecladoControle::liberar);
         for (FonteAcoes f : fontes.values()) {
             f.liberarTodas();
         }

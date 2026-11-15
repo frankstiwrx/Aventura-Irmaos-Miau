@@ -102,7 +102,8 @@ class PuloAltoGamePanelTest {
             sim.definir("g1", EstadoGamepad.repouso().comEixo(com.irmaosmiau.dispositivos.EixoGamepad.ESQ_X, 1f)
                     .com(BotaoGamepad.R3));
             ticks(1);
-            assertTrue(b.isRolando(), "R3 = rolamento");
+            // 5O.1 (pedido): em pe, R3 + direcao = acrobacia (o rolamento ficou para joelhos/deitado).
+            assertTrue(b.isEmAcrobacia(), "R3 em pe = acrobacia");
             sim.definir("g1", EstadoGamepad.repouso());
             ticks(80);
             // 5K (pedido): L3 e o comando de postura; L3 + L3 rapido = deitar direto, de novo = levantar.

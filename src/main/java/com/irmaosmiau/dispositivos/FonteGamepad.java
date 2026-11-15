@@ -54,6 +54,8 @@ public final class FonteGamepad implements FonteAcoes {
     private com.irmaosmiau.controles.DirecaoTecnica rsFamilia;
     private com.irmaosmiau.controles.FamiliaTecnica.Escolha escolhaPendente;
     private EstadoGamepad ultimoEstado;
+    /** 5O.1: leitura fisica (antes do Select virar RB), para o diagnostico do F3. */
+    private EstadoGamepad ultimoCru;
     /** Entrega 5G: pulo decidido no instante do toque (normal ou alto) e mantido ate soltar. */
     private AcaoJogador puloEscolhido;
 
@@ -71,7 +73,8 @@ public final class FonteGamepad implements FonteAcoes {
      * @param estado leitura atual; null = sem leitura (desconectado ou janela sem foco)
      */
     public void atualizar(EstadoGamepad estadoCru) {
-        EstadoGamepad estado = estadoCru == null ? null : comHistereseNosGatilhos(estadoCru);
+        ultimoCru = estadoCru;
+        EstadoGamepad estado = estadoCru == null ? null : comHistereseNosGatilhos(comSelectComoRb(estadoCru));
         if (estado == null) {
             gatilhoApertado[0] = false;
             gatilhoApertado[1] = false;
@@ -167,7 +170,21 @@ public final class FonteGamepad implements FonteAcoes {
 
     /** 5O (diagnostico F3): o botao fisico esta apertado na ultima leitura? */
     public boolean botaoFisico(BotaoGamepad b) {
-        return ultimoEstado != null && ultimoEstado.pressionado(b);
+        return ultimoCru != null && ultimoCru.pressionado(b);
+    }
+
+    /** 5O.1: RB LOGICO = RB fisico ou Select (se o Select estiver livre no slot). */
+    public boolean rbLogico() {
+        return ultimoEstado != null && ultimoEstado.pressionado(BotaoGamepad.RB);
+    }
+
+    /** 5O.1: Select livre no slot = RB (pulo alto, quedas, corrida). */
+    private EstadoGamepad comSelectComoRb(EstadoGamepad e) {
+        if (e.pressionado(MapaGamepad.ALTERNATIVA_RB) && !e.pressionado(BotaoGamepad.RB)
+                && mapa.selectValeComoRb(slot)) {
+            return e.com(BotaoGamepad.RB);
+        }
+        return e;
     }
 
     /** 5O (diagnostico F3): houve leitura neste tick? */

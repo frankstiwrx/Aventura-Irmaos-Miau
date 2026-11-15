@@ -43,6 +43,19 @@ import org.junit.jupiter.api.Test;
  */
 class GamepadGamePanelTest {
 
+    // 5O.1 (pedido): o J2 no teclado virou TECLADO-CONTROLE (layout fixo do Xbox). Estes testes
+    // cobrem as TECLAS LIVRES configuraveis, que continuam existindo (-Dirmaosmiau.teclado.j2=livre);
+    // o teclado-controle tem testes proprios (TecladoControle51Test).
+    @org.junit.jupiter.api.BeforeEach
+    void tecladoLivre51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(java.util.Set.of());
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void tecladoPadrao51() {
+        com.irmaosmiau.controles.LayoutTecladoControle.definirParaTestes(null);
+    }
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
 
@@ -136,10 +149,10 @@ class GamepadGamePanelTest {
             criar(gamepadNo(J2), null, false, 1);
             int xb = painel.getLutador1().getX();
             int xp = painel.getLutador2().getX();
-            tecla("pressed D");
+            tecla("pressed NUMPAD6");   // 5O.1 (pedido): D -> NUM 6
             gp("g1", repouso().comEixo(EixoGamepad.ESQ_X, -1f));
             ticks(10);
-            tecla("released D");
+            tecla("released NUMPAD6");
             gp("g1", repouso());
             assertTrue(painel.getLutador1().getX() > xb, "J1 pelo teclado");
             assertTrue(painel.getLutador2().getX() < xp, "J2 pelo gamepad");
@@ -329,9 +342,9 @@ class GamepadGamePanelTest {
             int x = painel.getLutador1().getX();
             ticks(20);
             assertEquals(x, painel.getLutador1().getX(), "nada continua andando depois de desconectar");
-            tecla("pressed D");
+            tecla("pressed NUMPAD6");   // 5O.1 (pedido): D -> NUM 6
             ticks(3);
-            tecla("released D");
+            tecla("released NUMPAD6");
             assertTrue(painel.getLutador1().getX() > x, "teclado assume");
 
             sim.conectar("g1", "ID-1", "Controle 1");
@@ -409,7 +422,8 @@ class GamepadGamePanelTest {
             criar(gamepadNo(J2), null, false, 1);
             estabelecerPegadaComTeclado();
             String dica = painel.montarEstadoHud().getDicaControles();
-            assertTrue(dica.contains("J1: WASD") && dica.contains("J2: analógico · B/Bola romper"), dica);
+            assertTrue(dica.contains("J1: NUM 8456") &&   // 5O.1 (pedido): WASD -> NUM 8456
+                     dica.contains("J2: analógico · B/Bola romper"), dica);
             painel.getActionMap().get("alternarPausa").actionPerformed(null);
             painel.mostrarAjudaControles(true);
             PainelAjudaControles.Conteudo c = painel.montarAjudaControles();
@@ -423,14 +437,14 @@ class GamepadGamePanelTest {
     }
 
     private void estabelecerPegadaComTeclado() {
-        tecla("pressed D");
+        tecla("pressed NUMPAD6");   // 5O.1 (pedido): D -> NUM 6
         for (int i = 0; i < 200 && !sistema().podeTentarAcao(painel.getLutador1(), painel.getLutador2(), "pegada_1"); i++) {
             ticks(1);
         }
-        tecla("released D");
-        tecla("pressed H");
+        tecla("released NUMPAD6");
+        tecla("pressed 2");         // 5O.1 (pedido): H -> 2
         ticks(1);
-        tecla("released H");
+        tecla("released 2");
         ticks(31);
         assertTrue(sistema().isInteracaoEstabelecida());
     }

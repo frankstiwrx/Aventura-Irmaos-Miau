@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 846, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 887, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -386,3 +386,14 @@ Gamepad (Xbox):
 
 - [ ] `git diff` não contém alterações em arrays `*_MIAUSTUDIO`, renderers do Branco/Preto ou `RegistroAnimacoesCombate`
 - [ ] `Pegada1RegressaoArraysTest` passou (protege os arrays aprovados da PEGADA_1)
+
+### R3 contextual, RT respira, Select = RB, teclado-controle do J2 e guarda andando (Entrega 5O.1)
+- [ ] Em pé: R3 + direção = estrela (fundo/frente) ou mortal (frente/trás); Y + direção não faz mais nada
+- [ ] De joelhos: R3 + direção rola nas 8 direções, perto do tatame, e continua de joelhos
+- [ ] Deitado: R3 + direção rola mais devagar e continua deitado
+- [ ] F7 ORIGINAL × EXPERIMENTAL: rolamento (bola baixa) e sprawl (prancha) só mudam no experimental
+- [ ] RT sozinho respira; RT + RS = guardas/sprawl (sem respirar); RB e Select + A = pulo alto; Start pausa
+- [ ] Guarda alta/média/baixa + LS anda a 50%, sem correr, sem cancelar a guarda; trocar de guarda andando
+- [ ] J2 no teclado: WASD, setas (RS), K/L/J/I, Z/M, T/H/G/F, O/P/E/Q, ENTER, SHIFT
+- [ ] J1 no teclado: NUM 8/4/5/6, NUM 0 correr, 1 deitar, 2 pegada 1, 0 desequilibrar, CTRL arrasto, - sprawl
+- [ ] F3 mostra RB físico, Select físico e RB lógico dos dois jogadores

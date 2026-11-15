@@ -46,7 +46,9 @@ class Familias5OTest {
             assertEquals(BotaoGamepad.RB, m.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).orElseThrow());
             assertEquals(BotaoGamepad.GATILHO_DIR, m.botao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_DEFESA)).orElseThrow());
             assertEquals(BotaoGamepad.RB, m.botao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_PROJECAO)).orElseThrow());
-            assertEquals(BotaoGamepad.NORTE, m.botao(J1, ItemGamepad.de(AcaoJogador.ACROBACIA)).orElseThrow());
+            // 5O.1 (pedido): o Y nao faz mais acrobacia (agora R3 + direcao em pe) e o Select nao respira.
+            assertTrue(m.quemUsa(J1, BotaoGamepad.VOLTAR).isEmpty(), "Select livre = RB logico");
+            assertTrue(m.botao(J1, ItemGamepad.de(AcaoJogador.RESPIRAR)).isEmpty(), "respirar = RT sozinho");
             assertTrue(m.botao(J1, ItemGamepad.de(AcaoJogador.SPRAWL)).isEmpty(), "o sprawl agora e RT + RS para baixo");
         }
         MapaGamepad ctx = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);

@@ -41,6 +41,13 @@ public final class DefesaCorporal {
     public enum Fase { NENHUMA, ENTRANDO, ATIVA, SAINDO }
 
     /** Tempo de entrada na guarda (ticks de 16 ms, ~0,1 s). */
+    /**
+     * 5O.1: velocidade de caminhada enquanto uma guarda (alta, media ou baixa)
+     * esta segurada, como fracao da velocidade normal da postura. Sem corrida.
+     * Ponto unico de ajuste.
+     */
+    public static final double MULTIPLICADOR_VELOCIDADE = 0.5;
+
     public static final int TICKS_ENTRADA = 6;
     /** Tempo de saida para a postura normal (~0,13 s). */
     public static final int TICKS_SAIDA = 8;

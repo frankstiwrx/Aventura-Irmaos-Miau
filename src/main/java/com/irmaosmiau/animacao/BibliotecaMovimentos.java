@@ -57,6 +57,15 @@ public final class BibliotecaMovimentos {
 
         /** Pose (30 valores) e deslocamento vertical no progresso 0..1, interpolando quadros vizinhos. */
         public double[] noProgresso(double p, int[] destino) {
+            return noProgresso(p, destino, dys);
+        }
+
+        /** Deslocamentos do arquivo (assentados no Miau Branco). */
+        public int[] deslocamentosY() {
+            return dys.clone();
+        }
+
+        private double[] noProgresso(double p, int[] destino, int[] dys) {
             double t = Math.max(0, Math.min(1, p)) * (quadros.length - 1);
             int i = Math.min(quadros.length - 2, (int) Math.floor(t));
             double f = quadros.length == 1 ? 0 : t - i;

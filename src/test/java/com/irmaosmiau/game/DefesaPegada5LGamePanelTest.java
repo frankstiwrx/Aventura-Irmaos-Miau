@@ -243,6 +243,8 @@ class DefesaPegada5LGamePanelTest {
     void rolandoEvitaMasNaoFicaInvulneravel() throws Exception {
         naEdt(() -> {
             j1PegaPerto();
+            // 5O.1 (pedido): em pe o R3 faz acrobacia; o rolamento tecnico parte de joelhos.
+            j2().ajoelhar();
             tecla("pretoDireita", true);
             tecla("pretoRolar", true);
             ticks(1);

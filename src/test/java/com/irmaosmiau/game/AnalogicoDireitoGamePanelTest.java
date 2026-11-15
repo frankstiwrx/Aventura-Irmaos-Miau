@@ -178,14 +178,14 @@ class AnalogicoDireitoGamePanelTest {
     void receptorNaoArrastaOAplicadorEJ2Independente() throws Exception {
         naEdt(() -> {
             criar(contextual(J2), J2);                                  // J1 teclado, J2 Xbox contextual
-            tecla("pressed D");
+            tecla("pressed NUMPAD6");   // 5O.1 (pedido): D -> NUM 6
             for (int i = 0; i < 200 && !s().podeTentarAcao(painel.getLutador1(), painel.getLutador2(), "pegada_1"); i++) {
                 ticks(1);
             }
-            tecla("released D");
-            tecla("pressed H");
+            tecla("released NUMPAD6");
+            tecla("pressed 2");         // 5O.1 (pedido): H -> 2
             ticks(1);
-            tecla("released H");
+            tecla("released 2");
             ticks(31);
             assertTrue(s().isInteracaoEstabelecida());
             int xb = painel.getLutador1().getX();
@@ -268,7 +268,8 @@ class AnalogicoDireitoGamePanelTest {
             ticks(1);
             sim.definir("g1", andar(-1f).com(BotaoGamepad.R3).comEixo(EixoGamepad.DIR_Y, -0.9f));
             ticks(1);
-            assertTrue(painel.getLutador1().isRolando(), "R3 rola na direcao do analogico esquerdo");
+            // 5O.1 (pedido): em pe, R3 + direcao = acrobacia (de joelhos/deitado = rolamento).
+            assertTrue(painel.getLutador1().isEmAcrobacia(), "R3 em pe: acrobacia na direcao do analogico esquerdo");
             assertFalse(painel.montarEstadoHud().getMensagem() != null
                     && painel.montarEstadoHud().getMensagem().startsWith("J1: nada"), "nenhuma tecnica disparada");
         });
