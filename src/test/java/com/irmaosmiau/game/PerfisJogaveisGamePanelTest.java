@@ -246,7 +246,7 @@ class PerfisJogaveisGamePanelTest {
 
     @Test
     void perfilComPoucoFolegoNaoConsegueAPegada() throws Exception {
-        AtributosLutador cansado = new AtributosLutador(35, 2, 42, 22, 25, 25, 1, 72);
+        AtributosLutador cansado = new AtributosLutador(35, 1, 42, 22, 25, 25, 1, 72);
         ServicoPerfis s = new ServicoPerfis(new RepositorioPerfis(new DiretorioDados(tmp)), CatalogoPersonagens.padrao());
         s.criar("cansado", "Cansado", "miau_branco", cansado);
         EscolhaLutador esc = new OpcoesDeLutadores(CatalogoPersonagens.padrao(), s)
@@ -260,9 +260,9 @@ class PerfisJogaveisGamePanelTest {
             j.moverX(p.getX() - j.getX() - 60);
             painel.atualizarUmTickParaTestes();
             assertEquals(ResultadoAcao.INDISPONIVEL, painel.getSistemaCombate().tentarAcao(j, p, "pegada_1"),
-                    "folego maximo 2 < custo 3 da PEGADA_1");
+                    "folego maximo 1 < custo 1,8 da PEGADA_1 (5P.1 (pedido))");
             HudCombate.Estado e = painel.montarEstadoHud();
-            assertEquals("2/2", e.getLutadores().get(0).textoFolego());
+            assertEquals("1/1", e.getLutadores().get(0).textoFolego());
         });
     }
 

@@ -219,7 +219,7 @@ class DefesaPegada5LGamePanelTest {
             assertEquals(EventoDefesa.Tipo.PEGADA_EVITADA, s().getUltimoEventoDefesa().tipo());
             assertEquals("AGACHAMENTO", s().getUltimoEventoDefesa().detalhe());
             assertTrue(j2().getFolegoAtual() < fd - CustosFolego.EVASAO_ABAIXAR + 0.05, "quem evita paga");
-            assertTrue(j1().getFolegoAtual() < fa - 1.4, "a tentativa custa metade ao atacante");
+            assertTrue(j1().getFolegoAtual() < fa - 0.8, "a tentativa custa metade ao atacante");   // 5P.1 (pedido): 1,8/2
             assertTrue(painel.mensagemFeedbackParaTestes().contains("EVITADA"), painel.mensagemFeedbackParaTestes());
             assertEquals(EstadoVisual.REACAO_DEFESA, painel.getAnimador().origem(j2()).orElseThrow().estado());
             assertEquals("DEFESA_ALCANCE_FALHO", painel.getAnimador().origem(j1()).orElseThrow().idAnimacao());

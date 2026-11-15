@@ -64,9 +64,14 @@ public final class SistemaCombate {
     // =====================================================
     // Entrega 5L.1 (balanceamento): valores ANTES -> DEPOIS em docs/CONTROLES.md.
     /** Folego do aplicador para tentar o desequilibrio (5L.1: 4 -> 3). */
-    public static final double CUSTO_DESEQUILIBRIO = 3.0;
+    /** 5P.1: custo de folego de uma pegada (tecnicas.json x CustosFolego.FATOR_CUSTO_PEGADAS). */
+    public static double custoPegada(AcaoCombate acao) {
+        return acao.getCustoFolego() * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS;
+    }
+
+    public static final double CUSTO_DESEQUILIBRIO = 2.0;          // 5P.1: 3,0 -> 2,0
     /** Folego do receptor para tentar o rompimento tecnico, pago com ou sem sucesso (5L.1: 3 -> 2,5). */
-    public static final double CUSTO_ROMPIMENTO_TECNICO = 2.5;
+    public static final double CUSTO_ROMPIMENTO_TECNICO = 1.75;    // 5P.1: 2,5 -> 1,75
     /**
      * Entrega 5L.1: insistencia. A disputa e deterministica; sem isto, quem
      * perde uma vez perde sempre nas mesmas condicoes (ex.: o Preto oficial
@@ -98,7 +103,7 @@ public final class SistemaCombate {
     /** Firmeza recuperada por um reforco (limitada a 100). */
     public static final double REFORCO_FIRMEZA = 30.0;   // 5L.1: 25 -> 30
     /** Folego do aplicador por reforco. */
-    public static final double CUSTO_REFORCO = 2.0;   // 5L.1: 3 -> 2
+    public static final double CUSTO_REFORCO = 1.5;   // 5L.1: 3 -> 2; 5P.1: 2 -> 1,5
     /** Recarga entre reforcos (~1 s), separada da recarga das acoes de disputa. */
     public static final int RECARGA_REFORCO_TICKS = 60;
     /** Abaixo disso o HUD avisa "controle enfraquecendo". */
@@ -940,7 +945,7 @@ public final class SistemaCombate {
         validarAcaoEContexto(acao, contexto);
 
         return contexto.getFolegoAtacante()
-                >= acao.getCustoFolego();
+                >= custoPegada(acao);
     }
 
     /**
@@ -1102,12 +1107,12 @@ public final class SistemaCombate {
         }
 
         // Entrega 5L: evasao ANTES do contato (abaixar a tempo, rolando ou no ar).
-        if (acao.getCategoria() == CategoriaAcao.PEGADA && atacante.getFolegoAtual() >= acao.getCustoFolego()) {
+        if (acao.getCategoria() == CategoriaAcao.PEGADA && atacante.getFolegoAtual() >= custoPegada(acao)) {
             String evasao = defensor.getEvasaoAtiva();
             boolean pagou = evasao != null && (!"AGACHAMENTO".equals(evasao)
                     || defensor.consumirFolegoCombate(com.irmaosmiau.entities.CustosFolego.EVASAO_ABAIXAR));
             if (pagou) {
-                atacante.gastarFolegoEsforco(acao.getCustoFolego()
+                atacante.gastarFolegoEsforco(custoPegada(acao)
                         * com.irmaosmiau.entities.CustosFolego.FRACAO_CUSTO_PEGADA_EVITADA, "pegada evitada");
                 registrarEventoDefesa(EventoDefesa.Tipo.PEGADA_EVITADA, defensor, atacante, evasao);
                 ultimoResultado = ResultadoAcao.DEFENDIDO;
@@ -1116,7 +1121,7 @@ public final class SistemaCombate {
         }
 
         if (!atacante.consumirFolegoCombate(
-                acao.getCustoFolego()
+                custoPegada(acao)
         )) {
 
             ultimoResultado = ResultadoAcao.INDISPONIVEL;

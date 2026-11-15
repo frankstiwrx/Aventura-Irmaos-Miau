@@ -144,7 +144,7 @@ class ContextualGamePanelTest {
             gp("g1", r());
             ticks(1);
             pegarPeloDpad();
-            assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0);
+            assertEquals(folego - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), painel.getLutador1().getFolegoAtual(), 0.3);
             assertEquals("pegada_1", s().getIdAcaoInteracao());
         });
     }

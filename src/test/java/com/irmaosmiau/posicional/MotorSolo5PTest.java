@@ -49,6 +49,18 @@ class MotorSolo5PTest {
         }
     }
 
+    /**
+     * 5P.1 (pedido): as janelas ficaram ~30% maiores; em vez de contar os ticks
+     * da janela antiga, espera a tentativa atual se resolver.
+     */
+    private void resolver() {
+        for (int i = 0; i < 120 && m.getTentativa().isPresent(); i++) {
+            ticks(1);
+        }
+        assertTrue(m.getTentativa().isEmpty(), "a tentativa se resolveu");
+        ticks(1);
+    }
+
     private static ComandoSolo rs(Direcao d) {
         return new ComandoSolo(d, false);
     }
@@ -85,7 +97,9 @@ class MotorSolo5PTest {
 
     private void derrubarPelasPernas(Lado ini, Direcao reacaoDeQuemCai) {
         assertEquals(Resultado.INICIADA, cmd(ini, rb(Direcao.BAIXO)).resultado());
-        ticks(14);
+        for (int i = 0; i < 60 && !m.isAterrissando(); i++) {
+            ticks(1);                                          // 5P.1 (pedido): janela maior
+        }
         assertTrue(m.isAterrissando());
         if (reacaoDeQuemCai != null) {
             assertEquals(Resultado.CONCLUIDA, cmd(ini.outro(), rs(reacaoDeQuemCai)).resultado());
@@ -143,7 +157,7 @@ class MotorSolo5PTest {
         novo(300, 370);
         int x = b.getX();
         cmd(Lado.A, rb(Direcao.CIMA));
-        ticks(11);
+        resolver();                                            // 5P.1 (pedido)
         assertTrue(b.getX() > x, "recuou");
         assertTrue(m.getBase(Lado.B) < 60 && m.getBase(Lado.B) > 0, "desequilibrou: base " + m.getBase(Lado.B));
         assertEquals(Posicao.EM_PE_SEPARADOS, m.getPosicao(), "nao caiu");
@@ -152,7 +166,7 @@ class MotorSolo5PTest {
             ticks(MotorSolo.RECARGA_TICKS);
             b.encostarNaBorda(a.getX() + 60 - b.getX());
             cmd(Lado.A, rb(Direcao.CIMA));
-            ticks(11);
+            resolver();                                        // 5P.1 (pedido)
         }
         assertTrue(m.getBase(Lado.A) < MotorSolo.BASE_MINIMA_PARA_EMPURRAR || m.getPosicao() != Posicao.EM_PE_SEPARADOS,
                 "insistir gasta a propria base");
@@ -167,7 +181,7 @@ class MotorSolo5PTest {
             b.atualizar(false, false);
         }
         cmd(Lado.A, rb(Direcao.CIMA));
-        for (int i = 0; i < 11; i++) {
+        for (int i = 0; i < 120 && m.getTentativa().isPresent(); i++) {   // 5P.1 (pedido): janela maior
             b.getDefesa().manter(DefesaCorporal.Tipo.GUARDA_MEDIA);
             ticks(1);
         }
@@ -175,7 +189,7 @@ class MotorSolo5PTest {
         b.getDefesa().interromper();
         ticks(1);
         cmd(Lado.B, rb(Direcao.CIMA));                         // o outro aproveita
-        ticks(11);
+        resolver();                                            // 5P.1 (pedido)
         assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "quem avançou demais cai");
         assertTrue(a.isDeitado());
         assertEquals(Lado.B, m.getEstado().getPorCima().orElseThrow());
@@ -195,7 +209,7 @@ class MotorSolo5PTest {
         novo(300, 360);
         cmd(Lado.B, rb(Direcao.ESQUERDA));
         ia = new Intencao(-1, 0);                               // A recua (para longe do B)
-        ticks(10);
+        resolver();                                            // 5P.1 (pedido): recua a janela toda
         ia = Intencao.NENHUMA;
         assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "o outro ficou em pe");
         assertTrue(b.isDeitado() && !a.isDeitado());
@@ -218,7 +232,7 @@ class MotorSolo5PTest {
         // sem resposta, a passagem entra
         ticks(MotorSolo.RECARGA_TICKS);
         cmd(Lado.B, rs(Direcao.CIMA));
-        ticks(21);
+        resolver();                                            // 5P.1 (pedido)
         assertEquals(Posicao.CONTROLE_LATERAL, m.getPosicao());
         assertEquals(Lado.B, m.getEstado().getControlador().orElseThrow());
     }
@@ -231,15 +245,16 @@ class MotorSolo5PTest {
         cmd(Lado.A, rs(Direcao.BAIXO));                         // postura
         ticks(2);
         cmd(Lado.B, rs(Direcao.CIMA));                          // raspagem
-        ticks(15);
+        resolver();                                             // 5P.1 (pedido)
         assertEquals(Posicao.GUARDA, m.getPosicao(), "postura segura a raspagem");
         assertEquals(Lado.A, m.getEstado().getPorCima().orElseThrow());
         // quebrar a postura expoe e a raspagem entra
         ticks(MotorSolo.RECARGA_FALHA_TICKS + 1);
         cmd(Lado.B, rs(Direcao.BAIXO));
+        resolver();                                             // 5P.1 (pedido)
         ticks(MotorSolo.RECARGA_TICKS);
         cmd(Lado.B, rs(Direcao.CIMA));
-        ticks(15);
+        resolver();
         assertEquals(Lado.B, m.getEstado().getPorCima().orElseThrow(), "raspou com a postura quebrada");
     }
 
@@ -261,7 +276,7 @@ class MotorSolo5PTest {
         m.forcarPosicao(Posicao.CONTROLE_LATERAL, Lado.B, Lado.B);
         ticks(30);
         cmd(Lado.B, rs(Direcao.CIMA));
-        ticks(19);
+        resolver();                                             // 5P.1 (pedido)
         assertEquals(Posicao.MONTADA, m.getPosicao(), "sem reacao: montou");
     }
 
@@ -272,18 +287,19 @@ class MotorSolo5PTest {
         ticks(30);                                             // fim da animacao das posturas
         m.definirEstabilidade(90);
         cmd(Lado.B, rs(Direcao.ESQUERDA));
-        ticks(13);
+        resolver();                                             // 5P.1 (pedido)
         assertEquals(Posicao.CONTROLE_LATERAL, m.getPosicao(), "controle firme: o escape nao entra");
         assertTrue(m.recargaDe(Lado.B) > MotorSolo.RECARGA_TICKS, "e custa caro");
         // enquadrar (criar espaco) baixa o controle e o escape entra
         ticks(MotorSolo.RECARGA_FALHA_TICKS);
         for (int i = 0; i < 3; i++) {
             cmd(Lado.B, rs(Direcao.BAIXO));
-            ticks(MotorSolo.RECARGA_TICKS / 2 + 1);
+            resolver();                                         // 5P.1 (pedido)
+            ticks(MotorSolo.RECARGA_TICKS);
         }
         assertTrue(m.getEstabilidade() < 50, "estab " + m.getEstabilidade());
         cmd(Lado.B, rs(Direcao.ESQUERDA));
-        ticks(13);
+        resolver();
         assertEquals(Posicao.GUARDA_ABERTA, m.getPosicao());
     }
 
@@ -293,16 +309,17 @@ class MotorSolo5PTest {
         m.forcarPosicao(Posicao.MONTADA, Lado.A, Lado.A);
         ticks(30);
         cmd(Lado.A, rs(Direcao.BAIXO));                         // estabilizar
+        resolver();                                             // 5P.1 (pedido)
         ticks(MotorSolo.RECARGA_TICKS);
         assertTrue(m.getEstabilidade() >= 70);
         cmd(Lado.B, rb(Direcao.CIMA));                          // upa contra base firme
-        ticks(9);
+        resolver();
         assertEquals(Posicao.MONTADA, m.getPosicao(), "upa defendida");
         ticks(MotorSolo.RECARGA_FALHA_TICKS);
         cmd(Lado.A, rs(Direcao.CIMA));                          // montada alta: base alta exposta
         ticks(2);
         cmd(Lado.B, rb(Direcao.CIMA));                          // upa aproveita
-        ticks(9);
+        resolver();
         assertEquals(Posicao.GUARDA, m.getPosicao(), "upa: inverteu");
         assertEquals(Lado.B, m.getEstado().getPorCima().orElseThrow(), "quem deu a upa caiu por cima");
         assertEquals(Lado.A, m.getEstado().getControlador().orElseThrow(), "dentro da guarda do outro");
@@ -314,14 +331,14 @@ class MotorSolo5PTest {
         m.forcarPosicao(Posicao.MONTADA, Lado.B, Lado.B);
         ticks(30);
         cmd(Lado.B, rs(Direcao.ESQUERDA));
-        ticks(17);
+        resolver();                                             // 5P.1 (pedido)
         assertEquals(Posicao.COSTAS, m.getPosicao());
         assertEquals(Lado.B, m.getEstado().getControlador().orElseThrow());
         assertEquals(m.orientacao(a), m.orientacao(b), "nas costas os dois olham para o mesmo lado");
         ticks(30);
         m.definirEstabilidade(20);
         cmd(Lado.A, rs(Direcao.DIREITA));
-        ticks(17);
+        resolver();
         assertEquals(Posicao.GUARDA, m.getPosicao(), "girou para dentro da guarda");
         assertEquals(Lado.A, m.getEstado().getPorCima().orElseThrow());
     }
@@ -361,7 +378,10 @@ class MotorSolo5PTest {
         assertTrue(a.getFolegoAtual() <= fa + 1e-9 && b.getFolegoAtual() <= fb + 1e-9, "vinculados nao recuperam");
         double antes = a.getFolegoAtual();
         cmd(Lado.A, rs(Direcao.CIMA));
-        assertEquals(antes - 4.0, a.getFolegoAtual(), 1e-6, "passar a guarda custa 4");
+        // 5P.1 (pedido): custos do solo reduzidos e proporcionais ao folego maximo
+        assertEquals(antes - com.irmaosmiau.entities.CustosFolego.custoSolo(4.0, a.getAtributos().getFolego()),
+                a.getFolegoAtual(), 1e-6, "passar a guarda custa a base 4 reduzida");
+        assertTrue(antes - a.getFolegoAtual() < 4.0, "mais barato que no 5P");
         // separar: volta a recuperar
         m.forcarPosicao(Posicao.EM_PE_SEPARADOS, null, null);
         ticks(40);
@@ -401,7 +421,7 @@ class MotorSolo5PTest {
             // y passa para os cem quilos
             ticks(MotorSolo.RECARGA_TICKS);
             cmd(y, rs(Direcao.CIMA));
-            ticks(21);
+            resolver();                                         // 5P.1 (pedido)
             assertEquals(Posicao.CONTROLE_LATERAL, m.getPosicao());
             // y tenta a montada; x escapa na janela e recupera a guarda
             ticks(MotorSolo.RECARGA_TICKS + 30);

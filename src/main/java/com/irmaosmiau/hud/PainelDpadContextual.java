@@ -85,7 +85,8 @@ public final class PainelDpadContextual {
 
         g.setFont(TITULO);
         g.setColor(CAMADA);
-        g.drawString(q.sigla() + " · " + q.nomeCamada(), x + 6, Y + 12);
+        caber(g, q.sigla() + " · " + q.nomeCamada(), LARGURA - 10, TITULO);   // 5P.1: nunca vaza do painel
+        g.drawString(ultimoTexto, x + 6, Y + 12);
 
         int cx = x + LARGURA / 2;
         int cy = Y + 38;
@@ -103,13 +104,39 @@ public final class PainelDpadContextual {
     }
 
     /** alinhamento: -1 = termina em ax, 0 = centrado, 1 = comeca em ax. */
-    private static void escrever(Graphics2D g, FontMetrics fm, Quadro q, DirecaoTecnica d, int ax, int y,
+    private static void escrever(Graphics2D g, FontMetrics fm0, Quadro q, DirecaoTecnica d, int ax, int y,
             int alinhamento) {
-        String t = texto(q, d);
+        // 5P.1: os lados tem ~52 px, cima/baixo ~120 px; texto maior encolhe e, se preciso, corta.
+        caber(g, texto(q, d), alinhamento == 0 ? LARGURA - 16 : LARGURA / 2 - 17, ROTULO);
+        String t = ultimoTexto;
+        FontMetrics fm = g.getFontMetrics();
         int w = fm.stringWidth(t);
         int x = alinhamento < 0 ? ax - w : alinhamento == 0 ? ax - w / 2 : ax;
         g.setColor(cor(q, d));
         g.drawString(t, x, y);
+        g.setFont(ROTULO);
+    }
+
+    private static final Font PEQUENA = new Font("Arial", Font.BOLD, 8);
+    private static String ultimoTexto = "";
+
+    /** Escolhe a fonte (normal ou pequena) e corta com reticencias para caber em max px. */
+    static void caber(Graphics2D g, String texto, int max, Font normal) {
+        g.setFont(normal);
+        if (g.getFontMetrics().stringWidth(texto) <= max) {
+            ultimoTexto = texto;
+            return;
+        }
+        g.setFont(PEQUENA);
+        FontMetrics fm = g.getFontMetrics();
+        String t = texto;
+        while (t.length() > 1 && fm.stringWidth(t) > max) {
+            t = t.substring(0, t.length() - 2) + "…";
+            if (t.endsWith("……")) {
+                t = t.substring(0, t.length() - 1);
+            }
+        }
+        ultimoTexto = t;
     }
 
     /** Para testes: a posicao que a celula ocupa. */

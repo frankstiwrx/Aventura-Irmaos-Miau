@@ -10,6 +10,10 @@ import com.irmaosmiau.entities.IrmaoMiau;
 import org.junit.jupiter.api.Test;
 
 /**
+ * 5P.1 (pedido): a recuperacao passiva continua bloqueada na pegada, mas
+ * RESPIRAR de proposito (RT) recupera um pouco (fator
+ * CustosFolego.RESPIRACAO_NA_PEGADA), nos dois papeis.
+ *
  * Entrega 5O.3: com uma pegada ativa (aplicando ou sofrendo) ninguem recupera
  * folego nem condicionamento, nem respirando (RT) nem parado; o consumo normal
  * continua; ao acabar a pegada a recuperacao volta.
@@ -55,6 +59,15 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
         }
     }
 
+    /** 5P.1 (pedido): n ticks de RT na pegada: os dois ganham um pouco de folego. */
+    private void recuperaPoucoComRt(int n, String caso) {
+        double f1 = j1().getFolegoAtual();
+        double f2 = j2().getFolegoAtual();
+        ticks(n);
+        assertTrue(j1().getFolegoAtual() > f1, caso + ": J1 respirando recupera um pouco");
+        assertTrue(j2().getFolegoAtual() > f2, caso + ": J2 respirando recupera um pouco");
+    }
+
     @Test
     void j1AplicandoNinguemRecuperaParadoNemComRt() throws Exception {
         naEdt(() -> {
@@ -65,7 +78,7 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             semRecuperar(60, "parados (recuperacao passiva)");
             tecla("brancoModDefesa", true);                      // RT do aplicador
             ctl("P", true);                                      // RT do receptor
-            semRecuperar(60, "RT dos dois");
+            recuperaPoucoComRt(60, "RT dos dois");               // 5P.1 (pedido): antes nao recuperava
             tecla("brancoModDefesa", false);
             ctl("P", false);
         });
@@ -80,7 +93,7 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             semRecuperar(60, "J2 aplicando, parados");
             ctl("P", true);
             tecla("brancoModDefesa", true);
-            semRecuperar(60, "J2 aplicando, RT dos dois");
+            recuperaPoucoComRt(60, "J2 aplicando, RT dos dois");  // 5P.1 (pedido)
             ctl("P", false);
             tecla("brancoModDefesa", false);
         });
@@ -100,8 +113,18 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             ticks(30);
             double gastoComRt = com - j2().getFolegoAtual();
             ctl("P", false);
-            assertEquals(gastoSemRt, gastoComRt, 1e-6, "segurar o RT agarrado nao muda o folego");
+            // 5P.1 (pedido): o RT agarrado recupera, mas bem menos que respirando livre
+            double ganhoNaPegada = gastoSemRt - gastoComRt;
+            assertTrue(ganhoNaPegada > 0, "segurar o RT agarrado recupera um pouco");
             assertTrue(s().isInteracaoEstabelecida(), "o RT nao quebra a pegada");
+            s().encerrarInteracao();
+            ticks(5);
+            double livre = j2().getFolegoAtual();
+            ctl("P", true);
+            ticks(30);
+            ctl("P", false);
+            double ganhoLivre = j2().getFolegoAtual() - livre;
+            assertTrue(ganhoNaPegada < ganhoLivre * 0.4, "na pegada " + ganhoNaPegada + " x livre " + ganhoLivre);
         });
     }
 

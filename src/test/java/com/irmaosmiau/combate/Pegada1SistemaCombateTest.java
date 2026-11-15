@@ -113,12 +113,12 @@ class Pegada1SistemaCombateTest {
 
     @Test
     void semFolegoSuficienteEhIndisponivel() {
-        // Deixa o Branco com 2.5 de folego (custo da pegada = 3.0).
-        assertTrue(branco.consumirFolegoCombate(branco.getFolegoAtual() - 2.5));
+        // 5P.1 (pedido): custo da pegada = 3.0 x 0,6 = 1,8; deixa o Branco com 1,5.
+        assertTrue(branco.consumirFolegoCombate(branco.getFolegoAtual() - 1.5));
 
         assertEquals(ResultadoAcao.INDISPONIVEL,
                 sistema.tentarAcao(branco, preto, PEGADA_1));
-        assertEquals(2.5, branco.getFolegoAtual(), 1e-9);
+        assertEquals(1.5, branco.getFolegoAtual(), 1e-9);
         assertFalse(sistema.estaEmInteracao());
     }
 
@@ -133,7 +133,7 @@ class Pegada1SistemaCombateTest {
         assertEquals(ResultadoAcao.SUCESSO,
                 sistema.tentarAcao(branco, preto, PEGADA_1));
 
-        assertEquals(folegoBranco - 3.0, branco.getFolegoAtual(), 1e-9);
+        assertEquals(folegoBranco - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), branco.getFolegoAtual(), 1e-9);   // 5P.1 (pedido)
         assertEquals(folegoPreto, preto.getFolegoAtual(), 1e-9);
         assertEquals(EstadoInteracaoCombate.PEGADA_1, sistema.getEstadoInteracao());
         assertTrue(sistema.estaEmPegada1());
@@ -147,7 +147,7 @@ class Pegada1SistemaCombateTest {
         ticks(40);
         assertEquals(ResultadoAcao.INDISPONIVEL,
                 sistema.tentarAcao(branco, preto, PEGADA_1));
-        assertEquals(folegoBranco - 3.0, branco.getFolegoAtual(), 1e-9);
+        assertEquals(folegoBranco - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), branco.getFolegoAtual(), 1e-9);   // 5P.1 (pedido)
     }
 
     // =====================================================

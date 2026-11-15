@@ -81,8 +81,10 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
             toque("brancoPegada1");
             assertFalse(s().estaEmInteracao());
             assertEquals(f, j1().getFolegoAtual(), 0.05);
-            // HUD: o solo aparece reservado, nao como pegadas disponiveis
-            assertEquals("SOLO: EM BREVE", painel.montarQuadroDpad(SlotJogador.JOGADOR_2).nomeCamada());
+            // HUD: nada de pegadas; 5P.1 (pedido): o "EM BREVE" sai e entram os comandos do solo livre
+            String t = painel.montarQuadroDpad(SlotJogador.JOGADOR_2).nomeCamada();
+            assertTrue(t.startsWith("SOLO LIVRE") && t.contains("NO CHÃO"), t);
+            assertFalse(t.contains("EM BREVE"), t);
         });
     }
 

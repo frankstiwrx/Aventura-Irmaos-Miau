@@ -35,17 +35,34 @@ import java.util.Optional;
 public final class MotorSolo {
 
     // ---------------- parametros (um lugar so)
-    public static final int RECARGA_TICKS = 18;
-    public static final int RECARGA_FALHA_TICKS = 40;
-    public static final int ATERRISSAGEM_TICKS = 10;
+    // 5P.1: mais responsivo (antes 18 / 40 / 10)
+    public static final int RECARGA_TICKS = 12;
+    public static final int RECARGA_FALHA_TICKS = 28;
+    /** Tempo para quem caiu escolher como recebe (fechar a guarda / meia). Antes 10 (~0,16 s). */
+    public static final int ATERRISSAGEM_TICKS = 24;
+    /** 5P.1: todas as janelas x 1,3 (mais tempo para responder; centralizado). */
+    public static final double FATOR_JANELA = 1.3;
+    /** 5P.1: respirando, as proprias tecnicas saem 25% mais devagar (prontidao menor). */
+    public static final double FATOR_JANELA_RESPIRANDO = 1.25;
+    /** 5P.1: levantar de quem deitou por vontade propria e mais rapido; derrubado, mais lento. */
+    public static final double FATOR_LEVANTAR_VOLUNTARIO = 0.6;
+    public static final double FATOR_LEVANTAR_DERRUBADO = 1.4;
+    /** 5P.1: ticks "desorientado" depois de ser derrubado (so afeta o levantar e o controle inicial). */
+    public static final int DESORIENTADO_TICKS = 60;
+    /** 5P.1: estabilidade inicial de uma guarda puxada por quem estava no chao por vontade propria. */
+    public static final double ESTABILIDADE_GUARDA_VOLUNTARIA = 60;
+    /** 5P.1: quem controla e respira perde controle (por tick) em vez de ganhar. */
+    public static final double PERDA_ESTABILIDADE_RESPIRANDO = 0.3;
+    /** 5P.1: a base (RT) conta se for APERTADA na janela do outro (ou ate N ticks antes). */
+    public static final int BUFFER_BASE_TICKS = 6;
     public static final int POSTURA_TICKS = 60;
     public static final int POSTURA_QUEBRADA_TICKS = 40;
     public static final int MONTADA_ALTA_EXPOSTA_TICKS = 20;
-    public static final double GANHO_PASSIVO_ESTABILIDADE = 0.2;
+    public static final double GANHO_PASSIVO_ESTABILIDADE = 0.12;          // 5P.1: antes 0,2
     public static final double ESTABILIDADE_PROGRESSO = 50;
     public static final double ESTABILIDADE_REVERSAO = 30;
     public static final double DELTA_CONSOLIDAR = 25;
-    public static final double DELTA_ENQUADRAR = 20;
+    public static final double DELTA_ENQUADRAR = 25;                       // 5P.1: antes 20
     public static final double FRACAO_FOLEGO_CANSADO = 0.25;
     public static final double FRACAO_FOLEGO_EXAUSTO = 0.15;
     // em pe
@@ -76,7 +93,7 @@ public final class MotorSolo {
     }
 
     /** Tecnica em andamento (na janela). */
-    public record Tentativa(TecnicaSolo tecnica, Lado iniciador, int ticksRestantes, int janelaTotal) {
+    public record Tentativa(TecnicaSolo tecnica, Lado iniciador, int ticksRestantes, int janelaTotal, long inicio) {
         public double progresso() {
             return janelaTotal == 0 ? 1 : 1 - ticksRestantes / (double) janelaTotal;
         }
@@ -103,10 +120,18 @@ public final class MotorSolo {
         }
     }
 
-    private boolean fazBase(Lado l) {
-        Intencao i = intencoesAtuais.get(l);
-        return lutador(l).getDefesa().isAtiva() || (i != null && i.base());
+    /**
+     * 5P.1: a BASE (RT) e uma reacao: conta se o RT foi APERTADO durante a janela
+     * de quem esta entrando (ou ate BUFFER_BASE_TICKS antes). Segurar o RT de antes
+     * e so respirar: assim respirar nao vira defesa sem querer, e defender nao e
+     * so deixar o botao apertado. Livre, a guarda levantada (RT + RS) tambem vale.
+     */
+    private boolean fazBase(Lado l, long inicioJanela) {
+        Long t = ultimoBase.get(l);
+        return lutador(l).getDefesa().isAtiva() || (t != null && t >= inicioJanela - BUFFER_BASE_TICKS);
     }
+
+    private final Map<Lado, Long> ultimoBase = new EnumMap<>(Lado.class);
 
     private record Exposto(Exposicao tipo, int ticks) {
     }
@@ -156,6 +181,9 @@ public final class MotorSolo {
         exposicao.clear();
         eventos.clear();
         ultimo = null;
+        mensagens.clear();
+        ultimoBase.clear();
+        desorientado.clear();
         for (Lado l : Lado.values()) {
             postura.put(l, 0);
             recarga.put(l, 0);
@@ -350,10 +378,10 @@ public final class MotorSolo {
             }
             Optional<TecnicaSolo> t2 = catalogo.para(estado, lado, c);
             if (t2.isPresent() && tentativa.tecnica().contras().contains(t2.get().id())) {
-                if (eu.getFolegoAtual() < t2.get().custo()) {
+                if (eu.getFolegoAtual() < custo(lado, t2.get())) {
                     return new Resposta(Resultado.RECUSADA, "SEM FÔLEGO", t2.get());
                 }
-                eu.gastarFolegoEsforco(t2.get().custo(), t2.get().id());
+                eu.gastarFolegoEsforco(custo(lado, t2.get()), t2.get().id());
                 contra(lado, t2.get());
                 return new Resposta(Resultado.CONTRA, "CONTRA", t2.get());
             }
@@ -369,23 +397,35 @@ public final class MotorSolo {
             registrar("RECUSA", t.id(), lado, motivo);
             return new Resposta(Resultado.RECUSADA, motivo, t);
         }
-        eu.gastarFolegoEsforco(t.custo(), t.id());
+        eu.gastarFolegoEsforco(custo(lado, t), t.id());
         eu.registrarAtividadeDeCombate();
         if (t.isInstantanea()) {
             instantanea(lado, t);
             recarga.put(lado, RECARGA_TICKS / 2);
             return new Resposta(Resultado.CONCLUIDA, t.nome(), t);
         }
-        int janela = t.janela();
+        double j = t.janela() * FATOR_JANELA;
         if (eu.getFolegoAtual() < eu.getAtributos().getFolego() * FRACAO_FOLEGO_CANSADO) {
-            janela = (int) Math.round(janela * 1.5);           // cansado: mais lento, mais tempo para o outro
+            j *= 1.5;                                          // cansado: mais lento, mais tempo para o outro
         }
-        tentativa = new Tentativa(t, lado, janela, janela);
+        if (eu.isRespirando()) {
+            j *= FATOR_JANELA_RESPIRANDO;                      // respirando: menos pronto
+        }
+        if (t.id().equals(CatalogoTecnicasSolo.LEVANTAR_TECNICO)) {
+            j *= desorientado.getOrDefault(lado, 0) > 0 ? FATOR_LEVANTAR_DERRUBADO : FATOR_LEVANTAR_VOLUNTARIO;
+        }
+        int janela = Math.max(1, (int) Math.round(j));
+        tentativa = new Tentativa(t, lado, janela, janela, tick);
         if (t.exposicao() != null) {
             exposicao.put(lado, new Exposto(t.exposicao(), janela + 6));
         }
         registrar("INICIOU", t.id(), lado, "");
         return new Resposta(Resultado.INICIADA, t.nome(), t);
+    }
+
+    /** 5P.1: custo de folego desta tecnica para este lado (catalogo x balanceamento central). */
+    public double custo(Lado lado, TecnicaSolo t) {
+        return com.irmaosmiau.entities.CustosFolego.custoSolo(t.custo(), lutador(lado).getAtributos().getFolego());
     }
 
     /** Por que a tecnica nao pode comecar agora (null = pode). */
@@ -395,11 +435,13 @@ public final class MotorSolo {
         if (recarga.get(lado) > 0) {
             return "EM RECUPERAÇÃO";
         }
-        if (eu.getFolegoAtual() < t.custo()) {
+        if (eu.getFolegoAtual() < custo(lado, t)) {
             return "SEM FÔLEGO";
         }
-        if (eu.getTransicaoAtiva() != null || eu.isRolando() || eu.isPulando() || eu.isEmAcrobacia()
-                || eu.isFazendoSprawl()) {
+        // 5P.1: no chao a animacao de troca de postura (que o proprio motor dispara) nao bloqueia:
+        // antes, depois de toda troca de posicao os dois ficavam ~14 ticks recusando ate as contras.
+        if ((eu.getTransicaoAtiva() != null && !estado.getPosicao().isNoChao()) || eu.isRolando() || eu.isPulando()
+                || eu.isEmAcrobacia() || eu.isFazendoSprawl()) {
             return "EM MOVIMENTO";
         }
         int dist = Math.abs(eu.getX() - outro.getX());
@@ -477,20 +519,30 @@ public final class MotorSolo {
                 tentativa = null;
                 resolver(t, t.iniciador() == Lado.A ? ia : ib);
             } else {
-                tentativa = new Tentativa(t.tecnica(), t.iniciador(), t.ticksRestantes() - 1, t.janelaTotal());
+                tentativa = new Tentativa(t.tecnica(), t.iniciador(), t.ticksRestantes() - 1, t.janelaTotal(),
+                        t.inicio());
             }
         }
+        desorientado.replaceAll((k, v) -> Math.max(0, v - 1));
         Posicao p = estado.getPosicao();
         if (p.isVinculoDeSolo() && tentativa == null) {
             Lado ctrl = estado.getControlador().orElse(null);
             if (ctrl != null) {
                 IrmaoMiau c = lutador(ctrl);
-                double ganho = GANHO_PASSIVO_ESTABILIDADE;
-                if (c.getFolegoAtual() < c.getAtributos().getFolego() * FRACAO_FOLEGO_CANSADO) {
-                    ganho /= 2;
+                if (c.isRespirando()) {
+                    // 5P.1: quem controla e respira afrouxa o controle (escapes e raspagens ficam possiveis)
+                    estabilidade = Math.max(0, estabilidade - PERDA_ESTABILIDADE_RESPIRANDO);
+                } else {
+                    double ganho = GANHO_PASSIVO_ESTABILIDADE;
+                    if (c.getFolegoAtual() < c.getAtributos().getFolego() * FRACAO_FOLEGO_CANSADO) {
+                        ganho /= 2;
+                    }
+                    estabilidade = Math.min(100, estabilidade + ganho);
                 }
-                estabilidade = Math.min(100, estabilidade + ganho);
             }
+        }
+        for (Lado l : Lado.values()) {
+            lutador(l).setFatorRespiracaoNoSolo(fatorRespiracao(l));
         }
         encaixar();
         for (Lado l : Lado.values()) {
@@ -498,10 +550,54 @@ public final class MotorSolo {
         }
     }
 
-    /** Em pe, o estado e so uma LEITURA do SistemaCombate. */
+    /**
+     * 5P.1: quanto a respiracao rende no solo para este lado: 0 no meio da propria
+     * tecnica; por cima / controlando RESPIRACAO_SOLO_POR_CIMA; por baixo, de 0,35
+     * (controle fraco) a 0,15 (controle total do outro). Livre: 1.
+     */
+    public double fatorRespiracao(Lado l) {
+        if (tentativa != null && tentativa.iniciador() == l) {
+            return com.irmaosmiau.entities.CustosFolego.RESPIRACAO_EM_ACAO;
+        }
+        if (!estado.getPosicao().isVinculoDeSolo()) {
+            return 1.0;
+        }
+        boolean dominado = estado.getControlador().map(c -> c != l).orElse(false)
+                && estado.getPorCima().map(c -> c != l).orElse(false);
+        if (!dominado) {
+            return com.irmaosmiau.entities.CustosFolego.RESPIRACAO_SOLO_POR_CIMA;
+        }
+        double max = com.irmaosmiau.entities.CustosFolego.RESPIRACAO_SOLO_POR_BAIXO_MAX;
+        double min = com.irmaosmiau.entities.CustosFolego.RESPIRACAO_SOLO_POR_BAIXO_MIN;
+        return max - (max - min) * estabilidade / 100.0;
+    }
+
+    /** 5P.1: o lado que acabou de cair e escolhe como recebe (aterrissagem), ou vazio. */
+    public Optional<Lado> ladoQueCai() {
+        return aterrissagemCima == null ? Optional.empty() : Optional.of(aterrissagemCima.outro());
+    }
+
+    /** 5P.1: um lado esta sofrendo uma entrada em pe (janela do outro): RT agora e base, nao respiracao. */
+    public boolean sofrendoEntrada(Lado l) {
+        return tentativa != null && tentativa.iniciador() == l.outro() && !estado.getPosicao().isNoChao();
+    }
+
+    /** Em pe, o estado e so uma LEITURA do SistemaCombate (e, 5P.1, de quem deitou por vontade propria). */
     private void sincronizarEmPe() {
         if (estado.getPosicao().isNoChao() || aterrissagemCima != null) {
             return;
+        }
+        // 5P.1: solo LIVRE: um deitou por vontade propria e o outro nao. Mesmo sistema do pos-queda:
+        // um em pe contra o solo, SEM vinculo e sem controle (nada e conquistado a distancia).
+        if (tentativa == null) {
+            for (Lado l : Lado.values()) {
+                if (lutador(l).isDeitado() && !lutador(l.outro()).isDeitado()) {
+                    estado = EstadoPosicional.noChao(Posicao.EM_PE_CONTRA_SOLO, l.outro(), null);
+                    desorientado.put(l, 0);
+                    registrar("SOLO_LIVRE", "-", l, "deitou");
+                    return;
+                }
+            }
         }
         Lado ap = sistema != null && sistema.isInteracaoEstabelecida() ? ladoDe(sistema.getAplicadorInteracao()) : null;
         EstadoPosicional novo = ap == null ? EstadoPosicional.separados() : EstadoPosicional.pegada(ap);
@@ -521,9 +617,10 @@ public final class MotorSolo {
             for (IrmaoMiau l : lutadores) {
                 alguemNoChao |= l.isDeitado() || l.isAjoelhado();
             }
-            if (!alguemNoChao) {
+            boolean osDoisDeitados = lutadores[0].isDeitado() && lutadores[1].isDeitado();
+            if (!alguemNoChao || osDoisDeitados) {
                 estado = EstadoPosicional.separados();
-                registrar("SEPARADOS", "-", Lado.A, "os dois de pe");
+                registrar("SEPARADOS", "-", Lado.A, osDoisDeitados ? "os dois deitados, sem vinculo" : "os dois de pe");
             }
         }
     }
@@ -544,6 +641,7 @@ public final class MotorSolo {
         TecnicaSolo tec = t.tecnica();
         Lado ini = t.iniciador();
         Lado out = ini.outro();
+        inicioJanelaAtual = t.inicio();
         switch (tec.id()) {
             case CatalogoTecnicasSolo.EMPURRAO -> resolverEmpurrao(ini);
             case CatalogoTecnicasSolo.QUEDA_PEGADA -> resolverQuedaPegada(ini, intencaoIniciador);
@@ -559,6 +657,9 @@ public final class MotorSolo {
                 if (ok) {
                     entrar(tec.sucesso().aplicar(estado, ini), ini, tec.papel() == PapelPosicional.POR_BAIXO
                             || tec.papel() == PapelPosicional.CONTROLADO);
+                    if (tec.id().equals(CatalogoTecnicasSolo.CONECTAR_GUARDA) && desorientado.getOrDefault(ini, 0) == 0) {
+                        estabilidade = ESTABILIDADE_GUARDA_VOLUNTARIA;   // deitou por vontade: guarda mais firme
+                    }
                     registrar("SUCESSO", tec.id(), ini, "");
                 } else {
                     recarga.put(ini, RECARGA_FALHA_TICKS);
@@ -637,7 +738,7 @@ public final class MotorSolo {
             }
             return;
         }
-        if (fazBase(def) && !exposto(def)) {
+        if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
             base.put(ini, base.get(ini) - 15);
             exposicao.put(ini, new Exposto(Exposicao.AVANCO, 30));
             registrar("DEFENDIDA", CatalogoTecnicasSolo.EMPURRAO, ini, "base firme");
@@ -666,7 +767,7 @@ public final class MotorSolo {
             registrar("FALHA", CatalogoTecnicasSolo.QUEDA_PEGADA, ini, "sem pegada");
             return;
         }
-        if (fazBase(def) && !exposto(def)) {
+        if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
             base.put(ini, Math.max(0, base.get(ini) - 30));
             exposicao.put(ini, new Exposto(Exposicao.BASE, 30));
             recarga.put(ini, RECARGA_FALHA_TICKS);
@@ -706,7 +807,7 @@ public final class MotorSolo {
         if (sistema != null && sistema.estaEmInteracao()) {
             sistema.encerrarInteracao();
         }
-        if (fazBase(def)) {
+        if (fazBase(def, inicioJanelaAtual)) {
             // base sem sprawl: os dois vao ao chao, ninguem consolida o controle (resultado E)
             entrar(EstadoPosicional.noChao(Posicao.SOLO_DISPUTADO, null, null), ini, true);
             registrar("SUCESSO", CatalogoTecnicasSolo.ENTRADA_PERNAS, ini, "queda sem controle (o outro fez base)");
@@ -736,21 +837,31 @@ public final class MotorSolo {
     }
 
     private final Map<Lado, Intencao> intencoesAtuais = new EnumMap<>(Lado.class);
+    private long inicioJanelaAtual;
 
     /** Intencoes do LS usadas nas resolucoes deste tick (chame antes de atualizar). */
     public void informarIntencoes(Intencao ia, Intencao ib) {
         intencoesAtuais.put(Lado.A, ia == null ? Intencao.NENHUMA : ia);
         intencoesAtuais.put(Lado.B, ib == null ? Intencao.NENHUMA : ib);
+        for (Lado l : Lado.values()) {
+            if (intencoesAtuais.get(l).base()) {
+                ultimoBase.put(l, tick + 1);                     // vale para o tick que vai rodar
+            }
+        }
     }
 
     /** O lado cai e quem derrubou fica em pe (resultado A). */
+    private final Map<Lado, Integer> desorientado = new EnumMap<>(Lado.class);
+
     private void derrubarSozinho(Lado caiu, Lado emPe) {
+        desorientado.put(caiu, DESORIENTADO_TICKS);
         lutador(caiu).aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
         estado = EstadoPosicional.noChao(Posicao.EM_PE_CONTRA_SOLO, emPe, null);
     }
 
     /** O lado cai e o outro acompanha: aterrissagem (quem caiu ainda escolhe como recebe). */
     private void derrubar(Lado caiu, Lado cima, boolean acompanha) {
+        desorientado.put(caiu, DESORIENTADO_TICKS);
         lutador(caiu).aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
         if (!acompanha) {
             estado = EstadoPosicional.noChao(Posicao.EM_PE_CONTRA_SOLO, cima, null);
@@ -886,8 +997,24 @@ public final class MotorSolo {
         }
     }
 
+    private final Deque<String> mensagens = new ArrayDeque<>();
+
+    /** 5P.1: frases dos resultados CONFIRMADOS desde a ultima consulta (aviso no topo). */
+    public List<String> consumirMensagens() {
+        List<String> l = List.copyOf(mensagens);
+        mensagens.clear();
+        return l;
+    }
+
     private void registrar(String tipo, String tecnica, Lado lado, String detalhe) {
         ultimo = new Evento(tick, tipo, tecnica, lado, detalhe);
+        String frase = NarradorSolo.mensagem(ultimo);
+        if (frase != null) {
+            mensagens.addLast(frase);
+            while (mensagens.size() > 4) {
+                mensagens.removeFirst();
+            }
+        }
         eventos.addLast(ultimo);
         while (eventos.size() > 40) {
             eventos.removeFirst();

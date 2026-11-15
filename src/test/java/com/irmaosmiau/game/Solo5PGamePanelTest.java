@@ -155,7 +155,7 @@ class Solo5PGamePanelTest extends Base5OGamePanel {
             esperarAssentar();
             assertEquals(Lado.B, m().getEstado().getPorCima().orElseThrow(), "J2 raspou");
             assertTrue(j2().isAjoelhado() && j1().isDeitado());
-            assertTrue(painel.montarQuadroDpad(SlotJogador.JOGADOR_2).nomeCamada().contains("GUARDA ABERTA"));
+            assertTrue(painel.montarQuadroDpad(SlotJogador.JOGADOR_2).nomeCamada().contains("G. ABERTA"));   // 5P.1 (pedido): titulo curto
         });
     }
 

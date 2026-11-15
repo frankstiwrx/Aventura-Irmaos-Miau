@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 947, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 972, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -423,3 +423,15 @@ Gamepad (Xbox):
 - [ ] Guarda: abrir → raspagem na janela; passar → cem quilos → montar → escape de quadril na janela
 - [ ] Montada: estabilizar segura a upa; montada alta deixa a upa entrar; costas → girar
 - [ ] Ligados no solo ninguém anda/rola/muda de postura; F5 e luta nova soltam tudo; F3 mostra a linha SOLO
+
+### Refinamento do solo (Entrega 5P.1)
+- [ ] J1 deita sozinho (e o J2 também): HUD "SOLO LIVRE", sem "EM BREVE"; de longe nada acontece, perto dá para entrar na guarda
+- [ ] Levantar depois de deitar por vontade é rápido; depois de derrubado é mais lento
+- [ ] Na pegada e no solo, segurar o RT recupera um pouco; parado sem RT não recupera
+- [ ] Respirando por cima o controle afrouxa (o escape do outro fica mais fácil); sem ação do outro nada muda
+- [ ] RT segurado de antes não vira base; apertar o RT na entrada do outro faz base
+- [ ] Ao cair dá tempo de escolher ↑ fechar a guarda / ←/→ meia (cruz "CAINDO")
+- [ ] Logo depois de uma queda ou raspagem os comandos do solo respondem
+- [ ] Uma sequência queda → passar → montada → escape não esgota o Branco
+- [ ] Aviso curto no topo só com resultados (derrubou, raspou, passou, escapou), ~2 s, sem cobrir relógio e fôlego
+- [ ] Pausa → REINICIAR LUTA: mesma luta do zero, mais de uma vez; F5 do treino igual

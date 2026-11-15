@@ -284,7 +284,7 @@ class PoliticaInteracaoTest {
 
         double antes = s.branco.getFolegoAtual();
         assertEquals(ResultadoAcao.SUCESSO, s.sistema.tentarAcao(s.branco, s.preto, "pegada_1"));
-        assertEquals(antes - 3.0, s.branco.getFolegoAtual(), 1e-9);
+        assertEquals(antes - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), s.branco.getFolegoAtual(), 1e-9);   // 5P.1 (pedido)
         assertTrue(antes >= folegoDepoisDaPrimeira, "folego so recupera, nunca e cobrado de novo sem H");
 
         for (int f = 0; f < 30; f++) {

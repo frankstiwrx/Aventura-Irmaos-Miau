@@ -152,6 +152,7 @@ Teclado: J1 = teclas de técnica **2 ↑ / 6 → / 7 ↓ / 8 ←**, **4** = RB, 
 | Queda com a pegada, ponte (upa) | 6,0 |
 | Entrada nas pernas | 7,0 |
 
+- **5P.1:** respirar de propósito agora recupera devagar no vínculo (ver "Recuperação contextual" no fim).
 - **Vínculo de solo** (`IrmaoMiau.setVinculadoNoSolo`, todas as posições de chão menos "um em pé × solo")
   bloqueia **toda** recuperação de fôlego e condicionamento, igual à pegada da 5O.3 (mesmas quatro funções,
   sem rota nova). Separou (escapou para em pé / um em pé × solo): recupera normalmente.
@@ -161,7 +162,7 @@ Teclado: J1 = teclas de técnica **2 ↑ / 6 → / 7 ↓ / 8 ←**, **4** = RB, 
 
 ## Prioridade dos comandos
 
-1. Transição de postura em andamento: nada (recusa "EM MOVIMENTO").
+1. Transição de postura em andamento: nada (recusa "EM MOVIMENTO") — **5P.1:** só em pé; no chão o comando é aceito.
 2. Ligado no solo ou um em pé × solo: RS e RB + RS vão para o `MotorSolo`; RT não levanta guarda; não anda,
    não rola (R3), não pula, não faz sprawl, não muda de postura pelo L3/F.
 3. Em pé: RB + RS = quedas; RT + RS = defesas; RS = pegadas / ações da pegada (como antes); R3 = mobilidade.
@@ -198,3 +199,83 @@ ser trocada depois por poses do MiauStudio (JSON) sem mexer no motor.
 - Ligados no solo, a dupla não se desloca pela arena (escapar ou levantar devolve o movimento).
 - Os números (custos, janelas, limiares) são um primeiro balanceamento; estão todos em `MotorSolo` e no
   catálogo.
+
+# Entrega 5P.1 — Refinamento do solo
+
+## Solo livre (deitar por vontade própria)
+
+Deitar sem ter sido derrubado entra no **mesmo** `MotorSolo`: `EM_PE_CONTRA_SOLO`, com quem ficou em pé
+"por cima", **sem controlador e sem vínculo** (ninguém conquista nada a distância; entrar na guarda e
+passagens continuam exigindo alcance). O "SOLO: EM BREVE" saiu: os dois lados veem os comandos da posição.
+
+| | Deitou por vontade | Foi derrubado |
+|---|---|---|
+| Janela do levantar técnico | × 0,6 (mais rápido) | × 1,4 por `DESORIENTADO_TICKS` = 60 |
+| Puxar guarda do chão | estabilidade inicial 60 | estabilidade normal |
+
+## Recuperação contextual (evolui a 5O.3)
+
+A recuperação **passiva** (parado) continua bloqueada em qualquer vínculo (pegada ou solo). **Respirar de
+propósito** (RT segurado / X) agora recupera em todo lugar, multiplicado por um fator de contexto
+(`IrmaoMiau.fatorRespiracaoContexto`, valores em `CustosFolego`):
+
+| Situação | Fator da respiração |
+|---|---|
+| Livre (em pé, de joelhos, deitado) | 1,0 (por postura, como na 5O.2) |
+| Andando | × 0,5 |
+| Na pegada (aplicando ou sofrendo) | 0,25 |
+| Solo, por cima ou sem ser dominado | 0,35 |
+| Solo, dominado por baixo | 0,35 → 0,15 conforme a estabilidade do outro |
+| Durante a própria técnica | 0 |
+
+**Vulnerabilidade (sutil):** quem respira solta menos o corpo: as próprias técnicas saem com janela × 1,25
+(mais tempo para o outro reagir) e quem **controla** e respira perde 0,3 de estabilidade por tick em vez de
+ganhar. Nada acontece sozinho: a consequência só vem se o outro agir (escape, raspagem, upa).
+
+**RT: respirar × base × defesas.** RT **segurado** = respirar. RT **apertado** (borda) durante a janela da
+entrada do outro (± `BUFFER_BASE_TICKS` = 6) = base. Enquanto se sofre uma entrada em pé, o RT não conta
+como respiração. RT + RS livre = defesas (sem mudança).
+
+## Custos (antes → agora)
+
+| Item | 5P | 5P.1 |
+|---|---|---|
+| Pegadas (JSON) | custo do JSON | × 0,6 (`FATOR_CUSTO_PEGADAS`), ex.: PEGADA_1 3,0 → 1,8 |
+| Desequilíbrio / rompimento técnico / reforço | 3,0 / 2,5 / 2,0 | 2,0 / 1,75 / 1,5 |
+| Arrasto por pixel / resistência por tick | 0,0025 / 0,004 | 0,0015 / 0,0025 |
+| Distância de joelhos / deitado | × 2,5 / × 5,0 | × 2,0 / × 3,5 |
+| Técnicas de solo (tabela acima) | custo base | base × 0,5 × √(fôlego máx / 32,5) (`CustosFolego.custoSolo`) |
+
+Com a raiz do fôlego máximo, o Branco (25) paga ~0,44 da base e o Preto (40) ~0,55: a **fração** do tanque
+gasta é parecida. Ex.: passar a guarda 4,0 → 1,75 (Branco) / 2,22 (Preto).
+
+## Execução mais acessível
+
+| Parâmetro | 5P | 5P.1 |
+|---|---|---|
+| Janelas das técnicas | catálogo | × 1,3 (`FATOR_JANELA`) |
+| Recarga / recarga após falha | 18 / 40 | 12 / 28 |
+| Aterrissagem (escolher como cair) | 10 | 24 |
+| Ganho passivo de estabilidade | 0,2 | 0,12 |
+| Enquadrar baixa o controle em | 20 | 25 |
+| Limiares de escape (quadril, meia, virar, fugir, upa, escape da montada, girar, neutro) | 50/60/60/60/45/60/50/35 | 60/65/65/65/55/65/55/45 |
+
+Causa principal dos comandos "mortos": a transição de postura (~14 ticks) bloqueava **todo** comando de solo
+depois de cada queda/raspagem. Agora só bloqueia em pé. Requisitos (postura, exposição, estabilidade) mantidos.
+
+## Guardas: ações distintas
+
+PUXAR GUARDA (em pé ou do chão) · FECHAR (a própria guarda) · MANTER (retenção) · REC. GUARDA / REC. MEIA
+(escapes que recuperam) · ABRIR (a guarda do outro) · SOLTAR (a própria). Ao cair, quem cai vê a cruz
+"CAINDO: COMO RECEBER?" (↑ FECHAR GUARDA, ←/→ MEIA) durante a aterrissagem.
+
+## Avisos no topo
+
+`hud/AvisosCombate`: só resultados **confirmados** do motor (via `NarradorSolo`: "J1 derrubou J2!",
+"J2 conseguiu uma raspagem!", "J1 foi ao chão." …); nunca tentativas nem recusas. Um por vez, 110 ticks
+(~1,8 s; 60 com fila), fila de 3, abaixo do relógio (y 34–56) e entre os painéis de fôlego.
+
+## Reiniciar luta
+
+Pausa → **REINICIAR LUTA**: mesmo caminho do "tentar novamente" (mesmos Miaus, arena, modo, início e tempo);
+fôlego, posições, pegadas, solo e avisos zerados. F5 do treino continua igual.

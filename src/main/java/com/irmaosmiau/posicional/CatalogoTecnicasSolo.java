@@ -196,7 +196,7 @@ public final class CatalogoTecnicasSolo {
                 para(Posicao.CONTROLE_LATERAL, INI, INI), QUEDA_PEGADA);
         c.transicao(ENTRADA_PERNAS, "Entrada nas pernas", "PERNAS", emPe, qq, List.of(rb(Direcao.BAIXO)),
                 7.0, 14, Exposicao.PERNAS, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI));
-        c.transicao(PUXAR_GUARDA, "Puxar para a guarda", "PUXAR GUARDA", emPe, qq, List.of(rb(Direcao.ESQUERDA)),
+        c.transicao(PUXAR_GUARDA, "Puxar guarda", "PUXAR GUARDA", emPe, qq, List.of(rb(Direcao.ESQUERDA)),
                 2.0, 10, null, sempre, 0, para(Posicao.GUARDA, OUT, INI));
 
         // ================= UM EM PE, OUTRO NO CHAO (por cima = quem esta em pe)
@@ -208,16 +208,16 @@ public final class CatalogoTecnicasSolo {
                 para(Posicao.CONTROLE_LATERAL, INI, INI), RETENCAO_PES, CONECTAR_GUARDA);
         c.transicao(LEVANTAR_TECNICO, "Levantar técnico", "LEVANTAR", umEmPe, baixo, List.of(rs(Direcao.CIMA)),
                 3.0, 14, Exposicao.BASE, sempre, 0, para(Posicao.EM_PE_SEPARADOS, NADA, NADA), ENTRAR_GUARDA);
-        c.transicao(RETENCAO_PES, "Retenção com os pés", "PÉS", umEmPe, baixo, List.of(rs(Direcao.BAIXO)),
+        c.transicao(RETENCAO_PES, "Manter distância (pés)", "PÉS", umEmPe, baixo, List.of(rs(Direcao.BAIXO)),
                 1.5, 0, null, sempre, 0, null);
-        c.transicao(CONECTAR_GUARDA, "Conectar na guarda", "CONECTAR", umEmPe, baixo, lados(false),
+        c.transicao(CONECTAR_GUARDA, "Puxar guarda (do chão)", "PUXAR GUARDA", umEmPe, baixo, lados(false),
                 2.0, 8, null, sempre, 0, para(Posicao.GUARDA_ABERTA, OUT, INI));
 
         // ================= SOLO DISPUTADO (ninguem por cima)
         Set<Posicao> disputa = EnumSet.of(Posicao.SOLO_DISPUTADO);
         c.transicao(SUBIR_POR_CIMA, "Subir por cima", "SUBIR", disputa, qq, List.of(rs(Direcao.CIMA)),
                 4.0, 12, Exposicao.BASE, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI), PUXAR_PARA_GUARDA);
-        c.transicao(PUXAR_PARA_GUARDA, "Puxar para a guarda", "GUARDA", disputa, qq, List.of(rs(Direcao.BAIXO)),
+        c.transicao(PUXAR_PARA_GUARDA, "Puxar guarda", "PUXAR GUARDA", disputa, qq, List.of(rs(Direcao.BAIXO)),
                 2.0, 8, null, sempre, 0, para(Posicao.GUARDA, OUT, INI));
         c.transicao(LEVANTAR_DO_SOLO, "Levantar", "LEVANTAR", disputa, qq, List.of(rb(Direcao.CIMA)),
                 3.0, 10, Exposicao.BASE, sempre, 0, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA), SUBIR_POR_CIMA);
@@ -225,7 +225,7 @@ public final class CatalogoTecnicasSolo {
         // ================= GUARDA FECHADA (quem esta por baixo controla)
         Set<Posicao> fechada = EnumSet.of(Posicao.GUARDA);
         c.ajuste(POSTURA, "Postura", "POSTURA", fechada, cima, List.of(rs(Direcao.BAIXO)), Efeito.POSTURA);
-        c.transicao(ABRIR_GUARDA, "Abrir a guarda", "ABRIR", fechada, cima, List.of(rs(Direcao.CIMA)),
+        c.transicao(ABRIR_GUARDA, "Abrir a guarda do outro", "ABRIR", fechada, cima, List.of(rs(Direcao.CIMA)),
                 3.0, 16, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM),
                 RASPAGEM, QUEBRAR_POSTURA);
         c.transicao(RASPAGEM, "Raspagem", "RASPAR", EnumSet.of(Posicao.GUARDA, Posicao.GUARDA_ABERTA), baixo,
@@ -233,7 +233,7 @@ public final class CatalogoTecnicasSolo {
                 para(Posicao.GUARDA_ABERTA, INI, OUT), POSTURA, CONTROLAR_PERNAS);
         c.ajuste(QUEBRAR_POSTURA, "Quebrar a postura", "QUEBRAR", fechada, baixo, List.of(rs(Direcao.BAIXO)),
                 Efeito.QUEBRAR_POSTURA);
-        c.mudanca(SOLTAR_GUARDA, "Abrir a guarda (ajustar o quadril)", "ABRIR", fechada, baixo, lados(false),
+        c.mudanca(SOLTAR_GUARDA, "Soltar a própria guarda", "SOLTAR", fechada, baixo, lados(false),
                 para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM));
 
         // ================= GUARDA ABERTA (quem esta por baixo controla a distancia)
@@ -246,7 +246,7 @@ public final class CatalogoTecnicasSolo {
                 Efeito.POSTURA);
         c.transicao(FECHAR_GUARDA, "Fechar a guarda", "FECHAR", aberta, baixo, List.of(rs(Direcao.BAIXO)),
                 2.0, 10, null, sempre, 0, para(Posicao.GUARDA, OUT, INI), CONTROLAR_PERNAS);
-        c.transicao(RETENCAO, "Retenção de guarda", "RETER", aberta, baixo, lados(false),
+        c.transicao(RETENCAO, "Manter a guarda", "MANTER", aberta, baixo, lados(false),
                 1.5, 0, null, sempre, 0, null);
         c.transicao(LEVANTAR_DA_GUARDA, "Levantar da guarda", "LEVANTAR", aberta, baixo, List.of(rb(Direcao.CIMA)),
                 4.0, 16, Exposicao.BASE, sempre, 0, para(Posicao.EM_PE_SEPARADOS, NADA, NADA), PASSAR_GUARDA);
@@ -257,7 +257,7 @@ public final class CatalogoTecnicasSolo {
                 4.0, 18, Exposicao.BASE, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI),
                 RECUPERAR_GUARDA, RASPAGEM_MEIA);
         c.ajuste(POSTURA_MEIA, "Pressão de ombro", "PRESSÃO", meia, cima, List.of(rs(Direcao.BAIXO)), Efeito.POSTURA);
-        c.transicao(RECUPERAR_GUARDA, "Recuperar a guarda", "GUARDA", meia, baixo, List.of(rs(Direcao.BAIXO)),
+        c.transicao(RECUPERAR_GUARDA, "Recuperar a guarda", "REC. GUARDA", meia, baixo, List.of(rs(Direcao.BAIXO)),
                 3.0, 12, null, semPostura, 0, para(Posicao.GUARDA_ABERTA, OUT, INI), POSTURA_MEIA);
         c.transicao(RASPAGEM_MEIA, "Raspagem da meia-guarda", "RASPAR", meia, baixo, List.of(rs(Direcao.CIMA)),
                 5.0, 14, null, semPostura, 0, para(Posicao.GUARDA_ABERTA, INI, OUT), POSTURA_MEIA);
@@ -274,12 +274,12 @@ public final class CatalogoTecnicasSolo {
                 ESCAPE_QUADRIL);
         c.ajuste(ENQUADRAR, "Enquadrar (criar espaço)", "ENQUADRAR", lateral, ctrlado, List.of(rs(Direcao.BAIXO)),
                 Efeito.ENQUADRAR);
-        c.transicao(ESCAPE_QUADRIL, "Escape de quadril", "QUADRIL", lateral, ctrlado, lados(false),
-                4.0, 12, null, estab, 50, para(Posicao.GUARDA_ABERTA, OUT, INI), CONSOLIDAR);
-        c.transicao(RECUPERAR_MEIA, "Joelho no meio (meia-guarda)", "MEIA", lateral, ctrlado,
-                List.of(rb(Direcao.BAIXO)), 3.0, 10, null, estab, 60, para(Posicao.MEIA_GUARDA, OUT, INI), CONSOLIDAR);
+        c.transicao(ESCAPE_QUADRIL, "Escape de quadril (recuperar a guarda)", "REC. GUARDA", lateral, ctrlado, lados(false),
+                4.0, 12, null, estab, 60, para(Posicao.GUARDA_ABERTA, OUT, INI), CONSOLIDAR);
+        c.transicao(RECUPERAR_MEIA, "Joelho no meio (recuperar meia-guarda)", "REC. MEIA", lateral, ctrlado,
+                List.of(rb(Direcao.BAIXO)), 3.0, 10, null, estab, 65, para(Posicao.MEIA_GUARDA, OUT, INI), CONSOLIDAR);
         c.transicao(VIRAR_JOELHOS, "Virar para os joelhos", "VIRAR", lateral, ctrlado, List.of(rs(Direcao.CIMA)),
-                4.0, 14, Exposicao.BASE, estab, 60, para(Posicao.SOLO_DISPUTADO, NADA, NADA), PEGAR_COSTAS_VIRADA);
+                4.0, 14, Exposicao.BASE, estab, 65, para(Posicao.SOLO_DISPUTADO, NADA, NADA), PEGAR_COSTAS_VIRADA);
         c.transicao(PEGAR_COSTAS_VIRADA, "Pegar as costas na virada", "COSTAS", lateral, ctrl,
                 List.of(rb(Direcao.CIMA)), 4.0, 8, null, Criterio.OUTRO_EXPOSTO, 0, para(Posicao.COSTAS, INI, INI));
 
@@ -291,8 +291,8 @@ public final class CatalogoTecnicasSolo {
                 Efeito.CONSOLIDAR);
         c.mudanca(VOLTAR_CEM_QUILOS, "Voltar aos cem quilos", "100 KG", joelho, ctrl, lados(false),
                 para(Posicao.CONTROLE_LATERAL, MANTEM, MANTEM));
-        c.transicao(FUGIR_DO_JOELHO, "Empurrar o joelho e fugir", "FUGIR", joelho, ctrlado, lados(false),
-                3.5, 10, null, estab, 60, para(Posicao.GUARDA_ABERTA, OUT, INI), PRESSAO_JOELHO);
+        c.transicao(FUGIR_DO_JOELHO, "Empurrar o joelho (recuperar a guarda)", "REC. GUARDA", joelho, ctrlado, lados(false),
+                3.5, 10, null, estab, 65, para(Posicao.GUARDA_ABERTA, OUT, INI), PRESSAO_JOELHO);
         c.ajuste(ENQUADRAR_JOELHO, "Enquadrar o joelho", "ENQUADRAR", joelho, ctrlado, List.of(rs(Direcao.BAIXO)),
                 Efeito.ENQUADRAR);
         c.transicao(INVERTER_JOELHO, "Inverter (base alta)", "INVERTER", joelho, ctrlado, List.of(rb(Direcao.CIMA)),
@@ -307,9 +307,9 @@ public final class CatalogoTecnicasSolo {
                 3.5, 16, Exposicao.CONTROLE_REDUZIDO, sempre, 0, para(Posicao.COSTAS, INI, INI),
                 ESCAPE_MONTADA, PONTE);
         c.transicao(PONTE, "Ponte (upa)", "UPA", montada, ctrlado, List.of(rb(Direcao.CIMA)),
-                6.0, 8, null, estab, 45, para(Posicao.GUARDA, INI, OUT), ESTABILIZAR_MONTADA);
-        c.transicao(ESCAPE_MONTADA, "Escape de quadril (meia-guarda)", "QUADRIL", montada, ctrlado, lados(false),
-                4.0, 14, null, estab, 60, para(Posicao.MEIA_GUARDA, OUT, INI), ESTABILIZAR_MONTADA);
+                6.0, 8, null, estab, 55, para(Posicao.GUARDA, INI, OUT), ESTABILIZAR_MONTADA);
+        c.transicao(ESCAPE_MONTADA, "Escape da montada (meia-guarda)", "ESCAPAR", montada, ctrlado, lados(false),
+                4.0, 14, null, estab, 65, para(Posicao.MEIA_GUARDA, OUT, INI), ESTABILIZAR_MONTADA);
         c.ajuste(ENQUADRAR_MONTADA, "Enquadrar", "ENQUADRAR", montada, ctrlado, List.of(rs(Direcao.BAIXO)),
                 Efeito.ENQUADRAR);
 
@@ -320,9 +320,9 @@ public final class CatalogoTecnicasSolo {
         c.ajuste(DEFENDER_MAOS, "Defender com as mãos", "DEFENDER", costas, ctrlado, List.of(rs(Direcao.BAIXO)),
                 Efeito.ENQUADRAR);
         c.transicao(GIRAR_NAS_COSTAS, "Tirar os ganchos e girar", "GIRAR", costas, ctrlado, lados(false),
-                4.0, 16, null, estab, 50, para(Posicao.GUARDA, INI, OUT), AJUSTAR_GANCHOS);
+                4.0, 16, null, estab, 55, para(Posicao.GUARDA, INI, OUT), AJUSTAR_GANCHOS);
         c.transicao(ESCAPAR_NEUTRO, "Escapar para o neutro", "ESCAPAR", costas, ctrlado, List.of(rb(Direcao.CIMA)),
-                5.0, 12, null, estab, 35, para(Posicao.SOLO_DISPUTADO, NADA, NADA), AJUSTAR_GANCHOS);
+                5.0, 12, null, estab, 45, para(Posicao.SOLO_DISPUTADO, NADA, NADA), AJUSTAR_GANCHOS);
         return c;
     }
 }

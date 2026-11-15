@@ -2703,6 +2703,33 @@ public void alternarDeitado() {
         return vinculadoNoSolo;
     }
 
+    /** 5P.1: fator de respiracao no solo (o MotorSolo calcula pela posicao e pelo papel). */
+    private double fatorRespiracaoSolo = 1.0;
+
+    public void setFatorRespiracaoNoSolo(double fator) {
+        this.fatorRespiracaoSolo = Math.max(0.0, Math.min(1.0, fator));
+    }
+
+    /**
+     * 5P.1: quanto a respiracao voluntaria rende AGORA (0..1) pelo contexto:
+     * livre 1; na pegada RESPIRACAO_NA_PEGADA; no solo o fator do motor (0 no meio
+     * da propria tecnica); andando, metade. A recuperacao PASSIVA continua so para
+     * quem esta livre.
+     */
+    public double fatorRespiracaoContexto() {
+        double f = 1.0;
+        if (vinculadoEmPegada) {
+            f = Math.min(f, CustosFolego.RESPIRACAO_NA_PEGADA);
+        }
+        if (vinculadoNoSolo) {
+            f = Math.min(f, fatorRespiracaoSolo);
+        }
+        if (andando) {
+            f *= CustosFolego.RESPIRACAO_ANDANDO;
+        }
+        return f;
+    }
+
     /**
      * 5P: o MotorSolo muda a postura (cair, acompanhar, raspar, levantar) sem
      * cobrar o custo de uma transicao comum; a animacao de transicao de postura
@@ -3030,8 +3057,9 @@ private void recuperarFolego() {
 
 private void recuperarFolegoRespirando() {
 
-    if (vinculadoEmPegada || vinculadoNoSolo) {
-        return;                                         // 5O.3: RT na pegada nao recupera (nem cobra)
+    double contexto = fatorRespiracaoContexto();          // 5P.1: substitui o bloqueio absoluto da 5O.3
+    if (contexto <= 0) {
+        return;
     }
 
     if (pulando) {
@@ -3047,7 +3075,8 @@ private void recuperarFolegoRespirando() {
     double taxa =
             calcularTaxaRecuperacaoFolego()
             * 15.0
-            * CustosFolego.recuperacaoRespirando(posturaBase());   // 5O.2: por postura
+            * CustosFolego.recuperacaoRespirando(posturaBase())   // 5O.2: por postura
+            * contexto;
 
     folegoAtual += taxa;
 
@@ -3063,8 +3092,9 @@ private void recuperarFolegoRespirando() {
 
 private void recuperarCondicionamentoRespirando() {
 
-    if (vinculadoEmPegada || vinculadoNoSolo) {
-        return;                                         // 5O.3
+    double contexto = fatorRespiracaoContexto();          // 5P.1
+    if (contexto <= 0) {
+        return;
     }
 
     /*
@@ -3097,7 +3127,7 @@ private void recuperarCondicionamentoRespirando() {
      * a recuperação física.
      */
     condicionamentoAtual +=
-            taxaBase * 2.5 * CustosFolego.recuperacaoRespirando(posturaBase());   // 5O.2
+            taxaBase * 2.5 * CustosFolego.recuperacaoRespirando(posturaBase()) * contexto;   // 5O.2 / 5P.1
 
     if (
             condicionamentoAtual

@@ -217,7 +217,7 @@ class GamepadGamePanelTest {
             double folego = painel.getLutador1().getFolegoAtual();
             estabelecerPegadaPeloGamepad();
             assertEquals("pegada_1", sistema().getIdAcaoInteracao());
-            assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0);
+            assertEquals(folego - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), painel.getLutador1().getFolegoAtual(), 0.3);
             assertTrue(painel.montarEstadoHud().getEstadoInteracao().startsWith("PEGADA 1 · FIRMEZA"));
         });
     }

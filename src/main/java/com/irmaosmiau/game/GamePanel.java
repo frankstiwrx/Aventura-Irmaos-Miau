@@ -224,6 +224,29 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private JPanel menuPausa;
     // 5I: primeiro foco da pausa (A/ENTER = continuar) e o "voltar" do B.
     private JButton botaoContinuar;
+    private JButton reiniciarLuta;
+
+    /**
+     * 5P.1: REINICIAR LUTA (pausa): recomeca a MESMA luta pelo mesmo caminho do
+     * "tentar novamente" do fim de jogo: luta nova com os mesmos Miaus, arena,
+     * modo, inicio e tempo; folego, posicoes, pegadas, solo e avisos zerados.
+     */
+    void reiniciarLuta() {
+        if (aoTentarNovamente == null) {
+            return;
+        }
+        gameLoop.stop();
+        avisos.limpar();
+        if (solo != null) {
+            solo.reiniciar();
+        }
+        aoTentarNovamente.run();
+    }
+
+    /** Testes: o botao da pausa. */
+    JButton botaoReiniciarLuta() {
+        return reiniciarLuta;
+    }
     // Entrega 5C: tela de ajuda de controles (pausa -> CONTROLES).
     private boolean ajudaVisivel;
     private JButton voltarDaAjuda;
@@ -621,6 +644,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 modoDoisMiaus ? List.of(jogadorBranco, jogadorPreto) : List.of(jogadorPrincipal),
                 sistemaCombate, deslocandoConjunto, tick);
 
+        avisos.atualizar();                                       // 5P.1
         tick++;
         contarTempoDeLuta();
         verificarFimDeJogo();
@@ -1293,6 +1317,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      * ha recuperacao gratuita durante a defesa.
      */
     boolean respirandoPeloModificador(SlotJogador slot, IrmaoMiau l) {
+        if (solo != null && solo.sofrendoEntrada(lado(slot))) {
+            return false;                                    // 5P.1: na entrada do outro o RT e base, nao respiracao
+        }
         if (!input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA) || l.getDefesa().isAtiva()
                 || l.isFazendoSprawl() || dispositivos.direcaoFamiliaGamepad(slot) != null) {
             return false;
@@ -1309,6 +1336,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     // ENTREGA 5P: QUEDAS E COMBATE DE SOLO (MotorSolo)
     // =====================================================
     private com.irmaosmiau.posicional.MotorSolo solo;
+    private final java.util.Map<SlotJogador, Boolean> rtAnterior = new java.util.EnumMap<>(SlotJogador.class);
+    /** 5P.1: aviso discreto no topo (resultados confirmados do MotorSolo). */
+    private final com.irmaosmiau.hud.AvisosCombate avisos = new com.irmaosmiau.hud.AvisosCombate();
+
+    /** Aviso no topo agora (testes). */
+    String avisoAtual() {
+        return avisos.getAtual();
+    }
     private final java.util.Map<com.irmaosmiau.posicional.Lado, com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo>
             pedidosSolo = new java.util.EnumMap<>(com.irmaosmiau.posicional.Lado.class);
 
@@ -1370,6 +1405,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 solo.comandos(new java.util.EnumMap<>(pedidosSolo));
         pedidosSolo.clear();
         r.forEach((l, resp) -> {
+            if (resp.resultado() == com.irmaosmiau.posicional.MotorSolo.Resultado.CONTRA) {
+                avisos.adicionar(solo.consumirMensagens().stream().reduce((a, b) -> b).orElse(null));
+            }
             String sigla = l == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
             String nome = resp.tecnica() == null ? "" : resp.tecnica().nome().toUpperCase(java.util.Locale.ROOT) + " · ";
             String txt = switch (resp.resultado()) {
@@ -1393,8 +1431,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 - (input.isAtiva(s, AcaoJogador.MOVER_ESQUERDA) ? 1 : 0);
         int dy = (input.isAtiva(s, AcaoJogador.MOVER_BAIXO) ? 1 : 0)
                 - (input.isAtiva(s, AcaoJogador.MOVER_CIMA) ? 1 : 0);
-        return new com.irmaosmiau.posicional.MotorSolo.Intencao(dx, dy,
-                input.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA));           // RT = base
+        boolean rt = input.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA);
+        boolean apertou = rt && !Boolean.TRUE.equals(rtAnterior.get(s));
+        rtAnterior.put(s, rt);
+        // 5P.1: a base e o RT APERTADO (reacao); segurado de antes e so respirar
+        return new com.irmaosmiau.posicional.MotorSolo.Intencao(dx, dy, apertou);
     }
 
     /** Um tick do motor de solo (depois das entradas): janelas, quedas, encaixe e orientacao. */
@@ -1407,17 +1448,41 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         com.irmaosmiau.posicional.MotorSolo.Evento antes = solo.getUltimoEvento();
         solo.informarIntencoes(ia, ib);
         solo.atualizar(ia, ib);
-        com.irmaosmiau.posicional.MotorSolo.Evento ev = solo.getUltimoEvento();
-        if (ev != null && ev != antes && !ev.tipo().equals("INICIOU") && !ev.tipo().equals("AJUSTE")) {
-            String sigla = ev.lado() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
-            feedback.mostrarInfo(sigla + ": " + ev.tipo() + " · " + solo.getCatalogo().buscar(ev.tecnica())
-                    .map(t -> t.nome().toUpperCase(java.util.Locale.ROOT)).orElse(ev.tecnica())
-                    + (ev.detalhe().isEmpty() ? "" : " (" + ev.detalhe() + ")"), tick);
+        for (String m : solo.consumirMensagens()) {
+            avisos.adicionar(m);                             // 5P.1: so resultados confirmados
         }
         for (IrmaoMiau l : List.of(jogadorBranco, jogadorPreto)) {
             solo.orientacao(l).ifPresent(l::setViradoParaDireita);
             manterNaArena(l);
         }
+    }
+
+    /** 5P.1: nome curto da posicao para a cruz do HUD (o painel tem 138 px). */
+    static String nomeCurto(com.irmaosmiau.posicional.Posicao p) {
+        return switch (p) {
+            case EM_PE_SEPARADOS -> "EM PÉ";
+            case EM_PE_PEGADA -> "PEGADA";
+            case EM_PE_CONTRA_SOLO -> "SOLO LIVRE";
+            case SOLO_DISPUTADO -> "SOLO";
+            case GUARDA -> "G. FECHADA";
+            case GUARDA_ABERTA -> "G. ABERTA";
+            case MEIA_GUARDA -> "MEIA";
+            case CONTROLE_LATERAL -> "100 KG";
+            case JOELHO_BARRIGA -> "JOELHO";
+            case MONTADA -> "MONTADA";
+            case COSTAS -> "COSTAS";
+        };
+    }
+
+    private String papelCurto(com.irmaosmiau.posicional.Lado l) {
+        com.irmaosmiau.posicional.EstadoPosicional e = solo.getEstado();
+        if (!e.getPosicao().isNoChao()) {
+            return e.getControlador().map(c -> c == l ? "APLICA" : "AGARRADO").orElse("LIVRE");
+        }
+        if (e.getPosicao() == com.irmaosmiau.posicional.Posicao.EM_PE_CONTRA_SOLO) {
+            return e.getPorCima().map(c -> c == l ? "EM PÉ" : "NO CHÃO").orElse("");
+        }
+        return e.getPorCima().map(c -> c == l ? "CIMA" : "BAIXO").orElse("");
     }
 
     /** 5P: cruz de comandos do solo (o que cada direcao faz AGORA, deste lado). */
@@ -1436,8 +1501,22 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         solo.motivoSem(l, t.get()) == null));
             }
         }
+        if (solo.ladoQueCai().filter(x -> x == l).isPresent()) {
+            // 5P.1: caindo: a escolha de como receber, com tempo (ATERRISSAGEM_TICKS)
+            m.clear();
+            m.put(com.irmaosmiau.controles.DirecaoTecnica.CIMA, new CelulaContextual(new PosicaoComando(CamadaComando.UM,
+                    com.irmaosmiau.controles.DirecaoTecnica.CIMA), CelulaContextual.Tipo.EXECUTAVEL, "FECHAR GUARDA",
+                    null, null, true));
+            for (com.irmaosmiau.controles.DirecaoTecnica d : new com.irmaosmiau.controles.DirecaoTecnica[] {
+                com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA, com.irmaosmiau.controles.DirecaoTecnica.DIREITA}) {
+                m.put(d, new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL,
+                        "MEIA", null, null, true));
+            }
+            return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, "CAINDO: COMO RECEBER?", m);
+        }
         String nome = (explosivo ? (e.getPosicao().isNoChao() ? "RB · " : "QUEDAS (RB) · ") : "")
-                + e.getPosicao().getNome().toUpperCase(java.util.Locale.ROOT) + " · " + solo.papel(l);
+                + nomeCurto(e.getPosicao()) + " · " + papelCurto(l)
+                + (e.getPosicao().isNoChao() && !explosivo ? " · RT AR" : "");
         return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, nome, m);
     }
 
@@ -1736,9 +1815,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
         CamadaComando camada = dispositivos.camadaAtiva(slot);
         // 5O: alguem deitado e o lutador livre: as pegadas em pe nao valem; o solo ainda esta em preparacao.
-        if (camada == CamadaComando.UM && com.irmaosmiau.controles.PapelCombate.de(sistemaCombate, ator)
+        if (solo == null && camada == CamadaComando.UM && com.irmaosmiau.controles.PapelCombate.de(sistemaCombate, ator)
                 == com.irmaosmiau.controles.PapelCombate.LIVRE && (ator.isDeitado() || outro.isDeitado())) {
-            return quadroDoSolo(slot, ator);
+            return quadroDoSolo(slot, ator);                 // so sem motor de solo (modo sem combate)
         }
         return PainelDpadContextual.montar(slot.getSigla(), camada, nomeCamada(slot, camada),
                 RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro));
@@ -2070,9 +2149,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         menuPausa.setBounds(
                 250,
-                65,
+                40,
                 300,
-                320
+                370
         );
 
         GridBagConstraints gbc
@@ -2127,6 +2206,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         "MENU PRINCIPAL"
                 );
 
+        // 5P.1: a mesma luta de novo (mesmos Miaus, arena, modo e tempo), sem voltar a selecao.
+        reiniciarLuta = new JButton("REINICIAR LUTA");
+
         // Entrega 5C: ajuda com as teclas configuradas.
         JButton controles
                 = new JButton(
@@ -2155,6 +2237,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         controles.setFont(
                 fonteBotao
         );
+        reiniciarLuta.setFont(fonteBotao);
+        reiniciarLuta.addActionListener(e -> reiniciarLuta());
+        reiniciarLuta.setVisible(aoTentarNovamente != null);
 
         controles.addActionListener(
                 e -> mostrarAjudaControles(true)
@@ -2193,18 +2278,25 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         gbc.gridy = 2;
 
         menuPausa.add(
-                trocarMiau,
+                reiniciarLuta,
                 gbc
         );
 
         gbc.gridy = 3;
 
         menuPausa.add(
-                controles,
+                trocarMiau,
                 gbc
         );
 
         gbc.gridy = 4;
+
+        menuPausa.add(
+                controles,
+                gbc
+        );
+
+        gbc.gridy = 5;
 
         menuPausa.add(
                 menuPrincipal,
@@ -2799,6 +2891,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
         desenharRelogio(g2);
+        avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
 
         // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
         PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);

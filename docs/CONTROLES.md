@@ -1103,3 +1103,13 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
 - No chão, **RS** (J1: 2/6/7/8; J2: setas) e **RB + RS** mudam de técnica conforme a posição e o papel
   (↑ avançar, ↓ segurar, ←/→ quadril e laterais, RB = explosivo). **RT** segurado = base contra quedas e
   empurrões. Tabela completa em `docs/COMBATE_SOLO.md`.
+
+# Entrega 5P.1 — Solo livre, respiração e reiniciar
+
+- **Deitar** por vontade própria (J1: **1**; J2: L3/**Z**) já mostra os comandos do solo livre (sem
+  "EM BREVE"): quem está em pé ↑ entra na guarda, RB + ↑ passagem em pé; quem está no chão ↑ levanta,
+  ↓ pés (distância), ←/→ puxar guarda.
+- **RT segurado** (J1: **3**; J2: **P**) = respirar, também na pegada e no solo (mais devagar). **RT
+  apertado** na entrada do outro = base.
+- Caindo: ↑ fechar a guarda, ←/→ meia-guarda (a cruz mostra "CAINDO: COMO RECEBER?").
+- Pausa (ESC / Start): **REINICIAR LUTA** recomeça a mesma luta. F5 continua reiniciando o treino.

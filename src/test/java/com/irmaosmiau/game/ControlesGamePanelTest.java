@@ -122,7 +122,7 @@ class ControlesGamePanelTest {
             assertEquals(MapaControles.padrao(), painel.getMapaControles());
             double folego = painel.getLutador1().getFolegoAtual();
             estabelecerPegada("NUMPAD6", "2");   // 5O.1 (pedido): teclas novas do J1
-            assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0, "custo 3 uma vez");
+            assertEquals(folego - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), painel.getLutador1().getFolegoAtual(), 0.3, "custo da pegada uma vez (5P.1 (pedido): 1,8)");
             toqueFisico("0");                            // 5O.1 (pedido): T -> 0
             assertTrue(painel.getLutador2().getEfeitos().isAtivo(EfeitosTemporarios.Tipo.DESEQUILIBRIO));
             String dica = painel.montarEstadoHud().getDicaControles();
@@ -149,7 +149,7 @@ class ControlesGamePanelTest {
             double folego = painel.getLutador1().getFolegoAtual();
             estabelecerPegada("NUMPAD6", "P");   // 5O.1 (pedido)
             assertEquals("pegada_1", sistema().getIdAcaoInteracao());
-            assertEquals(folego - 3, painel.getLutador1().getFolegoAtual(), 1.0);
+            assertEquals(folego - (3.0 * com.irmaosmiau.entities.CustosFolego.FATOR_CUSTO_PEGADAS), painel.getLutador1().getFolegoAtual(), 0.3);
             assertTrue(painel.montarEstadoHud().getEstadoInteracao().startsWith("PEGADA 1 · FIRMEZA"));
         });
     }

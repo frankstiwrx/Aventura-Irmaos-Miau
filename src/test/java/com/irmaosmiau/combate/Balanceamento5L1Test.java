@@ -50,9 +50,10 @@ class Balanceamento5L1Test {
 
     @Test
     void valoresDeBalanceamento() {
-        assertEquals(3.0, SistemaCombate.CUSTO_DESEQUILIBRIO);
-        assertEquals(2.5, SistemaCombate.CUSTO_ROMPIMENTO_TECNICO);
-        assertEquals(2.0, SistemaCombate.CUSTO_REFORCO);
+        // 5P.1 (pedido): custos menores.
+        assertEquals(2.0, SistemaCombate.CUSTO_DESEQUILIBRIO);
+        assertEquals(1.75, SistemaCombate.CUSTO_ROMPIMENTO_TECNICO);
+        assertEquals(1.5, SistemaCombate.CUSTO_REFORCO);
         assertEquals(30.0, SistemaCombate.REFORCO_FIRMEZA);
         assertEquals(0.06, SistemaCombate.DESGASTE_FIRMEZA_POR_TICK);
         assertEquals(0.08, SistemaCombate.DESGASTE_RESISTENCIA_POR_TICK);
