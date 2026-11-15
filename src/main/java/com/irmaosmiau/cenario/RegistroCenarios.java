@@ -24,7 +24,7 @@ public final class RegistroCenarios {
     public RegistroCenarios() {
     }
 
-    /** Dojo (padrao), campo original, campo remasterizado e arena do torneio (5O.4). */
+    /** Dojo (padrao), campo original, campo remasterizado, arena do torneio (5O.4), academia e fortaleza nevada (5P.3). */
     public static RegistroCenarios padrao() {
         RegistroCenarios r = new RegistroCenarios();
         r.registrar(new CenarioDojo());
@@ -32,6 +32,9 @@ public final class RegistroCenarios {
         // 5O.4: cenarios novos (os dois antigos continuam iguais e na mesma ordem).
         r.registrar(new CenarioCampoRemaster());
         r.registrar(new CenarioArenaTorneio());
+        // 5P.3: academia de jiu-jitsu e fortaleza nevada ao luar (depois dos quatro anteriores).
+        r.registrar(new CenarioAcademia());
+        r.registrar(new CenarioFortalezaNevada());
         return r;
     }
 

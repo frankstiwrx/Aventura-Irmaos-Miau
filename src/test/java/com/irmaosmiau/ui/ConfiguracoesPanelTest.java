@@ -69,7 +69,7 @@ class ConfiguracoesPanelTest {
             assertEquals(60, tela.controleVolumeMusica().getValue());
             assertEquals(35, tela.controleVolumeEfeitos().getValue());
             assertEquals("original", ((ConfiguracoesPanel.ItemCenario) tela.controleCenario().getSelectedItem()).id);
-            assertEquals(4, tela.controleCenario().getItemCount(), "todos os cenarios cadastrados");   // 5O.4 (pedido): antes 2
+            assertEquals(6, tela.controleCenario().getItemCount(), "todos os cenarios cadastrados");   // 5P.3 (pedido): antes 4
         });
     }
 

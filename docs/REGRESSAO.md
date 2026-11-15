@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1005, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1012, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -447,3 +447,10 @@ Gamepad (Xbox):
 - [ ] Depois de afastar/soltar, o de baixo levanta e os dois andam livres
 - [ ] Montada / 100 kg / costas / guarda fechada: LB, LT e LT+LB mostram finalizações com `*` e não executam
 - [ ] Condicionamento cai devagar sob a montada e nas quedas; parado/deitado livre não cai; exausto: aviso no topo, a luta continua
+
+### Mapas novos (Entrega 5P.3)
+- [ ] Seleção de luta e de treino: depois de "Arena do Grande Torneio" vêm "Academia de jiu-jitsu" e "Fortaleza nevada ao luar"
+- [ ] F4 passa pelos seis mapas e volta ao Dojo
+- [ ] Academia e fortaleza: pés nas faixas do chão nas 5 linhas; nada cobre os lutadores; HUD legível
+- [ ] Fortaleza: neve no chão, lua, lanternas acesas; montes de neve só nos cantos de baixo
+- [ ] Dojo, campo original, campo remasterizado e torneio iguais aos de antes

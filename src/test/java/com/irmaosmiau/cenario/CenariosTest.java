@@ -40,7 +40,7 @@ class CenariosTest {
         RegistroCenarios r = RegistroCenarios.padrao();
 
         // 5O.4 (pedido): + campo remasterizado e arena do torneio, depois dos dois de sempre.
-        assertEquals(List.of("dojo", "original", "campo_remaster", "torneio"), r.ids());
+        assertEquals(List.of("dojo", "original", "campo_remaster", "torneio", "academia", "fortaleza_neve"), r.ids());   // 5P.3 (pedido)
         assertEquals("dojo", RegistroCenarios.ID_PADRAO);
         assertInstanceOf(CenarioDojo.class, r.exigir("DOJO"));
         assertInstanceOf(CenarioOriginal.class, r.exigir(" original "));
@@ -57,7 +57,7 @@ class CenariosTest {
         };
         r.registrar(praia);
 
-        assertEquals(5, r.quantidade());                    // 5O.4 (pedido): antes 3 (2 + praia)
+        assertEquals(7, r.quantidade());                    // 5P.3 (pedido): antes 5 (4 + praia)
         assertSame(praia, r.exigir("praia"));
         // primeiro plano e opcional (padrao nao desenha nada)
         BufferedImage img = desenhar(praia, true);
@@ -84,7 +84,10 @@ class CenariosTest {
         assertSame(original, r.proximo(dojo));
         // 5O.4 (pedido): depois do original vem o campo remasterizado, depois a arena; o ciclo volta ao dojo.
         assertSame(r.exigir("campo_remaster"), r.proximo(original));
-        assertSame(dojo, r.proximo(r.exigir("torneio")));
+        // 5P.3 (pedido): depois do torneio vem a academia, depois a fortaleza; o ciclo volta ao dojo.
+        assertSame(r.exigir("academia"), r.proximo(r.exigir("torneio")));
+        assertSame(r.exigir("fortaleza_neve"), r.proximo(r.exigir("academia")));
+        assertSame(dojo, r.proximo(r.exigir("fortaleza_neve")));
         assertSame(dojo, r.proximo(null));
     }
 

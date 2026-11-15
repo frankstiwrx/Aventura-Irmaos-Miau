@@ -243,6 +243,11 @@ class ModoTreinoGamePanelTest {
         assertEquals("campo_remaster", painel.getCenario().getId());
         atalho("proximoCenario");
         assertEquals("torneio", painel.getCenario().getId());
+        // 5P.3 (pedido): o F4 passa tambem pela academia e pela fortaleza nevada.
+        atalho("proximoCenario");
+        assertEquals("academia", painel.getCenario().getId());
+        atalho("proximoCenario");
+        assertEquals("fortaleza_neve", painel.getCenario().getId());
         atalho("proximoCenario");
         assertEquals("dojo", painel.getCenario().getId());
         atalho("alternarMusica");

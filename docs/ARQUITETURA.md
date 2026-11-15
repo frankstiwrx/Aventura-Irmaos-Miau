@@ -450,6 +450,24 @@ Regras de escala iguais às do Dojo: o chão começa em y = 296 e cada linha de 
 centrada nos pés (y = 326 + 20 × linha); nada de primeiro plano acima de y ≈ 412. O campo original e o Dojo
 não foram tocados.
 
+## Arenas novas (Entrega 5P.3)
+
+Mais dois cenários Java2D no mesmo contrato e cache, registrados depois dos quatro anteriores (ordem: dojo,
+original, campo_remaster, torneio, **academia**, **fortaleza_neve**; o padrão continua o Dojo; o F4 e as telas
+de seleção de luta e treino passam pelos seis):
+
+- `CenarioAcademia` ("Academia de jiu-jitsu"): sala interna com teto e paredes laterais em perspectiva,
+  luminárias tubulares em "V", barra fixa, proteção de EVA preta em quebra-cabeça (64 px, abaixo da cintura
+  dos lutadores) e tatame cinza-azulado em placas. Emblemas **autorais**: selo "JIU-JITSU ★ IRMÃOS MIAU" com o
+  monograma "IM" e uma faixa de graduação, placa "ACADEMIA MIAU" e selo amarelo "OSS!" (nenhuma marca real
+  da referência).
+- `CenarioFortalezaNevada` ("Fortaleza nevada ao luar"): céu noturno com estrelas e lua cheia com halo,
+  montanhas nevadas em duas camadas (as mais distantes mais claras), pinheiros nevados, muralha de pedra
+  escura (136 px) com neve e pingentes de gelo, pilares com acabamento vermelho, torre central com o
+  estandarte da pata, estandartes vermelhos (pata e ondas), lanternas de pedra acesas; pátio de neve com uma
+  faixa por linha, sombras azuladas, luz do luar e das lanternas; montes de neve só nos cantos de baixo
+  (abaixo de y = 418).
+
 ## Quedas e combate de solo (Entrega 5P)
 
 Ver `docs/COMBATE_SOLO.md`. Resumo: `posicional.MotorSolo` é o dono único da relação entre os dois lutadores
