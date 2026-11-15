@@ -248,6 +248,11 @@ class ModoTreinoGamePanelTest {
         assertEquals("academia", painel.getCenario().getId());
         atalho("proximoCenario");
         assertEquals("fortaleza_neve", painel.getCenario().getId());
+        // 5P.4 (pedido): mais dois mapas no F4 (oito no total).
+        atalho("proximoCenario");
+        assertEquals("academia_miau", painel.getCenario().getId());
+        atalho("proximoCenario");
+        assertEquals("campeonato", painel.getCenario().getId());
         atalho("proximoCenario");
         assertEquals("dojo", painel.getCenario().getId());
         atalho("alternarMusica");

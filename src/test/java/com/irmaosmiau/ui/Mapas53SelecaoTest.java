@@ -62,6 +62,9 @@ class Mapas53SelecaoTest {
         assertEquals("torneio", treinarNoMapa(3));
         assertEquals("academia", treinarNoMapa(4));
         assertEquals("fortaleza_neve", treinarNoMapa(5));
-        assertEquals("dojo", treinarNoMapa(6), "o ciclo volta ao dojo");
+        // 5P.4 (pedido): os dois mapas novos vem em seguida; o ciclo volta ao dojo depois dos oito
+        assertEquals("academia_miau", treinarNoMapa(6));
+        assertEquals("campeonato", treinarNoMapa(7));
+        assertEquals("dojo", treinarNoMapa(8), "o ciclo volta ao dojo");
     }
 }

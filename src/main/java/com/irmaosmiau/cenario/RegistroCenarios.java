@@ -35,6 +35,9 @@ public final class RegistroCenarios {
         // 5P.3: academia de jiu-jitsu e fortaleza nevada ao luar (depois dos quatro anteriores).
         r.registrar(new CenarioAcademia());
         r.registrar(new CenarioFortalezaNevada());
+        // 5P.4: fachada da Academia dos Irmaos Miau e o Campeonato Miau (oito mapas).
+        r.registrar(new CenarioFachadaAcademia());
+        r.registrar(new CenarioCampeonato());
         return r;
     }
 

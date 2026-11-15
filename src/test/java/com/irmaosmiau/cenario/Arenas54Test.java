@@ -32,7 +32,8 @@ class Arenas54Test {
     @Test
     void quatroMapasNaOrdemComOsAntigosIntactos() {
         RegistroCenarios r = RegistroCenarios.padrao();
-        assertEquals(List.of("dojo", "original", "campo_remaster", "torneio", "academia", "fortaleza_neve"), r.ids());   // 5P.3 (pedido): + academia e fortaleza nevada
+        assertEquals(List.of("dojo", "original", "campo_remaster", "torneio", "academia", "fortaleza_neve",
+                "academia_miau", "campeonato"), r.ids());   // 5P.4 (pedido): oito mapas
         assertEquals("dojo", RegistroCenarios.ID_PADRAO, "o padrao continua o Dojo");
         assertEquals("Campo original", r.exigir("original").getNome());
         assertEquals("Dojo de jiu-jitsu", r.exigir("dojo").getNome());

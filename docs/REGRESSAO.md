@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1012, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1017, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -454,3 +454,7 @@ Gamepad (Xbox):
 - [ ] Academia e fortaleza: pés nas faixas do chão nas 5 linhas; nada cobre os lutadores; HUD legível
 - [ ] Fortaleza: neve no chão, lua, lanternas acesas; montes de neve só nos cantos de baixo
 - [ ] Dojo, campo original, campo remasterizado e torneio iguais aos de antes
+
+### Mapas novos (Entrega 5P.4)
+- [ ] Seleção, treino, configurações e F4: oito mapas; depois da fortaleza vêm "Academia dos Irmãos Miau" e "Campeonato Miau"
+- [ ] Os dois: pés nas faixas do tatame nas 5 linhas; nada cobre os lutadores; placar do campeonato só decorativo
