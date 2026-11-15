@@ -1,0 +1,27 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "receptor.pegada_2",
+  "estado": "PEGADA_ESTABELECIDA",
+  "rig": "miau_v1",
+  "uso": "RECEPTOR",
+  "loop": true,
+  "duracaoQuadroMs": 1200,
+  "sequencia": [1, 2],
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "5N (Claude): reacao COMPARTILHADA do receptor da PEGADA_2 (Cruzada): o tronco gira pela pegada cruzada: o braco da frente e levado para baixo e atravessado; o outro braco recua para proteger; o pescoco mantem a cabeca orientada. Quadros = DELTAS sobre a pose do motor: 0 CONTATO, 1 e 2 SUSTENTADA (respiracao), 3 LIBERACAO.",
+  "quadros": [
+    {
+      "pose": [0, 0, 7, 1, 0, 0, -1, 0, 0, 4, 0, -2, 0, 0, 3, 4, 2, 8, 0, 0, -6, -2, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, -3, 2, 0, 7, 0, -6, -1, 0, 6, 8, 4, 16, -6, 2, -14, -4, 1, 0, 0, 0, 4, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, -3, 2, 0, 8, 0, -6, -1, 0, 6, 8, 4, 17, -6, 2, -15, -4, 1, 0, 0, 0, 4, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 2, 0, 0, -5, 0, 2, 0, 0, 0, 0, -4, -8, 0, 0, 6, -2, 0, 0, 0, 0, 0, 0, 0, 0]
+    }
+  ]
+}

@@ -148,9 +148,13 @@ class AnalogicoDireitoGamePanelTest {
             assertEquals(lp, p.getLinhaAtual(), "linhas de profundidade preservadas");
             sim.definir("g1", r());
             ticks(1);
-            sim.definir("g1", r().comEixo(EixoGamepad.ESQ_Y, 1f));      // mudar de linha continua rompendo (3A)
-            ticks(1);
-            assertEquals(MotivoEncerramentoInteracao.MOVIMENTO, s().getUltimoMotivoEncerramento());
+            // 5N (pedido): antes, mudar de linha rompia (3A: MOVIMENTO). Agora o aplicador conduz a
+            // dupla para a outra linha junto, e a pegada continua (arrasto multidirecional).
+            sim.definir("g1", r().comEixo(EixoGamepad.ESQ_Y, 1f));
+            ticks(25);
+            assertTrue(s().isInteracaoEstabelecida(), "5N: mudanca conjunta de linha nao rompe");
+            assertEquals(b.getLinhaAtual(), p.getLinhaAtual(), "5N: os dois na mesma linha");
+            assertTrue(b.getLinhaAtual() > lb, "5N: a dupla foi para a frente");
         });
     }
 

@@ -58,7 +58,7 @@ public enum AcaoJogador {
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "T", "PAGE_DOWN"),
     REFORCAR_PEGADA("Reforco", "Reforçar a pegada", "reforçar",
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "Y", "PAGE_UP"),
-    MODO_DESLOCAMENTO_CONTROLADO("Controle", "Modo controle (+ esquerda/direita = arrastar)", "arrastar",
+    MODO_DESLOCAMENTO_CONTROLADO("Controle", "Modo controle (+ direções = conduzir a dupla)", "arrastar",
             GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "SHIFT", "DELETE"),
     // Entrega 5L: as outras tres pegadas (RS -> / ↓ / <- no gamepad, livre).
     PEGADA_2("Pegada2", "Pegada cruzada (PEGADA 2)", "cruzada",

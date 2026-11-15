@@ -429,3 +429,60 @@ motor considera a pegada estabelecida.
   continua. Para longe do oponente roda 0-1-2-3; para perto, ao contrário.
 - Física, velocidade e fôlego iguais (testado nos dois modos). Preso numa pegada, não rasteja (5L-A).
 - O `movimento_chao` autoral continua no perfil e volta com F6.
+
+# Entrega 5N — Reações do receptor e arrasto multidirecional
+
+## Reação COMPARTILHADA do receptor (por técnica, não por personagem)
+
+Cada técnica de pegada tem UMA reação de quem recebe, em
+`/conteudo/animacoes/receptor/receptor_<idTecnica>.json` (ex.: `receptor_pegada_1.json`).
+Formato: o mesmo das animações individuais (`ANIMACAO_INDIVIDUAL_IRMAOS_MIAU`, esquema 1), com
+`"uso": "RECEPTOR"`, `"estado": "PEGADA_ESTABELECIDA"` e `"rig": "miau_v1"`. O JSON v2 do MiauStudio
+não mudou e nenhum projeto autoral foi tocado.
+
+Contrato dos 4 quadros (30 valores; os 4 primeiros são ignorados). Os valores são **deltas** somados à
+pose que o motor deixou no receptor, em espaço **local** (+X = para onde ele olha, −Y = para cima;
+braço `Esq` = o da frente do tronco, `Dir` = o braço esticado à frente; `rotPeito` positivo = inclina
+para a frente):
+
+| Quadro | Uso |
+|---|---|
+| 0 CONTATO | sobe a partir de 40% da entrada do aplicador e chega no pico em 70% |
+| 1 SUSTENTADA_A / 2 SUSTENTADA_B | pose de controle; alterna devagar entre as duas (período = 2 × `duracaoQuadroMs`) enquanto a pegada existir |
+| 3 LIBERACAO | recuo curto quando a pegada acaba (a liberação parte da última pose sustentada, sem salto) |
+
+| Técnica | Reação |
+|---|---|
+| PEGADA_1 gola e manga | o braço da manga é puxado à frente/abaixo; a mão livre segura o punho que pega a gola; tronco levemente puxado |
+| PEGADA_2 cruzada | cintura gira, tronco inclina; o braço da frente é levado para baixo e atravessado; o outro recua; o pescoço mantém a cabeça orientada |
+| PEGADA_3 duas mangas | os dois braços à frente e abaixo (cotovelos acompanhando); quadril recua |
+| PEGADA_4 gola e nuca | cabeça e tronco inclinam (postura quebrada, sem exagero); braços sobem em moldura |
+
+**Adaptação** (`AdaptadorRigReacao`): usa a reação se `IrmaoMiau.getRigAnimacao()` for o rig dela
+(hoje `miau_v1` para todos); fatores de proporção opcionais (tronco/braços/pernas); deltas limitados a
+±24; de joelhos as pernas ficam com o adaptador de joelhos do motor (joelhos no tatame). Rig
+incompatível = fallback: a pose do motor fica como está.
+
+**Personagem futuro (Miau Judô, Sambo, Karatê...)**: se usar o esqueleto de 30 valores, não precisa de
+nenhum arquivo de receptor — as quatro reações já servem. Se os membros forem mais longos/curtos:
+`AdaptadorRigReacao.registrarProporcao(MiauJudo.class, new Proporcao(1.0, 1.2, 1.0))`. Se o esqueleto
+for outro, sobrescreve `getRigAnimacao()` e cria reações para o novo rig (ou fica no fallback). Uma
+técnica nova só precisa de `receptor_<id>.json`.
+
+**Prioridade na pegada** (o idle/taunt nunca substitui o receptor agarrado: a pose de combate tem
+prioridade no desenho e segurar/ser segurado conta como atividade): transição/estados especiais →
+liberação/rompimento (`ReacoesDefesa`) → desequilíbrio → força/ROMPER resistido/reforço → passos do
+arrasto e direção do puxão → pose sustentada → idle/taunt só livre.
+
+**F6**: no modo autoral (comparação), as camadas da 5N ficam desligadas e o receptor volta à pose do motor
+(como até a 5M); no experimental (padrão do jogo) as reações aparecem.
+
+## Arrasto multidirecional
+
+Com o modo controle (SHIFT / DELETE; LB no Clássico; analógico no Contextual), o aplicador conduz a dupla
+para os lados, para a frente/fundo (linhas 1–5) e nas diagonais. Uma operação só: os dois andam o mesmo
+tanto ou nenhum anda naquele eixo; na diagonal cada eixo anda 1/√2 (não fica mais rápido); na borda o eixo
+livre continua (desliza). Fôlego: só o aplicador paga `ARRASTO_POR_PIXEL` × distância realmente andada
+(bloqueado não custa; nunca negativo). As referências da pegada andam junto (X, Y e linha), então a
+mudança conjunta de linha não rompe. Passos dos dois pela distância andada em X e em profundidade; o
+receptor inclina conforme é puxado/empurrado e vira a cabeça ao mudar de linha.

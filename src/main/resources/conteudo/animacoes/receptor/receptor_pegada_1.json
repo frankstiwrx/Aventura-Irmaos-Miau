@@ -1,0 +1,27 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "receptor.pegada_1",
+  "estado": "PEGADA_ESTABELECIDA",
+  "rig": "miau_v1",
+  "uso": "RECEPTOR",
+  "loop": true,
+  "duracaoQuadroMs": 1200,
+  "sequencia": [1, 2],
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "5N (Claude): reacao COMPARTILHADA do receptor da PEGADA_1 (Gola e manga): o ombro da manga controlada acompanha a mao do aplicador; a mao livre segura o punho que pega a gola; tronco levemente puxado. Quadros = DELTAS sobre a pose do motor: 0 CONTATO, 1 e 2 SUSTENTADA (respiracao), 3 LIBERACAO.",
+  "quadros": [
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 1, 0, 0, 7, 0, 2, 0, 0, 4, 0, 8, -2, 4, 3, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 2, 1, 0, 5, 0, -3, 1, 0, 8, -2, 16, -6, 6, 6, 10, 12, 3, 0, 0, 0, 3, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 2, 1, 0, 6, 0, -2, 1, 0, 8, -2, 17, -6, 6, 7, 10, 13, 3, 0, 0, 0, 3, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, -2, 0, 0, -6, 0, -3, 0, 0, 0, 0, -6, -4, -4, 0, -8, -4, 0, 0, 0, 0, 0, 0, 0, 0]
+    }
+  ]
+}

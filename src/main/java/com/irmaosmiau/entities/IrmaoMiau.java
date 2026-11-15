@@ -1528,6 +1528,44 @@ public void alternarDeitado() {
     }
 
     // =============================
+    // 5N: RIG SEMANTICO, PROFUNDIDADE CONJUNTA E ATIVIDADE NA PEGADA
+    // =============================
+    /** Rig semantico do lutador (as reacoes compartilhadas do receptor usam o mesmo). */
+    public static final String RIG_PADRAO = "miau_v1";
+
+    /**
+     * 5N: o esqueleto de 30 valores do MiauStudio. Um personagem futuro com
+     * outro esqueleto devolve outro nome e as reacoes compartilhadas caem no
+     * fallback (a pose do motor fica como esta).
+     */
+    public String getRigAnimacao() {
+        return RIG_PADRAO;
+    }
+
+    /** 5N: cabe na faixa das cinco linhas se a profundidade mudar dy px? */
+    public boolean podeDeslocarProfundidade(int dy) {
+        int novo = yBase + dy;
+        return novo >= yLinha1 && novo <= yLinha1 + (TOTAL_LINHAS - 1) * ESPACO_ENTRE_LINHAS;
+    }
+
+    /**
+     * 5N: o arrasto da dupla muda a profundidade (como moverVertical, mas
+     * inteiro e sem custo proprio: quem paga e o aplicador, no motor).
+     * Quem chama confere {@link #podeDeslocarProfundidade(int)} antes.
+     */
+    public void deslocarProfundidadeFisicamente(int dy) {
+        yBase += dy;
+        y += dy;
+        restoMovimentoY = 0;
+        linhaAtual = (int) Math.round((double) (yBase - yLinha1) / ESPACO_ENTRE_LINHAS);
+    }
+
+    /** 5N: segurar ou ser segurado conta como atividade (o taunt nao aparece logo depois). */
+    public void registrarAtividadeDeCombate() {
+        ultimaAtividade = System.currentTimeMillis();
+    }
+
+    // =============================
     // 5M.3: POSE DE APRESENTACAO (MENUS)
     // =============================
     private boolean poseDeApresentacao;

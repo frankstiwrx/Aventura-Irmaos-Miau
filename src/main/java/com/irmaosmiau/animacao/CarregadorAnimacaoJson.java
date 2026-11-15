@@ -61,6 +61,35 @@ public final class CarregadorAnimacaoJson {
 
     /** @throws ConteudoInvalidoException com o caminho do problema */
     public static AnimacaoIndividual ler(String json, String origemArquivo) {
+        return ler(json, origemArquivo, USO_INDIVIDUAL);
+    }
+
+    /** Entrega 5N: "uso" das reacoes compartilhadas do receptor (por tecnica, rig semantico). */
+    public static final String USO_RECEPTOR = "RECEPTOR";
+    private static final String USO_INDIVIDUAL = "INDIVIDUAL";
+
+    /**
+     * Entrega 5N: le uma REACAO DO RECEPTOR (mesmo formato, "uso": "RECEPTOR",
+     * "estado": "PEGADA_ESTABELECIDA"). Os quadros sao DELTAS sobre a pose que
+     * o motor deixou no receptor; contrato dos quadros em ReacaoReceptor.
+     */
+    public static AnimacaoIndividual lerReacaoReceptor(String json, String origemArquivo) {
+        return ler(json, origemArquivo, USO_RECEPTOR);
+    }
+
+    /** Entrega 5N: reacao do receptor pelo classpath (NetBeans e JAR). */
+    public static AnimacaoIndividual reacaoReceptorDoRecurso(String caminho) {
+        try (InputStream in = CarregadorAnimacaoJson.class.getResourceAsStream(caminho)) {
+            if (in == null) {
+                throw new ConteudoInvalidoException("Reacao do receptor nao encontrada: " + caminho);
+            }
+            return lerReacaoReceptor(new String(in.readAllBytes(), StandardCharsets.UTF_8), caminho);
+        } catch (IOException ex) {
+            throw new ConteudoInvalidoException("Falha ao ler " + caminho + ": " + ex.getMessage(), ex);
+        }
+    }
+
+    private static AnimacaoIndividual ler(String json, String origemArquivo, String usoEsperado) {
         ObjetoJson doc = ObjetoJson.ler(json, origemArquivo);
         for (String chave : doc.chaves()) {
             if (!CAMPOS.contains(chave)) {
@@ -74,9 +103,11 @@ public final class CarregadorAnimacaoJson {
         if (versao < 1 || versao > VERSAO_ESQUEMA) {
             throw doc.erro("versaoEsquema", "versao " + versao + " nao suportada (ate " + VERSAO_ESQUEMA + ")");
         }
-        String uso = doc.textoOpcional("uso", "INDIVIDUAL");
-        if (!uso.equals("INDIVIDUAL")) {
-            throw doc.erro("uso", "este formato e so para animacoes individuais (conjuntas: MiauStudio)");
+        String uso = doc.textoOpcional("uso", USO_INDIVIDUAL);
+        if (!uso.equals(usoEsperado)) {
+            throw doc.erro("uso", usoEsperado.equals(USO_INDIVIDUAL)
+                    ? "este formato e so para animacoes individuais (conjuntas: MiauStudio)"
+                    : "esperado \"" + usoEsperado + "\"");
         }
         String rig = doc.texto("rig");
         if (!RIGS.contains(rig)) {
@@ -88,7 +119,10 @@ public final class CarregadorAnimacaoJson {
         } catch (IllegalArgumentException ex) {
             throw doc.erro("estado", "estado visual desconhecido");
         }
-        if (estado.isConjunto()) {
+        if (usoEsperado.equals(USO_RECEPTOR) && estado != EstadoVisual.PEGADA_ESTABELECIDA) {
+            throw doc.erro("estado", "reacao do receptor usa PEGADA_ESTABELECIDA");
+        }
+        if (usoEsperado.equals(USO_INDIVIDUAL) && estado.isConjunto()) {
             throw doc.erro("estado", "estado conjunto em animacao individual");
         }
         List<int[]> quadros = new ArrayList<>();

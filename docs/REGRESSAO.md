@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 765, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 810, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 3 testes): manifesto, DLLs do GLFW
@@ -347,6 +347,17 @@ Gamepad (Xbox):
 - [ ] Linhas MAPA / PARCEIRO / INÍCIO; sem TEMPO nem DIFICULDADE; TREINAR! não espera o J2
 - [ ] O treino abre no mapa e no início escolhidos; F5, pausa, TENTAR NOVAMENTE e SELECIONAR PERSONAGENS (volta à grade de treino)
 - [ ] Configurações, Controles e Personagens personalizados: título em letreiro amarelo, textos sem corte, acentos ok
+
+### Receptor e arrasto multidirecional (Entrega 5N)
+
+- [ ] As 4 pegadas, Branco aplicando e Preto aplicando: o receptor muda de pose de acordo com a técnica (P1 braço da manga, P2 giro, P3 dois braços, P4 cabeça/tronco)
+- [ ] A reação começa quando a mão chega (não antes) e fica enquanto a pegada existir; nada de guarda nem taunt por cima
+- [ ] Branco × Branco e Preto × Preto; J1 e J2 aplicando; dos dois lados da tela; em pé e de joelhos (ninguém levanta)
+- [ ] Resistir, ROMPER resistido, reforço e desequilíbrio aparecem no corpo; ROMPER com sucesso e soltar = liberação suave
+- [ ] SHIFT + ↑/↓ (e diagonais) leva a dupla de linha junta; a pegada continua; linha 1 e 5 bloqueiam
+- [ ] Bordas esquerda/direita: ninguém passa, ninguém fica para trás; na diagonal desliza pela borda
+- [ ] Xbox Contextual: analógico em qualquer direção conduz; Clássico: LB + analógico
+- [ ] F3: "RECEPTOR: J2 ... SUSTENTADA" e "ARRASTO: FRENTE OK / BLOQUEADO"; F6 volta ao autoral (receptor parado como antes)
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

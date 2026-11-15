@@ -632,28 +632,124 @@ public final class SistemaCombate {
      */
     public ResultadoAcaoTecnica deslocarPegadaControlada(IrmaoMiau aplicador, int direcao,
             int xMinimo, int xMaximo) {
+        return deslocarPegadaControlada(aplicador, direcao, 0, xMinimo, xMaximo);
+    }
+
+    // =====================================================
+    // ENTREGA 5N: ARRASTO MULTIDIRECIONAL
+    // =====================================================
+    /** Passo diagonal por eixo (1/raiz de 2): na diagonal a dupla nao anda mais rapido. */
+    public static final double PASSO_DIAGONAL = Math.sqrt(0.5);
+
+    /** O que o ultimo pedido de arrasto fez (HUD tecnico e testes). */
+    public record UltimoArrasto(int pedidoX, int pedidoY, int dx, int dy, boolean bloqueadoX, boolean bloqueadoY,
+            ResultadoAcaoTecnica resultado, long tick) {
+    }
+
+    /** Relogio logico do motor (ticks de atualizar()). */
+    public long getTick() {
+        return tick;
+    }
+
+    private double restoArrastoX;
+    private double restoArrastoY;
+    private UltimoArrasto ultimoArrasto;
+
+    public UltimoArrasto getUltimoArrasto() {
+        return ultimoArrasto;
+    }
+
+    /**
+     * Entrega 5N: o APLICADOR conduz a dupla em X (-1/+1) e/ou em
+     * profundidade (-1 = para a linha 1, +1 = para a linha 5), como UMA
+     * operacao: os dois andam o mesmo tanto ou nenhum anda naquele eixo.
+     *
+     * - Velocidade: {@link #VELOCIDADE_DESLOCAMENTO_CONJUNTO} px/tick em
+     *   qualquer direcao; na diagonal cada eixo anda {@link #PASSO_DIAGONAL}
+     *   (resto acumulado), entao combinar eixos nao e mais rapido.
+     * - Limites: X dentro de [xMinimo, xMaximo] para os dois; profundidade
+     *   dentro das cinco linhas para os dois. Um eixo bloqueado nao impede o
+     *   outro (deslizar pela borda); os dois bloqueados = LIMITE_ARENA, sem
+     *   movimento e sem custo.
+     * - Folego: so o aplicador paga, pela distancia que a dupla REALMENTE andou
+     *   (mesma taxa do arrasto horizontal; nunca negativo).
+     * - Pegada: as referencias da politica andam junto (X, profundidade e
+     *   linha), entao a mudanca conjunta e legitima nao rompe; distancia,
+     *   orientacao e lados nao mudam.
+     */
+    public ResultadoAcaoTecnica deslocarPegadaControlada(IrmaoMiau aplicador, int direcaoX, int direcaoY,
+            int xMinimo, int xMaximo) {
         validarDoCombate(aplicador);
-        if (!isInteracaoEstabelecida() || aplicador != aplicadorInteracao || direcao == 0) {
+        int sx = Integer.signum(direcaoX);
+        int sy = Integer.signum(direcaoY);
+        if (!isInteracaoEstabelecida() || aplicador != aplicadorInteracao || (sx == 0 && sy == 0)) {
             return ResultadoAcaoTecnica.SEM_PEGADA;
         }
-        int dx = Integer.signum(direcao) * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
         IrmaoMiau receptor = receptorInteracao;
-        int menor = Math.min(aplicador.getX(), receptor.getX()) + dx;
-        int maior = Math.max(aplicador.getX(), receptor.getX()) + dx;
-        if (menor < xMinimo || maior > xMaximo) {
-            return ResultadoAcaoTecnica.LIMITE_ARENA;
+        int dx;
+        int dy;
+        if (sx != 0 && sy != 0) {
+            restoArrastoX += sx * PASSO_DIAGONAL * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
+            restoArrastoY += sy * PASSO_DIAGONAL * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
+            dx = (int) restoArrastoX;
+            dy = (int) restoArrastoY;
+            restoArrastoX -= dx;
+            restoArrastoY -= dy;
+        } else {
+            restoArrastoX = 0;
+            restoArrastoY = 0;
+            dx = sx * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
+            dy = sy * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
+        }
+        // Eixo X: os dois cabem?
+        if (dx != 0) {
+            int menor = Math.min(aplicador.getX(), receptor.getX()) + dx;
+            int maior = Math.max(aplicador.getX(), receptor.getX()) + dx;
+            if (menor < xMinimo || maior > xMaximo) {
+                dx = 0;
+                restoArrastoX = 0;
+            }
+        }
+        // Profundidade: os dois cabem nas cinco linhas?
+        if (dy != 0 && !(aplicador.podeDeslocarProfundidade(dy) && receptor.podeDeslocarProfundidade(dy))) {
+            dy = 0;
+            restoArrastoY = 0;
+        }
+        boolean xPossivel = sx != 0 && !bordaX(aplicador, receptor, sx, xMinimo, xMaximo);
+        boolean yPossivel = sy != 0 && aplicador.podeDeslocarProfundidade(sy)
+                && receptor.podeDeslocarProfundidade(sy);
+        if (dx == 0 && dy == 0) {
+            // Nada andou neste tick: bloqueado de verdade (borda) ou so acumulando a diagonal.
+            ResultadoAcaoTecnica r = xPossivel || yPossivel ? ResultadoAcaoTecnica.SUCESSO
+                    : ResultadoAcaoTecnica.LIMITE_ARENA;
+            ultimoArrasto = new UltimoArrasto(sx, sy, 0, 0, sx != 0 && !xPossivel, sy != 0 && !yPossivel, r, tick);
+            if (r == ResultadoAcaoTecnica.SUCESSO) {
+                deslocouNesteTick = true;
+            }
+            return r;
         }
         aplicador.deslocarFisicamente(dx);
         receptor.deslocarFisicamente(dx);
-        // Entrega 5K: so o aplicador paga o esforco, pelo deslocamento real da dupla.
+        if (dy != 0) {
+            aplicador.deslocarProfundidadeFisicamente(dy);
+            receptor.deslocarProfundidadeFisicamente(dy);
+        }
+        // So o aplicador paga, pela distancia real (a diagonal custa o que andou, nunca de graca).
         aplicador.gastarFolegoEsforco(
-                com.irmaosmiau.entities.CustosFolego.ARRASTO_POR_PIXEL * Math.abs(dx), "arrasto");
-        // A politica compara com estes retratos: deslocar a referencia junto
-        // evita romper por MOVIMENTO, sem esconder outras mudancas do corpo.
-        referenciaAplicador = referenciaAplicador.transladado(dx);
-        referenciaReceptor = referenciaReceptor.transladado(dx);
+                com.irmaosmiau.entities.CustosFolego.ARRASTO_POR_PIXEL * Math.hypot(dx, dy), "arrasto");
+        referenciaAplicador = referenciaAplicador.transladado(dx, dy, aplicador.getLinhaAtual());
+        referenciaReceptor = referenciaReceptor.transladado(dx, dy, receptor.getLinhaAtual());
         deslocouNesteTick = true;
+        ultimoArrasto = new UltimoArrasto(sx, sy, dx, dy, sx != 0 && !xPossivel, sy != 0 && !yPossivel,
+                ResultadoAcaoTecnica.SUCESSO, tick);
         return ResultadoAcaoTecnica.SUCESSO;
+    }
+
+    /** A borda impede andar sx em X? */
+    private static boolean bordaX(IrmaoMiau a, IrmaoMiau b, int sx, int xMinimo, int xMaximo) {
+        int menor = Math.min(a.getX(), b.getX()) + sx;
+        int maior = Math.max(a.getX(), b.getX()) + sx;
+        return menor < xMinimo || maior > xMaximo;
     }
 
     // =====================================================

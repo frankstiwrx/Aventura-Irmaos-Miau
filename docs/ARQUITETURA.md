@@ -373,3 +373,18 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
   fora do fluxo.
 - `EstiloTelas` usa a tipografia de `ArteMenus`: título em letreiro (Arial Bold 24, amarelo com contorno),
   rótulos `ArteMenus.TEXTO`, dicas `ArteMenus.PEQUENO`, cabeçalhos de grupo `SUBTITULO` (amarelo).
+
+## Receptor e arrasto multidirecional (Entrega 5N)
+
+- `animacao.ReacaoReceptor` (contrato CONTATO / SUSTENTADA A-B / LIBERACAO), `BibliotecaReacoesReceptor`
+  (técnica → reação, por convenção de arquivo), `AdaptadorRigReacao` (compatibilidade por
+  `IrmaoMiau.getRigAnimacao()`, proporção, postura, limite). `CarregadorAnimacaoJson.lerReacaoReceptor`
+  aceita `"uso": "RECEPTOR"` (extensão mínima do formato individual).
+- `CamadaPoseCombate` soma a reação do receptor (entrada e sustentada), a direção do puxão e o reforço à
+  pose do motor (só no modo EXPERIMENTAL). `ReacoesDefesa` ganhou `RECEPTOR_LIBERADO` e a liberação a partir
+  do último delta (também no rompimento).
+- `SistemaCombate.deslocarPegadaControlada(aplicador, dirX, dirY, xMin, xMax)` (a versão só com X
+  continua), `UltimoArrasto` para o F3; `IrmaoMiau.podeDeslocarProfundidade` / `deslocarProfundidadeFisicamente`;
+  `EstadoCorporalObservado.transladado(dx, dy, linha)`.
+- `GamePanel`: modo controle + cima/baixo conduz (o aplicador não anda sozinho em profundidade);
+  `MapaGamepad` (Contextual): o arrasto automático vale para as quatro direções.

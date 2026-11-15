@@ -890,7 +890,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
          * Sem SHIFT, A/D continua sendo caminhada normal (e rompe a pegada).
          */
         boolean horizontal = input.isEsquerda() ^ input.isDireita();
-        boolean conjunto = horizontal
+        // 5N: com o modo controle, cima/baixo (e as diagonais) tambem conduzem a dupla.
+        boolean vertical = input.isCima() ^ input.isBaixo();
+        boolean conjunto = (horizontal || vertical)
                 && input.isControle()
                 && sistemaCombate != null
                 && sistemaCombate.isInteracaoEstabelecida()
@@ -899,7 +901,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (conjunto) {
             com.irmaosmiau.combate.ResultadoAcaoTecnica r = sistemaCombate.deslocarPegadaControlada(
                     jogadorBranco,
-                    input.isDireita() ? 1 : -1,
+                    horizontal ? (input.isDireita() ? 1 : -1) : 0,
+                    vertical ? (input.isBaixo() ? 1 : -1) : 0,
                     LIMITE_ESQUERDO_ARENA,
                     LIMITE_DIREITO_ARENA);
             if (!deslocandoConjuntoJ1) {
@@ -917,8 +920,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 jogadorBranco,
                 !preso && !conjunto && input.isEsquerda(),
                 !preso && !conjunto && input.isDireita(),
-                !preso && input.isCima(),
-                !preso && input.isBaixo(),
+                !preso && !conjunto && input.isCima(),
+                !preso && !conjunto && input.isBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -1036,7 +1039,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
          * estabelecida); no Contextual o modo vem do analogico (5H).
          */
         boolean horizontal = input.isPretoEsquerda() ^ input.isPretoDireita();
-        boolean conjunto = horizontal
+        boolean vertical = input.isPretoCima() ^ input.isPretoBaixo();     // 5N
+        boolean conjunto = (horizontal || vertical)
                 && input.isAtiva(SlotJogador.JOGADOR_2, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO)
                 && sistemaCombate != null
                 && sistemaCombate.isInteracaoEstabelecida()
@@ -1045,7 +1049,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (conjunto) {
             com.irmaosmiau.combate.ResultadoAcaoTecnica r = sistemaCombate.deslocarPegadaControlada(
                     jogadorPreto,
-                    input.isPretoDireita() ? 1 : -1,
+                    horizontal ? (input.isPretoDireita() ? 1 : -1) : 0,
+                    vertical ? (input.isPretoBaixo() ? 1 : -1) : 0,
                     LIMITE_ESQUERDO_ARENA,
                     LIMITE_DIREITO_ARENA);
             if (!deslocandoConjuntoJ2) {
@@ -1063,8 +1068,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 jogadorPreto,
                 !preso && !conjunto && input.isPretoEsquerda(),
                 !preso && !conjunto && input.isPretoDireita(),
-                !preso && input.isPretoCima(),
-                !preso && input.isPretoBaixo(),
+                !preso && !conjunto && input.isPretoCima(),
+                !preso && !conjunto && input.isPretoBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -2649,20 +2654,25 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             l.add("APLICADOR: - | RECEPTOR: - | sem tecnica ativa");
         }
         com.irmaosmiau.combate.SelecaoAnimacaoConjunta sel = sistemaCombate.getSelecaoAnimacao();
-        l.add("ANIMACAO: " + (sel == null ? "-" : sel.descricao())
-                + (apl != null && apl.isAjoelhado() ? " + fallback ajoelhado" : ""));
         com.irmaosmiau.animacao.CamadaPoseCombate c = animador.getCamada();
-        String arrasto = "-";
+        // 5N: o que o receptor mostra (reacao compartilhada da tecnica) e como a ultima pegada acabou.
+        String receptor = rec == null || !sistemaCombate.estaEmInteracao() ? "-"
+                : rotuloSlot(rec) + " " + rec.getEstadoCorporal() + " " + c.faseReceptor(rec);
+        l.add("ANIMACAO: " + (sel == null ? "-" : sel.descricao())
+                + (apl != null && apl.isAjoelhado() ? " + fallback ajoelhado" : "")
+                + " | RECEPTOR: " + receptor);
+        String passos = "-";
         String deseq = "-";
         for (IrmaoMiau x : List.of(jogadorBranco, jogadorPreto)) {
             if (c.faseArrasto(x) >= 0) {
-                arrasto = "passos (fallback) fase " + c.faseArrasto(x);
+                passos = "fase " + c.faseArrasto(x);
             }
             if (c.intensidadeReacao(x) > 0) {
-                deseq = rotuloSlot(x) + " reagindo (fallback)";
+                deseq = rotuloSlot(x) + " reagindo";
             }
         }
-        l.add("ARRASTO: " + arrasto + " | DESEQUILIBRIO: " + deseq);
+        l.add("ARRASTO: " + descricaoArrasto() + " | passos " + passos + " | LINHAS J1 " + (jogadorBranco.getLinhaAtual() + 1)
+                + " J2 " + (jogadorPreto.getLinhaAtual() + 1) + " | DESEQ: " + deseq);
         // Entrega 5K: modo de comparacao, folego, custo e consequencia do desequilibrio.
         l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual().rotulo());
         l.add("FOLEGO J1: " + folego(jogadorBranco) + " | J2: " + folego(jogadorPreto));
@@ -2696,6 +2706,20 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     + String.format(" | bonus +%.0f%%", 100 * com.irmaosmiau.combate.SistemaCombate.BONUS_INSISTENCIA * falhas));
         }
         return l;
+    }
+
+    /** 5N: ultimo pedido de arrasto (direcao, andou ou bloqueou) em poucos caracteres. */
+    private String descricaoArrasto() {
+        com.irmaosmiau.combate.SistemaCombate.UltimoArrasto a = sistemaCombate.getUltimoArrasto();
+        if (a == null || sistemaCombate.getTick() - a.tick() > 30) {
+            return "-";
+        }
+        String dir = (a.pedidoX() < 0 ? "ESQ" : a.pedidoX() > 0 ? "DIR" : "")
+                + (a.pedidoX() != 0 && a.pedidoY() != 0 ? "+" : "")
+                + (a.pedidoY() < 0 ? "FUNDO" : a.pedidoY() > 0 ? "FRENTE" : "");
+        String r = a.resultado() == com.irmaosmiau.combate.ResultadoAcaoTecnica.LIMITE_ARENA ? "BLOQUEADO"
+                : a.bloqueadoX() ? "OK (BORDA X)" : a.bloqueadoY() ? "OK (BORDA LINHA)" : "OK";
+        return dir + " " + r;
     }
 
     private String descricaoCiclo(SlotJogador slot, IrmaoMiau x) {
@@ -2825,6 +2849,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     void atualizarUmTickParaTestes() {
         atualizar();
+    }
+
+    /** 5N: relogio logico do GamePanel (o mesmo das animacoes). */
+    long tickParaTestes() {
+        return tick;
     }
 
     /** 5M: fim de jogo e motivo (para testes). */

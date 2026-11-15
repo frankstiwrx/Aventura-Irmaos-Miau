@@ -897,3 +897,7 @@ MAPA / TEMPO / LUTAR e ←/→ mudam o valor; só o J1 configura a partida.
 
 Treino (5M.3): a mesma grade, com um cursor só: W A S D ou setas, ESPAÇO/H/ENTER/END confirmam, Q ou
 BACKSPACE voltam, e qualquer gamepad conectado guia o J1. ↑/↓ escolhem MAPA / PARCEIRO / INÍCIO / TREINAR!.
+
+Arrasto multidirecional (5N): com a pegada estabelecida, o aplicador segura o modo controle (J1 SHIFT, J2
+DELETE; gamepad Clássico LB; Contextual automático pelo analógico) e usa as quatro direções ou as diagonais:
+a dupla anda junta para os lados e entre as linhas 1–5.

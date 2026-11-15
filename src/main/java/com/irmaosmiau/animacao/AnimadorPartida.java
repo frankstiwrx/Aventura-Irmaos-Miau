@@ -57,7 +57,8 @@ public final class AnimadorPartida {
     // Entrega 5K: transicoes de postura (procedurais); deitado = quadro 1 do JSON do chao.
     private final TransicoesPostura transicoes = new TransicoesPostura(this::poseDeitado);
     // Entrega 5L: reacoes curtas a eventos defensivos (fora da pegada).
-    private final ReacoesDefesa reacoes = new ReacoesDefesa(transicoes);
+    // 5N: a liberacao do receptor comeca da ultima reacao dele (camada).
+    private final ReacoesDefesa reacoes = new ReacoesDefesa(transicoes, camada::snapshotReceptor);
     // Entrega 5L: fuga de quadril: quadro pela distancia andada e sentido (frente/tras).
     private final Map<IrmaoMiau, double[]> trilhaChao = new IdentityHashMap<>();
     /** Pixels andados por quadro da fuga de quadril. */

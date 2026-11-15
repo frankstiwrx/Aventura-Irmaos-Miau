@@ -388,11 +388,14 @@ public final class MapaGamepad {
         ativas.addAll(analogicoAtual);
         if (c.esquema() == EsquemaGamepad.CONTEXTUAL && slot.usa(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO)
                 && (analogicoAtual.contains(AcaoJogador.MOVER_ESQUERDA)
-                        || analogicoAtual.contains(AcaoJogador.MOVER_DIREITA))) {
+                        || analogicoAtual.contains(AcaoJogador.MOVER_DIREITA)
+                        || analogicoAtual.contains(AcaoJogador.MOVER_CIMA)
+                        || analogicoAtual.contains(AcaoJogador.MOVER_BAIXO))) {
             /*
-             * 5H: arrasto AUTOMATICO. Andar para os lados com o analogico vale como
-             * "modo controle"; o GamePanel so arrasta se este lutador for o APLICADOR
-             * de uma pegada estabelecida (regra da 5B). Fora disso nada muda.
+             * 5H: arrasto AUTOMATICO. Andar com o analogico vale como "modo controle";
+             * o GamePanel so arrasta se este lutador for o APLICADOR de uma pegada
+             * estabelecida (regra da 5B). Fora disso nada muda. 5N: tambem para
+             * frente/fundo e nas diagonais (a dupla muda de linha junta).
              */
             ativas.add(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO);
         }

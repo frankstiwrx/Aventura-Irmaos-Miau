@@ -85,6 +85,12 @@ public final class EstadoCorporalObservado {
                 ajoelhado);
     }
 
+    /** 5N: o mesmo retrato com a dupla deslocada em X e em profundidade (arrasto multidirecional). */
+    public EstadoCorporalObservado transladado(int dx, int dy, int novaLinha) {
+        return new EstadoCorporalObservado(x + dx, y + dy, novaLinha, pulando, agachado, deitado, rolando,
+                fazendoSprawl, ajoelhado);
+    }
+
     public int getX() {
         return x;
     }
