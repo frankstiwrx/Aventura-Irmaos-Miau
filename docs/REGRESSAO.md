@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 661, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 688, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -297,6 +297,20 @@ Gamepad (Xbox):
 - [ ] Desequilíbrio com sucesso: F3 mostra "DESEQUILIBRADO"; receptor lento por ~2 s; reação visual
 - [ ] F6: "EXPERIMENTAL"; nova pegada em pé e de joelhos, Branco e Preto aplicando, dos dois lados; F6 volta à autoral
 - [ ] Pausar com clique pendente / com o A segurado: nada muda ao voltar
+
+### Defesa e quatro pegadas (Entrega 5L)
+
+- [ ] Pegada estabelecida: o receptor anda, muda de linha, pula, rola, agacha, faz sprawl, usa L3 — nada solta, ele não sai do lugar
+- [ ] Receptor forçando: F3 mostra "RECEPTOR FORCANDO"; a firmeza cai mais rápido; o aplicador reforça; o receptor perde fôlego
+- [ ] ROMPER (↓ no RS ou U/5/B): resistido = puxão e a pegada fica; com firmeza baixa ou aplicador cansado, rompe (recuo)
+- [ ] De joelhos, J2 aperta agachar e logo depois J1 tenta pegar: "EVITADA"; segurando agachar por muito tempo antes, a pegada entra
+- [ ] RS ↑ → ↓ ← (livre) nos dois esquemas: Gola e manga / Cruzada / Duas mangas / Gola e nuca (F3: "PEGADA: …")
+- [ ] De joelhos no início: 2 e 4 só depois de chegar mais perto
+- [ ] Teclado: 6/7/8 (J1) e NUM 7/8/9 (J2)
+- [ ] Com pegada, o RS volta a reforçar/desequilibrar/romper (Contextual); no Clássico o RS não faz nada
+- [ ] As 4 pegadas com Branco e Preto aplicando, dos dois lados, Branco×Branco e Preto×Preto, em pé e de joelhos
+- [ ] Deitado rastejando: fuga de quadril (joelhos dobram, quadril sai); parar volta ao deitado; F6 volta ao movimento antigo
+- [ ] F6: PEGADA_1 autoral ↔ proposta; o jogo abre na proposta
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

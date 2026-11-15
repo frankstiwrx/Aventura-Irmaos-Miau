@@ -204,6 +204,15 @@ public final class SessaoDispositivos {
         return f.consumirComandoContextual();
     }
 
+    /** Entrega 5L: RS do esquema CLASSICO (vazio fora do gamepad ou no Contextual). */
+    public Optional<com.irmaosmiau.controles.DirecaoTecnica> consumirPegadaClassica(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        if (f == null || !usaGamepadAgora(slot)) {
+            return Optional.empty();
+        }
+        return f.consumirPegadaClassica();
+    }
+
     public CamadaComando camadaAtiva(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
         return f == null ? CamadaComando.UM : f.camadaAtiva();

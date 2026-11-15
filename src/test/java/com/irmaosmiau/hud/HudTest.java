@@ -100,7 +100,8 @@ class HudTest {
         assertEquals("Pegada 1: aguarde a animação", f.getMensagem(31));
 
         f.registrarTentativa(s2, perto, p, "pegada_2", s2.tentarAcao(perto, p, "pegada_2"), 32);
-        assertEquals("Pegada 2: ainda não disponível", f.getMensagem(32));
+        // 5L (pedido): a PEGADA_2 ficou jogavel (antes "ainda nao disponivel"); aqui a 1 ainda esta entrando.
+        assertEquals("Pegada 2: aguarde a animação", f.getMensagem(32));
 
         // Mensagem some depois de ~1,6 s
         assertNull(f.getMensagem(32 + FeedbackCombate.DURACAO_MENSAGEM_TICKS));

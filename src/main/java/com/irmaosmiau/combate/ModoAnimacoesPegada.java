@@ -22,8 +22,24 @@ public enum ModoAnimacoesPegada {
 
     private static volatile ModoAnimacoesPegada atual = inicial();
 
+    /* Motor/testes: AUTORAL, como desde a 5K (salvo a propriedade). */
     private static ModoAnimacoesPegada inicial() {
         return "experimental".equalsIgnoreCase(System.getProperty(PROPRIEDADE, "")) ? EXPERIMENTAL : AUTORAL;
+    }
+
+    /**
+     * Entrega 5L: o modo com que o JOGO comeca (o Main aplica ao abrir). As
+     * animacoes feitas pelo Claude foram aprovadas como direcao visual, entao
+     * a PROPOSTA e o padrao; as autorais do MiauStudio ficam a um F6
+     * (ou -Dirmaosmiau.animacoes.pegada=autoral).
+     */
+    public static ModoAnimacoesPegada padraoDoJogo() {
+        return "autoral".equalsIgnoreCase(System.getProperty(PROPRIEDADE, "")) ? AUTORAL : EXPERIMENTAL;
+    }
+
+    /** Texto para o HUD/feedback. */
+    public String rotulo() {
+        return this == EXPERIMENTAL ? "PROPOSTA (Claude)" : "AUTORAL (MiauStudio)";
     }
 
     public static ModoAnimacoesPegada atual() {
@@ -32,6 +48,11 @@ public enum ModoAnimacoesPegada {
 
     public static void definir(ModoAnimacoesPegada modo) {
         atual = modo == null ? AUTORAL : modo;
+    }
+
+    /** Volta ao padrao do motor (testes). */
+    public static void restaurarPadrao() {
+        atual = inicial();
     }
 
     /** Alterna e devolve o novo modo. */

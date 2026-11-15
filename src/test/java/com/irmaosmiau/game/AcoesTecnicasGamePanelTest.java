@@ -144,6 +144,12 @@ class AcoesTecnicasGamePanelTest {
             assertEquals("PEGADA ROMPIDA!", painel.montarEstadoHud().getMensagem(),
                     "nao e sobrescrita por 'Pegada desfeita'");
             assertEquals(xp, p.getX(), "rompeu parado");
+            // 5L (pedido): o rompimento bem-sucedido tem uma reacao curta (recuo) antes do desenho normal.
+            assertEquals(com.irmaosmiau.animacao.EstadoVisual.REACAO_DEFESA,
+                    painel.getAnimador().origem(p).orElseThrow().estado());
+            for (int i = 0; i < com.irmaosmiau.animacao.ReacoesDefesa.DURACAO_TICKS; i++) {
+                painel.atualizarUmTickParaTestes();
+            }
             assertFalse(p.isPoseCombateExternaAtiva());
         });
     }

@@ -60,6 +60,57 @@
       "experimental": true,
       "postura": "AJOELHADO",
       "descricao": "EXPERIMENTAL 5K (feita pelo Claude com o rig): Preto aplicador de joelhos. So no modo de comparacao (F6)."
+    },
+    {
+      "id": "pegada_2_entrada",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_2_BRANCO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Cruzada, Branco aplicador."
+    },
+    {
+      "id": "pegada_2_entrada_preto",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_2_PRETO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_2_entrada",
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Cruzada, Preto aplicador."
+    },
+    {
+      "id": "pegada_3_entrada",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_3_BRANCO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Duas mangas, Branco aplicador."
+    },
+    {
+      "id": "pegada_3_entrada_preto",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_3_PRETO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_3_entrada",
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Duas mangas, Preto aplicador."
+    },
+    {
+      "id": "pegada_4_entrada",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_4_BRANCO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Gola e nuca, Branco aplicador."
+    },
+    {
+      "id": "pegada_4_entrada_preto",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_4_PRETO_PROPOSTA.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_4_entrada",
+      "descricao": "PROPOSTA 5L (feita pelo Claude com o rig): Gola e nuca, Preto aplicador."
     }
   ]
 }

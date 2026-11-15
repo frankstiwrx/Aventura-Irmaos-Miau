@@ -56,6 +56,12 @@ public final class FeedbackCombate {
             mostrar(nome + "!", Tipo.SUCESSO, tick);
             return;
         }
+        if (resultado == ResultadoAcao.DEFENDIDO) {
+            // Entrega 5L: o defensor evitou a pegada antes do contato.
+            com.irmaosmiau.combate.EventoDefesa e = sistema.getUltimoEventoDefesa();
+            mostrar(nome + ": EVITADA" + (e == null ? "" : " (" + e.detalhe().toLowerCase() + ")"), Tipo.AVISO, tick);
+            return;
+        }
         mostrar(nome + ": " + motivoIndisponivel(sistema, atacante, defensor, acao), Tipo.AVISO, tick);
     }
 

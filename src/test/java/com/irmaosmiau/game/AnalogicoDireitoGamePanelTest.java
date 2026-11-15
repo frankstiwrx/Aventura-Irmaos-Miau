@@ -187,7 +187,8 @@ class AnalogicoDireitoGamePanelTest {
             int xb = painel.getLutador1().getX();
             sim.definir("g1", andar(1f));                               // receptor anda
             ticks(1);
-            assertFalse(s().estaEmInteracao(), "o receptor andando rompe (movimento/alcance), nunca arrasta");
+            // 5L (pedido): antes "o receptor andando rompe" (era a fuga gratuita reprovada no Xbox).
+            assertTrue(s().isInteracaoEstabelecida(), "o receptor andando so resiste: a pegada continua");
             assertEquals(xb, painel.getLutador1().getX(), "o aplicador nao foi levado");
         });
     }

@@ -52,8 +52,9 @@ class GamePanelConteudoTest {
         assertTrue(s.getAcao("pegada_1").isJogavel());
         assertEquals(30, s.getAcao("pegada_1").getDuracaoAnimacaoFrames());
         assertEquals(3.0, s.getAcao("pegada_1").getCustoFolego());
+        // 5L (pedido): as pegadas 2-4 ficaram jogaveis (antes assertFalse).
         for (String id : new String[]{"pegada_2", "pegada_3", "pegada_4"}) {
-            assertFalse(s.getAcao(id).isJogavel(), id);
+            assertTrue(s.getAcao(id).isJogavel(), id);
         }
     }
 

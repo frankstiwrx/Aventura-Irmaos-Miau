@@ -16,28 +16,55 @@
       "exigeFrenteParaOponente": true,
       "custoFolego": 3.0,
       "dificuldade": 20.0,
-      "pesos": { "tecnica": 0.50, "forca": 0.30, "agilidade": 0.20, "pesoCorporal": 0.00 }
+      "pesos": { "tecnica": 0.5, "forca": 0.3, "agilidade": 0.2, "pesoCorporal": 0.0 }
     },
     {
       "id": "pegada_2",
       "nome": "Pegada 2",
       "categoria": "PEGADA",
-      "disponibilidade": "PENDENTE",
-      "descricao": "Inversao das maos. Aguardando animacao no MiauStudio e regras."
+      "disponibilidade": "JOGAVEL",
+      "descricao": "Cruzada: maos invertidas (frente na manga, tras cruza para a gola). (Entrega 5L)",
+      "estadoInteracaoAoSucesso": "PEGADA_2",
+      "animacao": "pegada_2_entrada",
+      "duracaoAnimacaoFrames": 30,
+      "alcanceHorizontal": 115.0,
+      "diferencaMaximaLinhas": 1,
+      "exigeFrenteParaOponente": true,
+      "custoFolego": 3.5,
+      "dificuldade": 24.0,
+      "pesos": { "tecnica": 0.55, "forca": 0.3, "agilidade": 0.15, "pesoCorporal": 0.0 }
     },
     {
       "id": "pegada_3",
       "nome": "Pegada 3",
       "categoria": "PEGADA",
-      "disponibilidade": "PENDENTE",
-      "descricao": "Ambas as maos nas lapelas. Aguardando animacao no MiauStudio e regras."
+      "disponibilidade": "JOGAVEL",
+      "descricao": "Duas mangas: as duas maos nas mangas. (Entrega 5L)",
+      "estadoInteracaoAoSucesso": "PEGADA_3",
+      "animacao": "pegada_3_entrada",
+      "duracaoAnimacaoFrames": 30,
+      "alcanceHorizontal": 135.0,
+      "diferencaMaximaLinhas": 1,
+      "exigeFrenteParaOponente": true,
+      "custoFolego": 2.5,
+      "dificuldade": 16.0,
+      "pesos": { "tecnica": 0.4, "forca": 0.25, "agilidade": 0.35, "pesoCorporal": 0.0 }
     },
     {
       "id": "pegada_4",
       "nome": "Pegada 4",
       "categoria": "PEGADA",
-      "disponibilidade": "PENDENTE",
-      "descricao": "Ambas as maos nos bracos. Aguardando animacao no MiauStudio e regras."
+      "disponibilidade": "JOGAVEL",
+      "descricao": "Gola e nuca: mao da frente na nuca, mao de tras na gola. (Entrega 5L)",
+      "estadoInteracaoAoSucesso": "PEGADA_4",
+      "animacao": "pegada_4_entrada",
+      "duracaoAnimacaoFrames": 30,
+      "alcanceHorizontal": 110.0,
+      "diferencaMaximaLinhas": 1,
+      "exigeFrenteParaOponente": true,
+      "custoFolego": 4.0,
+      "dificuldade": 26.0,
+      "pesos": { "tecnica": 0.4, "forca": 0.4, "agilidade": 0.1, "pesoCorporal": 0.1 }
     }
   ]
 }

@@ -259,7 +259,8 @@ class ContextualGamePanelTest {
             PainelDpadContextual.Quadro q = painel.montarQuadroDpad(J1);
             assertEquals(CamadaComando.UM, q.camada());
             assertEquals("PEGAR", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
-            assertEquals("·", PainelDpadContextual.texto(q, DirecaoTecnica.BAIXO));
+            // 5L (pedido): livre, RS baixo = PEGADA_3 (antes vazio).
+            assertEquals("MANGAS", PainelDpadContextual.texto(q, DirecaoTecnica.BAIXO));
             pegarPeloDpad();
             assertEquals("REFORÇO", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
             gp("g1", r().com(BotaoGamepad.GATILHO_ESQ));

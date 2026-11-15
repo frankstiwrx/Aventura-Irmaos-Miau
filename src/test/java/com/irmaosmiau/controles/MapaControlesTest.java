@@ -36,6 +36,9 @@ class MapaControlesTest {
             {"brancoRompimento", "5"},
             {"pretoPegada1", "END"}, {"pretoDesequilibrio", "PAGE_DOWN"}, {"pretoReforco", "PAGE_UP"},
             {"pretoControle", "DELETE"},
+            // 5L (pedido): as pegadas 2-4.
+            {"brancoPegada2", "6"}, {"brancoPegada3", "7"}, {"brancoPegada4", "8"},
+            {"pretoPegada2", "NUMPAD7"}, {"pretoPegada3", "NUMPAD8"}, {"pretoPegada4", "NUMPAD9"},
         };
         for (String[] l : tabela) {
             TECLAS_ANTERIORES.put(l[0], l[1]);
@@ -59,8 +62,9 @@ class MapaControlesTest {
         assertTrue(p.isValido(), p.problemas().toString());
         assertTrue(p.ehPadrao());
         // 5I (pedido): antes 16 (J1) e 13 (J2); agora os dois slots tem as 17 acoes.
-        assertEquals(17, SlotJogador.JOGADOR_1.acoes().size());
-        assertEquals(17, SlotJogador.JOGADOR_2.acoes().size());
+        // 5L (pedido): + 3 pegadas (antes 17).
+        assertEquals(20, SlotJogador.JOGADOR_1.acoes().size());
+        assertEquals(20, SlotJogador.JOGADOR_2.acoes().size());
     }
 
     @Test
@@ -204,7 +208,9 @@ class MapaControlesTest {
                 AcoesContextuais.disponiveis(PapelCombate.APLICADOR, SlotJogador.JOGADOR_1));
         assertEquals(List.of(AcaoJogador.ROMPIMENTO_TECNICO),
                 AcoesContextuais.disponiveis(PapelCombate.RECEPTOR, SlotJogador.JOGADOR_2));
-        assertEquals(List.of(AcaoJogador.INICIAR_PEGADA, AcaoJogador.TENTAR_DESEQUILIBRIO,
+        // 5L (pedido): as pegadas 2-4 entram logo depois da 1 (mesma regra de pegada simultanea).
+        assertEquals(List.of(AcaoJogador.INICIAR_PEGADA, AcaoJogador.PEGADA_2, AcaoJogador.PEGADA_3,
+                AcaoJogador.PEGADA_4, AcaoJogador.TENTAR_DESEQUILIBRIO,
                 AcaoJogador.REFORCAR_PEGADA, AcaoJogador.ROMPIMENTO_TECNICO),
                 AcoesContextuais.ACOES_DE_COMBATE, "ordem de despacho da 5B");
     }

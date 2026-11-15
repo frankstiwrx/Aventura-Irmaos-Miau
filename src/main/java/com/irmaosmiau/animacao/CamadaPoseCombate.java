@@ -60,6 +60,10 @@ public final class CamadaPoseCombate {
         long inicioReacao = Long.MIN_VALUE;
         int fase = -1;
         double intensidadeReacao;
+        // Entrega 5L: receptor forcando / ROMPER resistido (a pegada continua).
+        long ultimaSequenciaDefesa;
+        long inicioDefesaFalhou = Long.MIN_VALUE;
+        double intensidadeForca;
     }
 
     private final Map<IrmaoMiau, Estado> estados = new IdentityHashMap<>();
@@ -106,7 +110,25 @@ public final class CamadaPoseCombate {
         e.restanteAnterior = restante;
         e.intensidadeReacao = envelope(e.inicioReacao == Long.MIN_VALUE ? -1 : tick - e.inicioReacao);
 
+        // Entrega 5L: o receptor que forca puxa o tronco para tras (sem soltar); ROMPER resistido
+        // da um puxao mais forte e curto. So o que o motor confirmou.
+        com.irmaosmiau.combate.EventoDefesa ev = sistema.getUltimoEventoDefesa();
+        if (ev != null && ev.sequencia() > e.ultimaSequenciaDefesa) {
+            e.ultimaSequenciaDefesa = ev.sequencia();
+            if (ev.tipo() == com.irmaosmiau.combate.EventoDefesa.Tipo.ROMPIMENTO_FALHOU && ev.defensor() == l) {
+                e.inicioDefesaFalhou = tick;
+            }
+        }
+        boolean forcando = sistema.getReceptorInteracao() == l && sistema.getTicksResistindo() > 0;
+        double falhou = e.inicioDefesaFalhou == Long.MIN_VALUE ? 0 : envelope(tick - e.inicioDefesaFalhou);
+        e.intensidadeForca = Math.max(forcando ? 0.5 : 0.0, falhou);
+
         int[] pose = compor(e.base, e.fase, e.intensidadeReacao);
+        if (e.intensidadeForca > 0) {
+            pose[9] -= (int) Math.round(INCLINACAO_PEITO * e.intensidadeForca);
+            pose[6] -= (int) Math.round(INCLINACAO_CINTURA * e.intensidadeForca);
+            pose[11] -= (int) Math.round(3 * e.intensidadeForca);
+        }
         if (!Arrays.equals(pose, atual)) {
             l.aplicarPoseCombateExterna(pose, l.getDeslocamentoVisualCombateX(), l.getDeslocamentoVisualCombateY());
         }
@@ -146,6 +168,12 @@ public final class CamadaPoseCombate {
             p[JOEL_DIR_X] += (int) Math.round(PASSO * reacao);
         }
         return p;
+    }
+
+    /** Entrega 5L: forca do receptor preso (0 = nenhuma; 0,5 forcando; ate 1 no ROMPER resistido). */
+    public double intensidadeForca(IrmaoMiau l) {
+        Estado e = estados.get(l);
+        return e == null ? 0.0 : e.intensidadeForca;
     }
 
     /** Fase do passo do arrasto (-1 = sem passo agora). */

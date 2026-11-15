@@ -339,7 +339,7 @@ class AnimacoesRuntimeGamePanelTest {
                     textos.add(m);
                 });
         // 5J (pedido): o Branco tem 3 JSON (chao + ajoelhado + ajoelhado em movimento); antes 1 aviso.
-        assertEquals(3, avisos.get());
+        assertEquals(4, avisos.get());   // 5L (pedido): + fuga de quadril do Branco
         assertTrue(textos.stream().anyMatch(t -> t.contains("branco_movimento_chao.json ausente")), textos.toString());
         PerfisAnimacoes invalido = PerfisAnimacoes.paraJogo(r -> r.contains("preto") ? "{ lixo" : CatalogoAnimacoes.lerRecurso(r),
                 m -> {
@@ -347,7 +347,7 @@ class AnimacoesRuntimeGamePanelTest {
                     textos.add(m);
                 });
         // 5J (pedido): + 3 avisos do Preto invalido (antes 2 no total).
-        assertEquals(6, avisos.get());
+        assertEquals(8, avisos.get());   // 5L (pedido): + fuga de quadril (antes 6)
         assertTrue(textos.stream().anyMatch(t -> t.contains("preto_movimento_chao.json invalido")), textos.toString());
 
         naEdt(() -> {
@@ -370,7 +370,7 @@ class AnimacoesRuntimeGamePanelTest {
             ticks(30);
             assertFalse(origem(painel.getLutador2()).isJson(), "Preto com JSON invalido: legado, sem quebrar");
         });
-        assertEquals(6, avisos.get(), "nenhum aviso por quadro nem por partida"); // 5J (pedido): antes 2
+        assertEquals(8, avisos.get(), "nenhum aviso por quadro nem por partida"); // 5K: antes 2; 5L (pedido): antes 6
     }
 
     // =====================================================

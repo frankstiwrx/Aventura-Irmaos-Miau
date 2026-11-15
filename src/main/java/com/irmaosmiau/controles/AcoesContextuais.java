@@ -21,11 +21,25 @@ public final class AcoesContextuais {
     /** Acoes de combate lidas a cada tick, na ordem de despacho da 5B (H, T, Y, U). */
     public static final List<AcaoJogador> ACOES_DE_COMBATE = List.of(
             AcaoJogador.INICIAR_PEGADA,
+            AcaoJogador.PEGADA_2,
+            AcaoJogador.PEGADA_3,
+            AcaoJogador.PEGADA_4,
             AcaoJogador.TENTAR_DESEQUILIBRIO,
             AcaoJogador.REFORCAR_PEGADA,
             AcaoJogador.ROMPIMENTO_TECNICO);
 
     private AcoesContextuais() {
+    }
+
+    /** Entrega 5L: id da tecnica de uma acao de pegada (null se nao for pegada). */
+    public static String idPegada(AcaoJogador a) {
+        return switch (a) {
+            case INICIAR_PEGADA -> "pegada_1";
+            case PEGADA_2 -> "pegada_2";
+            case PEGADA_3 -> "pegada_3";
+            case PEGADA_4 -> "pegada_4";
+            default -> null;
+        };
     }
 
     /** Acoes de combate uteis agora para este papel, entre as que o slot usa. */

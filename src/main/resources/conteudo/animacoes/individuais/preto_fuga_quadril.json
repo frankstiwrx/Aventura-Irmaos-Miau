@@ -1,0 +1,31 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "preto.fuga_quadril",
+  "estado": "MOVIMENTO_CHAO",
+  "rig": "miau_v1",
+  "uso": "INDIVIDUAL",
+  "loop": true,
+  "duracaoQuadroMs": 140,
+  "sequencia": [0, 1, 2, 3],
+  "deslocamentoVisual": {
+    "x": 0,
+    "y": 70
+  },
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "PROPOSTA 5L (Claude): fuga de quadril sobre o quadro 1 do MOVIMENTO_CHAO autoral; quadros avancam pela distancia andada",
+  "quadros": [
+    {
+      "pose": [507, 4, 7, 1, 0, 0, 0, 0, 0, 15, -89, 23, 0, 0, -2, -3, -44, 22, -4, 3, -47, 15, 0, 0, -3, -7, -11, 9, -43, 5]
+    },
+    {
+      "pose": [507, 4, 7, 1, 0, 0, 0, 0, 0, 18, -89, 23, 0, 0, -2, -3, -44, 22, -4, 3, -39, 11, 30, -14, -3, -41, 15, -3, -43, -27]
+    },
+    {
+      "pose": [507, 4, 7, 1, -4, 0, -4, 0, 0, 11, -89, 23, 0, 0, 2, -3, -34, 22, 4, -3, -29, 5, 14, -6, -3, -21, 1, 4, -43, -7]
+    },
+    {
+      "pose": [507, 4, 7, 1, -2, 0, -2, 0, 0, 16, -89, 23, 0, 0, -2, -3, -44, 22, -4, 3, -41, 12, 22, -10, -3, -31, 7, 0, -43, -17]
+    }
+  ]
+}

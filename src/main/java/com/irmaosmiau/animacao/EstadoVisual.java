@@ -22,6 +22,8 @@ public enum EstadoVisual {
     AJOELHADO_MOVIMENTO,
     /** Entrega 5K: mudando de postura (contratos TRANSICAO_*; procedural por enquanto). */
     TRANSICAO_POSTURA,
+    /** Entrega 5L: reacao curta a um evento defensivo do motor (fora da pegada). */
+    REACAO_DEFESA,
     /** Conjunta: os 30 quadros de entrada da PEGADA_1. */
     PEGADA_ENTRADA,
     /** Conjunta: pose final persistente da PEGADA_1. */

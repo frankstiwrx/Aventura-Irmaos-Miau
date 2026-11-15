@@ -371,3 +371,61 @@ A correção global continua pendente de validação visual da PEGADA_1 original
 | `PEGADA_1_DESEQUILIBRIO` | `CamadaPoseCombate` (reação) | animação do receptor (pendente) |
 | `POSTURA_AJOELHADO_IDLE` / `_MOVIMENTO` | JSON de fallback (5J) | trocar os quadros do JSON |
 | `TRANSICAO_*` | `TransicoesPostura` (procedural) | animação individual por transição (pendente: falta o estado no carregador) |
+
+---
+
+# Entrega 5L — Animações das pegadas, defesa e fuga de quadril
+
+## Padrão visual
+
+- **No jogo**, as animações feitas pelo Claude são o padrão (`ModoAnimacoesPegada.padraoDoJogo()`, aplicado
+  pelo `Main`). **F6** volta às autorais do MiauStudio (e de volta). `-Dirmaosmiau.animacoes.pegada=autoral`
+  abre já na autoral. O motor isolado (testes) continua AUTORAL, para os testes de regressão das poses aprovadas.
+- F6 troca: a PEGADA_1 (autoral ↔ experimental 5K) e o movimento no chão (autoral ↔ fuga de quadril).
+  As pegadas 2–4 só têm a proposta (não há autoral para comparar).
+
+## Pegadas 2–4 (projetos MiauStudio v2 novos, `*_PROPOSTA.json`)
+
+Geradas com os pivôs reais de cada rig, dupla a 84 px, 4 quadros (7/7/8/8 frames): preparo, alcance,
+contato, pegada assentada. Sem deslocamento horizontal entre quadros.
+
+| Pegada | Mão da frente | Mão de trás | Receptor |
+|---|---|---|---|
+| 2 Cruzada | manga (cotovelo da frente) | cruza para a gola | cabeça e tronco reagem |
+| 3 Duas mangas | punho da frente | manga de trás (o receptor traz a mão à frente) | disputa as mangas |
+| 4 Gola e nuca | nuca | gola | cabeça e tronco descem (puxado) |
+
+| Combinação | Animação |
+|---|---|
+| Branco aplica (em pé) | `PEGADA_N_BRANCO_PROPOSTA` |
+| Preto aplica (em pé) | `PEGADA_N_PRETO_PROPOSTA` (variante) |
+| Branco × Branco / Preto × Preto | composta por papel entre as duas |
+| De joelhos | a mesma, com o adaptador de joelhos (pernas e altura) — verificada nos testes; sem arquivo próprio |
+| PEGADA_1 | autoral (F6) ou experimental 5K (padrão), com as variantes de joelhos da 5K |
+
+Arquivos autorais e experimentais da 5K: intactos (SHA-256 nos testes).
+
+## Defesa
+
+| Contrato | Quando (evento do motor) | Desenho |
+|---|---|---|
+| `DEFESA_EVASAO` | pegada evitada abaixando | abaixa e inclina para trás |
+| `DEFESA_ALCANCE_FALHO` | (no atacante) pegada evitada | estica os braços e recolhe |
+| `DEFESA_ROMPIMENTO_SUCESSO` | ROMPER funcionou | recua o tronco, recolhe os braços |
+| `DEFESA_SOLTOU` | (no aplicador) foi rompido | braços caem para a frente e voltam |
+| `PEGADA_RESISTENCIA` | receptor forçando | puxa o tronco para trás (a pegada fica) |
+| `PEGADA_DEFESA_FALHOU` | ROMPER resistido | puxão mais forte e curto (a pegada fica) |
+
+Os dois últimos são da `CamadaPoseCombate` (dentro da pegada); os quatro primeiros, de
+`animacao.ReacoesDefesa` (14 ticks, estado visual `REACAO_DEFESA`). Nenhuma reação mostra fuga enquanto o
+motor considera a pegada estabelecida.
+
+## Fuga de quadril (movimento deitado)
+
+- `individuais/<branco|preto>_fuga_quadril.json` (formato individual do jogo), feita sobre o quadro 1 do
+  MOVIMENTO_CHAO autoral (o deitado parado continua idêntico): 0 deitado, 1 joelhos sobem e pés vêm ao
+  quadril, 2 pés empurram e o quadril gira de lado com o braço apoiando, 3 recolhe.
+- O quadro avança pela **distância real** andada (um quadro a cada 3 px): parou = parado; voltou a andar =
+  continua. Para longe do oponente roda 0-1-2-3; para perto, ao contrário.
+- Física, velocidade e fôlego iguais (testado nos dois modos). Preso numa pegada, não rasteja (5L-A).
+- O `movimento_chao` autoral continua no perfil e volta com F6.

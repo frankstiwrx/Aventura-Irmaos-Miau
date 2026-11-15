@@ -56,6 +56,12 @@ public final class AnimadorPartida {
     private final CamadaPoseCombate camada = new CamadaPoseCombate();
     // Entrega 5K: transicoes de postura (procedurais); deitado = quadro 1 do JSON do chao.
     private final TransicoesPostura transicoes = new TransicoesPostura(this::poseDeitado);
+    // Entrega 5L: reacoes curtas a eventos defensivos (fora da pegada).
+    private final ReacoesDefesa reacoes = new ReacoesDefesa(transicoes);
+    // Entrega 5L: fuga de quadril: quadro pela distancia andada e sentido (frente/tras).
+    private final Map<IrmaoMiau, double[]> trilhaChao = new IdentityHashMap<>();
+    /** Pixels andados por quadro da fuga de quadril. */
+    public static final double PX_POR_QUADRO_FUGA = 3.0;
 
     /** @param msPorTick duracao nominal de um tick do loop logico (GamePanel: 16 ms) */
     public AnimadorPartida(ControladorAnimacoes controlador, double msPorTick) {
@@ -77,6 +83,7 @@ public final class AnimadorPartida {
             }
         }
         origens.keySet().removeIf(l -> !contem(lutadores, l));
+        reacoes.observar(sistema, tick);
         for (IrmaoMiau l : lutadores) {
             atualizar(l, sistema, deslocandoConjunto, tick);
             camada.atualizar(l, sistema, deslocandoConjunto, tick);
@@ -102,6 +109,19 @@ public final class AnimadorPartida {
             return;
         }
         transicoes.liberar(l);
+        // Entrega 5L: reacao defensiva (fora da pegada; o combate tem prioridade).
+        boolean naPegada = sistema != null && sistema.estaEmInteracao()
+                && (sistema.getAplicadorInteracao() == l || sistema.getReceptorInteracao() == l);
+        if (!naPegada && reacoes.ativa(l, tick) != null) {
+            liberar(l);                                   // solta o JSON so enquanto a reacao desenha
+            ReacoesDefesa.Tipo r0 = reacoes.aplicar(l, tick);
+            if (r0 != null) {
+                origens.put(l, new OrigemVisual(FonteAnimacao.PROCEDURAL, r0.name(), -1, EstadoVisual.REACAO_DEFESA));
+                return;
+            }
+        } else {
+            reacoes.liberar(l);
+        }
         Optional<AnimacaoResolvida> r = controlador.resolver(l, sistema, deslocandoConjunto);
         if (r.isEmpty() || r.get().usaCodigoLegado()) {
             liberar(l);
@@ -110,6 +130,17 @@ public final class AnimadorPartida {
             return;
         }
         DefinicaoAnimacao d = r.get().definicao();
+        // Entrega 5L: no modo PROPOSTA (F6), o movimento no chao usa a fuga de quadril.
+        boolean fuga = false;
+        if (d.estado() == EstadoVisual.MOVIMENTO_CHAO
+                && com.irmaosmiau.combate.ModoAnimacoesPegada.atual() == com.irmaosmiau.combate.ModoAnimacoesPegada.EXPERIMENTAL) {
+            Optional<DefinicaoAnimacao> f = controlador.getPerfis().getCatalogo()
+                    .buscar(d.id().substring(0, d.id().indexOf('.')) + ".fuga_quadril.json");
+            if (f.isPresent()) {
+                d = f.get();
+                fuga = true;
+            }
+        }
         Reproducao rep = ativas.get(l);
         if (rep == null || !rep.definicao.id().equals(d.id())) {
             liberar(l);                                   // troca de estado: comeca do 1o quadro
@@ -117,7 +148,7 @@ public final class AnimadorPartida {
             ativas.put(l, rep);
         }
         AnimacaoIndividual a = d.getDados().orElseThrow();
-        int quadro = a.indiceQuadroNoTick(tick - rep.tickInicio, msPorTick);
+        int quadro = fuga ? quadroDaFuga(l, a, rep.tickInicio == tick) : a.indiceQuadroNoTick(tick - rep.tickInicio, msPorTick);
         if (!rep.reprodutor.aplicarQuadro(l, quadro)) {
             // Outro dono da pose (combate): nao interferir.
             ativas.remove(l);
@@ -146,6 +177,42 @@ public final class AnimadorPartida {
     /** De onde vem o desenho do lutador no ultimo tick (vazio = ainda nao atualizado). */
     public Optional<OrigemVisual> origem(IrmaoMiau lutador) {
         return Optional.ofNullable(origens.get(lutador));
+    }
+
+    /**
+     * Entrega 5L: quadro da fuga de quadril pela DISTANCIA realmente andada
+     * (parou = quadro parado; voltou a andar = continua de onde estava). Indo
+     * para a frente (para onde olha) a sequencia roda ao contrario.
+     */
+    private int quadroDaFuga(IrmaoMiau l, AnimacaoIndividual a, boolean comecou) {
+        double[] t = trilhaChao.computeIfAbsent(l, k -> new double[] {k.getX(), k.getY(), 0, -1});
+        if (comecou) {
+            t[0] = l.getX();
+            t[1] = l.getY();
+        }
+        double dx = l.getX() - t[0];
+        double dy = l.getY() - t[1];
+        t[2] += Math.abs(dx) + Math.abs(dy);
+        if (dx != 0) {
+            boolean paraFrente = (dx > 0) == l.isViradoParaDireita();
+            t[3] = paraFrente ? 1 : -1;
+        }
+        t[0] = l.getX();
+        t[1] = l.getY();
+        int[] seq = a.getSequencia();
+        int passo = (int) (t[2] / PX_POR_QUADRO_FUGA) % seq.length;
+        int i = t[3] > 0 ? (seq.length - passo) % seq.length : passo;
+        return seq[i];
+    }
+
+    /** Fase da fuga de quadril (distancia acumulada em px; 0 = sem dados). */
+    public double distanciaFuga(IrmaoMiau l) {
+        double[] t = trilhaChao.get(l);
+        return t == null ? 0 : t[2];
+    }
+
+    public ReacoesDefesa getReacoes() {
+        return reacoes;
     }
 
     /** Pose deitado pelo JSON do movimento no chao do perfil (quadro 1), se houver. */

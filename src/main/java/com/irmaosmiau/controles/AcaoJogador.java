@@ -60,6 +60,13 @@ public enum AcaoJogador {
             GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "Y", "PAGE_UP"),
     MODO_DESLOCAMENTO_CONTROLADO("Controle", "Modo controle (+ esquerda/direita = arrastar)", "arrastar",
             GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "SHIFT", "DELETE"),
+    // Entrega 5L: as outras tres pegadas (RS -> / ↓ / <- no gamepad, livre).
+    PEGADA_2("Pegada2", "Pegada cruzada (PEGADA 2)", "cruzada",
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "6", "NUMPAD7"),
+    PEGADA_3("Pegada3", "Pegada nas duas mangas (PEGADA 3)", "mangas",
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "7", "NUMPAD8"),
+    PEGADA_4("Pegada4", "Pegada gola e nuca (PEGADA 4)", "nuca",
+            GrupoAcao.COMBATE, TipoAcionamento.TOQUE, "8", "NUMPAD9"),
 
     // ---------------- DEFESA ----------------
     SPRAWL("Sprawl", "Sprawl", "sprawl",
@@ -110,6 +117,9 @@ public enum AcaoJogador {
 
     /** Uso dos slots ate a 5H (para migracao de preferencias antigas). */
     public boolean usadaAntesDa5I(SlotJogador slot) {
+        if (this == PEGADA_2 || this == PEGADA_3 || this == PEGADA_4) {
+            return false;                                  // 5L
+        }
         if (slot == SlotJogador.JOGADOR_1) {
             return this != ROMPIMENTO_TECNICO;
         }

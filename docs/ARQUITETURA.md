@@ -332,3 +332,16 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
 - `animacao.TransicoesPostura` (procedural, estado `TRANSICAO_POSTURA`, fonte `PROCEDURAL`) no `AnimadorPartida`.
 - `combate.ModoAnimacoesPegada` (AUTORAL/EXPERIMENTAL, F6). `RegistroAnimacoesCombate`: experimentais e
   postura por animação; `resolver(..., modo)`. Catálogo: `"experimental"`, `"postura"`.
+
+## Defesa e quatro pegadas (Entrega 5L)
+
+- `GamePanel.receptorPreso` / `resistirNaPegada`: o receptor de pegada estabelecida não se move; forçar chama
+  `SistemaCombate.resistirPegada` (desgaste extra de firmeza + fôlego).
+- `SistemaCombate.tentarAcao`: evasão antes do contato (`IrmaoMiau.getEvasaoAtiva`) → `ResultadoAcao.DEFENDIDO`.
+  `combate.EventoDefesa` (PEGADA_EVITADA, ROMPIMENTO_SUCESSO, ROMPIMENTO_FALHOU) para HUD e animações.
+- `combate.ParametrosPegadas`: firmeza inicial, fator de reforço e de rompimento, preparação e especialidade.
+  Alcance e custo seguem no `tecnicas.json` (pegada_2..4 agora JOGÁVEIS).
+- `AcaoJogador.PEGADA_2..4`; `RepertorioContextual` (livre: 4 direções); RS no Clássico
+  (`FonteGamepad.consumirPegadaClassica` → `GamePanel.executarPegadaClassica`).
+- `animacao.ReacoesDefesa`, `CamadaPoseCombate` (força/defesa falhou), fuga de quadril no `AnimadorPartida`.
+- `ModoAnimacoesPegada.padraoDoJogo()` (PROPOSTA) aplicado pelo `Main`.

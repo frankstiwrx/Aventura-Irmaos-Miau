@@ -116,10 +116,11 @@ class ComandosContextuaisTest {
     @Test
     void livreSoPegar() {
         List<CelulaContextual> l = celulas(SlotJogador.JOGADOR_1, PapelCombate.LIVRE, EstadoPosicional.separados(), Lado.A);
-        assertEquals("[C1↑=PEGAR]", resumo(l));
+        // 5L (pedido): livre, as 4 direcoes do RS sao as 4 pegadas (antes so C1↑=PEGAR).
+        assertEquals("[C1↑=PEGAR, C1→=CRUZADA, C1↓=MANGAS, C1←=NUCA]", resumo(l));
         assertEquals(AcaoJogador.INICIAR_PEGADA, l.get(0).acao());
         // 5I (pedido): o Jogador 2 tambem aplica pegada (antes: "[]").
-        assertEquals("[C1↑=PEGAR]", resumo(celulas(SlotJogador.JOGADOR_2, PapelCombate.LIVRE,
+        assertEquals("[C1↑=PEGAR, C1→=CRUZADA, C1↓=MANGAS, C1←=NUCA]", resumo(celulas(SlotJogador.JOGADOR_2, PapelCombate.LIVRE,
                 EstadoPosicional.separados(), Lado.B)), "o Jogador 2 tambem aplica pegada");
     }
 

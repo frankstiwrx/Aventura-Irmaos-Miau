@@ -241,6 +241,8 @@ private EstadoCorporal estadoCorporal =
     /* Houve esforco neste tick (arrasto, transicao): sem recuperacao passiva. */
     private boolean esforcoNesteTick;
     private double ultimoCustoFolego;
+    /* Entrega 5L: ticks seguidos com o comando de agachar/abaixar apertado (0 = solto). */
+    private int ticksAbaixando;
     private String ultimoCustoMotivo = "";
 
     
@@ -617,6 +619,9 @@ public void iniciarSprawl() {
         // ESTADO ATUAL
         // =========================
         andando = estaAndando;
+
+        // Entrega 5L: o comando de abaixar conta desde o primeiro tick (de pe ou de joelhos).
+        ticksAbaixando = querAgachar && !pulando && !isDeitado() ? ticksAbaixando + 1 : 0;
 
         agachado =
         querAgachar
@@ -1938,6 +1943,33 @@ public void alternarDeitado() {
     /** Velocidade normal sem efeitos temporarios (referencia do custo da caminhada). */
     private double calcularVelocidadeSemEfeitos() {
         return 3.2 + (atributos.getVelocidade() / 100.0) * 1.6;
+    }
+
+    // =============================
+    // ENTREGA 5L: EVASAO ANTES DO CONTATO
+    // =============================
+    /** Janela do "abaixar" que ainda evita uma pegada (~190 ms); segurar depois disso nao protege. */
+    public static final int JANELA_EVASAO_ABAIXAR_TICKS = 12;
+
+    /**
+     * Evasao possivel AGORA contra uma pegada que esta chegando, ou null:
+     * "ROLAMENTO", "PULO" ou "AGACHAMENTO" (o abaixar recente, de pe ou de joelhos).
+     */
+    public String getEvasaoAtiva() {
+        if (rolando) {
+            return "ROLAMENTO";
+        }
+        if (pulando) {
+            return "PULO";
+        }
+        if (ticksAbaixando > 0 && ticksAbaixando <= JANELA_EVASAO_ABAIXAR_TICKS) {
+            return "AGACHAMENTO";
+        }
+        return null;
+    }
+
+    public int getTicksAbaixando() {
+        return ticksAbaixando;
     }
 
     /** Entrega 5J: de joelhos. */

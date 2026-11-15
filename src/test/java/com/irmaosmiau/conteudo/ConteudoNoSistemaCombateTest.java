@@ -74,11 +74,14 @@ class ConteudoNoSistemaCombateTest {
         SistemaCombate s = CarregadorConteudoCombate.carregarPadrao().criarSistema(b, p);
         double folego = b.getFolegoAtual();
 
-        for (String id : new String[]{"pegada_2", "pegada_3", "pegada_4"}) {
+        // 5L (pedido): as pegadas 2-4 sao jogaveis; a 87 px (124 u) so a PEGADA_3 (alcance 135)
+        // alcanca; a 2 (115) e a 4 (110) precisam chegar mais perto.
+        for (String id : new String[]{"pegada_2", "pegada_4"}) {
             assertTrue(s.possuiAcao(id));
             assertFalse(s.podeTentarAcao(b, p, id), id);
             assertEquals(ResultadoAcao.INDISPONIVEL, s.tentarAcao(b, p, id), id);
         }
+        assertTrue(s.podeTentarAcao(b, p, "pegada_3"));
         assertEquals(folego, b.getFolegoAtual());
         assertFalse(s.estaEmInteracao());
         assertFalse(b.isPoseCombateExternaAtiva());

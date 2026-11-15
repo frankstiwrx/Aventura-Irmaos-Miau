@@ -430,7 +430,8 @@ class PapeisIndependentes5IGamePanelTest {
             tecla("brancoControle", false);
             ticks(1);
             assertEquals(x2, l2().getX(), "o aplicador nao foi levado");
-            assertFalse(s().isInteracaoEstabelecida(), "andar como receptor rompe, como antes");
+            // 5L (pedido): antes "andar como receptor rompe" (fuga gratuita reprovada no Xbox).
+            assertTrue(s().isInteracaoEstabelecida(), "andar como receptor so resiste: a pegada continua");
         });
     }
 
@@ -463,14 +464,14 @@ class PapeisIndependentes5IGamePanelTest {
             assertEquals(x1 - x2, l1().getX() - l2().getX());
             assertTrue(s().isInteracaoEstabelecida());
 
-            // O receptor J1 andando no analogico nao arrasta: rompe.
+            // O receptor J1 andando no analogico nao arrasta. 5L (pedido): e tambem nao rompe mais.
             sim.definir("g1", EstadoGamepad.repouso().comEixo(EixoGamepad.ESQ_X, -1f));
             int x2b = l2().getX();
             ticks(40);
             sim.definir("g1", EstadoGamepad.repouso());
             ticks(1);
             assertEquals(x2b, l2().getX(), "receptor nao leva o aplicador");
-            assertFalse(s().isInteracaoEstabelecida());
+            assertTrue(s().isInteracaoEstabelecida(), "5L (pedido): antes assertFalse (fuga gratuita)");
         });
     }
 

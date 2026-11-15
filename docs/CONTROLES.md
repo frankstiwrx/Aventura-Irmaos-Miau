@@ -786,3 +786,57 @@ Futuro: a mesma janela de instabilidade pode reduzir a defesa contra quedas e ra
   pegada e fica até fechar o jogo. Também por `-Dirmaosmiau.animacoes.pegada=experimental`.
 - **F3** mostra postura e direção do ciclo, clique pendente/duplo, transição ativa, fôlego atual/máximo,
   último custo, firmeza, consequência do desequilíbrio, arrasto, variante e origem da animação.
+
+---
+
+# Entrega 5L — Defesa de pegadas e quatro pegadas
+
+## Causa da fuga gratuita (corrigida)
+
+A `PoliticaInteracaoPadrao` (3A/5B) encerra a pegada estabelecida quando o corpo de qualquer um dos dois
+muda: X ou Y (MOVIMENTO), pulo, rolamento, sprawl, agachar, deitar/levantar. O `GamePanel` deixava o
+**receptor** andar, mudar de linha, pular, rolar, agachar e fazer sprawl normalmente. Então bastava ao
+receptor andar 1 px: o X mudava e a política encerrava por MOVIMENTO. (A postura já estava bloqueada na 5K.)
+
+## Regra nova (receptor de pegada estabelecida)
+
+- Fica **preso**: não anda, não muda de linha, não pula, não rola, não agacha, não faz sprawl, não muda de
+  postura. Os comandos não soltam nada.
+- Apertar uma direção vira **resistência**: a firmeza cai mais rápido (+0,12 por tick, além do desgaste
+  normal de 0,10) e o receptor gasta 0,004 de fôlego por tick (~0,25/s). Sem fôlego, forçar não conta (e
+  quem força sem fôlego também não recupera). O aplicador pode reforçar.
+- Saídas legítimas: **ROMPER** (disputa de atributos + firmeza; resistido = a pegada fica, sucesso =
+  encerra), firmeza chegando a zero (SEM_CONTROLE), e o próprio aplicador soltar (andar sem o modo controle,
+  pular etc., como antes). Forçar reduz a firmeza, o que ajuda o ROMPER seguinte.
+- O aplicador continua arrastando (Clássico com modificador, Contextual automático).
+- ROMPER **não é instantâneo**: depende da disputa e tem recarga de 45 ticks. O minijogo de precisão fica
+  para o futuro; o ponto de troca é `SistemaCombate.tentarRompimentoTecnico`.
+
+## Evasão ANTES do contato
+
+Quando alguém tenta uma pegada e o defensor está:
+- **abaixando a tempo** — o comando de agachar (C / M / LT), de pé ou **de joelhos**, nos primeiros
+  12 ticks (~190 ms) depois de apertado. Segurar mais tempo não protege. Custa 1,5 de fôlego a quem evita;
+- **rolando** ou **no ar** (pulo) — sem custo extra (o rolamento e o pulo já custam);
+
+então a pegada é **EVITADA** (resultado DEFENDIDO): nada começa, o atacante paga metade do custo da
+pegada e aparece "EVITADA". Depois do contato (entrada ou pegada estabelecida) nada disso funciona.
+
+## Quatro pegadas
+
+| | Pegada | Teclado J1 / J2 | Xbox (livre) | Alcance | Fôlego | Firmeza inicial | Reforço | Romper | Prepara | Especialista |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Gola e manga | H / END | RS ↑ (e X no Clássico) | 125 | 3,0 | 100 | ×1,0 | ×1,0 | queda | — (igual à 5K) |
+| 2 | Cruzada | 6 / NUM 7 | RS → | 115 | 3,5 | 100 | ×0,8 | ×0,85 (difícil) | queda | Branco |
+| 3 | Duas mangas | 7 / NUM 8 | RS ↓ | 135 | 2,5 | 85 | ×1,2 | ×1,15 (fácil) | guarda | Preto |
+| 4 | Gola e nuca | 8 / NUM 9 | RS ← | 110 | 4,0 | 95 | ×1,0 | ×0,9 | queda | Branco |
+
+- Especialista: rompimento 10% mais difícil e reforço 10% maior para quem domina a pegada. Atributos
+  dos personagens não mudam.
+- "Romper": a disputa do ROMPER vê a firmeza dividida pelo fator (×1,15 = parece mais fraca).
+- Alcances: no início de joelhos (84 px = 120 u) a 1 e a 3 já alcançam; a 2 e a 4 exigem chegar mais perto.
+- **Comandos:** livre, o RS escolhe a pegada nos **dois esquemas** (no Clássico o RS só faz isso). Com
+  pegada, o RS do Contextual volta a reforçar (↑), desequilibrar (→) e romper (↓ do receptor); no Clássico
+  continuam os botões. LT, LB e LT+LB continuam reservados. D-pad no Contextual = as mesmas 4 pegadas.
+  Teclado: as novas teclas são remapeáveis em CONTROLES.
+- Pegadas simultâneas: continua valendo a do J1 (regra 5I, agora para as quatro).

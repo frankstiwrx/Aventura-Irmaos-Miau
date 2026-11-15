@@ -21,6 +21,9 @@ public final class CatalogoAnimacoes {
             "/conteudo/animacoes/individuais/branco_ajoelhado_movimento.json";
     public static final String RECURSO_PRETO_AJOELHADO_MOV =
             "/conteudo/animacoes/individuais/preto_ajoelhado_movimento.json";
+    // Entrega 5L: fuga de quadril (proposta) para o movimento no chao.
+    public static final String RECURSO_BRANCO_FUGA = "/conteudo/animacoes/individuais/branco_fuga_quadril.json";
+    public static final String RECURSO_PRETO_FUGA = "/conteudo/animacoes/individuais/preto_fuga_quadril.json";
 
     private final Map<String, DefinicaoAnimacao> porId = new LinkedHashMap<>();
 
@@ -68,7 +71,9 @@ public final class CatalogoAnimacoes {
             "branco.ajoelhado.json", RECURSO_BRANCO_AJOELHADO,
             "preto.ajoelhado.json", RECURSO_PRETO_AJOELHADO,
             "branco.ajoelhado_movimento.json", RECURSO_BRANCO_AJOELHADO_MOV,
-            "preto.ajoelhado_movimento.json", RECURSO_PRETO_AJOELHADO_MOV);
+            "preto.ajoelhado_movimento.json", RECURSO_PRETO_AJOELHADO_MOV,
+            "branco.fuga_quadril.json", RECURSO_BRANCO_FUGA,
+            "preto.fuga_quadril.json", RECURSO_PRETO_FUGA);
 
     /**
      * Entrega 5G: catalogo do JOGO, tolerante. Um JSON ausente ou invalido NAO
@@ -134,6 +139,8 @@ public final class CatalogoAnimacoes {
             c.registrar(DefinicaoAnimacao.legada(p + ".movimento_chao.legada", EstadoVisual.MOVIMENTO_CHAO,
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO"));
             // 5K: transicoes de postura (TRANSICAO_AJOELHAR, _DEITAR, _ERGUER_JOELHOS, _LEVANTAR, _RAPIDA_*).
+            c.registrar(DefinicaoAnimacao.procedural(p + ".reacao_defesa.legada", EstadoVisual.REACAO_DEFESA,
+                    "animacao.ReacoesDefesa (procedural 5L: DEFESA_EVASAO, _ALCANCE_FALHO, _ROMPIMENTO_SUCESSO, _SOLTOU)"));
             c.registrar(DefinicaoAnimacao.procedural(p + ".transicao_postura.legada", EstadoVisual.TRANSICAO_POSTURA,
                     "animacao.TransicoesPostura (procedural 5K, interpola as poses das posturas no rig)"));
             // 5J: fallback em codigo (PosturaAjoelhada) quando o JSON nao carrega.

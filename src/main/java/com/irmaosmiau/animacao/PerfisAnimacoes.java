@@ -94,7 +94,8 @@ public final class PerfisAnimacoes {
         for (String[] pc : new String[][]{{CatalogoPersonagens.ID_BRANCO, "branco"}, {CatalogoPersonagens.ID_PRETO, "preto"}}) {
             PerfilAnimacoes perfil = perfilLegado(pc[0], pc[1], c);
             for (DefinicaoAnimacao d : c.todas()) {
-                if (d.fonte() == FonteAnimacao.JSON_INDIVIDUAL && d.id().startsWith(pc[1] + ".")) {
+                if (d.fonte() == FonteAnimacao.JSON_INDIVIDUAL && d.id().startsWith(pc[1] + ".")
+                        && !d.id().contains(".fuga_quadril")) {   // 5L: so pelo modo PROPOSTA (F6)
                     perfil = perfil.comAnimacao(d.estado(), d.id(), c);
                 }
             }

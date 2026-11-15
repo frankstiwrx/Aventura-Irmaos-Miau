@@ -79,6 +79,10 @@ public class Main {
             ServicoGamepads.iniciarFisico();
             Runtime.getRuntime().addShutdownHook(new Thread(ServicoGamepads::encerrar, "encerrar-gamepad"));
 
+            // Entrega 5L: o jogo comeca com as animacoes de pegada propostas (F6 volta as autorais).
+            com.irmaosmiau.combate.ModoAnimacoesPegada.definir(
+                    com.irmaosmiau.combate.ModoAnimacoesPegada.padraoDoJogo());
+
             // Entrega 5I: menus navegaveis por gamepad e teclado (sem mouse).
             new com.irmaosmiau.ui.NavegadorMenus(janela, ServicoGamepads::global, System::currentTimeMillis)
                     .instalar();

@@ -44,6 +44,9 @@ public final class FonteGamepad implements FonteAcoes {
     private final ResolvedorComandosContextuais contextual = new ResolvedorComandosContextuais();
     /** Entrega 5H: analogico direito = direcoes de tecnica (Contextual). */
     private final LeitorAnalogicoTecnicas analogicoDireito = new LeitorAnalogicoTecnicas();
+    // Entrega 5L: no CLASSICO o RS escolhe a pegada (so a borda: uma por inclinacao).
+    private com.irmaosmiau.controles.DirecaoTecnica rsClassicoAnterior;
+    private com.irmaosmiau.controles.DirecaoTecnica pegadaClassicaPendente;
     private final boolean[] gatilhoApertado = new boolean[2];
     /** Entrega 5G: pulo decidido no instante do toque (normal ou alto) e mantido ate soltar. */
     private AcaoJogador puloEscolhido;
@@ -109,6 +112,10 @@ public final class FonteGamepad implements FonteAcoes {
         // Sem leitura nao alimenta o resolvedor: a limpeza continua exigindo uma soltura REAL do D-pad.
         if (estado != null) {
             contextual.atualizar(entradaContextual(estado));
+            lerPegadaClassica(estado);
+        } else {
+            rsClassicoAnterior = null;
+            pegadaClassicaPendente = null;
         }
     }
 
@@ -175,6 +182,31 @@ public final class FonteGamepad implements FonteAcoes {
         return new EntradaContextual(dirs, base.modificador2(), base.modificador3());
     }
 
+    /** Entrega 5L: RS no CLASSICO (mesma zona morta e histerese do Contextual), uma por inclinacao. */
+    private void lerPegadaClassica(EstadoGamepad estado) {
+        if (mapa.esquema(slot) == EsquemaGamepad.CONTEXTUAL) {
+            rsClassicoAnterior = null;
+            pegadaClassicaPendente = null;
+            return;
+        }
+        if (estado.pressionado(BotaoGamepad.R3)) {
+            analogicoDireito.desarmar();
+        }
+        com.irmaosmiau.controles.DirecaoTecnica d = analogicoDireito.atualizar(
+                estado.eixo(EixoGamepad.DIR_X), estado.eixo(EixoGamepad.DIR_Y));
+        if (d != null && rsClassicoAnterior == null) {
+            pegadaClassicaPendente = d;
+        }
+        rsClassicoAnterior = d;
+    }
+
+    /** Direcao do RS escolhida no CLASSICO desde a ultima consulta (uma vez). */
+    public Optional<com.irmaosmiau.controles.DirecaoTecnica> consumirPegadaClassica() {
+        Optional<com.irmaosmiau.controles.DirecaoTecnica> d = Optional.ofNullable(pegadaClassicaPendente);
+        pegadaClassicaPendente = null;
+        return d;
+    }
+
     /** Comando contextual deste toque (esquema CONTEXTUAL), uma unica vez. */
     public Optional<PosicaoComando> consumirComandoContextual() {
         return contextual.consumir();
@@ -189,6 +221,7 @@ public final class FonteGamepad implements FonteAcoes {
     public void limparContextual() {
         contextual.limpar();
         analogicoDireito.desarmar();
+        pegadaClassicaPendente = null;
     }
 
     public MapaGamepad getMapa() {

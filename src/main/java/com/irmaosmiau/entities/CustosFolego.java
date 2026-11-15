@@ -38,6 +38,14 @@ public final class CustosFolego {
      */
     public static final double ARRASTO_POR_PIXEL = 0.0025;
 
+    // ---------------- Entrega 5L: defesa
+    /** Receptor preso que forca para sair (por tick): ~0,25/s. */
+    public static final double RESISTENCIA_POR_TICK = 0.004;
+    /** Abaixar (agachar / de joelhos) a tempo e evitar a pegada: custo unico. */
+    public static final double EVASAO_ABAIXAR = 1.5;
+    /** Quem tentou a pegada evitada paga esta fracao do custo da tecnica (gastou a tentativa). */
+    public static final double FRACAO_CUSTO_PEGADA_EVITADA = 0.5;
+
     // ---------------- Transicoes de postura (custo unico por transicao)
     public static final double AJOELHAR = 0.5;            // em pe -> ajoelhado
     public static final double DEITAR = 0.5;              // ajoelhado -> deitado

@@ -38,7 +38,8 @@ class CarregadorConteudoCombateTest {
         AnimacaoConjuntaQuadros legado = new RegistroAnimacoesCombate().buscar("pegada_1_entrada");
         // 5J (pedido): + a variante autoral do Preto (antes 1).
         // 5K (pedido): + 4 variantes EXPERIMENTAIS (antes 2); a autoral do Preto continua a primeira.
-        assertEquals(6, c.getRegistroAnimacoes().quantidade());
+        // 5L (pedido): + 6 animacoes das pegadas 2-4 (antes 6).
+        assertEquals(12, c.getRegistroAnimacoes().quantidade());
         assertEquals("pegada_1_entrada_preto", c.getRegistroAnimacoes().getVariantes("pegada_1_entrada").get(0));
         assertEquals(5, c.getRegistroAnimacoes().getVariantes("pegada_1_entrada").size());
         assertEquals(30, json.getDuracaoTotalFrames());
@@ -60,12 +61,13 @@ class CarregadorConteudoCombateTest {
         assertEquals(List.of("pegada_1", "pegada_2", "pegada_3", "pegada_4"),
                 tecnicas.listar().stream().map(AcaoCombate::getId).toList());
         assertTrue(tecnicas.buscar("pegada_1").isJogavel());
+        // 5L (pedido): as pegadas 2-4 deixaram de ser PENDENTES (antes: pendentes, sem animacao nem estado).
         for (String id : new String[]{"pegada_2", "pegada_3", "pegada_4"}) {
             AcaoCombate a = tecnicas.buscar(id);
-            assertEquals(DisponibilidadeAcao.PENDENTE, a.getDisponibilidade(), id);
-            assertFalse(a.isJogavel(), id);
-            assertFalse(a.possuiAnimacaoConjunta(), id + " nao pode ter animacao inventada");
-            assertNull(a.getEstadoInteracaoAoSucesso(), id + " nao pode ter regra inventada");
+            assertEquals(DisponibilidadeAcao.JOGAVEL, a.getDisponibilidade(), id);
+            assertTrue(a.isJogavel(), id);
+            assertEquals(id + "_entrada", a.getIdAnimacaoConjunta(), id + ": animacao propria");
+            assertEquals("PEGADA_" + id.charAt(id.length() - 1), a.getEstadoInteracaoAoSucesso().name());
             assertEquals(CategoriaAcao.PEGADA, a.getCategoria());
             assertNotNull(a.getDescricao());
         }

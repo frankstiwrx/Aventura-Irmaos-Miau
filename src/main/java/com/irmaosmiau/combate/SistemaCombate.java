@@ -32,6 +32,13 @@ public final class SistemaCombate {
     // ANIMACAO CONJUNTA ATIVA
     // =====================================================
     private AnimacaoCombateAtiva animacaoCombateAtiva;
+    // Entrega 5L: ultimo evento defensivo confirmado e resistencia do receptor neste tick.
+    private EventoDefesa ultimoEventoDefesa;
+    private long sequenciaEventos;
+    private boolean resistiuNesteTick;
+    private long ticksResistindo;
+    /** Desgaste extra da firmeza quando o receptor forca para sair (por tick). */
+    public static final double DESGASTE_RESISTENCIA_POR_TICK = 0.12;
     // Entrega 5J: variante (molde + papel) da animacao conjunta em uso.
     private SelecaoAnimacaoConjunta selecaoAnimacao;
     private final RegistroAnimacoesCombate registroAnimacoes;
@@ -262,8 +269,11 @@ public final class SistemaCombate {
             return;
         }
         double desgaste = DESGASTE_FIRMEZA_POR_TICK
-                + (deslocouNesteTick ? DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK : 0.0);
+                + (deslocouNesteTick ? DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK : 0.0)
+                + (resistiuNesteTick ? DESGASTE_RESISTENCIA_POR_TICK : 0.0);
         deslocouNesteTick = false;
+        ticksResistindo = resistiuNesteTick ? ticksResistindo + 1 : 0;
+        resistiuNesteTick = false;
         firmeza = Math.max(0.0, firmeza - desgaste);
         if (firmeza <= 1e-9) {
             firmeza = 0.0;
@@ -554,12 +564,17 @@ public final class SistemaCombate {
         if (pre != null) {
             return pre;
         }
+        // Entrega 5L: pegadas mais faceis de romper aparecem para a disputa com menos firmeza.
+        double firmezaVista = Math.min(FIRMEZA_INICIAL,
+                firmeza / ParametrosPegadas.fatorRompimento(idAcaoInteracao, aplicador));
         ResultadoDisputa disputa = disputar(TipoDisputa.ROMPIMENTO_TECNICO, receptor, aplicador,
-                CUSTO_ROMPIMENTO_TECNICO);
+                CUSTO_ROMPIMENTO_TECNICO, firmezaVista);
         if (disputa.isSucessoDoAtaque()) {
             encerrarInteracao(MotivoEncerramentoInteracao.ROMPIMENTO_TECNICO);
+            registrarEventoDefesa(EventoDefesa.Tipo.ROMPIMENTO_SUCESSO, receptor, aplicador, "ROMPER");
             return ResultadoAcaoTecnica.SUCESSO;
         }
+        registrarEventoDefesa(EventoDefesa.Tipo.ROMPIMENTO_FALHOU, receptor, aplicador, "ROMPER");
         return ResultadoAcaoTecnica.RESISTIDO;   // resistencia passiva: sem custo (5B)
     }
 
@@ -583,7 +598,8 @@ public final class SistemaCombate {
             return ResultadoAcaoTecnica.SEM_FOLEGO;
         }
         aplicador.consumirFolegoCombate(CUSTO_REFORCO);
-        firmeza = Math.min(FIRMEZA_INICIAL, firmeza + REFORCO_FIRMEZA);
+        firmeza = Math.min(FIRMEZA_INICIAL,
+                firmeza + REFORCO_FIRMEZA * ParametrosPegadas.fatorReforco(idAcaoInteracao, aplicador));
         recargaReforcoAte.put(aplicador, tick + RECARGA_REFORCO_TICKS);
         return ResultadoAcaoTecnica.SUCESSO;
     }
@@ -623,6 +639,48 @@ public final class SistemaCombate {
         return ResultadoAcaoTecnica.SUCESSO;
     }
 
+    // =====================================================
+    // ENTREGA 5L: RESISTENCIA DO RECEPTOR E EVENTOS DE DEFESA
+    // =====================================================
+    /**
+     * O RECEPTOR de uma pegada estabelecida forca para sair (andar, mudar de
+     * linha...). Ele NAO se move e a pegada NAO acaba por isso: a forca gasta
+     * a firmeza um pouco mais rapido (o aplicador pode reforcar) e custa
+     * folego ao receptor. Sem folego, a forca nao tem efeito.
+     *
+     * @return true se a resistencia contou neste tick
+     */
+    public boolean resistirPegada(IrmaoMiau receptor) {
+        validarDoCombate(receptor);
+        if (!isInteracaoEstabelecida() || receptor != receptorInteracao || resistiuNesteTick) {
+            return false;
+        }
+        if (receptor.getFolegoAtual() < com.irmaosmiau.entities.CustosFolego.RESISTENCIA_POR_TICK) {
+            // Sem folego a forca nao conta, e quem esta forcando tambem nao recupera
+            // (senao a recuperacao de um tick pagaria a forca do seguinte).
+            receptor.gastarFolegoEsforco(0.0, "resistencia sem folego");
+            return false;
+        }
+        receptor.gastarFolegoEsforco(com.irmaosmiau.entities.CustosFolego.RESISTENCIA_POR_TICK, "resistencia");
+        resistiuNesteTick = true;
+        return true;
+    }
+
+    /** Ticks seguidos em que o receptor forcou (0 = nao esta forcando). */
+    public long getTicksResistindo() {
+        return estaEmInteracao() ? ticksResistindo : 0;
+    }
+
+    /** Ultimo evento defensivo confirmado (null = nenhum ainda). */
+    public EventoDefesa getUltimoEventoDefesa() {
+        return ultimoEventoDefesa;
+    }
+
+    private void registrarEventoDefesa(EventoDefesa.Tipo tipo, IrmaoMiau defensor, IrmaoMiau oponente,
+            String detalhe) {
+        ultimoEventoDefesa = new EventoDefesa(tipo, defensor, oponente, tick, ++sequenciaEventos, detalhe);
+    }
+
     public int getRecargaReforcoRestante(IrmaoMiau lutador) {
         Long ate = recargaReforcoAte.get(lutador);
         return ate == null ? 0 : (int) Math.max(0, ate - tick);
@@ -644,7 +702,12 @@ public final class SistemaCombate {
      * quem agiu e inicia a recarga.
      */
     private ResultadoDisputa disputar(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor, double custo) {
-        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor, firmeza);
+        return disputar(tipo, atacante, defensor, custo, firmeza);
+    }
+
+    private ResultadoDisputa disputar(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor, double custo,
+            double firmezaDaDisputa) {
+        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor, firmezaDaDisputa);
         atacante.consumirFolegoCombate(custo);
         recargaAte.put(atacante, tick + RECARGA_ACAO_TECNICA_TICKS);
         return ultimaDisputa;
@@ -830,6 +893,20 @@ public final class SistemaCombate {
             return ultimoResultado;
         }
 
+        // Entrega 5L: evasao ANTES do contato (abaixar a tempo, rolando ou no ar).
+        if (acao.getCategoria() == CategoriaAcao.PEGADA && atacante.getFolegoAtual() >= acao.getCustoFolego()) {
+            String evasao = defensor.getEvasaoAtiva();
+            boolean pagou = evasao != null && (!"AGACHAMENTO".equals(evasao)
+                    || defensor.consumirFolegoCombate(com.irmaosmiau.entities.CustosFolego.EVASAO_ABAIXAR));
+            if (pagou) {
+                atacante.gastarFolegoEsforco(acao.getCustoFolego()
+                        * com.irmaosmiau.entities.CustosFolego.FRACAO_CUSTO_PEGADA_EVITADA, "pegada evitada");
+                registrarEventoDefesa(EventoDefesa.Tipo.PEGADA_EVITADA, defensor, atacante, evasao);
+                ultimoResultado = ResultadoAcao.DEFENDIDO;
+                return ultimoResultado;
+            }
+        }
+
         if (!atacante.consumirFolegoCombate(
                 acao.getCustoFolego()
         )) {
@@ -952,7 +1029,8 @@ public final class SistemaCombate {
         // Ainda nao estabelecida: depende do fim da animacao de entrada.
         referenciaAplicador = null;
         referenciaReceptor = null;
-        firmeza = FIRMEZA_INICIAL;
+        // Entrega 5L: cada pegada comeca com a sua firmeza (PEGADA_1: 100, como antes).
+        firmeza = ParametrosPegadas.firmezaInicial(idAcao, aplicador);
         deslocouNesteTick = false;
     }
 

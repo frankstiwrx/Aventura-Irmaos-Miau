@@ -746,8 +746,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             return;
         }
 
-        boolean agachando
-                = input.isAgachar();
+        // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
+        // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
+        boolean preso = receptorPreso(jogadorBranco);
+        boolean agachando = !preso && input.isAgachar();
 
         // =========================
 // DEITAR / LEVANTAR
@@ -768,10 +770,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // CORRIDA
         // =========================
-        boolean correndo
-                = input.isCorrer()
-                && !agachando
-                && !respirando;
+        boolean correndo = !preso && input.isCorrer() && !agachando && !respirando;
 
         jogadorBranco.setCorrendo(
                 correndo
@@ -780,8 +779,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // ROLAMENTO
 // =========================
-        if (input.isRolar()
-                && !rolamentoBrancoAnterior) {
+        if (!preso && input.isRolar() && !rolamentoBrancoAnterior) {
 
             Direcao direcao
                     = obterDirecao(
@@ -799,8 +797,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // SPRAWL
 // =========================
-        if (input.isSprawl()
-                && !sprawlBrancoAnterior) {
+        if (!preso && input.isSprawl() && !sprawlBrancoAnterior) {
 
             jogadorBranco.iniciarSprawl();
         }
@@ -833,12 +830,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         deslocandoConjuntoJ1 = conjunto;
 
+        if (preso && (input.isEsquerda() || input.isDireita() || input.isCima() || input.isBaixo())) {
+            resistirNaPegada(SlotJogador.JOGADOR_1, jogadorBranco);
+        }
+
         moverPersonagem(
                 jogadorBranco,
-                !conjunto && input.isEsquerda(),
-                !conjunto && input.isDireita(),
-                input.isCima(),
-                input.isBaixo(),
+                !preso && !conjunto && input.isEsquerda(),
+                !preso && !conjunto && input.isDireita(),
+                !preso && input.isCima(),
+                !preso && input.isBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -847,8 +848,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // PULO ALTO
         // =========================
-        if (input.isPular()
-                && !puloBrancoAnterior) {
+        if (!preso && input.isPular() && !puloBrancoAnterior) {
 
             jogadorBranco.pular();
         }
@@ -856,16 +856,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // PULO CURTO
         // =========================
-        if (input.isPularCurto()
-                && !puloCurtoBrancoAnterior) {
+        if (!preso && input.isPularCurto() && !puloCurtoBrancoAnterior) {
 
             jogadorBranco.pularCurto();
         }
 
-        boolean andando
-                = (!conjunto && (input.isEsquerda() || input.isDireita()))
-                || input.isCima()
-                || input.isBaixo();
+        boolean andando = !preso && ((!conjunto && (input.isEsquerda() || input.isDireita()))
+                || input.isCima() || input.isBaixo());
 
         jogadorBranco.atualizar(
                 andando,
@@ -896,8 +893,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             return;
         }
 
-        boolean agachando
-                = input.isPretoAgachar();
+        // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
+        // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
+        boolean preso = receptorPreso(jogadorPreto);
+        boolean agachando = !preso && input.isPretoAgachar();
 
         // =========================
 // DEITAR / LEVANTAR
@@ -917,10 +916,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // CORRIDA
         // =========================
-        boolean correndo
-                = input.isPretoCorrer()
-                && !agachando
-                && !respirando;
+        boolean correndo = !preso && input.isPretoCorrer() && !agachando && !respirando;
 
         jogadorPreto.setCorrendo(
                 correndo
@@ -929,8 +925,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // ROLAMENTO
 // =========================
-        if (input.isPretoRolar()
-                && !rolamentoPretoAnterior) {
+        if (!preso && input.isPretoRolar() && !rolamentoPretoAnterior) {
 
             Direcao direcao
                     = obterDirecao(
@@ -948,8 +943,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // SPRAWL
 // =========================
-        if (input.isPretoSprawl()
-                && !sprawlPretoAnterior) {
+        if (!preso && input.isPretoSprawl() && !sprawlPretoAnterior) {
 
             jogadorPreto.iniciarSprawl();
         }
@@ -982,12 +976,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         deslocandoConjuntoJ2 = conjunto;
 
+        if (preso && (input.isPretoEsquerda() || input.isPretoDireita() || input.isPretoCima() || input.isPretoBaixo())) {
+            resistirNaPegada(SlotJogador.JOGADOR_2, jogadorPreto);
+        }
+
         moverPersonagem(
                 jogadorPreto,
-                !conjunto && input.isPretoEsquerda(),
-                !conjunto && input.isPretoDireita(),
-                input.isPretoCima(),
-                input.isPretoBaixo(),
+                !preso && !conjunto && input.isPretoEsquerda(),
+                !preso && !conjunto && input.isPretoDireita(),
+                !preso && input.isPretoCima(),
+                !preso && input.isPretoBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -996,8 +994,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // PULO ALTO
         // =========================
-        if (input.isPretoPular()
-                && !puloPretoAnterior) {
+        if (!preso && input.isPretoPular() && !puloPretoAnterior) {
 
             jogadorPreto.pular();
         }
@@ -1005,17 +1002,15 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // PULO CURTO
         // =========================
-        if (input.isPretoPularCurto()
-                && !puloCurtoPretoAnterior) {
+        if (!preso && input.isPretoPularCurto() && !puloCurtoPretoAnterior) {
 
             jogadorPreto.pularCurto();
         }
 
-        boolean andando
-                = input.isPretoEsquerda()
+        boolean andando = !preso && (input.isPretoEsquerda()
                 || input.isPretoDireita()
                 || input.isPretoCima()
-                || input.isPretoBaixo();
+                || input.isPretoBaixo());
 
         jogadorPreto.atualizar(
                 andando,
@@ -1117,7 +1112,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 if (!tocadas.get(slot).contains(acao)) {
                     continue;
                 }
-                if (acao == AcaoJogador.INICIAR_PEGADA && !interacaoAntes && sistemaCombate.estaEmInteracao()) {
+                if (AcoesContextuais.idPegada(acao) != null && !interacaoAntes && sistemaCombate.estaEmInteracao()) {
                     continue;   // o outro slot ja comecou a pegada neste tick
                 }
                 executarAcaoCombate(slot, acao);
@@ -1127,6 +1122,22 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5F: D-pad contextual (3 camadas), pelo mesmo caminho das teclas.
         for (SlotJogador slot : SlotJogador.values()) {
             dispositivos.consumirComandoContextual(slot).ifPresent(p -> executarComandoContextual(slot, p));
+            // Entrega 5L: no Classico o RS so escolhe a pegada, e so com o lutador livre.
+            dispositivos.consumirPegadaClassica(slot).ifPresent(d -> executarPegadaClassica(slot, d));
+        }
+    }
+
+        /** Entrega 5L: o lutador e o receptor de uma pegada ja estabelecida (fica preso). */
+    private boolean receptorPreso(IrmaoMiau l) {
+        return sistemaCombate != null && sistemaCombate.isInteracaoEstabelecida()
+                && sistemaCombate.getReceptorInteracao() == l;
+    }
+
+    /** Entrega 5L: forcar a saida vira resistencia (firmeza cai mais rapido), nunca fuga. */
+    private void resistirNaPegada(SlotJogador slot, IrmaoMiau receptor) {
+        boolean contou = sistemaCombate.resistirPegada(receptor);
+        if (contou && sistemaCombate.getTicksResistindo() == 0) {
+            feedback.mostrarInfo(slot.getSigla() + ": PRESO NA PEGADA · use ROMPER", tick);
         }
     }
 
@@ -1161,6 +1172,22 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         } else {
             feedback.mostrarInfo(c.get().rotulo() + ": ainda não disponível no jogo", tick);
         }
+    }
+
+    /** Entrega 5L: RS no Classico = as 4 pegadas (livre); com pegada, nada (os botoes do Classico agem). */
+    private void executarPegadaClassica(SlotJogador slot, com.irmaosmiau.controles.DirecaoTecnica d) {
+        if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+            return;
+        }
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        if (com.irmaosmiau.controles.PapelCombate.de(sistemaCombate, ator) != com.irmaosmiau.controles.PapelCombate.LIVRE) {
+            return;
+        }
+        RepertorioContextual.celula(RepertorioContextual.paraCombate(sistemaCombate, slot, ator,
+                ator == jogadorBranco ? jogadorPreto : jogadorBranco),
+                new PosicaoComando(CamadaComando.UM, d))
+                .filter(CelulaContextual::isExecutavel)
+                .ifPresent(c -> executarAcaoCombate(slot, c.acao()));
     }
 
     /** "D-pad", "LT + D-pad", "LT + LB + D-pad" com os botoes configurados. */
@@ -1198,9 +1225,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
 
         switch (acao) {
-            case INICIAR_PEGADA -> {
-                ResultadoAcao resultado = sistemaCombate.tentarAcao(ator, outro, "pegada_1");
-                feedback.registrarTentativa(sistemaCombate, ator, outro, "pegada_1", resultado, tick);
+            // Entrega 5L: as quatro pegadas pelo mesmo caminho (o motor decide alcance, custo e evasao).
+            case INICIAR_PEGADA, PEGADA_2, PEGADA_3, PEGADA_4 -> {
+                String id = AcoesContextuais.idPegada(acao);
+                ResultadoAcao resultado = sistemaCombate.tentarAcao(ator, outro, id);
+                feedback.registrarTentativa(sistemaCombate, ator, outro, id, resultado, tick);
                 if (resultado == ResultadoAcao.SUCESSO) {
                     audio.tocarEfeito(AudioJogo.EFEITO_PEGADA);
                 }
@@ -2499,7 +2528,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         Graphics2D d = (Graphics2D) g2.create();
         d.translate(0, 30);
         d.setColor(new Color(255, 255, 255, 170));
-        d.fillRoundRect(262, 32, 400, 224 + 74 + 68, 8, 8);
+        d.fillRoundRect(262, 32, 520, 224 + 74 + 68 + 17, 8, 8);
         desenharDebugCombate(d);
         // Entrega 5J: postura, papeis, variante da animacao e camadas visuais.
         d.setColor(new Color(20, 40, 90));
@@ -2545,7 +2574,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         l.add("ARRASTO: " + arrasto + " | DESEQUILIBRIO: " + deseq);
         // Entrega 5K: modo de comparacao, folego, custo e consequencia do desequilibrio.
-        l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual());
+        l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual().rotulo());
         l.add("FOLEGO J1: " + folego(jogadorBranco) + " | J2: " + folego(jogadorPreto));
         StringBuilder efeitos = new StringBuilder();
         for (IrmaoMiau x : List.of(jogadorBranco, jogadorPreto)) {
@@ -2556,6 +2585,15 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         l.add(efeitos.length() == 0 ? "CONSEQUENCIA: -" : "CONSEQUENCIA: " + efeitos.toString().trim());
         l.add("TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto));
+        // Entrega 5L: tipo de pegada, defesa e encerramento.
+        String tecnica = sistemaCombate.estaEmInteracao()
+                ? com.irmaosmiau.combate.ParametrosPegadas.de(sistemaCombate.getIdAcaoInteracao()).nome() : "-";
+        com.irmaosmiau.combate.EventoDefesa ev = sistemaCombate.getUltimoEventoDefesa();
+        l.add("PEGADA: " + tecnica
+                + (sistemaCombate.getTicksResistindo() > 0 ? " | RECEPTOR FORCANDO (" + sistemaCombate.getTicksResistindo() + ")" : "")
+                + " | DEFESA: " + (ev == null ? "-" : ev.tipo() + " " + ev.detalhe() + " (" + rotuloSlot(ev.defensor()) + ")")
+                + " | FIM: " + (sistemaCombate.getUltimoMotivoEncerramento() == null ? "-"
+                        : sistemaCombate.getUltimoMotivoEncerramento()));
         return l;
     }
 
@@ -2593,7 +2631,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5K: F6 = compara animacoes de pegada (AUTORAL <-> EXPERIMENTAL), vale na proxima pegada.
         atalho("F6", "alternarAnimacoesPegada", () -> {
             com.irmaosmiau.combate.ModoAnimacoesPegada m = com.irmaosmiau.combate.ModoAnimacoesPegada.alternar();
-            feedback.mostrarInfo("ANIMAÇÕES DE PEGADA: " + m + " (na próxima pegada)", tick);
+            feedback.mostrarInfo("ANIMAÇÕES DE PEGADA: " + m.rotulo() + " (na próxima pegada)", tick);
             repaint();
         });
         atalho("F4", "proximoCenario", () -> {

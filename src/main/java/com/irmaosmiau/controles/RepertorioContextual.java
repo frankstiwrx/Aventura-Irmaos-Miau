@@ -40,6 +40,10 @@ public final class RepertorioContextual {
             EXECUTAVEIS.put(p, new java.util.LinkedHashMap<>());
         }
         EXECUTAVEIS.get(PapelCombate.LIVRE).put(c1(DirecaoTecnica.CIMA), AcaoJogador.INICIAR_PEGADA);
+        // Entrega 5L: livre, as quatro direcoes sao as quatro pegadas.
+        EXECUTAVEIS.get(PapelCombate.LIVRE).put(c1(DirecaoTecnica.DIREITA), AcaoJogador.PEGADA_2);
+        EXECUTAVEIS.get(PapelCombate.LIVRE).put(c1(DirecaoTecnica.BAIXO), AcaoJogador.PEGADA_3);
+        EXECUTAVEIS.get(PapelCombate.LIVRE).put(c1(DirecaoTecnica.ESQUERDA), AcaoJogador.PEGADA_4);
         EXECUTAVEIS.get(PapelCombate.APLICADOR).put(c1(DirecaoTecnica.CIMA), AcaoJogador.REFORCAR_PEGADA);
         EXECUTAVEIS.get(PapelCombate.APLICADOR).put(c1(DirecaoTecnica.DIREITA), AcaoJogador.TENTAR_DESEQUILIBRIO);
         EXECUTAVEIS.get(PapelCombate.RECEPTOR).put(c1(DirecaoTecnica.BAIXO), AcaoJogador.ROMPIMENTO_TECNICO);
@@ -63,6 +67,9 @@ public final class RepertorioContextual {
     public static String rotuloCurto(AcaoJogador a) {
         return switch (a) {
             case INICIAR_PEGADA -> "PEGAR";
+            case PEGADA_2 -> "CRUZADA";
+            case PEGADA_3 -> "MANGAS";
+            case PEGADA_4 -> "NUCA";
             case TENTAR_DESEQUILIBRIO -> "DESEQ.";
             case REFORCAR_PEGADA -> "REFORÇO";
             case ROMPIMENTO_TECNICO -> "ROMPER";
@@ -121,7 +128,8 @@ public final class RepertorioContextual {
 
     static boolean disponivelAgora(SistemaCombate s, AcaoJogador a, IrmaoMiau ator, IrmaoMiau outro) {
         return switch (a) {
-            case INICIAR_PEGADA -> s.podeTentarAcao(ator, outro, "pegada_1");
+            case INICIAR_PEGADA, PEGADA_2, PEGADA_3, PEGADA_4 ->
+                    s.podeTentarAcao(ator, outro, AcoesContextuais.idPegada(a));
             case TENTAR_DESEQUILIBRIO, ROMPIMENTO_TECNICO -> s.getRecargaRestante(ator) == 0;
             case REFORCAR_PEGADA -> s.getRecargaReforcoRestante(ator) == 0 && s.getFirmeza() < 100;
             default -> true;
