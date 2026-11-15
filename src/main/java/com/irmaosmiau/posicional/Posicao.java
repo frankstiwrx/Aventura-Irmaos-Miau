@@ -25,7 +25,14 @@ public enum Posicao {
     /** Um em pe (por cima) e o outro no chao, sem vinculo: o de pe pode entrar, o de baixo pode levantar. */
     EM_PE_CONTRA_SOLO("Um em pé, outro no chão", true, false),
     /** Os dois no chao sem controle (queda sem controle consolidado, viradas, escapes para o neutro). */
-    SOLO_DISPUTADO("Solo disputado", true, false);
+    SOLO_DISPUTADO("Solo disputado", true, false),
+    // ---- Entrega 5P.2: variacoes de guarda (quem esta por baixo controla) ----
+    /** Borboleta: sentado, ganchos por dentro das coxas; quem esta por cima de joelhos. */
+    GUARDA_BORBOLETA("Guarda borboleta", true, false),
+    /** De La Riva: gancho por fora de uma perna de quem esta EM PE. */
+    DE_LA_RIVA("Guarda De La Riva", true, false),
+    /** Laco: a perna enrolada na MANGA do outro (exige a conexao de manga); quem esta por cima em pe. */
+    GUARDA_LACO("Guarda laço", true, false);
 
     private final String nome;
     private final boolean noChao;
@@ -57,6 +64,17 @@ public enum Posicao {
     /** 5P: os dois corpos estao LIGADOS (nenhum se afasta livremente; o folego nao recupera). */
     public boolean isVinculoDeSolo() {
         return noChao && this != EM_PE_CONTRA_SOLO;
+    }
+
+    /** 5P.2: alguma guarda (quem esta por baixo controla a posicao). */
+    public boolean isGuarda() {
+        return this == GUARDA || this == GUARDA_ABERTA || this == MEIA_GUARDA || this == GUARDA_BORBOLETA
+                || this == DE_LA_RIVA || this == GUARDA_LACO;
+    }
+
+    /** 5P.2: guardas em que quem esta por cima fica EM PE (o gancho/laco prende uma perna de pe). */
+    public boolean isGuardaComOutroEmPe() {
+        return this == DE_LA_RIVA || this == GUARDA_LACO;
     }
 
     public boolean isJogavelNoJogo() {

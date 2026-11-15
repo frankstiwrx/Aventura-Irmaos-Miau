@@ -38,8 +38,40 @@ public record TecnicaSolo(
         CIMA, DIREITA, BAIXO, ESQUERDA
     }
 
-    /** Comando: direcao + modificador de quedas (RB/Select). */
-    public record ComandoSolo(Direcao direcao, boolean explosivo) {
+    /**
+     * 5P.2: a FAMILIA do comando (o modificador segurado com o RS). Nomes no
+     * padrao PlayStation (L1 = LB, L2 = LT, R1 = RB/Select, R2 = RT).
+     * - RS: fundamentos (avancar, segurar, lados);
+     * - R1: tatico / explosivo (quedas em pe, upa, levantar, sair da posicao);
+     * - L1: guardas (em pe: entradas; no chao: variacoes) e finalizacoes futuras;
+     * - L2: quedas especificas (em pe) / controles de manga e finalizacoes futuras;
+     * - L1_L2: especiais (berimbolo) e a terceira familia de finalizacoes.
+     */
+    public enum Familia {
+        RS("RS"), R1("R1"), L1("L1"), L2("L2"), L1_L2("L1+L2");
+
+        private final String rotulo;
+
+        Familia(String rotulo) {
+            this.rotulo = rotulo;
+        }
+
+        public String getRotulo() {
+            return rotulo;
+        }
+    }
+
+    /** Comando: direcao + familia (5P: o booleano antigo = RS / R1). */
+    public record ComandoSolo(Direcao direcao, Familia familia) {
+
+        public ComandoSolo(Direcao direcao, boolean explosivo) {
+            this(direcao, explosivo ? Familia.R1 : Familia.RS);
+        }
+
+        /** R1 (RB/Select): a familia explosiva da 5P. */
+        public boolean explosivo() {
+            return familia == Familia.R1;
+        }
     }
 
     /** Vulnerabilidade temporaria (contextual). */
@@ -53,7 +85,9 @@ public record TecnicaSolo(
         /** Avanco excessivo de um empurrao bloqueado (o outro empurra / derruba). */
         AVANCO,
         /** Entrada nas pernas: o sprawl do outro vence. */
-        PERNAS
+        PERNAS,
+        /** 5P.2: pernas presas por quem esta em pe (a retencao com os pes nao funciona). */
+        PERNAS_PRESAS
     }
 
     /** O que precisa ser verdade no fim da janela. */
@@ -65,7 +99,9 @@ public record TecnicaSolo(
         /** O outro nao esta em postura (guarda) OU esta exposto. */
         SEM_POSTURA_DO_OUTRO,
         /** So se o outro estiver exposto. */
-        OUTRO_EXPOSTO
+        OUTRO_EXPOSTO,
+        /** 5P.2: o PROPRIO controle (de quem controla e inicia) no limiar ou acima, e o outro sem postura. */
+        CONTROLE_PROPRIO
     }
 
     /** Efeito das tecnicas instantaneas (ajustes de controle, sem trocar de posicao). */
@@ -80,7 +116,17 @@ public record TecnicaSolo(
         /** Quebra a postura do outro (expoe POSTURA_QUEBRADA por 40 ticks). */
         QUEBRAR_POSTURA,
         /** Montada alta: +35 de estabilidade, mas a base fica alta (expoe BASE por 20 ticks). */
-        MONTADA_ALTA
+        MONTADA_ALTA,
+        /** 5P.2: desequilibra o outro (expoe BASE por 30 ticks): a raspagem passa pela postura. */
+        DESEQUILIBRAR,
+        /** 5P.2: em pe, prende as pernas de quem esta no chao (expoe PERNAS_PRESAS por 45 ticks). */
+        CONTROLAR_PERNAS,
+        /** 5P.2: segura a manga do outro (conexao MANGA, pre-requisito da guarda laco). */
+        PEGAR_MANGA,
+        /** 5P.2: solta a manga presa pelo outro (perde a conexao; do laco volta para a guarda aberta). */
+        LIVRAR_MANGA,
+        /** 5P.2: recua / cria distancia (sem vinculo). */
+        RECUAR
     }
 
     public boolean isInstantanea() {

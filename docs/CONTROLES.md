@@ -1113,3 +1113,22 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
   apertado** na entrada do outro = base.
 - Caindo: ↑ fechar a guarda, ←/→ meia-guarda (a cruz mostra "CAINDO: COMO RECEBER?").
 - Pausa (ESC / Start): **REINICIAR LUTA** recomeça a mesma luta. F5 continua reiniciando o treino.
+
+# Entrega 5P.2 — Famílias L1 / L2 / L1+L2, pegada ativa e desengajar
+
+| Nome | Xbox | Teclado virtual J2 | Teclado J1 |
+|---|---|---|---|
+| L1 | LB | E | — |
+| L2 | LT | Q | — |
+| L1 + L2 | LT + LB | Q + E | — |
+| R1 | RB / Select | O / SHIFT | 4 |
+| R2 | RT | P | 3 |
+| RS | analógico direito | setas | 2/6/7/8 (teclas de pegada) |
+
+- **Aplicando a pegada**: RS ← tiro de guarda, RS ↓ derrubada forçada (↑ reforço e → desequilíbrio como antes).
+- **L1 + RS em pé** = guardas (↑ tiro, ↓ puxar guarda, ← borboleta, → De La Riva).
+- **L2 + RS em pé** = quedas (↑ rasteira, → quadril, ← manga, ↓ derrubada forçada).
+- **L1 + L2 + RS** = especiais (berimbolo na De La Riva).
+- **R1 ↓** = sair: abrir e afastar (por baixo), criar espaço e levantar (por cima), soltar a posição (dominando).
+- Na guarda, montada, 100 kg e costas, L1/L2/L1+L2 mostram as **finalizações futuras** com `*` (não executam).
+- Tabelas completas em `docs/COMBATE_SOLO.md`; plano das finalizações em `docs/FINALIZACOES_PLANEJAMENTO.md`.

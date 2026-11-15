@@ -28,6 +28,8 @@ public final class PainelDpadContextual {
     public static final int LARGURA = 138;
     public static final int ALTURA = 62;
     public static final int Y = 66;
+    /** 5P.2: o que aparece quando o contexto nao tem nenhuma acao. */
+    public static final String TEXTO_VAZIO = "sem técnica neste contexto";
 
     /** O que desenhar (montado pelo GamePanel, testavel sem tela). */
     public record Quadro(String sigla, CamadaComando camada, String nomeCamada,
@@ -96,6 +98,15 @@ public final class PainelDpadContextual {
 
         g.setFont(ROTULO);
         FontMetrics fm = g.getFontMetrics();
+        if (q.celulas().isEmpty()) {
+            // 5P.2: sem nada neste contexto: aviso discreto em vez de um painel "quebrado"
+            g.setFont(PEQUENA);
+            g.setColor(VAZIA);
+            String t = TEXTO_VAZIO;
+            g.drawString(t, cx - g.getFontMetrics().stringWidth(t) / 2, cy + 21);
+            g.dispose();
+            return;
+        }
         escrever(g, fm, q, DirecaoTecnica.CIMA, cx, cy - 13, 0);
         escrever(g, fm, q, DirecaoTecnica.BAIXO, cx, cy + 21, 0);
         escrever(g, fm, q, DirecaoTecnica.ESQUERDA, cx - 13, cy + 4, -1);

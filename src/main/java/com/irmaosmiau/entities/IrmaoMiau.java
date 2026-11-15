@@ -2234,6 +2234,24 @@ public void alternarDeitado() {
      * Esforco do motor de combate (ex.: arrastar): gasta o que der, sem
      * deixar negativo, e suspende a recuperacao passiva neste tick.
      */
+    /** 5P.2: desgaste de CONDICIONAMENTO de uma acao/impacto (nunca negativo). */
+    public void gastarCondicionamentoEsforco(double quantidade, String motivo) {
+        if (quantidade < 0) {
+            throw new IllegalArgumentException("O custo de condicionamento nao pode ser negativo.");
+        }
+        gastarCondicionamento(quantidade);
+    }
+
+    /** 5P.2: 0 (descansado) a 1 (condicionamento zerado); efeitos graduais. */
+    public double fatorExaustao() {
+        return CustosFolego.fatorExaustao(condicionamentoAtual, atributos.getCondicionamento());
+    }
+
+    /** 5P.2: exaustao critica (identificada; a luta NAO termina por isso nesta entrega). */
+    public boolean isExaustaoCritica() {
+        return condicionamentoAtual <= atributos.getCondicionamento() * CustosFolego.LIMIAR_EXAUSTAO_CRITICA;
+    }
+
     public void gastarFolegoEsforco(double quantidade, String motivo) {
         if (quantidade < 0) {
             throw new IllegalArgumentException("O custo de folego nao pode ser negativo.");
@@ -3076,7 +3094,8 @@ private void recuperarFolegoRespirando() {
             calcularTaxaRecuperacaoFolego()
             * 15.0
             * CustosFolego.recuperacaoRespirando(posturaBase())   // 5O.2: por postura
-            * contexto;
+            * contexto
+            * (1.0 - CustosFolego.EXAUSTAO_RESPIRACAO * fatorExaustao());   // 5P.2: exausto respira pior
 
     folegoAtual += taxa;
 

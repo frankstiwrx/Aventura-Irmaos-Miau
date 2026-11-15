@@ -20,7 +20,8 @@ public final class NarradorSolo {
         String o = sigla(e.lado().outro());
         return switch (e.tipo()) {
             case "SUCESSO", "CONTRA" -> sucesso(e.tecnica(), e.detalhe(), q, o);
-            case "REVERSAO" -> q + " reverteu a queda!";
+            case "REVERSAO" -> e.tecnica().equals(CatalogoTecnicasSolo.PROJECAO_QUADRIL)
+                    ? q + " bloqueou o quadril e reverteu!" : q + " reverteu a queda!";
             case "SPRAWL" -> q + " defendeu com sprawl!";
             case "ATERRISSOU" -> switch (e.tecnica()) {
                 case "GUARDA" -> o + " fechou a guarda!";
@@ -28,7 +29,15 @@ public final class NarradorSolo {
                 default -> q + " chegou aos 100 quilos!";
             };
             case "DEFENDIDA" -> switch (e.tecnica()) {
-                case CatalogoTecnicasSolo.QUEDA_PEGADA, CatalogoTecnicasSolo.EMPURRAO -> o + " defendeu a queda!";
+                case CatalogoTecnicasSolo.QUEDA_PEGADA, CatalogoTecnicasSolo.EMPURRAO, CatalogoTecnicasSolo.RASTEIRA,
+                        CatalogoTecnicasSolo.QUEDA_MANGA, CatalogoTecnicasSolo.DERRUBADA_FORCADA -> o + " defendeu a queda!";
+                case CatalogoTecnicasSolo.TIRO_GUARDA -> o + " defendeu o tiro de guarda!";
+                case CatalogoTecnicasSolo.PASSAR_BORBOLETA, CatalogoTecnicasSolo.PASSAR_DLR,
+                        CatalogoTecnicasSolo.PASSAR_LACO -> o + " manteve a guarda!";
+                case CatalogoTecnicasSolo.RASPAGEM_BORBOLETA, CatalogoTecnicasSolo.RASPAGEM_DLR,
+                        CatalogoTecnicasSolo.RASPAGEM_LACO -> o + " segurou a raspagem!";
+                case CatalogoTecnicasSolo.BERIMBOLO -> o + " parou o berimbolo!";
+                case CatalogoTecnicasSolo.SAIR_DA_GUARDA -> o + " segurou na guarda!";
                 case CatalogoTecnicasSolo.PASSAR_GUARDA, CatalogoTecnicasSolo.LIBERAR_PERNA,
                         CatalogoTecnicasSolo.PASSAGEM_EM_PE, CatalogoTecnicasSolo.JOELHO_CORTANDO -> o + " manteve a guarda!";
                 case CatalogoTecnicasSolo.RASPAGEM, CatalogoTecnicasSolo.RASPAGEM_MEIA -> o + " segurou a raspagem!";
@@ -39,6 +48,7 @@ public final class NarradorSolo {
                 default -> null;
             };
             case "SOLO_LIVRE" -> q + " foi ao chão.";
+            case "EXAUSTAO" -> q + " está exausto!";
             default -> null;
         };
     }
@@ -51,6 +61,29 @@ public final class NarradorSolo {
                     detalhe.contains("sem controle") ? "Os dois foram ao chão!" : q + " derrubou " + o + "!";
             case CatalogoTecnicasSolo.PUXAR_GUARDA, CatalogoTecnicasSolo.PUXAR_PARA_GUARDA,
                     CatalogoTecnicasSolo.CONECTAR_GUARDA -> q + " puxou para a guarda!";
+            case CatalogoTecnicasSolo.TIRO_GUARDA -> q + " deu um tiro de guarda!";
+            case CatalogoTecnicasSolo.DERRUBADA_FORCADA -> detalhe.startsWith("desequilibrou")
+                    ? q + " desequilibrou " + o + "!" : q + " forçou " + o + " ao chão!";
+            case CatalogoTecnicasSolo.RASTEIRA -> q + " derrubou " + o + " com uma rasteira!";
+            case CatalogoTecnicasSolo.PROJECAO_QUADRIL -> q + " projetou " + o + " pelo quadril!";
+            case CatalogoTecnicasSolo.QUEDA_MANGA -> q + " derrubou " + o + " pela manga!";
+            case CatalogoTecnicasSolo.PUXAR_BORBOLETA, CatalogoTecnicasSolo.CONECTAR_BORBOLETA,
+                    CatalogoTecnicasSolo.IR_BORBOLETA -> q + " entrou na borboleta.";
+            case CatalogoTecnicasSolo.PUXAR_DLR, CatalogoTecnicasSolo.CONECTAR_DLR,
+                    CatalogoTecnicasSolo.IR_DLR -> q + " entrou na De La Riva.";
+            case CatalogoTecnicasSolo.IR_LACO -> q + " montou o laço na manga.";
+            case CatalogoTecnicasSolo.PRENDER_PERNAS -> q + " prendeu as pernas de " + o + ".";
+            case CatalogoTecnicasSolo.JOELHO_DIRETO -> q + " colocou o joelho na barriga!";
+            case CatalogoTecnicasSolo.BERIMBOLO -> q + " pegou as costas com berimbolo!";
+            case CatalogoTecnicasSolo.PASSAR_BORBOLETA, CatalogoTecnicasSolo.PASSAR_DLR,
+                    CatalogoTecnicasSolo.PASSAR_LACO -> q + " passou a guarda!";
+            case CatalogoTecnicasSolo.RASPAGEM_BORBOLETA, CatalogoTecnicasSolo.RASPAGEM_DLR,
+                    CatalogoTecnicasSolo.RASPAGEM_LACO -> q + " conseguiu uma raspagem!";
+            case CatalogoTecnicasSolo.LIVRAR_GANCHO -> q + " livrou a perna do gancho.";
+            case CatalogoTecnicasSolo.SOLTAR_MANGA -> q + " soltou a manga do laço.";
+            case CatalogoTecnicasSolo.AFASTAR_DA_GUARDA -> q + " afastou e saiu da guarda.";
+            case CatalogoTecnicasSolo.SAIR_DA_GUARDA -> q + " levantou da guarda.";
+            case CatalogoTecnicasSolo.ABANDONAR_POSICAO -> q + " soltou a posição.";
             case CatalogoTecnicasSolo.ENTRAR_GUARDA -> q + " entrou na guarda!";
             case CatalogoTecnicasSolo.PASSAGEM_EM_PE, CatalogoTecnicasSolo.PASSAR_GUARDA,
                     CatalogoTecnicasSolo.LIBERAR_PERNA -> q + " passou a guarda!";

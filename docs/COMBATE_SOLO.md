@@ -279,3 +279,114 @@ PUXAR GUARDA (em pé ou do chão) · FECHAR (a própria guarda) · MANTER (reten
 
 Pausa → **REINICIAR LUTA**: mesmo caminho do "tentar novamente" (mesmos Miaus, arena, modo, início e tempo);
 fôlego, posições, pegadas, solo e avisos zerados. F5 do treino continua igual.
+
+# Entrega 5P.2 — Famílias contextuais, guardas novas, desengajar e condicionamento
+
+Nomes (padrão PlayStation): **L1** = LB / E, **L2** = LT / Q, **R1** = RB / O (Select = RB), **R2** = RT / P,
+**RS** = analógico direito / setas. Os mapeamentos físicos não mudaram.
+
+## Famílias: antes e depois
+
+| Família | Antes (5P.1) | Agora (5P.2) |
+|---|---|---|
+| RS | fundamentos no chão; pegadas / reforço / desequilíbrio / romper em pé | igual + **aplicador da pegada**: ← tiro de guarda, ↓ derrubada forçada |
+| R1 + RS | quedas em pé; explosivos no chão (upa, levantar...) | igual + **guarda fechada por baixo**: ↑ desequilibrar, ←/→ ângulo, ↓ abrir e afastar; **por cima em qualquer guarda**: ↓ criar espaço e levantar; **dominando**: ↓ soltar a posição; **solo livre**: em pé ↓ joelho direto, no chão ↓ afastar |
+| L1 + RS | reservado (células "GUARDA*" da 5E) | **guardas**: em pé ↑ tiro, ↓ puxar guarda, ← borboleta, → De La Riva; no chão por baixo: roda de guardas (↑ aberta, ← borboleta, → DLR, ↓ laço); posições de controle: finalizações futuras |
+| L2 + RS | reservado ("QUEDA*") | **quedas** com a pegada: ↑ rasteira, → projeção de quadril, ← queda pela manga, ↓ derrubada forçada; no chão: ↓ pegar a manga; posições de controle: finalizações futuras |
+| L1 + L2 + RS | vazio | **especiais**: ↑ berimbolo (De La Riva); posições de controle: 3ª família de finalizações; em pé: nada |
+
+### Prioridade (uma ação por comando)
+
+1. L1 e L2 segurados juntos = sempre **L1+L2** (a camada QUATRO do Contextual): nunca a família de um só.
+2. RB segurado = R1 (a família PROJEÇÕES do 5O; RT + RB continua = defesas).
+3. A técnica do **catálogo** vence; se não há técnica e a posição/papel tem espaço de finalização, o comando
+   é recusado como "FINALIZAÇÃO FUTURA" (sem custo).
+4. Em pé com a pegada, RS ↑ / → continuam no `SistemaCombate` (reforço, desequilíbrio) e RS ← / ↓ vão para o
+   motor (tiro, derrubada). O receptor continua com RS ↓ = romper e o arrasto.
+5. Teste automático: para todas as posições, papéis, famílias e direções existe **no máximo uma** técnica,
+   e nenhum espaço de finalização colide com uma técnica real.
+
+## Pegada ativa: tiro de guarda e derrubada forçada
+
+- **Tiro de guarda** (RS ← ou L1 ↑; aplicador): janela 12 (×1,3), custo 4, explosiva. Dá certo → guarda
+  fechada com quem saltou controlando (estabilidade 55). Falha (o outro **recua**, faz **base** com RT na
+  janela, ou firmeza < 40) → quem saltou cai **deitado sem guarda** e o outro fica em pé.
+- **Derrubada forçada** (RS ↓ ou L2 ↓; aplicador): janela 16, custo 5, exposição de avanço. Tira 40 + 30% da
+  firmeza da base do outro; só derruba quem fica **sem base** (ou exposto) — a primeira normalmente só
+  desequilibra. LS para o outro no fim = acompanha (aterrissagem por cima). Base firme (RT) → quem forçou
+  perde base e fica com o avanço exposto (o outro pode empurrar/derrubar).
+
+## Quedas novas (L2, exigem a pegada estabelecida e aplicada por quem tenta)
+
+| Técnica | Pegada | Janela / custo | Entra quando | Falha |
+|---|---|---|---|---|
+| Rasteira (↑) | qualquer | 10 / 4,0 | o outro anda (LS), está sem base ou exposto | pé firme: exposto 20 ticks |
+| Projeção de quadril (→) | cruzada ou nuca | 22 / 6,5 | sem base firme do outro | base firme na janela = **reversão** (quem projetava cai) |
+| Queda pela manga (←) | duas mangas | 18 / 5,5 | firmeza ≥ 30, ou sem base | base firme: exposto 30 ticks |
+
+## Guardas novas
+
+| Guarda | Entrada | Por baixo | Por cima | Saídas |
+|---|---|---|---|---|
+| **Borboleta** (de joelhos por cima) | L1 ← em pé (perto ou com pegada), L1 ← do chão (solo livre), roda de guardas | ↑ elevação (raspa: fica por cima na guarda aberta do outro), ←/→ desequilibrar, ↓ manter os ganchos | ↑ amassar e passar (controle < 60), ↓ base, ←/→ tirar os ganchos | passar, raspar, levantar, afastar |
+| **De La Riva** (por cima **em pé**) | L1 → com pegada, L1 → do chão, roda | ↑ raspagem (meia por cima), ←/→ desequilibrar, ↓ manter o gancho, **L1+L2 ↑ berimbolo** (controle ≥ 50 e o outro sem base → costas) | ↑ quebrar o gancho e passar (controle < 55), ↓ base, ←/→ livrar a perna | idem + livrar a perna |
+| **Laço** (por cima em pé) | só com a **manga** (L2 ↓ pegar a manga, ou ter caído com a pegada das mangas) e L1 ↓ | ↑ raspagem pelo próprio controle (≥ 40), ↓ travar o laço | ↑ passar (controle < 45, mais difícil), ↓ base, ←/→ soltar a manga (volta à guarda aberta) | idem |
+
+A roda de guardas (por baixo, L1) é uma transição curta (6 ticks) e **exposta**: um passe do outro na janela
+entra como contra. Sair das guardas solta a manga.
+
+## Solo livre (um em pé, outro no chão)
+
+| Quem | RS | R1 | L1 |
+|---|---|---|---|
+| Em pé | ↑ entrar na guarda, ↓ recuar, ←/→ prender as pernas | ↑ passagem em pé, ↓ joelho na barriga direto (só com o outro exposto: pernas presas, levantando...) | — |
+| No chão | ↑ levantar, ↓ pés (distância), ←/→ puxar para a guarda aberta | ↓ afastar | ← borboleta, → De La Riva |
+
+Aproximar-se não muda a posição (nada de cem quilos automático); só uma entrada que dá certo consolida.
+Pernas presas: a retenção com os pés não serve como contra ("PERNAS PRESAS").
+
+## Desengajar e levantar
+
+- **Soltar o próprio controle é simples**: quem domina (100 kg, joelho, montada, costas) usa R1 ↓ "soltar a
+  posição" (janela 6) → fica em pé contra quem está no chão, sem vínculo.
+- **Na guarda**: por baixo, R1 ↓ "abrir e afastar" (os passes do outro na janela entram como contra) e R1 ↑
+  levantar direto (guardas abertas e meia). Por cima, R1 ↓ "criar espaço e levantar": só com o controle do
+  outro < 60 (ou ele exposto/exausto); quebrar a postura / manter os ganchos na janela segura.
+- **Dominado** não sai direto: precisa do escape (existente).
+- Teste: em toda posição de chão, os dois lados têm pelo menos uma saída ou progresso.
+- Ao separar, o vínculo acaba no mesmo tick e cada um volta a andar.
+
+## Condicionamento (desgaste físico)
+
+| Origem | Desgaste |
+|---|---|
+| Técnica | 10% do custo de fôlego (30% nas explosivas: R1, quedas em pé, tiro de guarda) — cobrado uma vez, no mesmo lugar do fôlego |
+| Ser derrubado | 0,8 × (cond. máx / 30), uma vez por queda |
+| Preso sob controle dominante | 0,003/tick × controle/100 × (cond. máx / 30) |
+| Mantendo a pressão dominante | 0,0012/tick × (cond. máx / 30) |
+| Livre, deitado ou nas guardas | nada; a recuperação passiva lenta de sempre volta assim que não há vínculo |
+
+**Exaustão** (abaixo de 35% do condicionamento, gradual até 0): janelas até +40%, ganho de controle até −50%,
+respiração até −40%, explosivas até +30% de custo. **Crítica** (≤ 5%): evento `EXAUSTAO_CRITICA` e aviso
+"J1 está exausto!"; a luta **não** termina por isso (regra futura). Parâmetros em `CustosFolego`.
+
+## Eventos de luta (para regras futuras)
+
+`MotorSolo.consumirEventosLuta()` classifica: QUEDA, RASPAGEM, PASSAGEM, MONTADA, COSTAS, ESCAPE,
+RECUPERACAO_GUARDA, ABANDONO, EXAUSTAO_CRITICA. Nenhum ponto é dado nesta entrega.
+
+## Arquitetura
+
+- `TecnicaSolo.Familia` + `ComandoSolo(direção, família)` (o construtor antigo `(direção, explosivo)` vale RS/R1).
+- `RequisitoTecnica` (pegada aplicada, mangas, cruzada/nuca, manga no chão, distância) conferido em
+  `MotorSolo.motivoSem`; o HUD mostra a técnica cinza quando falta algo.
+- `RegistroFinalizacoes` (48 espaços, ids estáveis), `EventoLuta`, conexão `MotorSolo.Conexao.MANGA`.
+- Animações: `CatalogoTecnicasSolo.animacaoFutura(id)` = "solo/<id>"; hoje tudo usa as poses procedurais
+  (`AnimadorSolo`: borboleta como as guardas; De La Riva e laço com quem está por cima em pé).
+
+## Limitações (5P.2)
+
+- J1 no **teclado** não tem L1/L2 (só RS/teclas de pegada e R1 pela tecla 4); as famílias L ficam no Xbox e no
+  teclado virtual do J2. O tiro de guarda e a derrubada forçada funcionam no teclado do J1 (teclas ← e ↓ da pegada).
+- Sem animações próprias (salto para a guarda, projeção, berimbolo usam as transições de postura).
+- Guarda aranha, X e de lapela: planejadas (ver "Sugestões" no relatório), não implementadas.

@@ -175,17 +175,18 @@ class ContextualGamePanelTest {
             double folego = painel.getLutador1().getFolegoAtual();
             gp("g1", r().com(BotaoGamepad.GATILHO_ESQ));
             ticks(1);
-            gp("g1", r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.DPAD_CIMA));   // LT + cima = QUEDA*
+            // 5P.2 (pedido): LT + cima deixou de ser a QUEDA* reservada da 5E: e a RASTEIRA (familia L2 = quedas),
+            // uma tecnica real que custa folego e abre a janela de reacao (ainda em pe, a pegada continua).
+            gp("g1", r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.DPAD_CIMA));
             ticks(1);
-            assertEquals("QUEDA: ainda não disponível no jogo", painel.montarEstadoHud().getMensagem());
-            assertTrue(s().isInteracaoEstabelecida(), "nenhuma posicao de chao foi ativada");
-            assertEquals(folego, painel.getLutador1().getFolegoAtual(), 0.5, "nada cobrado");
+            assertTrue(painel.montarEstadoHud().getMensagem().contains("RASTEIRA"), painel.montarEstadoHud().getMensagem());
+            assertTrue(painel.getMotorSolo().getTentativa().isPresent(), "a rasteira esta na janela");
+            assertTrue(s().isInteracaoEstabelecida(), "nada foi ao chao ainda");
+            assertTrue(painel.getLutador1().getFolegoAtual() < folego, "tecnica real custa");
             gp("g1", r());
             ticks(1);
-            gp("g1", r().com(BotaoGamepad.DPAD_ESQUERDA));                            // vazio
-            ticks(1);
-            assertTrue(painel.montarEstadoHud().getMensagem().startsWith("J1: nada na camada 1 ←"),  // 5H
-                    painel.montarEstadoHud().getMensagem());
+            // 5P.2 (pedido): RS <- do aplicador deixou de ser vazio: e o tiro de guarda
+            assertEquals("TIRO GUARDA", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.ESQUERDA));
             assertNull(s().getUltimaDisputa());
         });
     }
@@ -269,18 +270,20 @@ class ContextualGamePanelTest {
             ticks(1);
             q = painel.montarQuadroDpad(J1);
             assertEquals(CamadaComando.DOIS, q.camada());
-            assertEquals("LT + RS", q.nomeCamada());                     // 5H: analogico direito
-            assertEquals("QUEDA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
+            // 5P.2 (pedido): LT (L2) com a pegada = familia de QUEDAS reais (antes "QUEDA*" reservada)
+            assertEquals("LT · QUEDAS · PEGADA", q.nomeCamada());
+            assertEquals("RASTEIRA", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
             // 5H (pedido): LB sozinho = camada 3; LT + LB = avancada (vazia).
             gp("g1", r().com(BotaoGamepad.LB));
             ticks(1);
             q = painel.montarQuadroDpad(J1);
-            assertEquals("LB + RS", q.nomeCamada());
-            assertEquals("GUARDA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
+            // 5P.2 (pedido): LB (L1) com a pegada = familia de GUARDAS reais (antes "GUARDA*" reservada)
+            assertEquals("LB · GUARDAS · PEGADA", q.nomeCamada());
+            assertEquals("TIRO GUARDA", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
             gp("g1", r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.LB));
             ticks(1);
             q = painel.montarQuadroDpad(J1);
-            assertEquals("LT + LB + RS", q.nomeCamada());
+            assertEquals("LT + LB · ESPECIAIS · PEGADA", q.nomeCamada());   // 5P.2 (pedido)
             assertEquals("·", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA), "avancada: vazia");
             BufferedImage img = new BufferedImage(800, 450, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = img.createGraphics();

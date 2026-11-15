@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 972, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1005, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -435,3 +435,15 @@ Gamepad (Xbox):
 - [ ] Uma sequência queda → passar → montada → escape não esgota o Branco
 - [ ] Aviso curto no topo só com resultados (derrubou, raspou, passou, escapou), ~2 s, sem cobrir relógio e fôlego
 - [ ] Pausa → REINICIAR LUTA: mesma luta do zero, mais de uma vez; F5 do treino igual
+
+### Famílias e solo (Entrega 5P.2)
+- [ ] Com a pegada (J1 aplicando): RS ← tiro de guarda fecha a guarda; com o RT do J2 na janela, J1 cai sem guarda
+- [ ] RS ↓ derrubada forçada: a primeira desequilibra, a segunda derruba; com RT do J2, J1 fica exposto
+- [ ] Reforço, desequilíbrio, romper e arrasto continuam
+- [ ] LB (E) + RS em pé: guardas; LT (Q) + RS: quedas (quadril/manga cinzas sem a pegada certa); LT+LB: nada em pé
+- [ ] Solo livre: em pé ←/→ prende as pernas, R1 ↓ joelho direto só depois; no chão L1 ←/→ borboleta / De La Riva
+- [ ] De La Riva: J1 por cima em pé; L1+L2 ↑ berimbolo com controle; laço só depois de pegar a manga (L2 ↓)
+- [ ] RB na guarda fechada por baixo: DESEQ. / ÂNGULO / AFASTAR; R1 ↓ por cima levanta com espaço; dominando, R1 ↓ solta
+- [ ] Depois de afastar/soltar, o de baixo levanta e os dois andam livres
+- [ ] Montada / 100 kg / costas / guarda fechada: LB, LT e LT+LB mostram finalizações com `*` e não executam
+- [ ] Condicionamento cai devagar sob a montada e nas quedas; parado/deitado livre não cai; exausto: aviso no topo, a luta continua

@@ -56,7 +56,7 @@ public final class AnimadorSolo {
         double dy = base.dy() + (cima ? alturaPorCima(p) : 0);
         if (cima && l.isAjoelhado()) {
             switch (p) {
-                case GUARDA, GUARDA_ABERTA, MEIA_GUARDA -> {
+                case GUARDA, GUARDA_ABERTA, MEIA_GUARDA, GUARDA_BORBOLETA -> {
                     pose[9] += 18;                              // tronco inclinado para dentro da guarda
                     pose[20] += 10;                             // mao da frente no quadril do outro
                     pose[21] += 14;

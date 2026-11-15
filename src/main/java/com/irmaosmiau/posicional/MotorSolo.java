@@ -156,6 +156,18 @@ public final class MotorSolo {
     private final Map<Lado, Double> base = new EnumMap<>(Lado.class);
     private final Deque<Evento> eventos = new ArrayDeque<>();
     private Evento ultimo;
+    /** 5P.2: conexoes de quimono no chao (manga presa) por lado. */
+    private final Map<Lado, java.util.EnumSet<Conexao>> conexoes = new EnumMap<>(Lado.class);
+    /** 5P.2: espacos de finalizacao (reservados; nada executa). */
+    private final RegistroFinalizacoes finalizacoes = RegistroFinalizacoes.referencia();
+    /** 5P.2: eventos de luta para regras futuras (pontuacao/exaustao); nao dao pontos. */
+    private final Deque<EventoLuta.Registro> eventosLuta = new ArrayDeque<>();
+    private final java.util.EnumSet<Lado> exaustaoAvisada = java.util.EnumSet.noneOf(Lado.class);
+
+    /** 5P.2: contato de quimono que habilita guardas (o laco exige a manga). */
+    public enum Conexao {
+        MANGA
+    }
 
     public MotorSolo(IrmaoMiau a, IrmaoMiau b, SistemaCombate sistema, int xMin, int xMax) {
         if (a == null || b == null || a == b) {
@@ -184,7 +196,10 @@ public final class MotorSolo {
         mensagens.clear();
         ultimoBase.clear();
         desorientado.clear();
+        eventosLuta.clear();
+        exaustaoAvisada.clear();
         for (Lado l : Lado.values()) {
+            conexoes.put(l, java.util.EnumSet.noneOf(Conexao.class));
             postura.put(l, 0);
             recarga.put(l, 0);
             base.put(l, BASE_MAXIMA);
@@ -213,6 +228,27 @@ public final class MotorSolo {
 
     public CatalogoTecnicasSolo getCatalogo() {
         return catalogo;
+    }
+
+    /** 5P.2: o lado tem esta conexao de quimono agora? */
+    public boolean temConexao(Lado l, Conexao c) {
+        return conexoes.get(l).contains(c);
+    }
+
+    /** Teste/depuracao: da uma conexao a um lado. */
+    public void adicionarConexao(Lado l, Conexao c) {
+        conexoes.get(l).add(c);
+    }
+
+    public RegistroFinalizacoes getFinalizacoes() {
+        return finalizacoes;
+    }
+
+    /** 5P.2: eventos de luta desde a ultima consulta (futuras regras de pontuacao/vitoria). */
+    public List<EventoLuta.Registro> consumirEventosLuta() {
+        List<EventoLuta.Registro> l = List.copyOf(eventosLuta);
+        eventosLuta.clear();
+        return l;
     }
 
     public Optional<Tentativa> getTentativa() {
@@ -377,6 +413,10 @@ public final class MotorSolo {
                 return new Resposta(Resultado.ABANDONADA, "ABANDONOU", null);
             }
             Optional<TecnicaSolo> t2 = catalogo.para(estado, lado, c);
+            if (t2.isPresent() && t2.get().id().equals(CatalogoTecnicasSolo.RETENCAO_PES)
+                    && exposicaoDe(lado).orElse(null) == Exposicao.PERNAS_PRESAS) {
+                return new Resposta(Resultado.RECUSADA, "PERNAS PRESAS", t2.get());   // 5P.2
+            }
             if (t2.isPresent() && tentativa.tecnica().contras().contains(t2.get().id())) {
                 if (eu.getFolegoAtual() < custo(lado, t2.get())) {
                     return new Resposta(Resultado.RECUSADA, "SEM FÔLEGO", t2.get());
@@ -389,6 +429,10 @@ public final class MotorSolo {
         }
         Optional<TecnicaSolo> ot = catalogo.para(estado, lado, c);
         if (ot.isEmpty()) {
+            // 5P.2: espaco de finalizacao reservado: nao executa nem custa
+            if (finalizacoes.para(estado, lado, c).isPresent()) {
+                return new Resposta(Resultado.RECUSADA, "FINALIZAÇÃO FUTURA", null);
+            }
             return new Resposta(Resultado.RECUSADA, "NADA NESTA POSIÇÃO", null);
         }
         TecnicaSolo t = ot.get();
@@ -398,6 +442,9 @@ public final class MotorSolo {
             return new Resposta(Resultado.RECUSADA, motivo, t);
         }
         eu.gastarFolegoEsforco(custo(lado, t), t.id());
+        // 5P.2: o mesmo esforco tambem desgasta o condicionamento (uma cobranca so, aqui)
+        eu.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.condicionamentoDaTecnica(
+                custo(lado, t), explosiva(t)), t.id());
         eu.registrarAtividadeDeCombate();
         if (t.isInstantanea()) {
             instantanea(lado, t);
@@ -411,6 +458,7 @@ public final class MotorSolo {
         if (eu.isRespirando()) {
             j *= FATOR_JANELA_RESPIRANDO;                      // respirando: menos pronto
         }
+        j *= 1.0 + com.irmaosmiau.entities.CustosFolego.EXAUSTAO_JANELA * eu.fatorExaustao();   // 5P.2: exausto
         if (t.id().equals(CatalogoTecnicasSolo.LEVANTAR_TECNICO)) {
             j *= desorientado.getOrDefault(lado, 0) > 0 ? FATOR_LEVANTAR_DERRUBADO : FATOR_LEVANTAR_VOLUNTARIO;
         }
@@ -425,7 +473,38 @@ public final class MotorSolo {
 
     /** 5P.1: custo de folego desta tecnica para este lado (catalogo x balanceamento central). */
     public double custo(Lado lado, TecnicaSolo t) {
-        return com.irmaosmiau.entities.CustosFolego.custoSolo(t.custo(), lutador(lado).getAtributos().getFolego());
+        double c = com.irmaosmiau.entities.CustosFolego.custoSolo(t.custo(), lutador(lado).getAtributos().getFolego());
+        if (explosiva(t)) {
+            c *= 1.0 + com.irmaosmiau.entities.CustosFolego.EXAUSTAO_CUSTO_EXPLOSIVO * lutador(lado).fatorExaustao();
+        }
+        return c;
+    }
+
+    /** 5P.2: explosiva = familia R1 ou entrada em pe com janela (quedas, tiro de guarda). */
+    static boolean explosiva(TecnicaSolo t) {
+        return t.comandos().stream().anyMatch(ComandoSolo::explosivo)
+                || (!t.isInstantanea() && t.origens().stream().noneMatch(Posicao::isNoChao));
+    }
+
+    /** 5P.2: requisito que falta (null = todos ok). */
+    private String faltaRequisito(Lado lado, TecnicaSolo t, int dist, boolean mesmaFaixa) {
+        for (RequisitoTecnica r : catalogo.requisitos(t.id())) {
+            boolean ok = switch (r) {
+                case PEGADA_APLICADOR -> sistema != null && sistema.isInteracaoEstabelecida()
+                        && sistema.getAplicadorInteracao() == lutador(lado);
+                case PEGADA_MANGAS -> sistema != null && "pegada_3".equals(sistema.getIdAcaoInteracao());
+                case PEGADA_CRUZADA_OU_NUCA -> sistema != null && ("pegada_2".equals(sistema.getIdAcaoInteracao())
+                        || "pegada_4".equals(sistema.getIdAcaoInteracao()));
+                case CONEXAO_MANGA -> temConexao(lado, Conexao.MANGA);
+                case PERTO_PARA_PUXAR -> (sistema != null && sistema.isInteracaoEstabelecida())
+                        || dist <= ALCANCE_PUXAR_PX;
+                case PERTO_NO_CHAO -> dist <= ALCANCE_ENTRAR_PX && mesmaFaixa;
+            };
+            if (!ok) {
+                return r.getMotivo();
+            }
+        }
+        return null;
     }
 
     /** Por que a tecnica nao pode comecar agora (null = pode). */
@@ -447,6 +526,10 @@ public final class MotorSolo {
         int dist = Math.abs(eu.getX() - outro.getX());
         boolean mesmaFaixa = Math.abs(eu.getLinhaAtual() - outro.getLinhaAtual()) <= 1;
         Posicao p = estado.getPosicao();
+        String falta = faltaRequisito(lado, t, dist, mesmaFaixa);   // 5P.2
+        if (falta != null && p.isNoChao()) {
+            return falta;
+        }
         if (!p.isNoChao()) {
             if (eu.isDeitado() || eu.isAjoelhado() || outro.isDeitado() || outro.isAjoelhado()) {
                 return "SÓ EM PÉ";
@@ -456,6 +539,9 @@ public final class MotorSolo {
             }
             if (!mesmaFaixa) {
                 return "LINHA DISTANTE";
+            }
+            if (falta != null) {
+                return falta;                                  // 5P.2: pegada certa, distancia
             }
             return switch (t.id()) {
                 case CatalogoTecnicasSolo.EMPURRAO -> dist <= ALCANCE_EMPURRAO_PX ? null : "LONGE";
@@ -537,6 +623,7 @@ public final class MotorSolo {
                     if (c.getFolegoAtual() < c.getAtributos().getFolego() * FRACAO_FOLEGO_CANSADO) {
                         ganho /= 2;
                     }
+                    ganho *= 1.0 - com.irmaosmiau.entities.CustosFolego.EXAUSTAO_GANHO_CONTROLE * c.fatorExaustao();
                     estabilidade = Math.min(100, estabilidade + ganho);
                 }
             }
@@ -544,9 +631,46 @@ public final class MotorSolo {
         for (Lado l : Lado.values()) {
             lutador(l).setFatorRespiracaoNoSolo(fatorRespiracao(l));
         }
+        desgastarCondicionamento();                               // 5P.2
         encaixar();
         for (Lado l : Lado.values()) {
             lutador(l).setVinculadoNoSolo(estado.getPosicao().isVinculoDeSolo() || aterrissagemCima != null);
+        }
+    }
+
+    /** Posicoes de controle dominante (quem esta embaixo e pressionado; quem esta em cima mantem a pressao). */
+    private static boolean dominante(Posicao p) {
+        return p == Posicao.CONTROLE_LATERAL || p == Posicao.JOELHO_BARRIGA || p == Posicao.MONTADA
+                || p == Posicao.COSTAS;
+    }
+
+    /**
+     * 5P.2: desgaste fisico gradual: preso sob controle dominante (proporcional ao
+     * controle) e, menos, quem mantem a pressao. Livre ou nas guardas: nada aqui (a
+     * recuperacao lenta continua sendo a passiva do lutador livre).
+     */
+    private void desgastarCondicionamento() {
+        Posicao p = estado.getPosicao();
+        if (dominante(p) && aterrissagemCima == null) {
+            Lado ctrl = estado.getControlador().orElse(null);
+            if (ctrl != null) {
+                IrmaoMiau c = lutador(ctrl);
+                IrmaoMiau d = lutador(ctrl.outro());
+                c.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.drenoPressao(
+                        c.getAtributos().getCondicionamento()), "pressao");
+                d.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.drenoDominado(estabilidade,
+                        d.getAtributos().getCondicionamento()), "dominado");
+            }
+        }
+        for (Lado l : Lado.values()) {
+            if (lutador(l).isExaustaoCritica()) {
+                if (exaustaoAvisada.add(l)) {
+                    registrar("EXAUSTAO", "-", l, "condicionamento crítico");
+                }
+            } else if (lutador(l).getCondicionamentoAtual()
+                    > lutador(l).getAtributos().getCondicionamento() * 0.10) {
+                exaustaoAvisada.remove(l);
+            }
         }
     }
 
@@ -647,14 +771,26 @@ public final class MotorSolo {
             case CatalogoTecnicasSolo.QUEDA_PEGADA -> resolverQuedaPegada(ini, intencaoIniciador);
             case CatalogoTecnicasSolo.ENTRADA_PERNAS -> resolverPernas(ini);
             case CatalogoTecnicasSolo.PUXAR_GUARDA -> resolverPuxarGuarda(ini);
+            case CatalogoTecnicasSolo.TIRO_GUARDA -> resolverTiroGuarda(ini);
+            case CatalogoTecnicasSolo.DERRUBADA_FORCADA -> resolverDerrubadaForcada(ini, intencaoIniciador);
+            case CatalogoTecnicasSolo.RASTEIRA -> resolverRasteira(ini, intencaoIniciador);
+            case CatalogoTecnicasSolo.PROJECAO_QUADRIL -> resolverProjecaoQuadril(ini);
+            case CatalogoTecnicasSolo.QUEDA_MANGA -> resolverQuedaManga(ini, intencaoIniciador);
             default -> {
                 boolean ok = switch (tec.criterio()) {
                     case SE_NAO_CONTRADA -> true;
                     case ESTABILIDADE_BAIXA -> estabilidade < tec.limiarEstabilidade() || exposto(out) || exausto(out);
                     case SEM_POSTURA_DO_OUTRO -> !emPostura(out) || exposto(out);
                     case OUTRO_EXPOSTO -> exposto(out);
+                    case CONTROLE_PROPRIO -> estabilidade >= tec.limiarEstabilidade() && (!emPostura(out) || exposto(out));
                 };
-                if (ok) {
+                if (ok && tec.sucesso() == null) {
+                    aplicarEfeito(ini, tec);                    // 5P.2: efeito com janela (desequilibrar, prender...)
+                    registrar("SUCESSO", tec.id(), ini, "efeito");
+                } else if (ok) {
+                    if (tec.id().equals(CatalogoTecnicasSolo.SOLTAR_MANGA)) {
+                        conexoes.get(out).remove(Conexao.MANGA);
+                    }
                     entrar(tec.sucesso().aplicar(estado, ini), ini, tec.papel() == PapelPosicional.POR_BAIXO
                             || tec.papel() == PapelPosicional.CONTROLADO);
                     if (tec.id().equals(CatalogoTecnicasSolo.CONECTAR_GUARDA) && desorientado.getOrDefault(ini, 0) == 0) {
@@ -836,6 +972,142 @@ public final class MotorSolo {
         registrar("SUCESSO", CatalogoTecnicasSolo.PUXAR_GUARDA, ini, "guarda fechada");
     }
 
+    // ---------------- 5P.2: pegada ativa e quedas especificas
+    /** Quem caiu com a pegada: acompanha (LS para o outro) = aterrissagem por cima; senao fica em pe. */
+    private boolean acompanha(Lado ini, Intencao intencao) {
+        int paraOOutro = Integer.signum(lutador(ini.outro()).getX() - lutador(ini).getX());
+        return intencao != null && intencao.dx() != 0 && intencao.dx() == paraOOutro;
+    }
+
+    private boolean semPegada(Lado ini, String id) {
+        if (sistema == null || !sistema.isInteracaoEstabelecida()) {
+            registrar("FALHA", id, ini, "sem pegada");
+            return true;
+        }
+        return false;
+    }
+
+    private void falhouEmPe(Lado ini, String id, String motivo, Exposicao exp, int ticks) {
+        exposicao.put(ini, new Exposto(exp, ticks));
+        recarga.put(ini, RECARGA_FALHA_TICKS);
+        registrar("DEFENDIDA", id, ini, motivo);
+    }
+
+    /**
+     * Tiro de guarda: salta com a pegada para fechar a guarda. Diferente de puxar:
+     * mais rapido e explosivo, mas se o outro faz base (RT na janela), recua ou a
+     * pegada esta fraca, quem saltou cai no chao SEM guarda (o outro fica em pe).
+     */
+    private void resolverTiroGuarda(Lado ini) {
+        Lado out = ini.outro();
+        if (semPegada(ini, CatalogoTecnicasSolo.TIRO_GUARDA)) {
+            return;
+        }
+        int longe = Integer.signum(lutador(out).getX() - lutador(ini).getX());
+        boolean recuou = intencoesAtuais.get(out) != null && intencoesAtuais.get(out).dx() == longe && longe != 0;
+        String motivo = recuou ? "o outro recuou" : fazBase(out, inicioJanelaAtual) && !exposto(out) ? "base firme"
+                : sistema.getFirmeza() < 40 ? "pegada fraca" : null;
+        if (motivo != null) {
+            sistema.encerrarInteracao();
+            lutador(ini).aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
+            estado = EstadoPosicional.noChao(Posicao.EM_PE_CONTRA_SOLO, out, null);
+            falhouEmPe(ini, CatalogoTecnicasSolo.TIRO_GUARDA, motivo + " (caiu sem guarda)", Exposicao.BASE, 30);
+            return;
+        }
+        entrar(EstadoPosicional.noChao(Posicao.GUARDA, out, ini), ini, false);
+        estabilidade = 55;
+        registrar("SUCESSO", CatalogoTecnicasSolo.TIRO_GUARDA, ini, "guarda fechada");
+    }
+
+    /**
+     * Derrubada forcada: pressao + deslocamento usando o vinculo da pegada. Tira
+     * muita base; so derruba quem ja esta sem base (ou exposto). Base firme (RT)
+     * deixa quem forcou com o avanco exposto (o outro pode empurrar/derrubar).
+     */
+    private void resolverDerrubadaForcada(Lado ini, Intencao intencao) {
+        Lado def = ini.outro();
+        if (semPegada(ini, CatalogoTecnicasSolo.DERRUBADA_FORCADA)) {
+            return;
+        }
+        if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
+            base.put(ini, Math.max(0, base.get(ini) - 25));
+            falhouEmPe(ini, CatalogoTecnicasSolo.DERRUBADA_FORCADA, "base firme", Exposicao.AVANCO, 30);
+            return;
+        }
+        double dano = exposto(def) ? BASE_MAXIMA : 40 + sistema.getFirmeza() * 0.3;
+        base.put(def, base.get(def) - dano);
+        if (base.get(def) > 0) {
+            exposicao.put(def, new Exposto(Exposicao.BASE, 12));
+            exposicao.put(ini, new Exposto(Exposicao.AVANCO, 20));
+            registrar("SUCESSO", CatalogoTecnicasSolo.DERRUBADA_FORCADA, ini,
+                    "desequilibrou (base " + Math.round(base.get(def)) + ")");
+            return;
+        }
+        derrubarPelaPegada(def, ini, intencao, CatalogoTecnicasSolo.DERRUBADA_FORCADA);
+    }
+
+    /** Rasteira: de tempo (quem esta andando/sem base cai); contra pe firme nao entra. */
+    private void resolverRasteira(Lado ini, Intencao intencao) {
+        Lado def = ini.outro();
+        if (semPegada(ini, CatalogoTecnicasSolo.RASTEIRA)) {
+            return;
+        }
+        Intencao id = intencoesAtuais.get(def);
+        boolean andando = id != null && (id.dx() != 0 || id.dy() != 0);
+        boolean entra = andando || base.get(def) < 70 || exposto(def);
+        if (!entra || (fazBase(def, inicioJanelaAtual) && !andando && !exposto(def))) {
+            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "pé firme", Exposicao.BASE, 20);
+            return;
+        }
+        derrubarPelaPegada(def, ini, intencao, CatalogoTecnicasSolo.RASTEIRA);
+    }
+
+    /** Projecao de quadril: preparacao longa (gira de costas); base firme = REVERSAO (quem projetava cai). */
+    private void resolverProjecaoQuadril(Lado ini) {
+        Lado def = ini.outro();
+        if (semPegada(ini, CatalogoTecnicasSolo.PROJECAO_QUADRIL)) {
+            return;
+        }
+        sistema.encerrarInteracao();
+        if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
+            derrubar(ini, def, true);
+            registrar("REVERSAO", CatalogoTecnicasSolo.PROJECAO_QUADRIL, def, "contra-quadril");
+            return;
+        }
+        derrubar(def, ini, true);
+        registrar("SUCESSO", CatalogoTecnicasSolo.PROJECAO_QUADRIL, ini, "projetou");
+    }
+
+    /** Queda pela manga: precisa da pegada das mangas firme; base firme segura. */
+    private void resolverQuedaManga(Lado ini, Intencao intencao) {
+        Lado def = ini.outro();
+        if (semPegada(ini, CatalogoTecnicasSolo.QUEDA_MANGA)) {
+            return;
+        }
+        if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
+            falhouEmPe(ini, CatalogoTecnicasSolo.QUEDA_MANGA, "base firme", Exposicao.BASE, 30);
+            return;
+        }
+        if (sistema.getFirmeza() < FIRMEZA_MINIMA_QUEDA && base.get(def) >= BASE_DERRUBAVEL && !exposto(def)) {
+            falhouEmPe(ini, CatalogoTecnicasSolo.QUEDA_MANGA, "pegada fraca", Exposicao.BASE, 20);
+            return;
+        }
+        derrubarPelaPegada(def, ini, intencao, CatalogoTecnicasSolo.QUEDA_MANGA);
+    }
+
+    private void derrubarPelaPegada(Lado def, Lado ini, Intencao intencao, String id) {
+        if (sistema != null && sistema.estaEmInteracao()) {
+            sistema.encerrarInteracao();
+        }
+        boolean ac = acompanha(ini, intencao);
+        if (ac) {
+            derrubar(def, ini, true);
+        } else {
+            derrubarSozinho(def, ini);
+        }
+        registrar("SUCESSO", id, ini, ac ? "acompanhou" : "ficou em pé");
+    }
+
     private final Map<Lado, Intencao> intencoesAtuais = new EnumMap<>(Lado.class);
     private long inicioJanelaAtual;
 
@@ -853,7 +1125,14 @@ public final class MotorSolo {
     /** O lado cai e quem derrubou fica em pe (resultado A). */
     private final Map<Lado, Integer> desorientado = new EnumMap<>(Lado.class);
 
+    private void impacto(Lado caiu) {
+        IrmaoMiau l = lutador(caiu);
+        l.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.impactoQueda(
+                l.getAtributos().getCondicionamento()), "queda");
+    }
+
     private void derrubarSozinho(Lado caiu, Lado emPe) {
+        impacto(caiu);                                         // 5P.2
         desorientado.put(caiu, DESORIENTADO_TICKS);
         lutador(caiu).aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
         estado = EstadoPosicional.noChao(Posicao.EM_PE_CONTRA_SOLO, emPe, null);
@@ -861,6 +1140,7 @@ public final class MotorSolo {
 
     /** O lado cai e o outro acompanha: aterrissagem (quem caiu ainda escolhe como recebe). */
     private void derrubar(Lado caiu, Lado cima, boolean acompanha) {
+        impacto(caiu);                                         // 5P.2
         desorientado.put(caiu, DESORIENTADO_TICKS);
         lutador(caiu).aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
         if (!acompanha) {
@@ -897,8 +1177,23 @@ public final class MotorSolo {
 
     // ---------------- solo
     private void instantanea(Lado lado, TecnicaSolo t) {
+        aplicarEfeito(lado, t);
+        registrar("AJUSTE", t.id(), lado, "");
+    }
+
+    private void aplicarEfeito(Lado lado, TecnicaSolo t) {
         Lado out = lado.outro();
         switch (t.efeito()) {
+            case DESEQUILIBRAR -> exposicao.put(out, new Exposto(Exposicao.BASE, 30));
+            case CONTROLAR_PERNAS -> exposicao.put(out, new Exposto(Exposicao.PERNAS_PRESAS, 45));
+            case PEGAR_MANGA -> conexoes.get(lado).add(Conexao.MANGA);
+            case LIVRAR_MANGA -> conexoes.get(out).remove(Conexao.MANGA);
+            case RECUAR -> {
+                IrmaoMiau eu = lutador(lado);
+                int s = Integer.signum(eu.getX() - lutador(out).getX());
+                int alvo = Math.max(xMin, Math.min(xMax, eu.getX() + (s == 0 ? 1 : s) * 40));
+                eu.encostarNaBorda(alvo - eu.getX());
+            }
             case CONSOLIDAR -> estabilidade = Math.min(100, estabilidade + DELTA_CONSOLIDAR);
             case ENQUADRAR -> estabilidade = Math.max(0, estabilidade - DELTA_ENQUADRAR);
             case POSTURA -> postura.put(lado, POSTURA_TICKS);
@@ -916,7 +1211,6 @@ public final class MotorSolo {
                 }
             }
         }
-        registrar("AJUSTE", t.id(), lado, "");
     }
 
     /**
@@ -924,8 +1218,17 @@ public final class MotorSolo {
      * pegada em pe acaba; a postura vem da posicao.
      */
     private void entrar(EstadoPosicional novo, Lado iniciador, boolean reversao) {
+        if (sistema != null && sistema.isInteracaoEstabelecida() && "pegada_3".equals(sistema.getIdAcaoInteracao())
+                && novo.getPosicao().isNoChao()) {
+            conexoes.get(ladoDe(sistema.getAplicadorInteracao())).add(Conexao.MANGA);   // 5P.2: caiu segurando as mangas
+        }
         if (sistema != null && sistema.estaEmInteracao()) {
             sistema.encerrarInteracao();
+        }
+        if (!novo.getPosicao().isGuarda()) {
+            for (Lado l : Lado.values()) {
+                conexoes.get(l).clear();                       // fora das guardas a manga solta
+            }
         }
         estado = novo;
         postura.put(Lado.A, 0);
@@ -949,8 +1252,8 @@ public final class MotorSolo {
         IrmaoMiau b = lutador(cima.outro());
         int s = Integer.signum(c.getX() - b.getX());
         frente = s == 0 ? (b.isViradoParaDireita() ? 1 : -1) : s;
-        if (p == Posicao.EM_PE_CONTRA_SOLO) {
-            c.aplicarPosturaDoSolo(EstadoCorporal.EM_PE);
+        if (p == Posicao.EM_PE_CONTRA_SOLO || p.isGuardaComOutroEmPe()) {
+            c.aplicarPosturaDoSolo(EstadoCorporal.EM_PE);       // 5P.2: De La Riva e laco: quem esta por cima em pe
             b.aplicarPosturaDoSolo(EstadoCorporal.DEITADO);
             return;
         }
@@ -968,6 +1271,9 @@ public final class MotorSolo {
             case JOELHO_BARRIGA -> 22;
             case MONTADA -> 8;
             case COSTAS -> -26;
+            case GUARDA_BORBOLETA -> 40;
+            case DE_LA_RIVA -> 58;
+            case GUARDA_LACO -> 62;
             default -> 50;
         };
     }
@@ -1015,6 +1321,12 @@ public final class MotorSolo {
                 mensagens.removeFirst();
             }
         }
+        EventoLuta.de(ultimo).ifPresent(t -> {
+            eventosLuta.addLast(new EventoLuta.Registro(tick, t, lado, tecnica));
+            while (eventosLuta.size() > 32) {
+                eventosLuta.removeFirst();
+            }
+        });
         eventos.addLast(ultimo);
         while (eventos.size() > 40) {
             eventos.removeFirst();
