@@ -59,6 +59,8 @@ public final class AnimadorPartida {
     // Entrega 5L: reacoes curtas a eventos defensivos (fora da pegada).
     // 5N: a liberacao do receptor comeca da ultima reacao dele (camada).
     private final ReacoesDefesa reacoes = new ReacoesDefesa(transicoes, camada::snapshotReceptor);
+    // 5O: guardas, acrobacias e as versoes experimentais do sprawl e do rolamento (F7).
+    private final AnimadorMovimentos movimentos = new AnimadorMovimentos(BibliotecaMovimentos.padrao(), transicoes);
     // Entrega 5L: fuga de quadril: quadro pela distancia andada e sentido (frente/tras).
     private final Map<IrmaoMiau, double[]> trilhaChao = new IdentityHashMap<>();
     /** Pixels andados por quadro da fuga de quadril. */
@@ -122,6 +124,17 @@ public final class AnimadorPartida {
             }
         } else {
             reacoes.liberar(l);
+        }
+        // 5O: movimento compartilhado (fora da pegada: o combate tem prioridade).
+        if (!naPegada && movimentos.quer(l)) {
+            liberar(l);                                   // solta o JSON do perfil enquanto o movimento desenha
+            String m = movimentos.aplicar(l);
+            if (m != null) {
+                origens.put(l, new OrigemVisual(FonteAnimacao.JSON_INDIVIDUAL, "movimento:" + m, -1, estado));
+                return;
+            }
+        } else {
+            movimentos.liberar(l);
         }
         Optional<AnimacaoResolvida> r = controlador.resolver(l, sistema, deslocandoConjunto);
         if (r.isEmpty() || r.get().usaCodigoLegado()) {
@@ -227,6 +240,11 @@ public final class AnimadorPartida {
                     return new TransicoesPostura.Pose(q, a.getDeslocamentoVisualY());
                 })
                 .orElse(null);
+    }
+
+    /** 5O: guardas, acrobacias e movimentos experimentais. */
+    public AnimadorMovimentos getMovimentos() {
+        return movimentos;
     }
 
     public TransicoesPostura getTransicoes() {

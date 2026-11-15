@@ -55,8 +55,10 @@ class MapaGamepadEditavelTest {
             assertTrue(m.isValido(), m.problemas().toString());
             for (ItemGamepad i : m.itens(s)) {
                 // 5G: o RB so e o modificador OPCIONAL do pulo alto (A sozinho pula; tecnicas nao usam RB).
+                // 5O (pedido): o RB tambem e o modificador das quedas/transicoes (RB + RS).
                 assertFalse(m.botao(s, i).orElse(null) == BotaoGamepad.RB
-                        && i.comando() != ComandoGamepad.MODIFICADOR_PULO_ALTO, "RB nao e usado: " + i);
+                        && i.comando() != ComandoGamepad.MODIFICADOR_PULO_ALTO
+                        && i.acao() != AcaoJogador.MODIFICADOR_PROJECAO, "RB nao e usado: " + i);
             }
             assertEquals(BotaoGamepad.LESTE, m.botao(s, ItemGamepad.de(AcaoJogador.AGACHAR)).orElseThrow());
             assertEquals(BotaoGamepad.GATILHO_ESQ, m.botao(s, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2)).orElseThrow());
@@ -66,7 +68,8 @@ class MapaGamepadEditavelTest {
         // No classico, o RB pode ficar livre: correr vai para outro botao e nada e obrigatorio.
         // 5G: o RB tambem e o modificador (opcional) do pulo alto; tirando os dois, o RB fica livre.
         MapaGamepad semRb = MapaGamepad.padrao().semBotao(J1, ItemGamepad.de(AcaoJogador.CORRER))
-                .semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
+                .semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO))
+                .semBotao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_PROJECAO));   // 5O (pedido)
         assertTrue(semRb.isValido());
         assertTrue(semRb.quemUsa(J1, BotaoGamepad.RB).isEmpty());
     }

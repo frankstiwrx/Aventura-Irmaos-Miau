@@ -68,7 +68,8 @@ class AjudaControlesTest {
         assertTrue(linhas.get(0).isTitulo());
         assertFalse(linhas.stream().anyMatch(l -> "H".equals(l.tecla())), "H nao aparece mais");
         // 5I (pedido): antes 16 + 3; o J1 ganhou o rompimento. 5L (pedido): + 3 pegadas.
-        assertEquals(20 + 3, linhas.size(), "20 acoes + MOVIMENTO, COMBATE, DEFESA");
+        // 5O (pedido): + 3 (modificador de defesas, de quedas e acrobacia).
+        assertEquals(23 + 3, linhas.size(), "23 acoes + MOVIMENTO, COMBATE, DEFESA");
         assertTrue(AjudaControles.linhas(m, SlotJogador.JOGADOR_2)
                 .contains(new AjudaControles.Linha("Sprawl", "NUM 1")));
     }

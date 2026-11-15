@@ -58,6 +58,18 @@ class JarExecutavelIT {
         }
     }
 
+    /** 5O: as animacoes compartilhadas (guardas, sprawl, rolamentos, acrobacias) vao no JAR. */
+    @Test
+    void movimentosCompartilhadosDentroDoJar() throws Exception {
+        try (JarFile j = new JarFile(jar().toFile())) {
+            for (String m : new String[] {"guarda_alta", "guarda_media", "guarda_baixa", "sprawl_5o",
+                "rolamento_frente_5o", "rolamento_tras_5o", "rolamento_lateral_5o", "estrela_5o",
+                "mortal_frente_5o", "mortal_tras_5o"}) {
+                assertNotNull(j.getEntry("conteudo/animacoes/movimentos/" + m + ".json"), m + " no JAR");
+            }
+        }
+    }
+
     @Test
     void diagnosticoDeGamepadRodaPeloJar() throws Exception {
         String java = Paths.get(System.getProperty("java.home"), "bin", "java").toString();

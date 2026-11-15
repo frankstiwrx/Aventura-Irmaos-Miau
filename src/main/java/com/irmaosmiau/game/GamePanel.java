@@ -572,6 +572,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         if (modoDoisMiaus) {
 
+            xAntesDoTick1 = jogadorBranco.getX();
+            xAntesDoTick2 = jogadorPreto.getX();
             atualizarMiauBranco();
 
             if (modoTreino) {
@@ -582,6 +584,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 atualizarMiauPreto();
             }
             deslocandoConjunto = deslocandoConjuntoJ1 || deslocandoConjuntoJ2;
+            // 5O: ninguem sai da arena (andar, correr, pular, rolar, sprawl, acrobacias...).
+            manterNaArena(jogadorBranco);
+            manterNaArena(jogadorPreto);
+            impedirAtravessarNaAcrobacia(jogadorBranco, xAntesDoTick1, jogadorPreto, xAntesDoTick2);
+            impedirAtravessarNaAcrobacia(jogadorPreto, xAntesDoTick2, jogadorBranco, xAntesDoTick1);
 
             /*
              * A orientacao precisa refletir a posicao DESTE frame antes de
@@ -598,6 +605,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         } else {
 
             atualizarJogadorPrincipal();
+            manterNaArena(jogadorPrincipal);                     // 5O
             // Sem motor de combate no modo individual: comandos contextuais nao tem efeito.
             dispositivos.consumirComandoContextual(SlotJogador.JOGADOR_1);
         }
@@ -611,6 +619,22 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         contarTempoDeLuta();
         verificarFimDeJogo();
         repaint();
+    }
+
+    /**
+     * 5O: limite horizontal da arena para QUALQUER movimento (antes so o
+     * arrasto respeitava). A profundidade ja e limitada pelas cinco linhas.
+     * Mesmas bordas do arrasto conjunto, em todos os mapas.
+     */
+    static void manterNaArena(IrmaoMiau l) {
+        if (l == null) {
+            return;
+        }
+        if (l.getX() < LIMITE_ESQUERDO_ARENA) {
+            l.encostarNaBorda(LIMITE_ESQUERDO_ARENA - l.getX());
+        } else if (l.getX() > LIMITE_DIREITO_ARENA) {
+            l.encostarNaBorda(LIMITE_DIREITO_ARENA - l.getX());
+        }
     }
 
     // =====================================================
@@ -828,6 +852,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
         boolean preso = receptorPreso(jogadorBranco);
+        boolean travado = travadoPorFamilia(SlotJogador.JOGADOR_1, jogadorBranco);   // 5O
         boolean agachando = !preso && input.isAgachar();
 
         // =========================
@@ -918,10 +943,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         moverPersonagem(
                 jogadorBranco,
-                !preso && !conjunto && input.isEsquerda(),
-                !preso && !conjunto && input.isDireita(),
-                !preso && !conjunto && input.isCima(),
-                !preso && !conjunto && input.isBaixo(),
+                !preso && !travado && !conjunto && input.isEsquerda(),
+                !preso && !travado && !conjunto && input.isDireita(),
+                !preso && !travado && !conjunto && input.isCima(),
+                !preso && !travado && !conjunto && input.isBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -978,6 +1003,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
         boolean preso = receptorPreso(jogadorPreto);
+        boolean travado = travadoPorFamilia(SlotJogador.JOGADOR_2, jogadorPreto);     // 5O
         boolean agachando = !preso && input.isPretoAgachar();
 
         // =========================
@@ -1066,10 +1092,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         moverPersonagem(
                 jogadorPreto,
-                !preso && !conjunto && input.isPretoEsquerda(),
-                !preso && !conjunto && input.isPretoDireita(),
-                !preso && !conjunto && input.isPretoCima(),
-                !preso && !conjunto && input.isPretoBaixo(),
+                !preso && !travado && !conjunto && input.isPretoEsquerda(),
+                !preso && !travado && !conjunto && input.isPretoDireita(),
+                !preso && !travado && !conjunto && input.isPretoCima(),
+                !preso && !travado && !conjunto && input.isPretoBaixo(),
                 agachando,
                 correndo,
                 respirando
@@ -1190,6 +1216,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             resolverBotaoCompartilhado(slot, doSlot);
             tocadas.put(slot, doSlot);
         }
+        // Entrega 5O: RT/RB + direcao da tecnica = defesas/quedas (nunca pegada); Y + direcao = acrobacia.
+        atualizarFamilias(tocadas);
         boolean interacaoAntes = sistemaCombate.estaEmInteracao();
         for (AcaoJogador acao : AcoesContextuais.ACOES_DE_COMBATE) {
             for (SlotJogador slot : SlotJogador.values()) {
@@ -1211,7 +1239,223 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
     }
 
-        /** Entrega 5L: o lutador e o receptor de uma pegada ja estabelecida (fica preso). */
+        // =====================================================
+    // ENTREGA 5O: FAMILIAS DE TECNICAS (DEFESAS, QUEDAS, ACROBACIAS)
+    // =====================================================
+    /** Distancia minima entre os dois quando uma acrobacia avanca contra o adversario (px). */
+    static final int DISTANCIA_MINIMA_ACROBACIA = 50;
+
+    private int xAntesDoTick1;
+    private int xAntesDoTick2;
+    private final java.util.Map<SlotJogador, com.irmaosmiau.controles.FamiliaTecnica> familiaAtual =
+            new java.util.EnumMap<>(SlotJogador.class);
+    private final java.util.Map<SlotJogador, Boolean> acrobaciaAnterior = new java.util.EnumMap<>(SlotJogador.class);
+    private final java.util.Map<SlotJogador, String> ultimoMotivoFamilia = new java.util.EnumMap<>(SlotJogador.class);
+
+    /** Familia que o slot esta escolhendo agora (HUD, F3 e testes). */
+    com.irmaosmiau.controles.FamiliaTecnica familiaDo(SlotJogador slot) {
+        return familiaAtual.getOrDefault(slot, com.irmaosmiau.controles.FamiliaTecnica.PEGADAS);
+    }
+
+    /** Ultima recusa de uma tecnica de familia (motivo explicito), para o F3. */
+    String ultimoMotivoFamilia(SlotJogador slot) {
+        return ultimoMotivoFamilia.getOrDefault(slot, "-");
+    }
+
+    private static com.irmaosmiau.controles.FamiliaTecnica familiaPelosModificadores(InputHandler in, SlotJogador s) {
+        return com.irmaosmiau.controles.FamiliaTecnica.dosModificadores(
+                in.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA), in.isAtiva(s, AcaoJogador.MODIFICADOR_PROJECAO));
+    }
+
+    /** Guarda segurada, ou Y segurado com o lutador livre: os pes ficam (sem andar). */
+    private boolean travadoPorFamilia(SlotJogador slot, IrmaoMiau l) {
+        if (sistemaCombate == null || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+            return false;
+        }
+        boolean livre = !sistemaCombate.estaEmInteracao()
+                || (sistemaCombate.getAplicadorInteracao() != l && sistemaCombate.getReceptorInteracao() != l);
+        return l.getDefesa().isSegurada() || (livre && input.isAtiva(slot, AcaoJogador.ACROBACIA));
+    }
+
+    /** As quatro teclas/botoes de pegada como direcoes da tecnica (mesma ordem do RS). */
+    private static com.irmaosmiau.controles.DirecaoTecnica direcaoDaAcao(AcaoJogador a) {
+        return switch (a) {
+            case INICIAR_PEGADA -> com.irmaosmiau.controles.DirecaoTecnica.CIMA;
+            case PEGADA_2 -> com.irmaosmiau.controles.DirecaoTecnica.DIREITA;
+            case PEGADA_3 -> com.irmaosmiau.controles.DirecaoTecnica.BAIXO;
+            case PEGADA_4 -> com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA;
+            default -> null;
+        };
+    }
+
+    private static final AcaoJogador[] ACOES_PEGADA = {
+        AcaoJogador.INICIAR_PEGADA, AcaoJogador.PEGADA_2, AcaoJogador.PEGADA_3, AcaoJogador.PEGADA_4};
+
+    /**
+     * Um tick das familias para os dois slots. Prioridade: RT (defesas) > RB
+     * (quedas) > nenhum (pegadas). Com um modificador, as teclas/botoes de
+     * pegada viram a direcao da familia e NAO pegam. Guardas: sustentadas
+     * enquanto a direcao estiver segurada. Sprawl e quedas: uma vez por
+     * inclinacao/toque. Acrobacia: uma vez quando Y + direcao comecam juntos.
+     */
+    private void atualizarFamilias(java.util.Map<SlotJogador, java.util.EnumSet<AcaoJogador>> tocadas) {
+        for (IrmaoMiau l : List.of(jogadorBranco, jogadorPreto)) {
+            manterDefesaCoerente(l);
+        }
+        for (SlotJogador slot : SlotJogador.values()) {
+            IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+            IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
+            if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+                dispositivos.consumirEscolhaFamilia(slot);
+                ator.getDefesa().soltar();
+                continue;                                 // parceiro passivo
+            }
+            com.irmaosmiau.controles.FamiliaTecnica fam = familiaPelosModificadores(input, slot);
+            familiaAtual.put(slot, fam);
+            com.irmaosmiau.controles.DirecaoTecnica teclaSegurada = null;
+            com.irmaosmiau.controles.DirecaoTecnica teclaNova = null;
+            for (AcaoJogador a : ACOES_PEGADA) {
+                if (input.isAtiva(slot, a) && teclaSegurada == null) {
+                    teclaSegurada = direcaoDaAcao(a);
+                }
+                if (tocadas.get(slot).contains(a) && teclaNova == null) {
+                    teclaNova = direcaoDaAcao(a);
+                }
+            }
+            java.util.Optional<com.irmaosmiau.controles.FamiliaTecnica.Escolha> pad =
+                    dispositivos.consumirEscolhaFamilia(slot);
+            if (fam == com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
+                ator.getDefesa().soltar();
+                tentarAcrobacia(slot, ator);
+                continue;
+            }
+            for (AcaoJogador a : ACOES_PEGADA) {
+                tocadas.get(slot).remove(a);              // com RT/RB a tecla de pegada nao pega
+            }
+            com.irmaosmiau.controles.DirecaoTecnica segurada = dispositivos.direcaoFamiliaGamepad(slot);
+            if (segurada == null) {
+                segurada = teclaSegurada;
+            }
+            com.irmaosmiau.controles.DirecaoTecnica nova = pad.filter(e -> e.familia() == fam)
+                    .map(com.irmaosmiau.controles.FamiliaTecnica.Escolha::direcao).orElse(teclaNova);
+            if (fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS) {
+                atualizarDefesas(slot, ator, outro, segurada, nova);
+            } else {
+                ator.getDefesa().soltar();
+                if (nova != null) {
+                    String m = com.irmaosmiau.combate.ResolvedorFamilias.resolver(fam, nova, ator, outro,
+                            sistemaCombate).motivo();
+                    ultimoMotivoFamilia.put(slot, m);
+                    feedback.mostrarInfo(slot.getSigla() + ": QUEDAS E TRANSIÇÕES · " + m, tick);
+                }
+            }
+            acrobaciaAnterior.put(slot, input.isAtiva(slot, AcaoJogador.ACROBACIA));
+        }
+    }
+
+    private void atualizarDefesas(SlotJogador slot, IrmaoMiau ator, IrmaoMiau outro,
+            com.irmaosmiau.controles.DirecaoTecnica segurada, com.irmaosmiau.controles.DirecaoTecnica nova) {
+        com.irmaosmiau.entities.DefesaCorporal.Tipo g = com.irmaosmiau.combate.ResolvedorFamilias.guardaDa(segurada);
+        if (g != null) {
+            com.irmaosmiau.combate.ResolvedorFamilias.Resolucao r = com.irmaosmiau.combate.ResolvedorFamilias
+                    .resolver(com.irmaosmiau.controles.FamiliaTecnica.DEFESAS, segurada, ator, outro, sistemaCombate);
+            if (r.disponivel()) {
+                manterGuarda(ator, g);
+            } else {
+                ator.getDefesa().soltar();
+                if (nova != null) {
+                    ultimoMotivoFamilia.put(slot, r.motivo());
+                    feedback.mostrarInfo(slot.getSigla() + ": " + r.rotulo() + " · " + r.motivo(), tick);
+                }
+            }
+        } else {
+            ator.getDefesa().soltar();
+        }
+        if (nova == com.irmaosmiau.controles.DirecaoTecnica.BAIXO) {
+            com.irmaosmiau.combate.ResolvedorFamilias.Resolucao r = com.irmaosmiau.combate.ResolvedorFamilias
+                    .resolver(com.irmaosmiau.controles.FamiliaTecnica.DEFESAS, nova, ator, outro, sistemaCombate);
+            if (r.disponivel()) {
+                ator.getDefesa().interromper();
+                ator.iniciarSprawl();
+                ultimoMotivoFamilia.put(slot, "-");
+            } else {
+                ultimoMotivoFamilia.put(slot, r.motivo());
+                feedback.mostrarInfo(slot.getSigla() + ": SPRAWL · " + r.motivo(), tick);
+            }
+        }
+    }
+
+    /** Guarda mantida neste tick: cobra a entrada/troca uma vez; ativa, o folego nao recupera. */
+    private static void manterGuarda(IrmaoMiau l, com.irmaosmiau.entities.DefesaCorporal.Tipo g) {
+        boolean trocando = l.getDefesa().isSegurada() && l.getDefesa().getTipo() != g;
+        if (l.getDefesa().manter(g)) {
+            l.gastarFolegoEsforco(trocando ? com.irmaosmiau.entities.CustosFolego.GUARDA_TROCA
+                    : com.irmaosmiau.entities.CustosFolego.GUARDA_ENTRADA, "guarda");
+        } else {
+            l.gastarFolegoEsforco(0.0, "guarda");
+        }
+        l.registrarAtividadeDeCombate();                  // guarda nao vira taunt
+    }
+
+    /** A guarda some na hora em estados incompativeis (agarrado, rolando, deitado...): nada fica preso. */
+    private void manterDefesaCoerente(IrmaoMiau l) {
+        boolean naPegada = sistemaCombate != null && sistemaCombate.estaEmInteracao()
+                && (sistemaCombate.getAplicadorInteracao() == l || sistemaCombate.getReceptorInteracao() == l);
+        if (l.getDefesa().isAtiva() && (naPegada || l.isRolando() || l.isFazendoSprawl() || l.isPulando()
+                || l.isEmAcrobacia() || l.isDeitado() || l.getTransicaoAtiva() != null)) {
+            l.getDefesa().interromper();
+        }
+    }
+
+    /** Y + direcao do movimento (relativa ao corpo), uma vez quando os dois comecam juntos. */
+    private void tentarAcrobacia(SlotJogador slot, IrmaoMiau ator) {
+        boolean y = input.isAtiva(slot, AcaoJogador.ACROBACIA);
+        int dx = (input.isAtiva(slot, AcaoJogador.MOVER_DIREITA) ? 1 : 0)
+                - (input.isAtiva(slot, AcaoJogador.MOVER_ESQUERDA) ? 1 : 0);
+        int dy = (input.isAtiva(slot, AcaoJogador.MOVER_BAIXO) ? 1 : 0)
+                - (input.isAtiva(slot, AcaoJogador.MOVER_CIMA) ? 1 : 0);
+        boolean pedido = y && (dx != 0 || dy != 0);
+        boolean antes = Boolean.TRUE.equals(acrobaciaAnterior.get(slot));
+        acrobaciaAnterior.put(slot, pedido);
+        if (!pedido || antes) {
+            return;
+        }
+        com.irmaosmiau.entities.TipoAcrobacia t = com.irmaosmiau.entities.TipoAcrobacia.pelaDirecao(dx, dy,
+                ator.isViradoParaDireita());
+        String motivo = com.irmaosmiau.combate.ResolvedorFamilias.motivoComumPublico(ator, sistemaCombate);
+        if (motivo == null) {
+            motivo = ator.motivoSemAcrobacia(t);
+        }
+        if (motivo == null && ator.iniciarAcrobacia(t)) {
+            ultimoMotivoFamilia.put(slot, "-");
+        } else {
+            ultimoMotivoFamilia.put(slot, motivo);
+            feedback.mostrarInfo(slot.getSigla() + ": " + t.getRotulo() + " · " + motivo, tick);
+        }
+    }
+
+    /**
+     * 5O: a acrobacia nao passa por dentro do adversario (linhas proximas):
+     * para a DISTANCIA_MINIMA_ACROBACIA antes dele e o avanco acaba ali.
+     */
+    static void impedirAtravessarNaAcrobacia(IrmaoMiau a, int xAntesA, IrmaoMiau b, int xAntesB) {
+        if (a == null || b == null || !a.isEmAcrobacia() || Math.abs(a.getLinhaAtual() - b.getLinhaAtual()) > 1) {
+            return;
+        }
+        int lado = Integer.signum(xAntesA - xAntesB);
+        if (lado == 0) {
+            return;
+        }
+        int dist = (a.getX() - b.getX()) * lado;              // positivo = do lado de antes
+        if (dist < DISTANCIA_MINIMA_ACROBACIA && Math.abs(a.getX() - xAntesA) > 0
+                && Integer.signum(a.getX() - xAntesA) == -lado) {
+            a.encostarNaBorda(b.getX() + lado * DISTANCIA_MINIMA_ACROBACIA - a.getX());
+            a.pararAvancoAcrobacia();
+        }
+    }
+
+
+    /** Entrega 5L: o lutador e o receptor de uma pegada ja estabelecida (fica preso). */
     private boolean receptorPreso(IrmaoMiau l) {
         return sistemaCombate != null && sistemaCombate.isInteracaoEstabelecida()
                 && sistemaCombate.getReceptorInteracao() == l;
@@ -1295,6 +1539,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      * "RS" do J1 (os comandos sao os mesmos por papel). O J1 e o Classico nao mudam.
      */
     PainelDpadContextual.Quadro montarQuadroDpad(SlotJogador slot) {
+        // 5O: com RT/RB (ou 3/4, INSERT/HOME) segurado, a cruz mostra a FAMILIA (qualquer esquema).
+        if (sistemaCombate != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+                && familiaDo(slot) != com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
+            return quadroDaFamilia(slot, familiaDo(slot));
+        }
         boolean j2NoTeclado = slot == SlotJogador.JOGADOR_2 && !dispositivos.usaGamepadAgora(slot);
         if (sistemaCombate == null || !(dispositivos.usaContextualAgora(slot) || j2NoTeclado)
                 || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
@@ -1303,8 +1552,75 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
         IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
         CamadaComando camada = dispositivos.camadaAtiva(slot);
+        // 5O: alguem deitado e o lutador livre: as pegadas em pe nao valem; o solo ainda esta em preparacao.
+        if (camada == CamadaComando.UM && com.irmaosmiau.controles.PapelCombate.de(sistemaCombate, ator)
+                == com.irmaosmiau.controles.PapelCombate.LIVRE && (ator.isDeitado() || outro.isDeitado())) {
+            return quadroDoSolo(slot, ator);
+        }
         return PainelDpadContextual.montar(slot.getSigla(), camada, nomeCamada(slot, camada),
                 RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro));
+    }
+
+    /** 5O: nome do modificador da familia no dispositivo do slot (RT/RB ou a tecla). */
+    private String nomeModificador(SlotJogador slot, AcaoJogador mod) {
+        if (dispositivos.usaGamepadAgora(slot)) {
+            return mapaGamepad.botao(slot, ItemGamepad.de(mod)).map(b -> b.getRotulo().split("/")[0]).orElse("?");
+        }
+        return input.getMapa().tecla(slot, mod).map(com.irmaosmiau.controles.TeclaFisica::getRotulo).orElse("?");
+    }
+
+    /** 5O: cruz da familia, com o que o motor permite AGORA (o mesmo resolvedor que executa). */
+    PainelDpadContextual.Quadro quadroDaFamilia(SlotJogador slot, com.irmaosmiau.controles.FamiliaTecnica fam) {
+        IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
+        java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m =
+                new java.util.EnumMap<>(com.irmaosmiau.controles.DirecaoTecnica.class);
+        for (com.irmaosmiau.controles.DirecaoTecnica d : com.irmaosmiau.controles.DirecaoTecnica.values()) {
+            com.irmaosmiau.combate.ResolvedorFamilias.Resolucao r =
+                    com.irmaosmiau.combate.ResolvedorFamilias.resolver(fam, d, ator, outro, sistemaCombate);
+            boolean reservada = fam == com.irmaosmiau.controles.FamiliaTecnica.PROJECOES;
+            m.put(d, new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
+                    reservada ? CelulaContextual.Tipo.RESERVADA : CelulaContextual.Tipo.EXECUTAVEL,
+                    rotuloCurtoFamilia(fam, d), null, null, r.disponivel()));
+        }
+        String nome = fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS
+                ? "DEFESAS (" + nomeModificador(slot, AcaoJogador.MODIFICADOR_DEFESA) + ")"
+                : "QUEDAS: EM BREVE (" + nomeModificador(slot, AcaoJogador.MODIFICADOR_PROJECAO) + ")";
+        return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, nome, m);
+    }
+
+    static String rotuloCurtoFamilia(com.irmaosmiau.controles.FamiliaTecnica fam,
+            com.irmaosmiau.controles.DirecaoTecnica d) {
+        if (fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS) {
+            return switch (d) {
+                case CIMA -> "G. ALTA";
+                case ESQUERDA -> "G. MÉDIA";
+                case DIREITA -> "G. BAIXA";
+                case BAIXO -> "SPRAWL";
+            };
+        }
+        return switch (d) {
+            case CIMA, DIREITA -> "QUEDA";
+            case BAIXO -> "GUARDA";
+            case ESQUERDA -> "TRANSIÇÃO";
+        };
+    }
+
+    /** 5O: com alguem deitado, as pegadas em pe somem; o que vem para o solo aparece como reservado. */
+    PainelDpadContextual.Quadro quadroDoSolo(SlotJogador slot, IrmaoMiau ator) {
+        java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m =
+                new java.util.EnumMap<>(com.irmaosmiau.controles.DirecaoTecnica.class);
+        String[] rot = ator.isDeitado()
+                ? new String[] {"GUARDA", "AFASTAR", "LEVANTAR", "PUXAR"}
+                : new String[] {"PASSAR", "LATERAL", "JOELHO", "MONTAR"};
+        com.irmaosmiau.controles.DirecaoTecnica[] ds = {com.irmaosmiau.controles.DirecaoTecnica.CIMA,
+            com.irmaosmiau.controles.DirecaoTecnica.DIREITA, com.irmaosmiau.controles.DirecaoTecnica.BAIXO,
+            com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA};
+        for (int i = 0; i < 4; i++) {
+            m.put(ds[i], new CelulaContextual(new PosicaoComando(CamadaComando.UM, ds[i]),
+                    CelulaContextual.Tipo.RESERVADA, rot[i], null, null, false));
+        }
+        return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, "SOLO: EM BREVE", m);
     }
 
     /** Uma acao de combate pedida por um slot, encaminhada ao SistemaCombate. */
@@ -2674,7 +2990,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         l.add("ARRASTO: " + descricaoArrasto() + " | passos " + passos + " | LINHAS J1 " + (jogadorBranco.getLinhaAtual() + 1)
                 + " J2 " + (jogadorPreto.getLinhaAtual() + 1) + " | DESEQ: " + deseq);
         // Entrega 5K: modo de comparacao, folego, custo e consequencia do desequilibrio.
-        l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual().rotulo());
+        l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual().rotulo()
+                + " | MOV (F7): " + com.irmaosmiau.animacao.VersaoMovimentos.atual().rotulo()
+                // 5O: familia escolhida pelos modificadores (o F3 continua com 10 linhas).
+                + " | FAMILIA J1 " + familiaDo(SlotJogador.JOGADOR_1).name()
+                + " J2 " + familiaDo(SlotJogador.JOGADOR_2).name());
         l.add("FOLEGO J1: " + folego(jogadorBranco) + " | J2: " + folego(jogadorPreto));
         StringBuilder efeitos = new StringBuilder();
         for (IrmaoMiau x : List.of(jogadorBranco, jogadorPreto)) {
@@ -2683,8 +3003,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 efeitos.append(rotuloSlot(x)).append(" DESEQUILIBRADO: velocidade 60% (").append(t).append(" ticks) ");
             }
         }
-        l.add(efeitos.length() == 0 ? "CONSEQUENCIA: -" : "CONSEQUENCIA: " + efeitos.toString().trim());
-        l.add("TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto));
+        l.add((efeitos.length() == 0 ? "CONSEQUENCIA: -" : "CONSEQUENCIA: " + efeitos.toString().trim())
+                + " | " + diagnosticoRb() + " | RECUSA J1 " + ultimoMotivoFamilia(SlotJogador.JOGADOR_1)
+                + " J2 " + ultimoMotivoFamilia(SlotJogador.JOGADOR_2));
+        l.add("TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto)
+                + " | DEFESA J1: " + defesaDe(jogadorBranco) + " J2: " + defesaDe(jogadorPreto));
         // Entrega 5L: tipo de pegada, defesa e encerramento.
         String tecnica = sistemaCombate.estaEmInteracao()
                 ? com.irmaosmiau.combate.ParametrosPegadas.de(sistemaCombate.getIdAcaoInteracao()).nome() : "-";
@@ -2706,6 +3029,34 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     + String.format(" | bonus +%.0f%%", 100 * com.irmaosmiau.combate.SistemaCombate.BONUS_INSISTENCIA * falhas));
         }
         return l;
+    }
+
+    /** 5O: RB no gamepad (botao fisico) x modificador logico das quedas (RB ou a tecla 4/HOME). */
+    private String diagnosticoRb() {
+        StringBuilder sb = new StringBuilder("RB");
+        for (SlotJogador s : SlotJogador.values()) {
+            String fisico = dispositivos.fonte(s).filter(f -> dispositivos.usaGamepadAgora(s))
+                    .map(f -> f.temLeitura() ? (f.botaoFisico(com.irmaosmiau.dispositivos.BotaoGamepad.RB) ? "SIM" : "nao")
+                            : "sem leitura")
+                    .orElse("-");
+            boolean logico = input.isAtiva(s, AcaoJogador.MODIFICADOR_PROJECAO);
+            sb.append(' ').append(s.getSigla()).append(" fis:").append(fisico).append(" log:").append(logico ? "SIM" : "nao");
+        }
+        return sb.toString();
+    }
+
+    private static String defesaDe(IrmaoMiau l) {
+        if (l.isFazendoSprawl()) {
+            return "SPRAWL " + l.getFaseSprawl();
+        }
+        if (l.isEmAcrobacia()) {
+            return l.getAcrobacia().name();
+        }
+        com.irmaosmiau.entities.DefesaCorporal d = l.getDefesa();
+        if (d.isAtiva()) {
+            return d.getTipo().name() + " " + d.getFase();
+        }
+        return l.getRecargaSprawl() > 0 ? "- (sprawl recarga " + l.getRecargaSprawl() + ")" : "-";
     }
 
     /** 5N: ultimo pedido de arrasto (direcao, andou ou bloqueou) em poucos caracteres. */
@@ -2757,6 +3108,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         atalho("F6", "alternarAnimacoesPegada", () -> {
             com.irmaosmiau.combate.ModoAnimacoesPegada m = com.irmaosmiau.combate.ModoAnimacoesPegada.alternar();
             feedback.mostrarInfo("ANIMAÇÕES DE PEGADA: " + m.rotulo() + " (na próxima pegada)", tick);
+            repaint();
+        });
+        // Entrega 5O: F7 = versao do rolamento e do sprawl (ORIGINAL x EXPERIMENTAL 5O); o F6 nao muda.
+        atalho("F7", "alternarMovimentos", () -> {
+            com.irmaosmiau.animacao.VersaoMovimentos v = com.irmaosmiau.animacao.VersaoMovimentos.alternar();
+            feedback.mostrarInfo("ROLAMENTO E SPRAWL: " + v.rotulo(), tick);
             repaint();
         });
         atalho("F4", "proximoCenario", () -> {

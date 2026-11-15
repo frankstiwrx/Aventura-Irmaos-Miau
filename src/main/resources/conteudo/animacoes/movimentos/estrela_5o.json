@@ -1,0 +1,33 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "movimento.estrela_5o",
+  "estado": "PULO",
+  "rig": "miau_v1",
+  "uso": "MOVIMENTO",
+  "loop": false,
+  "duracaoQuadroMs": 100,
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "5O EXPERIMENTAL (Claude): quadros passo, maos, vertical, roda, pouso, fim. Pose absoluta por quadro (progresso 0..1 do movimento), deslocamentosY assentam o corpo no tatame ou no ar.",
+  "deslocamentosY": [0, 12, -8, 36, -12, -2],
+  "quadros": [
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 8, 0, -4, 0, 0, -10, -36, -10, -90, 10, -34, -10, -86, 14, 0, 0, 0, -8, 0, -16, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 4, 70, 0, 0, 0, -8, -36, -8, -92, 8, -36, -8, -90, -4, 0, -24, -10, 10, 0, 24, -10]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 0, 180, 0, 0, 0, -8, -38, -10, -94, 8, -38, -8, -94, -26, 0, -56, -16, 26, 0, 56, -16]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, -4, 270, 0, 0, 0, -8, -36, -8, -92, 8, -36, -8, -90, -14, 0, -36, -12, 14, 0, 36, -12]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 6, 0, 0, 0, 6, 340, 0, 0, 0, -6, -30, -6, -76, 8, -30, -8, -72, -10, 0, -20, 0, 16, 0, 8, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 4, 0, 0, 0, 4, 360, 0, 0, 0, 4, -4, 10, -10, 0, 0, -6, -6, 4, 0, 0, 0, 4, 0, 0, 0]
+    }
+  ]
+}

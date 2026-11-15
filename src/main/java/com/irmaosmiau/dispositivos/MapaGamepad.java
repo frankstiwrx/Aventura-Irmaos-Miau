@@ -94,7 +94,37 @@ public final class MapaGamepad {
      */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
         // 5I: os dois slots usam todas as acoes de combate (papel vem da luta).
+        return transformar5O(transformar5H(transformar5G(layoutBase(slot, esquema, slot::usa), slot::usa)),
+                slot::usa);
+    }
+
+    /** Padroes da 5H a 5N (antes das familias da 5O), para reconhecer um gamepad.json nunca personalizado. */
+    public static ConfigSlot padrao5N(SlotJogador slot, EsquemaGamepad esquema) {
         return transformar5H(transformar5G(layoutBase(slot, esquema, slot::usa), slot::usa));
+    }
+
+    /**
+     * 5O: familias de tecnicas no gamepad, nos dois esquemas.
+     * - RT = modificador de DEFESAS (RT + RS: guardas alta/media/baixa e sprawl).
+     *   O sprawl, que antes saia no RT sozinho, passa a ser RT + RS para baixo
+     *   (no teclado continua com a tecla propria).
+     * - RB = modificador de QUEDAS E TRANSICOES (RB + RS; reservado). Continua
+     *   sendo o modificador do pulo alto (RB + A) e, no Classico, a corrida.
+     * - Y = acrobacia (Y + analogico esquerdo). No Classico o Y tambem e o
+     *   reforco: reforcar so vale para quem segura uma pegada e acrobacia so
+     *   para quem esta livre, entao os dois nunca valem juntos.
+     */
+    private static ConfigSlot transformar5O(ConfigSlot c5n, java.util.function.Predicate<AcaoJogador> usa) {
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(c5n.acoes());
+        if (a.get(AcaoJogador.SPRAWL) == BotaoGamepad.GATILHO_DIR) {
+            a.remove(AcaoJogador.SPRAWL);
+        }
+        a.put(AcaoJogador.MODIFICADOR_DEFESA, BotaoGamepad.GATILHO_DIR);
+        a.put(AcaoJogador.MODIFICADOR_PROJECAO, BotaoGamepad.RB);
+        a.put(AcaoJogador.ACROBACIA, BotaoGamepad.NORTE);
+        a.keySet().removeIf(acao -> !usa.test(acao));
+        return new ConfigSlot(c5n.esquema(), a, c5n.comandos());
     }
 
     /** Padroes da 5H (uso antigo dos slots), para reconhecer um gamepad.json nunca personalizado. */
@@ -253,7 +283,11 @@ public final class MapaGamepad {
     public static boolean podemDividir(ItemGamepad x, ItemGamepad y) {
         return par(x, y, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO, ComandoGamepad.MODIFICADOR_CAMADA_3)
                 || par(x, y, AcaoJogador.CORRER, ComandoGamepad.MODIFICADOR_PULO_ALTO)
-                || parDeAcoes(x, y, AcaoJogador.TENTAR_DESEQUILIBRIO, AcaoJogador.ROMPIMENTO_TECNICO);
+                || parDeAcoes(x, y, AcaoJogador.TENTAR_DESEQUILIBRIO, AcaoJogador.ROMPIMENTO_TECNICO)
+                // 5O: RB = pulo alto (com o A), corrida (Classico) e quedas (com o RS); Y = reforco/acrobacia.
+                || par(x, y, AcaoJogador.MODIFICADOR_PROJECAO, ComandoGamepad.MODIFICADOR_PULO_ALTO)
+                || parDeAcoes(x, y, AcaoJogador.CORRER, AcaoJogador.MODIFICADOR_PROJECAO)
+                || parDeAcoes(x, y, AcaoJogador.REFORCAR_PEGADA, AcaoJogador.ACROBACIA);
     }
 
     /**

@@ -46,6 +46,16 @@ public final class CustosFolego {
     /** Quem tentou a pegada evitada paga esta fracao do custo da tecnica (gastou a tentativa). */
     public static final double FRACAO_CUSTO_PEGADA_EVITADA = 0.5;
 
+    // ---------------- Entrega 5O: defesas (os custos explosivos ficam no IrmaoMiau/TipoAcrobacia)
+    /**
+     * Entrar numa guarda (RT + direcao): custo unico pequeno, abaixo de ajoelhar
+     * (0,5). Trocar de guarda custa a metade. Mantida, a guarda nao custa por
+     * tick, mas segurar a defesa e esforco: o folego NAO recupera enquanto ela
+     * estiver ativa (politica sustentavel, sem valor negativo).
+     */
+    public static final double GUARDA_ENTRADA = 0.3;
+    public static final double GUARDA_TROCA = 0.15;
+
     // ---------------- Transicoes de postura (custo unico por transicao)
     public static final double AJOELHAR = 0.5;            // em pe -> ajoelhado
     public static final double DEITAR = 0.5;              // ajoelhado -> deitado

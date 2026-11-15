@@ -72,7 +72,22 @@ public enum AcaoJogador {
     SPRAWL("Sprawl", "Sprawl", "sprawl",
             GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "G", "I"),
     ROMPIMENTO_TECNICO("Rompimento", "Romper a pegada (rompimento técnico)", "romper",
-            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "5", "U");
+            GrupoAcao.DEFESA, TipoAcionamento.TOQUE, "5", "U"),
+    // ---------------- ENTREGA 5O: FAMILIAS DE TECNICAS ----------------
+    /*
+     * Modificadores LOGICOS das familias (o mesmo para teclado e gamepad):
+     * segurado + direcao da tecnica (RS no gamepad; H/6/7/8 ou END/NUM 7-9 no
+     * teclado) = defesas / quedas. Gamepad: RT e RB. Teclado: 3/4 (J1) e
+     * INSERT/HOME (J2) - ALT foi evitado de proposito (no Windows abre o menu da
+     * janela e o AltGr do ABNT2 e Ctrl+Alt).
+     */
+    MODIFICADOR_DEFESA("ModDefesa", "Defesas (segure + direção da técnica)", "defesas",
+            GrupoAcao.DEFESA, TipoAcionamento.MODIFICADOR, "3", "INSERT"),
+    MODIFICADOR_PROJECAO("ModProjecao", "Quedas e transições (segure; em preparação)", "quedas",
+            GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "4", "HOME"),
+    /** Acrobacia: segure + direcao do MOVIMENTO (Y + analogico esquerdo no gamepad). */
+    ACROBACIA("Acrobacia", "Acrobacia (segure + direção do movimento)", "acrobacia",
+            GrupoAcao.MOVIMENTO, TipoAcionamento.MODIFICADOR, "9", "NUMPAD5");
 
     private final String sufixoComando;
     private final String rotulo;
@@ -119,6 +134,9 @@ public enum AcaoJogador {
     public boolean usadaAntesDa5I(SlotJogador slot) {
         if (this == PEGADA_2 || this == PEGADA_3 || this == PEGADA_4) {
             return false;                                  // 5L
+        }
+        if (this == MODIFICADOR_DEFESA || this == MODIFICADOR_PROJECAO || this == ACROBACIA) {
+            return false;                                  // 5O
         }
         if (slot == SlotJogador.JOGADOR_1) {
             return this != ROMPIMENTO_TECNICO;

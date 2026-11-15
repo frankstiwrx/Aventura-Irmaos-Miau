@@ -9,10 +9,10 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 810, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 846, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
-`mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 3 testes): manifesto, DLLs do GLFW
+`mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
 e `java -jar … --diagnostico-gamepad 0`.
 
 ```bash
@@ -358,6 +358,19 @@ Gamepad (Xbox):
 - [ ] Bordas esquerda/direita: ninguém passa, ninguém fica para trás; na diagonal desliza pela borda
 - [ ] Xbox Contextual: analógico em qualquer direção conduz; Clássico: LB + analógico
 - [ ] F3: "RECEPTOR: J2 ... SUSTENTADA" e "ARRASTO: FRENTE OK / BLOQUEADO"; F6 volta ao autoral (receptor parado como antes)
+
+### Defesas, solo, arena e acrobacias (Entrega 5O)
+
+- [ ] Sem modificador, RS (ou H/6/7/8) = as 4 pegadas como antes
+- [ ] RT (ou 3 / INSERT): o HUD vira "DEFESAS"; RS ↑ guarda alta, ← média, → baixa (seguradas, respirando), ↓ sprawl
+- [ ] Trocar de guarda e soltar: transição suave; com RT nada pega
+- [ ] RB (ou 4 / HOME): HUD "QUEDAS: EM BREVE"; nada executa; RT + RB = defesas
+- [ ] R3 + direção rola; RB + A pulo alto; B agacha (Contextual); corrida igual
+- [ ] F7 alterna rolamento/sprawl ORIGINAL × EXPERIMENTAL 5O (8 direções); F6 continua só das pegadas
+- [ ] Alguém deitado: as pegadas não saem (HUD "SOLO: EM BREVE"); em pé e de joelhos continuam
+- [ ] Ninguém sai da arena andando, correndo, pulando, rolando ou na acrobacia; nem quando a pegada acaba na borda
+- [ ] Y (9 / NUM 5) + direção: estrela e mortais; não atravessa o adversário; não sai de pegada; recarga
+- [ ] F3: FAMILIA, RB fis/log, DEFESA, RECUSA, MOV (F7)
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

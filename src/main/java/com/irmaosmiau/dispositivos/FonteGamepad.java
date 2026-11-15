@@ -48,6 +48,12 @@ public final class FonteGamepad implements FonteAcoes {
     private com.irmaosmiau.controles.DirecaoTecnica rsClassicoAnterior;
     private com.irmaosmiau.controles.DirecaoTecnica pegadaClassicaPendente;
     private final boolean[] gatilhoApertado = new boolean[2];
+    // Entrega 5O: familia escolhida pelos modificadores (RT/RB) e a direcao do RS nela.
+    private com.irmaosmiau.controles.FamiliaTecnica familia = com.irmaosmiau.controles.FamiliaTecnica.PEGADAS;
+    private com.irmaosmiau.controles.DirecaoTecnica rsAnterior;
+    private com.irmaosmiau.controles.DirecaoTecnica rsFamilia;
+    private com.irmaosmiau.controles.FamiliaTecnica.Escolha escolhaPendente;
+    private EstadoGamepad ultimoEstado;
     /** Entrega 5G: pulo decidido no instante do toque (normal ou alto) e mantido ate soltar. */
     private AcaoJogador puloEscolhido;
 
@@ -110,13 +116,63 @@ public final class FonteGamepad implements FonteAcoes {
         }
         pausaSegurada = pausa;
         // Sem leitura nao alimenta o resolvedor: a limpeza continua exigindo uma soltura REAL do D-pad.
+        ultimoEstado = estado;
         if (estado != null) {
-            contextual.atualizar(entradaContextual(estado));
-            lerPegadaClassica(estado);
+            // 5O: o RS e lido UMA vez por tick e vai para a familia do modificador segurado.
+            if (estado.pressionado(BotaoGamepad.R3)) {
+                analogicoDireito.desarmar();
+            }
+            com.irmaosmiau.controles.FamiliaTecnica nova = com.irmaosmiau.controles.FamiliaTecnica.dosModificadores(
+                    brutas.contains(AcaoJogador.MODIFICADOR_DEFESA), brutas.contains(AcaoJogador.MODIFICADOR_PROJECAO));
+            if (nova != familia && nova == com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
+                analogicoDireito.desarmar();   // soltou RT/RB com o RS inclinado: nada de pegada sem querer
+            }
+            familia = nova;
+            com.irmaosmiau.controles.DirecaoTecnica rs = analogicoDireito.atualizar(
+                    estado.eixo(EixoGamepad.DIR_X), estado.eixo(EixoGamepad.DIR_Y));
+            boolean pegadas = familia == com.irmaosmiau.controles.FamiliaTecnica.PEGADAS;
+            contextual.atualizar(pegadas ? entradaContextual(estado, rs) : EntradaContextual.NADA);
+            lerPegadaClassica(pegadas ? rs : null, rs);
+            rsFamilia = pegadas ? null : rs;
+            if (!pegadas && rs != null && rsAnterior == null) {
+                escolhaPendente = new com.irmaosmiau.controles.FamiliaTecnica.Escolha(familia, rs);
+            }
+            rsAnterior = rs;
         } else {
             rsClassicoAnterior = null;
             pegadaClassicaPendente = null;
+            rsAnterior = null;
+            rsFamilia = null;
+            escolhaPendente = null;
+            familia = com.irmaosmiau.controles.FamiliaTecnica.PEGADAS;
         }
+    }
+
+    /** 5O: familia escolhida agora pelos modificadores (RT > RB > nenhum). */
+    public com.irmaosmiau.controles.FamiliaTecnica familiaAtiva() {
+        return familia;
+    }
+
+    /** 5O: direcao do RS segurada na familia atual (null nas pegadas ou com o RS no neutro). */
+    public com.irmaosmiau.controles.DirecaoTecnica direcaoFamiliaSegurada() {
+        return rsFamilia;
+    }
+
+    /** 5O: familia + direcao escolhidas desde a ultima consulta (uma por inclinacao). */
+    public Optional<com.irmaosmiau.controles.FamiliaTecnica.Escolha> consumirEscolhaFamilia() {
+        Optional<com.irmaosmiau.controles.FamiliaTecnica.Escolha> e = Optional.ofNullable(escolhaPendente);
+        escolhaPendente = null;
+        return e;
+    }
+
+    /** 5O (diagnostico F3): o botao fisico esta apertado na ultima leitura? */
+    public boolean botaoFisico(BotaoGamepad b) {
+        return ultimoEstado != null && ultimoEstado.pressionado(b);
+    }
+
+    /** 5O (diagnostico F3): houve leitura neste tick? */
+    public boolean temLeitura() {
+        return ultimoEstado != null;
     }
 
     /**
@@ -162,16 +218,11 @@ public final class FonteGamepad implements FonteAcoes {
      * clique do analogico direito: apertado, o analogico nao escolhe tecnica
      * ate voltar ao neutro (oscilacao do clique nunca vira golpe).
      */
-    private EntradaContextual entradaContextual(EstadoGamepad estado) {
+    private EntradaContextual entradaContextual(EstadoGamepad estado, com.irmaosmiau.controles.DirecaoTecnica d) {
         EntradaContextual base = mapa.entradaContextual(estado, slot);
         if (mapa.esquema(slot) != EsquemaGamepad.CONTEXTUAL) {
             return base;
         }
-        if (estado.pressionado(BotaoGamepad.R3)) {
-            analogicoDireito.desarmar();
-        }
-        com.irmaosmiau.controles.DirecaoTecnica d = analogicoDireito.atualizar(
-                estado.eixo(EixoGamepad.DIR_X), estado.eixo(EixoGamepad.DIR_Y));
         if (d == null) {
             return base;
         }
@@ -183,21 +234,22 @@ public final class FonteGamepad implements FonteAcoes {
     }
 
     /** Entrega 5L: RS no CLASSICO (mesma zona morta e histerese do Contextual), uma por inclinacao. */
-    private void lerPegadaClassica(EstadoGamepad estado) {
+    /**
+     * @param d     direcao do RS valida para as pegadas (null com RT/RB segurado)
+     * @param bruta direcao do RS de fato (a borda olha para ela: inclinar com RT
+     *              e depois soltar o RT nao vira pegada)
+     */
+    private void lerPegadaClassica(com.irmaosmiau.controles.DirecaoTecnica d,
+            com.irmaosmiau.controles.DirecaoTecnica bruta) {
         if (mapa.esquema(slot) == EsquemaGamepad.CONTEXTUAL) {
             rsClassicoAnterior = null;
             pegadaClassicaPendente = null;
             return;
         }
-        if (estado.pressionado(BotaoGamepad.R3)) {
-            analogicoDireito.desarmar();
-        }
-        com.irmaosmiau.controles.DirecaoTecnica d = analogicoDireito.atualizar(
-                estado.eixo(EixoGamepad.DIR_X), estado.eixo(EixoGamepad.DIR_Y));
         if (d != null && rsClassicoAnterior == null) {
             pegadaClassicaPendente = d;
         }
-        rsClassicoAnterior = d;
+        rsClassicoAnterior = bruta;
     }
 
     /** Direcao do RS escolhida no CLASSICO desde a ultima consulta (uma vez). */
@@ -222,6 +274,7 @@ public final class FonteGamepad implements FonteAcoes {
         contextual.limpar();
         analogicoDireito.desarmar();
         pegadaClassicaPendente = null;
+        escolhaPendente = null;
     }
 
     public MapaGamepad getMapa() {
@@ -255,6 +308,7 @@ public final class FonteGamepad implements FonteAcoes {
         trava.travarPressionados("");
         contextual.limpar();
         analogicoDireito.desarmar();
+        escolhaPendente = null;
         pausaTocada = false;
         travarNaProximaLeitura = true;
     }

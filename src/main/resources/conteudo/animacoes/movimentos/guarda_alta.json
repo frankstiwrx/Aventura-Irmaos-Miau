@@ -1,0 +1,20 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "movimento.guarda_alta",
+  "estado": "PARADO",
+  "rig": "miau_v1",
+  "uso": "MOVIMENTO",
+  "loop": false,
+  "duracaoQuadroMs": 100,
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "5O (Claude): GUARDA ALTA: punhos no queixo e na testa, cotovelos fechados, queixo baixo; pes firmes. Quadros = DELTAS sobre a postura (em pe ou de joelhos): 0 e 1 alternam devagar (respiracao).",
+  "quadros": [
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 3, 0, 5, 1, 0, 22, -6, 50, -57, -16, -6, -30, -58, 3, 0, 0, 0, 3, 0, 0, 0]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 4, 0, 6, 1, 0, 22, -5, 50, -56, -16, -5, -30, -57, 4, 0, 0, 0, 4, 0, 0, 0]
+    }
+  ]
+}

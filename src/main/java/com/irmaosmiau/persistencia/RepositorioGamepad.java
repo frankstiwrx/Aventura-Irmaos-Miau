@@ -92,7 +92,8 @@ public final class RepositorioGamepad {
             boolean ehAtual = lido.config(s).equals(MapaGamepad.padraoDo(s, e));
             boolean padraoAntigo = !ehAtual && (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5G(s, e))
-                    || lido.config(s).equals(MapaGamepad.padrao5H(s, e)));
+                    || lido.config(s).equals(MapaGamepad.padrao5H(s, e))
+                    || lido.config(s).equals(MapaGamepad.padrao5N(s, e)));
             if (padraoAntigo) {
                 lido = lido.comEsquema(s, e);
                 avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"

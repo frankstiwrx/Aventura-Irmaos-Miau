@@ -901,3 +901,32 @@ BACKSPACE voltam, e qualquer gamepad conectado guia o J1. ↑/↓ escolhem MAPA 
 Arrasto multidirecional (5N): com a pegada estabelecida, o aplicador segura o modo controle (J1 SHIFT, J2
 DELETE; gamepad Clássico LB; Contextual automático pelo analógico) e usa as quatro direções ou as diagonais:
 a dupla anda junta para os lados e entre as linhas 1–5.
+
+## Famílias de técnicas, defesas e acrobacias (Entrega 5O)
+
+Mapeamento real (padrão; os dois esquemas, salvo indicação):
+
+| Botão | Clássico | Contextual |
+|---|---|---|
+| RS sozinho | 4 pegadas (↑ gola e manga, → cruzada, ↓ duas mangas, ← gola e nuca) | idem (+ D-pad e camadas LT/LB) |
+| **RT + RS** | **defesas**: ↑ guarda alta, ← guarda média, → guarda baixa, ↓ sprawl | idem |
+| **RB + RS** | **quedas e transições** (reservado: o HUD mostra "EM BREVE", nada executa) | idem |
+| RB | corrida (segurado) + modificador do pulo alto (RB + A) | modificador do pulo alto |
+| R3 + direção | rolamento técnico (sem mudança) | idem |
+| **Y + direção do movimento** | acrobacia (livre); com a pegada, Y continua sendo o reforço | acrobacia |
+| B | desequilibrar / romper | agachamento suave |
+| LB | modo controle (arrasto) | camada 3 |
+
+Mudança de propósito: o RT sozinho era o sprawl; agora o RT é o modificador das defesas e o sprawl é
+**RT + RS ↓** (no teclado continua G / I). Um `gamepad.json` nunca personalizado da 5N é atualizado sozinho.
+
+Prioridade: **RT vence RB**; com um modificador, a direção nunca pega. Guardas ficam enquanto a direção
+estiver segurada; sprawl e quedas saem uma vez por inclinação (volta ao neutro para repetir). Soltar o RT
+com o RS ainda inclinado não vira pegada.
+
+Teclado (equivalentes lógicos — ALT foi evitado: no Windows abre o menu da janela, e o AltGr do ABNT2 é
+Ctrl+Alt): J1 **3** = defesas, **4** = quedas, **9** + WASD = acrobacia; J2 **INSERT**, **HOME**,
+**NUM 5** + setas. A direção da técnica são as teclas de pegada (H/6/7/8 e END/NUM 7/8/9).
+
+Acrobacias (direção relativa ao corpo): para onde olha = mortal para a frente; para trás = mortal para
+trás; fundo/frente da tela = estrela para a esquerda/direita do corpo.

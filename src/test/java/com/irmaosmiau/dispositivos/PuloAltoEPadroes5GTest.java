@@ -66,6 +66,7 @@ class PuloAltoEPadroes5GTest {
     @Test
     void modificadorConfiguravelSemConflitoComAsCamadas() {
         MapaGamepad ctx = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+                .semBotao(J1, ItemGamepad.de(AcaoJogador.ACROBACIA))          // 5O (pedido): Y era livre
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.NORTE);
         assertTrue(ctx.isValido(), "Y esta livre no contextual");
         FonteGamepad f = new FonteGamepad(J1, ctx);
@@ -79,6 +80,7 @@ class PuloAltoEPadroes5GTest {
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.GATILHO_ESQ);
         assertFalse(conflito.isValido(), "LT ja e a camada 2");
         MapaGamepad troca = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+                .semBotao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_PROJECAO))   // 5O (pedido): RB tambem e quedas
                 .trocandoSeNecessario(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.GATILHO_ESQ);
         assertTrue(troca.isValido());
         assertEquals(BotaoGamepad.RB, troca.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2)).orElseThrow());

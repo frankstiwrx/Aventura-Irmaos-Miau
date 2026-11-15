@@ -388,3 +388,18 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
   `EstadoCorporalObservado.transladado(dx, dy, linha)`.
 - `GamePanel`: modo controle + cima/baixo conduz (o aplicador não anda sozinho em profundidade);
   `MapaGamepad` (Contextual): o arrasto automático vale para as quatro direções.
+
+## Famílias de técnicas, defesas e acrobacias (Entrega 5O)
+
+- `controles.FamiliaTecnica` (PEGADAS, DEFESAS, PROJECOES, ACROBACIAS; RT > RB). `AcaoJogador`:
+  `MODIFICADOR_DEFESA`, `MODIFICADOR_PROJECAO`, `ACROBACIA`. `MapaGamepad.transformar5O` (RT/RB/Y) e
+  `padrao5N` (migração). `FonteGamepad` lê o RS uma vez por tick e o entrega à família do modificador.
+- `combate.ResolvedorFamilias`: família + direção → técnica ou motivo (PERSONAGEM AGARRADO, INDISPONIVEL NO
+  SOLO, EM RECUPERACAO, SEM FOLEGO, EM PREPARAÇÃO...). O mesmo resultado executa, alimenta o HUD e o F3.
+- `SistemaCombate.posturasPermitemPegadaConvencional` / `motivoIndisponivel`: pegadas convencionais nunca
+  com alguém deitado ou em transição (regra do motor).
+- `entities.DefesaCorporal` (guardas: nível ALTO/MÉDIO/BAIXO, ENTRANDO/ATIVA/SAINDO, `protege(nivel)` para os
+  futuros golpes; nenhuma redução de dano simulada). Sprawl: fases e `RECARGA_SPRAWL_TICKS`. `TipoAcrobacia`
+  + estado de acrobacia no `IrmaoMiau` (evasão de pegada no ar, como o pulo).
+- `GamePanel.manterNaArena` (todo movimento livre) e `impedirAtravessarNaAcrobacia`.
+- `animacao.BibliotecaMovimentos`, `AnimadorMovimentos`, `VersaoMovimentos` (F7).

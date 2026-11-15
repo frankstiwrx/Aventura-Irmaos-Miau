@@ -42,7 +42,7 @@ public final class CarregadorAnimacaoJson {
     public static final Set<String> RIGS = Set.of("miau_v1");
 
     private static final Set<String> CAMPOS = Set.of("tipo", "versaoEsquema", "id", "estado", "rig", "uso",
-            "loop", "duracaoQuadroMs", "sequencia", "deslocamentoVisual", "espelhamento", "origem", "quadros");
+            "loop", "duracaoQuadroMs", "sequencia", "deslocamentoVisual", "espelhamento", "origem", "quadros", "deslocamentosY");
 
     private CarregadorAnimacaoJson() {
     }
@@ -89,6 +89,33 @@ public final class CarregadorAnimacaoJson {
         }
     }
 
+    /** Entrega 5O: movimento COMPARTILHADO (guardas, sprawl, rolamentos, acrobacias), rig semantico. */
+    public static final String USO_MOVIMENTO = "MOVIMENTO";
+
+    /** Entrega 5O: animacao + deslocamento vertical por quadro (null = nenhum). */
+    public record Movimento(AnimacaoIndividual animacao, int[] deslocamentosY) {
+    }
+
+    public static Movimento lerMovimento(String json, String origemArquivo) {
+        AnimacaoIndividual a = ler(json, origemArquivo, USO_MOVIMENTO);
+        int[] dys = ObjetoJson.ler(json, origemArquivo).inteirosOpcional("deslocamentosY");
+        if (dys != null && dys.length != a.getQuantidadeQuadros()) {
+            throw new ConteudoInvalidoException("[" + origemArquivo + "] deslocamentosY precisa de um valor por quadro.");
+        }
+        return new Movimento(a, dys);
+    }
+
+    public static Movimento movimentoDoRecurso(String caminho) {
+        try (InputStream in = CarregadorAnimacaoJson.class.getResourceAsStream(caminho)) {
+            if (in == null) {
+                throw new ConteudoInvalidoException("Movimento nao encontrado: " + caminho);
+            }
+            return lerMovimento(new String(in.readAllBytes(), StandardCharsets.UTF_8), caminho);
+        } catch (IOException ex) {
+            throw new ConteudoInvalidoException("Falha ao ler " + caminho + ": " + ex.getMessage(), ex);
+        }
+    }
+
     private static AnimacaoIndividual ler(String json, String origemArquivo, String usoEsperado) {
         ObjetoJson doc = ObjetoJson.ler(json, origemArquivo);
         for (String chave : doc.chaves()) {
@@ -122,7 +149,7 @@ public final class CarregadorAnimacaoJson {
         if (usoEsperado.equals(USO_RECEPTOR) && estado != EstadoVisual.PEGADA_ESTABELECIDA) {
             throw doc.erro("estado", "reacao do receptor usa PEGADA_ESTABELECIDA");
         }
-        if (usoEsperado.equals(USO_INDIVIDUAL) && estado.isConjunto()) {
+        if (!usoEsperado.equals(USO_RECEPTOR) && estado.isConjunto()) {
             throw doc.erro("estado", "estado conjunto em animacao individual");
         }
         List<int[]> quadros = new ArrayList<>();

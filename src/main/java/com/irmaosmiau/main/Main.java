@@ -82,6 +82,9 @@ public class Main {
             // Entrega 5L: o jogo comeca com as animacoes de pegada propostas (F6 volta as autorais).
             com.irmaosmiau.combate.ModoAnimacoesPegada.definir(
                     com.irmaosmiau.combate.ModoAnimacoesPegada.padraoDoJogo());
+            // Entrega 5O: rolamento e sprawl na versao nova (F7 volta ao original para comparar).
+            com.irmaosmiau.animacao.VersaoMovimentos.definir(
+                    com.irmaosmiau.animacao.VersaoMovimentos.padraoDoJogo());
 
             // Entrega 5I: menus navegaveis por gamepad e teclado (sem mouse).
             new com.irmaosmiau.ui.NavegadorMenus(janela, ServicoGamepads::global, System::currentTimeMillis)

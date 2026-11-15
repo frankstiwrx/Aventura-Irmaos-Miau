@@ -213,6 +213,28 @@ public final class SessaoDispositivos {
         return f.consumirPegadaClassica();
     }
 
+    /** 5O: familia escolhida pelos modificadores no gamepad do slot (PEGADAS sem gamepad). */
+    public com.irmaosmiau.controles.FamiliaTecnica familiaGamepad(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        return f == null || !usaGamepadAgora(slot) ? com.irmaosmiau.controles.FamiliaTecnica.PEGADAS
+                : f.familiaAtiva();
+    }
+
+    /** 5O: direcao do RS segurada na familia (null se nenhuma). */
+    public com.irmaosmiau.controles.DirecaoTecnica direcaoFamiliaGamepad(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        return f == null || !usaGamepadAgora(slot) ? null : f.direcaoFamiliaSegurada();
+    }
+
+    /** 5O: escolha (familia + direcao) do RS desde a ultima consulta. */
+    public Optional<com.irmaosmiau.controles.FamiliaTecnica.Escolha> consumirEscolhaFamilia(SlotJogador slot) {
+        FonteGamepad f = fontes.get(slot);
+        if (f == null || !usaGamepadAgora(slot)) {
+            return Optional.empty();
+        }
+        return f.consumirEscolhaFamilia();
+    }
+
     public CamadaComando camadaAtiva(SlotJogador slot) {
         FonteGamepad f = fontes.get(slot);
         return f == null ? CamadaComando.UM : f.camadaAtiva();

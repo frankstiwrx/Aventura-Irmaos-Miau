@@ -367,8 +367,11 @@ public void iniciarSprawl() {
      */
     if (pulando
             || rolando
+            || acrobacia != null
             || isDeitado()
-            || isAjoelhado()) {
+            || isAjoelhado()
+            || transicaoAtiva != null
+            || recargaSprawl > 0) {     // 5O: sem sprawl em sequencia
 
         return;
     }
@@ -605,6 +608,14 @@ public void iniciarSprawl() {
 
         // Entrega 5A: duracao dos efeitos avanca no loop logico.
         efeitos.atualizar();
+        // 5O: recargas do sprawl e das acrobacias; guarda (entrada/saida).
+        if (recargaSprawl > 0) {
+            recargaSprawl--;
+        }
+        if (recargaAcrobacia > 0) {
+            recargaAcrobacia--;
+        }
+        defesa.atualizar();
 
         // Entrega 5K: distancia andada e esforco deste tick (zerados para o proximo).
         double deslocouNesteTick = deslocamentoProprioTick;
@@ -643,6 +654,19 @@ public void iniciarSprawl() {
     }
 }
         
+        // 5O: acrobacia em andamento (como o rolamento: o corpo segue a tecnica).
+        if (acrobacia != null) {
+            andando = false;
+            agachado = false;
+            correndo = false;
+            respirando = false;
+            atualizarAcrobacia();
+            deslocamentoProprioTick = 0;      // custo proprio (nao e caminhada)
+            y = yBase;
+            atualizarPiscar();
+            return;
+        }
+
         if (rolando) {
 
     andando = false;
@@ -1215,6 +1239,8 @@ private void finalizarSprawl() {
     fazendoSprawl = false;
 
     framesSprawl = 0;
+
+    recargaSprawl = RECARGA_SPRAWL_TICKS;   // 5O
 }
     
     // =============================
@@ -1528,6 +1554,171 @@ public void alternarDeitado() {
     }
 
     // =============================
+    // 5O: DEFESAS, SPRAWL E ACROBACIAS
+    // =============================
+    /** Recarga depois de um sprawl (sem repeticao infinita): ~0,5 s. */
+    public static final int RECARGA_SPRAWL_TICKS = 30;
+    /** Recarga depois de uma acrobacia: ~0,4 s. */
+    public static final int RECARGA_ACROBACIA_TICKS = 24;
+
+    private final DefesaCorporal defesa = new DefesaCorporal();
+    private int recargaSprawl;
+    private int recargaAcrobacia;
+    private TipoAcrobacia acrobacia;
+    private int framesAcrobacia;
+    private double vxAcrobacia;
+    private double vyAcrobacia;
+    private boolean viradoNoInicioAcrobacia;
+
+    /** Estado mecanico das guardas (consultado pelos futuros golpes). */
+    public DefesaCorporal getDefesa() {
+        return defesa;
+    }
+
+    public int getRecargaSprawl() {
+        return recargaSprawl;
+    }
+
+    /** Fase do sprawl pelo progresso: ENTRADA, PROTECAO, RECUPERACAO (null fora dele). */
+    public String getFaseSprawl() {
+        if (!fazendoSprawl) {
+            return null;
+        }
+        double p = getProgressoSprawl();
+        return p < 0.25 ? "ENTRADA" : p < 0.62 ? "PROTECAO" : "RECUPERACAO";
+    }
+
+    /** Por que o sprawl nao pode comecar agora (null = pode). */
+    public String motivoSemSprawl() {
+        if (isDeitado() || isAjoelhado()) {
+            return "SÓ EM PÉ";
+        }
+        if (transicaoAtiva != null) {
+            return "MUDANDO DE POSTURA";
+        }
+        if (fazendoSprawl || rolando || pulando || acrobacia != null) {
+            return "EM MOVIMENTO";
+        }
+        if (recargaSprawl > 0) {
+            return "EM RECUPERACAO";
+        }
+        if (folegoAtual < CUSTO_SPRAWL) {
+            return "SEM FOLEGO";
+        }
+        return null;
+    }
+
+    /** Custo do sprawl (para o HUD e os testes). */
+    public static double custoSprawl() {
+        return CUSTO_SPRAWL;
+    }
+
+    /** 0..1 do sprawl (publico para a animacao experimental). */
+    public double progressoSprawl() {
+        return getProgressoSprawl();
+    }
+
+    /** 0..1 do rolamento (publico para a animacao experimental; a regra nao muda). */
+    public double progressoRolamento() {
+        return getProgressoRolamento();
+    }
+
+    public Direcao getDirecaoRolamento() {
+        return rolando ? direcaoRolamento : null;
+    }
+
+    /** Lado para onde olhava quando o rolamento comecou (a animacao nao vira no meio). */
+    public boolean isViradoParaDireitaNoInicioRolamento() {
+        return viradoParaDireitaNoInicioRolamento;
+    }
+
+    // ---------------- acrobacias
+    /**
+     * Inicia a acrobacia (Y + direcao). So em pe, livre, sem outra acao do
+     * corpo em andamento, fora da recarga e com folego. O deslocamento e
+     * decidido aqui (pela orientacao no inicio) e anda tick a tick com
+     * moverX / moverVertical (as cinco linhas limitam a profundidade); a borda
+     * da arena e o adversario sao respeitados pelo GamePanel.
+     *
+     * @return true se comecou
+     */
+    public boolean iniciarAcrobacia(TipoAcrobacia tipo) {
+        if (tipo == null || motivoSemAcrobacia(tipo) != null) {
+            return false;
+        }
+        defesa.interromper();
+        correndo = false;
+        respirando = false;
+        agachado = false;
+        gastarFolegoEsforco(tipo.getCusto(), "acrobacia");
+        acrobacia = tipo;
+        framesAcrobacia = 0;
+        viradoNoInicioAcrobacia = viradoParaDireita;
+        double frente = viradoParaDireita ? 1 : -1;
+        vxAcrobacia = tipo.getDeslocamentoFrentePx() * frente / tipo.getDuracaoTicks();
+        vyAcrobacia = tipo.getDeslocamentoProfundidadePx(viradoParaDireita) / (double) tipo.getDuracaoTicks();
+        ultimaAtividade = System.currentTimeMillis();
+        return true;
+    }
+
+    /** Por que a acrobacia nao pode comecar agora (null = pode). */
+    public String motivoSemAcrobacia(TipoAcrobacia tipo) {
+        if (isDeitado() || isAjoelhado()) {
+            return "SÓ EM PÉ";
+        }
+        if (transicaoAtiva != null) {
+            return "MUDANDO DE POSTURA";
+        }
+        if (acrobacia != null || rolando || fazendoSprawl || pulando) {
+            return "EM MOVIMENTO";
+        }
+        if (recargaAcrobacia > 0) {
+            return "EM RECUPERACAO";
+        }
+        if (folegoAtual < tipo.getCusto()) {
+            return "SEM FOLEGO";
+        }
+        return null;
+    }
+
+    private void atualizarAcrobacia() {
+        moverX(vxAcrobacia);
+        if (vyAcrobacia != 0) {
+            moverVertical(vyAcrobacia);
+        }
+        if (++framesAcrobacia >= acrobacia.getDuracaoTicks()) {
+            acrobacia = null;
+            framesAcrobacia = 0;
+            recargaAcrobacia = RECARGA_ACROBACIA_TICKS;
+        }
+    }
+
+    public TipoAcrobacia getAcrobacia() {
+        return acrobacia;
+    }
+
+    public boolean isEmAcrobacia() {
+        return acrobacia != null;
+    }
+
+    public double progressoAcrobacia() {
+        return acrobacia == null ? 0.0 : Math.min(1.0, framesAcrobacia / (double) acrobacia.getDuracaoTicks());
+    }
+
+    public boolean isViradoParaDireitaNoInicioAcrobacia() {
+        return viradoNoInicioAcrobacia;
+    }
+
+    public int getRecargaAcrobacia() {
+        return recargaAcrobacia;
+    }
+
+    /** O GamePanel parou o avanco contra o adversario: a acrobacia termina no lugar. */
+    public void pararAvancoAcrobacia() {
+        vxAcrobacia = 0;
+    }
+
+    // =============================
     // 5N: RIG SEMANTICO, PROFUNDIDADE CONJUNTA E ATIVIDADE NA PEGADA
     // =============================
     /** Rig semantico do lutador (as reacoes compartilhadas do receptor usam o mesmo). */
@@ -1558,6 +1749,12 @@ public void alternarDeitado() {
         y += dy;
         restoMovimentoY = 0;
         linhaAtual = (int) Math.round((double) (yBase - yLinha1) / ESPACO_ENTRE_LINHAS);
+    }
+
+    /** 5O: devolve o lutador para dentro da arena (sem guardar resto de movimento contra a parede). */
+    public void encostarNaBorda(int dx) {
+        x += dx;
+        restoMovimentoX = 0;
     }
 
     /** 5N: segurar ou ser segurado conta como atividade (o taunt nao aparece logo depois). */
@@ -2032,6 +2229,9 @@ public void alternarDeitado() {
     public String getEvasaoAtiva() {
         if (rolando) {
             return "ROLAMENTO";
+        }
+        if (acrobacia != null && acrobacia.noAr(progressoAcrobacia())) {
+            return "ACROBACIA";                    // 5O: como o pulo (so pegadas; nada de invulnerabilidade geral)
         }
         if (pulando) {
             return "PULO";

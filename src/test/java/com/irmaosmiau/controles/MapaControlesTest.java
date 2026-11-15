@@ -39,6 +39,9 @@ class MapaControlesTest {
             // 5L (pedido): as pegadas 2-4.
             {"brancoPegada2", "6"}, {"brancoPegada3", "7"}, {"brancoPegada4", "8"},
             {"pretoPegada2", "NUMPAD7"}, {"pretoPegada3", "NUMPAD8"}, {"pretoPegada4", "NUMPAD9"},
+            // 5O (pedido): equivalentes de teclado do RT (defesas), RB (quedas) e Y (acrobacia).
+            {"brancoModDefesa", "3"}, {"brancoModProjecao", "4"}, {"brancoAcrobacia", "9"},
+            {"pretoModDefesa", "INSERT"}, {"pretoModProjecao", "HOME"}, {"pretoAcrobacia", "NUMPAD5"},
         };
         for (String[] l : tabela) {
             TECLAS_ANTERIORES.put(l[0], l[1]);
@@ -62,9 +65,9 @@ class MapaControlesTest {
         assertTrue(p.isValido(), p.problemas().toString());
         assertTrue(p.ehPadrao());
         // 5I (pedido): antes 16 (J1) e 13 (J2); agora os dois slots tem as 17 acoes.
-        // 5L (pedido): + 3 pegadas (antes 17).
-        assertEquals(20, SlotJogador.JOGADOR_1.acoes().size());
-        assertEquals(20, SlotJogador.JOGADOR_2.acoes().size());
+        // 5L (pedido): + 3 pegadas (antes 17). 5O (pedido): + 3 (modificadores de familia e acrobacia).
+        assertEquals(23, SlotJogador.JOGADOR_1.acoes().size());
+        assertEquals(23, SlotJogador.JOGADOR_2.acoes().size());
     }
 
     @Test

@@ -986,6 +986,11 @@ public final class SistemaCombate {
             return false;
         }
 
+        // 5O: pegadas convencionais (em pe / de joelhos) nao valem com alguem deitado ou mudando de postura.
+        if (acao.getCategoria() == CategoriaAcao.PEGADA && !posturasPermitemPegadaConvencional(atacante, defensor)) {
+            return false;
+        }
+
         ContextoCombate contexto = new ContextoCombate(
                 atacante,
                 defensor
@@ -995,6 +1000,56 @@ public final class SistemaCombate {
                 && estaDentroDaDiferencaDeLinhas(acao, contexto)
                 && atendeOrientacaoDaAcao(acao, contexto)
                 && temFolegoSuficiente(acao, contexto);
+    }
+
+    // =====================================================
+    // ENTREGA 5O: POSTURAS DAS PEGADAS CONVENCIONAIS E MOTIVOS
+    // =====================================================
+    /**
+     * 5O: as quatro pegadas convencionais sao tecnicas de contato EM PE e DE
+     * JOELHOS (e entre essas duas posturas, como antes). Com qualquer um
+     * DEITADO ou no meio de uma TRANSICAO de postura (caindo, levantando...)
+     * elas nao valem: o solo tera tecnicas proprias. A regra e do motor, entao
+     * teclado, gamepad e chamadas diretas sao barrados igualmente.
+     */
+    public static boolean posturasPermitemPegadaConvencional(IrmaoMiau atacante, IrmaoMiau defensor) {
+        return posturaDePegada(atacante) && posturaDePegada(defensor);
+    }
+
+    private static boolean posturaDePegada(IrmaoMiau l) {
+        return !l.isDeitado() && l.getTransicaoAtiva() == null;
+    }
+
+    /** 5O: por que a acao nao pode ser tentada agora (null = pode). Texto curto para HUD e F3. */
+    public String motivoIndisponivel(IrmaoMiau atacante, IrmaoMiau defensor, String idAcao) {
+        AcaoCombate acao = registroAcoes.buscar(idAcao);
+        if (acao == null || !acao.isJogavel()) {
+            return "TECNICA AINDA NAO IMPLEMENTADA";
+        }
+        if (podeTentarAcao(atacante, defensor, idAcao)) {
+            return null;
+        }
+        if (acao.getCategoria() == CategoriaAcao.PEGADA && !posturasPermitemPegadaConvencional(atacante, defensor)) {
+            boolean transicao = atacante.getTransicaoAtiva() != null || defensor.getTransicaoAtiva() != null;
+            return transicao ? "MUDANDO DE POSTURA" : "INDISPONIVEL NO SOLO";
+        }
+        if (isAnimacaoCombateAtiva()) {
+            return "EM RECUPERACAO";
+        }
+        if (acaoJaRepresentaInteracaoAtual(acao, atacante, defensor)) {
+            return "JA ESTA NA PEGADA";
+        }
+        ContextoCombate c = new ContextoCombate(atacante, defensor);
+        if (!estaNoAlcanceHorizontal(acao, c) || !estaDentroDaDiferencaDeLinhas(acao, c)) {
+            return "DISTANCIA INADEQUADA";
+        }
+        if (!atendeOrientacaoDaAcao(acao, c)) {
+            return "DE COSTAS";
+        }
+        if (!temFolegoSuficiente(acao, c)) {
+            return "SEM FOLEGO";
+        }
+        return "INDISPONIVEL";
     }
 
     /**

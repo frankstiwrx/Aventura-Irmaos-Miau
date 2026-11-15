@@ -486,3 +486,35 @@ livre continua (desliza). Fôlego: só o aplicador paga `ARRASTO_POR_PIXEL` × d
 (bloqueado não custa; nunca negativo). As referências da pegada andam junto (X, Y e linha), então a
 mudança conjunta de linha não rompe. Passos dos dois pela distância andada em X e em profundidade; o
 receptor inclina conforme é puxado/empurrado e vira a cabeça ao mudar de linha.
+
+# Entrega 5O — Defesas, sprawl e rolamento experimentais, acrobacias
+
+## Originais preservados (comparáveis no jogo)
+
+- **Rolamento técnico original**: `IrmaoMiauBranco.ROLAMENTO_MIAUSTUDIO` / `IrmaoMiauPreto` (Java, intacto),
+  desenhado por `desenharRolamento` — tocado ao contrário para a frente, como sempre.
+- **Sprawl original**: `SPRAWL_MIAUSTUDIO` nos mesmos arquivos (Java, intacto).
+- **F7** alterna ROLAMENTO/SPRAWL entre **ORIGINAL** e **EXPERIMENTAL 5O** (o jogo abre no experimental; o F3
+  mostra "MOV (F7)"). O **F6 não mudou**: continua só das pegadas e das reações do receptor.
+
+## Movimentos compartilhados (rig `miau_v1`, por técnica — nunca por personagem)
+
+`/conteudo/animacoes/movimentos/<id>.json`, formato individual com `"uso": "MOVIMENTO"` e, nas sequências,
+`deslocamentosY` (um por quadro: assenta o corpo no tatame ou sobe no ar). Nenhum projeto JSON v2 mudou.
+
+| Arquivo | Uso | Quadros |
+|---|---|---|
+| `guarda_alta/media/baixa.json` | guardas (as duas versões) | 2 DELTAS sobre a postura (respiração); de joelhos as pernas são as da postura |
+| `sprawl_5o.json` | sprawl experimental | preparação, explosão, pernas atrás, proteção ×2, recolhe, agacha, guarda |
+| `rolamento_frente_5o.json`, `rolamento_tras_5o.json` | rolamento experimental | preparação, mergulho/senta, 4 posições do giro de 360° grupado, agachado, levanta |
+| `rolamento_lateral_5o.json` | rolamento para o fundo/frente da tela | abaixa, ombro, bola, rola, volta, abre, agachado, levanta |
+| (diagonais) | — | giro da frente/trás + 30% do lateral (ombro e quadril), sem arquivo próprio |
+| `estrela_5o.json`, `mortal_frente_5o.json`, `mortal_tras_5o.json` | acrobacias (as duas versões) | passo/impulso, mãos/salto, parada de mãos/grupado, roda/desce, pouso |
+
+As sequências são tocadas pelo PROGRESSO do movimento (a mecânica — distância, tempo, custo, colisão — é a
+mesma nas duas versões; só o desenho muda). Rig incompatível = nada aplicado (fallback do personagem).
+
+**Personagem futuro (Judô, Sambo, Karatê)**: com o esqueleto de 30 valores, usa todos esses arquivos sem
+nada novo. Variante específica = outro arquivo e uma linha na biblioteca. Para editar no MiauStudio: abrir
+um projeto INDIVIDUAL com os mesmos 30 valores e copiar os quadros para o arquivo (o MiauStudio ainda não
+exporta este formato diretamente).

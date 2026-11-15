@@ -39,6 +39,8 @@ class GamepadPersistenciaTest {
     private static MapaGamepad personalizado() {
         return MapaGamepad.padrao()
                 .comEsquema(SlotJogador.JOGADOR_1, EsquemaGamepad.CONTEXTUAL)
+                // 5O (pedido): o Y virou a acrobacia; para usar o Y na tecnica, o jogador libera a acrobacia.
+                .semBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.ACROBACIA))
                 .comBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.NORTE)
                 .semBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.ROLAR))
                 .semBotao(SlotJogador.JOGADOR_2, ItemGamepad.de(AcaoJogador.CORRER));
