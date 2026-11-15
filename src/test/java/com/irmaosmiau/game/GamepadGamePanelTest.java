@@ -67,6 +67,7 @@ class GamepadGamePanelTest {
         ServicoGamepads.instalarGlobal(null);
         PreferenciasDispositivos.instalarGlobal(null);
         PreferenciasControles.instalarGlobal(null);
+        com.irmaosmiau.preferencias.PreferenciasGamepad.instalarGlobal(null);
     }
 
     private void naEdt(Runnable r) throws Exception {
@@ -82,6 +83,9 @@ class GamepadGamePanelTest {
         ServicoGamepads.instalarGlobal(sim);
         PreferenciasDispositivos.instalarGlobal(PreferenciasDispositivos.emMemoria(assoc));
         PreferenciasControles.instalarGlobal(PreferenciasControles.emMemoria(teclas));
+        // 5O.2 (pedido): estes testes sao do esquema Classico; o padrao do jogo virou o Contextual.
+        com.irmaosmiau.preferencias.PreferenciasGamepad.instalarGlobal(com.irmaosmiau.preferencias.PreferenciasGamepad
+                .emMemoria(com.irmaosmiau.dispositivos.MapaGamepad.classico()));
         painel = treino
                 ? new GamePanel(ConfiguracaoTreino.padrao(), () -> { }, () -> { }, () -> { })
                 : new GamePanel(TipoPersonagem.AMBOS, () -> { }, () -> { }, () -> { });

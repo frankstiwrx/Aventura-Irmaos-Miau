@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 887, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 908, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -397,3 +397,10 @@ Gamepad (Xbox):
 - [ ] J2 no teclado: WASD, setas (RS), K/L/J/I, Z/M, T/H/G/F, O/P/E/Q, ENTER, SHIFT
 - [ ] J1 no teclado: NUM 8/4/5/6, NUM 0 correr, 1 deitar, 2 pegada 1, 0 desequilibrar, CTRL arrasto, - sprawl
 - [ ] F3 mostra RB físico, Select físico e RB lógico dos dois jogadores
+
+### Contextual padrão, J2 rompendo/arrastando e respiração por postura (Entrega 5O.2)
+- [ ] J1 agarra o J2; o J2 rompe com a seta ↓ (teclado) / RS ↓ (Xbox)
+- [ ] J2 agarra o J1 e arrasta com WASD (4 direções e diagonais), sem sair da arena
+- [ ] J2 no Contextual: L agacha, J corre (não pega), D-pad não anda
+- [ ] RT respira em pé, de joelhos e deitado (sem mudar a postura); andar respirando é mais lento embaixo
+- [ ] F3: `ESQUEMA J1 CONTEXTUAL J2 CONTEXTUAL`

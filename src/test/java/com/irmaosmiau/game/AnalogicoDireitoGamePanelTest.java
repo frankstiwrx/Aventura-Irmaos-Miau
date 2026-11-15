@@ -34,6 +34,8 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5H no GamePanel real: tecnicas pelo analogico direito e arrasto automatico (gamepad simulado). */
 class AnalogicoDireitoGamePanelTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
 
@@ -67,7 +69,7 @@ class AnalogicoDireitoGamePanelTest {
     }
 
     private static MapaGamepad contextual(SlotJogador... s) {
-        MapaGamepad m = MapaGamepad.padrao();
+        MapaGamepad m = MapaGamepad.classico();
         for (SlotJogador x : s) {
             m = m.comEsquema(x, EsquemaGamepad.CONTEXTUAL);
         }
@@ -216,7 +218,7 @@ class AnalogicoDireitoGamePanelTest {
     @Test
     void classicoIntactoESemArrastoAutomatico() throws Exception {
         naEdt(() -> {
-            criar(MapaGamepad.padrao(), J1);
+            criar(MapaGamepad.classico(), J1);
             sim.definir("g1", r().com(BotaoGamepad.DPAD_DIREITA));
             for (int i = 0; i < 200 && !s().podeTentarAcao(painel.getLutador1(), painel.getLutador2(), "pegada_1"); i++) {
                 ticks(1);

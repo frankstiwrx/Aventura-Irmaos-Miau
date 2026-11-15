@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5G: L3/R3 invertidos, A = pulo normal, modificador + A = pulo alto (configuravel). */
 class PuloAltoEPadroes5GTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
 
     private static EstadoGamepad r() {
@@ -22,7 +24,7 @@ class PuloAltoEPadroes5GTest {
     void novosPadroesNosDoisEsquemasEJogadores() {
         for (EsquemaGamepad e : EsquemaGamepad.values()) {
             for (SlotJogador s : SlotJogador.values()) {
-                MapaGamepad m = MapaGamepad.padrao().comEsquema(s, e);
+                MapaGamepad m = MapaGamepad.classico().comEsquema(s, e);
                 assertTrue(m.isValido(), e + " " + s + " " + m.problemas());
                 assertEquals(BotaoGamepad.R3, m.botao(s, ItemGamepad.de(AcaoJogador.ROLAR)).orElseThrow(), e + "");
                 assertEquals(BotaoGamepad.L3, m.botao(s, ItemGamepad.de(AcaoJogador.DEITAR_LEVANTAR)).orElseThrow());
@@ -40,7 +42,7 @@ class PuloAltoEPadroes5GTest {
 
     @Test
     void aSozinhoPulaNormalERbMaisAPulaAltoSemOsDois() {
-        FonteGamepad f = new FonteGamepad(J1, MapaGamepad.padrao());
+        FonteGamepad f = new FonteGamepad(J1, MapaGamepad.classico());
         f.atualizar(r().com(BotaoGamepad.SUL));
         assertTrue(f.isAtiva(AcaoJogador.PULO_CURTO));
         assertFalse(f.isAtiva(AcaoJogador.PULAR));
@@ -65,7 +67,7 @@ class PuloAltoEPadroes5GTest {
 
     @Test
     void modificadorConfiguravelSemConflitoComAsCamadas() {
-        MapaGamepad ctx = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+        MapaGamepad ctx = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
                 // 5O.1 (pedido): o Y voltou a ficar livre no Contextual (acrobacia = R3 + direcao em pe).
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.NORTE);
         assertTrue(ctx.isValido(), "Y esta livre no contextual");
@@ -76,16 +78,16 @@ class PuloAltoEPadroes5GTest {
         f.atualizar(r().com(BotaoGamepad.RB).com(BotaoGamepad.SUL));
         assertTrue(f.isAtiva(AcaoJogador.PULO_CURTO), "RB nao e mais o modificador");
 
-        MapaGamepad conflito = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+        MapaGamepad conflito = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.GATILHO_ESQ);
         assertFalse(conflito.isValido(), "LT ja e a camada 2");
-        MapaGamepad troca = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+        MapaGamepad troca = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
                 .semBotao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_PROJECAO))   // 5O (pedido): RB tambem e quedas
                 .trocandoSeNecessario(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.GATILHO_ESQ);
         assertTrue(troca.isValido());
         assertEquals(BotaoGamepad.RB, troca.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2)).orElseThrow());
 
-        MapaGamepad semMod = MapaGamepad.padrao().semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
+        MapaGamepad semMod = MapaGamepad.classico().semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO));
         FonteGamepad g = new FonteGamepad(J1, semMod);
         g.atualizar(r().com(BotaoGamepad.RB).com(BotaoGamepad.SUL));
         assertTrue(g.isAtiva(AcaoJogador.PULO_CURTO), "sem modificador: A e sempre o pulo normal");

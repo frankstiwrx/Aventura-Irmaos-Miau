@@ -53,7 +53,13 @@ public final class RepositorioGamepad {
 
     private static final Set<String> CAMPOS_RAIZ = Set.of(
             ArmazenamentoJson.CAMPO_TIPO, ArmazenamentoJson.CAMPO_VERSAO, "jogadores");
-    private static final Set<String> CAMPOS_SLOT = Set.of("esquema", "botoes");
+    private static final Set<String> CAMPOS_SLOT = Set.of("esquema", "botoes", "esquemaEscolhido");
+    /**
+     * 5O.2: gravado como true ao SALVAR em CONTROLES (o jogador escolheu o esquema).
+     * Arquivos antigos nao tem: um slot no Classico com os botoes padrao e sem esta
+     * marca e tratado como "nunca escolhido" e passa para o Contextual (novo padrao).
+     */
+    public static final String CAMPO_ESCOLHIDO = "esquemaEscolhido";
 
     private final Path arquivo;
     private final ArmazenamentoJson armazenamento = new ArmazenamentoJson();
@@ -89,6 +95,16 @@ public final class RepositorioGamepad {
                 continue;
             }
             EsquemaGamepad e = lido.esquema(s);
+            // 5O.2: Classico padrao (de qualquer versao) e nunca escolhido = o novo padrao Contextual.
+            boolean escolhido = doc.get().objeto("jogadores").objeto(s.getIdArquivo())
+                    .booleanoOpcional(CAMPO_ESCOLHIDO, false);
+            if (!escolhido && e == EsquemaGamepad.CLASSICO && e != MapaGamepad.ESQUEMA_PADRAO
+                    && ehPadraoDeAlgumaVersao(lido.config(s), s, e)) {
+                lido = lido.comEsquema(s, MapaGamepad.ESQUEMA_PADRAO);
+                avisos.add(s.getSigla() + ": o esquema padrão agora é o CONTEXTUAL (era o Clássico, nunca escolhido)."
+                        + " Para voltar: CONTROLES → esquema Clássico → SALVAR.");
+                continue;
+            }
             boolean ehAtual = lido.config(s).equals(MapaGamepad.padraoDo(s, e));
             boolean padraoAntigo = !ehAtual && (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5G(s, e))
@@ -113,6 +129,12 @@ public final class RepositorioGamepad {
         return new Leitura(lido, java.util.List.copyOf(avisos));
     }
 
+    private static boolean ehPadraoDeAlgumaVersao(MapaGamepad.ConfigSlot c, SlotJogador s, EsquemaGamepad e) {
+        return c.equals(MapaGamepad.padraoDo(s, e)) || c.equals(MapaGamepad.padraoAnterior(s, e))
+                || c.equals(MapaGamepad.padrao5G(s, e)) || c.equals(MapaGamepad.padrao5H(s, e))
+                || c.equals(MapaGamepad.padrao5N(s, e)) || c.equals(MapaGamepad.padrao5O(s, e));
+    }
+
     public void salvar(MapaGamepad mapa) {
         if (mapa == null || !mapa.isValido()) {
             throw new IllegalArgumentException("Mapeamento de gamepad com conflitos: "
@@ -127,6 +149,7 @@ public final class RepositorioGamepad {
             }
             Map<String, Object> slot = new LinkedHashMap<>();
             slot.put("esquema", mapa.esquema(s).name());
+            slot.put(CAMPO_ESCOLHIDO, Boolean.TRUE);
             slot.put("botoes", botoes);
             jogadores.put(s.getIdArquivo(), slot);
         }

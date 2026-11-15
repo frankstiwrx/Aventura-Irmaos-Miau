@@ -78,11 +78,27 @@ public final class MapaGamepad {
         return new MapaGamepad(m);
     }
 
-    /** Padrao atual (5G): os dois slots no Classico. */
+    /**
+     * Padrao atual (5O.2): os dois slots no CONTEXTUAL (o "Contextual Experimental"
+     * da tela de controles; nada a ver com a versao de animacoes do F7). Vale para o
+     * Xbox e para o teclado-controle do J2, que le o mesmo mapa do slot.
+     */
     public static MapaGamepad padrao() {
+        return todosNo(ESQUEMA_PADRAO);
+    }
+
+    /** 5O.2: esquema com que o jogo abre (configuracao nova ou nunca escolhida). */
+    public static final EsquemaGamepad ESQUEMA_PADRAO = EsquemaGamepad.CONTEXTUAL;
+
+    /** Os dois slots no Classico (o padrao da 5G a 5O.1; continua selecionavel). */
+    public static MapaGamepad classico() {
+        return todosNo(EsquemaGamepad.CLASSICO);
+    }
+
+    private static MapaGamepad todosNo(EsquemaGamepad e) {
         Map<SlotJogador, ConfigSlot> m = new EnumMap<>(SlotJogador.class);
         for (SlotJogador s : SlotJogador.values()) {
-            m.put(s, padraoDo(s, EsquemaGamepad.CLASSICO));
+            m.put(s, padraoDo(s, e));
         }
         return new MapaGamepad(m);
     }

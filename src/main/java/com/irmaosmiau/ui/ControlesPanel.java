@@ -719,6 +719,11 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
             seletorLista.setSelectedItem(modoLista);
             seletorEsquema.setSelectedItem(edicaoGamepad.esquema(slotAtual));
             seletorEsquema.setEnabled(modoLista == ModoLista.GAMEPAD);
+            // 5O.2: o esquema do slot vale para o Xbox E para o teclado-controle (J2 no teclado).
+            seletorEsquema.setToolTipText("Esquema de " + slotAtual.getSigla() + ": vale para o Xbox"
+                    + (com.irmaosmiau.controles.LayoutTecladoControle.usa(slotAtual)
+                            ? " e para o teclado-controle (WASD/setas)" : "")
+                    + ". Não confundir com o F7 (versão das animações).");
         } finally {
             mostrandoDispositivo = false;
         }

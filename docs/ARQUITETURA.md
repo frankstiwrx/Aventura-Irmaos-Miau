@@ -421,3 +421,11 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
 - Guarda andando: `DefesaCorporal.MULTIPLICADOR_VELOCIDADE` (0,5) em `moverPersonagem`, diagonal
   normalizada, sem corrida; custo = caminhada × `CustosFolego.FATOR_DISTANCIA_GUARDA` (1,0), sem recuperar.
 - `animacao.AssentamentoMovimentos`: assenta rolamentos e sprawl no tatame por classe de personagem (cache).
+
+## Esquema padrão e respiração por postura (Entrega 5O.2)
+
+- `MapaGamepad.ESQUEMA_PADRAO` = CONTEXTUAL; `MapaGamepad.classico()` guarda o padrão antigo.
+  `RepositorioGamepad` grava `esquemaEscolhido` e migra Clássico padrão nunca escolhido para o Contextual.
+- `SistemaCombate.deslocarPegadaControlada`: tick de diagonal só acumulando = esforço (sem recuperação).
+- `CustosFolego.recuperacaoRespirando/velocidadeRespirando` por postura; `IrmaoMiau.setRespirando` aceita
+  deitado; `getPoseCombateExternaParaDesenho` adiciona a respiração discreta no chão.

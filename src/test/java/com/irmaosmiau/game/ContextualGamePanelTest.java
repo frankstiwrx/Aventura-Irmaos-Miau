@@ -43,6 +43,8 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5F no GamePanel real: D-pad contextual em 3 camadas com gamepad SIMULADO. */
 class ContextualGamePanelTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
 
@@ -79,7 +81,7 @@ class ContextualGamePanelTest {
     }
 
     private static MapaGamepad contextual(SlotJogador... slots) {
-        MapaGamepad m = MapaGamepad.padrao();
+        MapaGamepad m = MapaGamepad.classico();
         for (SlotJogador s : slots) {
             m = m.comEsquema(s, EsquemaGamepad.CONTEXTUAL);
         }
@@ -345,7 +347,7 @@ class ContextualGamePanelTest {
         });
         restaurar();
         naEdt(() -> {
-            criar(MapaGamepad.padrao(), false, J1);           // classico 5D
+            criar(MapaGamepad.classico(), false, J1);           // classico 5D
             int x = painel.getLutador1().getX();
             gp("g1", r().com(BotaoGamepad.DPAD_DIREITA));
             ticks(5);

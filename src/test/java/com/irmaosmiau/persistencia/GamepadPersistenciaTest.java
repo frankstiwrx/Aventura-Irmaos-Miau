@@ -75,7 +75,8 @@ class GamepadPersistenciaTest {
         Files.writeString(arquivo(), "{\"tipo\":\"MAPEAMENTO_GAMEPAD_IRMAOS_MIAU\",\"versaoEsquema\":1,"
                 + "\"jogadores\":{\"jogador2\":{\"esquema\":\"CONTEXTUAL\",\"botoes\":{\"TECNICA_BAIXO\":\"DPAD_BAIXO\"}}}}");
         MapaGamepad m = repo().carregar();
-        assertEquals(EsquemaGamepad.CLASSICO, m.esquema(SlotJogador.JOGADOR_1));
+        // 5O.2 (pedido): o jogador ausente fica no esquema PADRAO, que agora e o Contextual (antes Classico).
+        assertEquals(MapaGamepad.ESQUEMA_PADRAO, m.esquema(SlotJogador.JOGADOR_1));
         assertEquals(EsquemaGamepad.CONTEXTUAL, m.esquema(SlotJogador.JOGADOR_2));
         assertEquals(1, m.itens(SlotJogador.JOGADOR_2).stream()
                 .filter(i -> m.botao(SlotJogador.JOGADOR_2, i).isPresent()).count(), "so o que estava no arquivo");

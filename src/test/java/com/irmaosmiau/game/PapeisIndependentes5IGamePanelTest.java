@@ -45,6 +45,8 @@ import org.junit.jupiter.api.Test;
  */
 class PapeisIndependentes5IGamePanelTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
 
@@ -437,7 +439,7 @@ class PapeisIndependentes5IGamePanelTest {
 
     @Test
     void arrastoAutomaticoContextualDoAplicadorJ1EJ2() throws Exception {
-        MapaGamepad contextual = MapaGamepad.padrao()
+        MapaGamepad contextual = MapaGamepad.classico()
                 .comEsquema(J1, EsquemaGamepad.CONTEXTUAL).comEsquema(J2, EsquemaGamepad.CONTEXTUAL);
         // J2 aplicador no Xbox (Contextual): RS cima pega, analogico esquerdo arrasta sem LB.
         comGamepads(contextual, J1, J2);
@@ -477,7 +479,7 @@ class PapeisIndependentes5IGamePanelTest {
 
     @Test
     void arrastoAutomaticoContextualDoAplicadorJ1() throws Exception {
-        comGamepads(MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL), J1);
+        comGamepads(MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL), J1);
         naEdt(() -> {
             painel = dois(null, null);
             ticks(1);
@@ -582,7 +584,7 @@ class PapeisIndependentes5IGamePanelTest {
     // =====================================================
     @Test
     void j2NoXboxClassicoPegaReforcaEArrastaComLb() throws Exception {
-        comGamepads(MapaGamepad.padrao(), J2);
+        comGamepads(MapaGamepad.classico(), J2);
         naEdt(() -> {
             painel = dois(null, null);
             ticks(1);
@@ -623,7 +625,7 @@ class PapeisIndependentes5IGamePanelTest {
 
     @Test
     void receptorJ1NoXboxClassicoRompeComB() throws Exception {
-        comGamepads(MapaGamepad.padrao(), J1);
+        comGamepads(MapaGamepad.classico(), J1);
         naEdt(() -> {
             painel = dois(null, null);
             ticks(1);
@@ -639,7 +641,7 @@ class PapeisIndependentes5IGamePanelTest {
 
     @Test
     void classicoSemLbContinuaRompendoAoAndar() throws Exception {
-        comGamepads(MapaGamepad.padrao(), J2);
+        comGamepads(MapaGamepad.classico(), J2);
         naEdt(() -> {
             painel = dois(null, null);
             ticks(1);

@@ -1758,7 +1758,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // DEFINE A VELOCIDADE
         // =========================
-        if (personagem.isDeitado()) {
+        if (respirando && personagem.isRespirando()) {
+
+            // 5O.2: respirando anda devagar em qualquer postura (velocidade propria da postura).
+            velocidadeAtual
+                    = personagem.getVelocidadeRespirando();
+
+        } else if (personagem.isDeitado()) {
 
             velocidadeAtual
                     = personagem.getVelocidadeRastejando();
@@ -1768,12 +1774,6 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             // 5J: de joelhos anda devagar (andar nao levanta).
             velocidadeAtual
                     = personagem.getVelocidadeAjoelhado();
-
-        } else if (respirando) {
-
-            velocidadeAtual
-                    = personagem
-                            .getVelocidadeRespirando();
 
         } else if (agachando) {
 
@@ -3068,9 +3068,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     /** 5O: RB no gamepad (botao fisico) x modificador logico das quedas (RB ou a tecla 4/HOME). */
+    /** 5O.2: esquema do slot no controle (Xbox ou teclado-controle); "TECLAS" nas teclas livres. */
+    private String esquemaDe(SlotJogador s) {
+        return dispositivos.usaControleAgora(s) ? mapaGamepad.esquema(s).name() : "TECLAS";
+    }
+
     /** 5O/5O.1: RB fisico, Select fisico e RB LOGICO (RB, Select livre ou a tecla do modificador). */
     private String diagnosticoRb() {
-        StringBuilder sb = new StringBuilder("RB");
+        // 5O.2: esquema de controles ativo de cada jogador (nao confundir com a versao de animacoes do F7)
+        StringBuilder sb = new StringBuilder("ESQUEMA J1 " + esquemaDe(SlotJogador.JOGADOR_1) + " J2 "
+                + esquemaDe(SlotJogador.JOGADOR_2) + " | RB");
         for (SlotJogador s : SlotJogador.values()) {
             java.util.Optional<com.irmaosmiau.dispositivos.FonteGamepad> f = dispositivos.fonte(s)
                     .filter(x -> dispositivos.usaControleAgora(s));

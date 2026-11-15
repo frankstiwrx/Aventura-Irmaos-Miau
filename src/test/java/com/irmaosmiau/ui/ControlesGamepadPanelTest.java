@@ -78,6 +78,7 @@ class ControlesGamepadPanelTest {
     void listaOsBotoesDoClassicoECapturaUmBotaoReal() throws Exception {
         abrir();
         naEdt(() -> {
+            tela.seletorEsquema().setSelectedItem(EsquemaGamepad.CLASSICO);   // 5O.2 (pedido): o padrao virou o Contextual
             ItemGamepad correr = ItemGamepad.de(AcaoJogador.CORRER);
             JButton b = tela.botaoGamepad(correr);
             assertNotNull(b);
@@ -129,6 +130,7 @@ class ControlesGamepadPanelTest {
     void conflitoRecusadoReservadoCancelarERemover() throws Exception {
         abrir();
         naEdt(() -> {
+            tela.seletorEsquema().setSelectedItem(EsquemaGamepad.CLASSICO);   // 5O.2 (pedido): o padrao virou o Contextual
             ItemGamepad correr = ItemGamepad.de(AcaoJogador.CORRER);
             dialogos.confirmacoes.add(false);
             tela.iniciarCapturaGamepad(correr);
@@ -163,7 +165,8 @@ class ControlesGamepadPanelTest {
         naEdt(() -> {
             tela.seletorEsquema().setSelectedItem(EsquemaGamepad.CONTEXTUAL);
             assertEquals(EsquemaGamepad.CONTEXTUAL, tela.gamepadEmEdicao().esquema(J1));
-            assertEquals(EsquemaGamepad.CLASSICO, tela.gamepadEmEdicao().esquema(SlotJogador.JOGADOR_2), "outro slot igual");
+            // 5O.2 (pedido): o outro slot fica no padrao, que agora e o Contextual (antes Classico).
+            assertEquals(MapaGamepad.ESQUEMA_PADRAO, tela.gamepadEmEdicao().esquema(SlotJogador.JOGADOR_2), "outro slot igual");
             assertNotNull(tela.botaoGamepad(ItemGamepad.de(ComandoGamepad.TECNICA_CIMA)));
             assertEquals("LT/L2", tela.botaoGamepad(ItemGamepad.de(ComandoGamepad.MODIFICADOR_CAMADA_2)).getText());
             tela.iniciarCapturaGamepad(ItemGamepad.de(ComandoGamepad.TECNICA_CIMA));

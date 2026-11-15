@@ -58,7 +58,8 @@ class GamepadPadroes5GPersistenciaTest {
         String antes = Files.readString(tmp.resolve(RepositorioGamepad.NOME_ARQUIVO));
         PreferenciasGamepad p = PreferenciasGamepad.carregar(repo());
         assertEquals(MapaGamepad.padraoDo(SlotJogador.JOGADOR_1, EsquemaGamepad.CONTEXTUAL), p.getAtual().config(SlotJogador.JOGADOR_1));
-        assertEquals(MapaGamepad.padraoDo(SlotJogador.JOGADOR_2, EsquemaGamepad.CLASSICO), p.getAtual().config(SlotJogador.JOGADOR_2));
+        // 5O.2 (pedido): Classico padrao nunca escolhido vai para o novo padrao, o Contextual.
+        assertEquals(MapaGamepad.padraoDo(SlotJogador.JOGADOR_2, EsquemaGamepad.CONTEXTUAL), p.getAtual().config(SlotJogador.JOGADOR_2));
         assertEquals(2, p.getAvisos().size(), p.getAvisos().toString());
         assertTrue(p.getAvisos().get(0).contains("atualizados"), p.getAvisos().get(0));
         assertEquals(antes, Files.readString(tmp.resolve(RepositorioGamepad.NOME_ARQUIVO)), "arquivo so muda ao salvar");
@@ -71,7 +72,9 @@ class GamepadPadroes5GPersistenciaTest {
         gravarComo5F(meu, MapaGamepad.padraoDo(SlotJogador.JOGADOR_2, EsquemaGamepad.CLASSICO));
         PreferenciasGamepad p = PreferenciasGamepad.carregar(repo());
         assertEquals(meu, p.getAtual().config(SlotJogador.JOGADOR_1), "nada sobrescrito em silencio");
-        assertEquals(1, p.getAvisos().size(), p.getAvisos().toString());
+        // 5O.2 (pedido): + o aviso do J2 (Classico padrao nunca escolhido -> Contextual). Antes 1.
+        assertEquals(2, p.getAvisos().size(), p.getAvisos().toString());
+        assertTrue(p.getAvisos().get(1).startsWith("J2: o esquema padrão agora é o CONTEXTUAL"), p.getAvisos().get(1));
         assertTrue(p.getAvisos().get(0).contains("RESTAURAR PADRÕES"), p.getAvisos().get(0));
     }
 

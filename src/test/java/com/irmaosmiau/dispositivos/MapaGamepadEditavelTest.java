@@ -21,6 +21,8 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5F: mapa de gamepad editavel, esquemas, conflitos, RB opcional e gatilhos. */
 class MapaGamepadEditavelTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
     private static final SlotJogador J2 = SlotJogador.JOGADOR_2;
 
@@ -30,7 +32,7 @@ class MapaGamepadEditavelTest {
 
     @Test
     void classicoIgualAo5D() {
-        MapaGamepad m = MapaGamepad.padrao();
+        MapaGamepad m = MapaGamepad.classico();
         assertEquals(EsquemaGamepad.CLASSICO, m.esquema(J1));
         assertEquals(EsquemaGamepad.CLASSICO, m.esquema(J2));
         // 5G (pedido do desenvolvedor): o padrao do Classico mudou (A pula, RB + A pulo alto,
@@ -51,7 +53,7 @@ class MapaGamepadEditavelTest {
     @Test
     void contextualNaoDependeDoRbEAgacharSaiDoLt() {
         for (SlotJogador s : SlotJogador.values()) {
-            MapaGamepad m = MapaGamepad.padrao().comEsquema(s, EsquemaGamepad.CONTEXTUAL);
+            MapaGamepad m = MapaGamepad.classico().comEsquema(s, EsquemaGamepad.CONTEXTUAL);
             assertTrue(m.isValido(), m.problemas().toString());
             for (ItemGamepad i : m.itens(s)) {
                 // 5G: o RB so e o modificador OPCIONAL do pulo alto (A sozinho pula; tecnicas nao usam RB).
@@ -67,7 +69,7 @@ class MapaGamepadEditavelTest {
         }
         // No classico, o RB pode ficar livre: correr vai para outro botao e nada e obrigatorio.
         // 5G: o RB tambem e o modificador (opcional) do pulo alto; tirando os dois, o RB fica livre.
-        MapaGamepad semRb = MapaGamepad.padrao().semBotao(J1, ItemGamepad.de(AcaoJogador.CORRER))
+        MapaGamepad semRb = MapaGamepad.classico().semBotao(J1, ItemGamepad.de(AcaoJogador.CORRER))
                 .semBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO))
                 .semBotao(J1, ItemGamepad.de(AcaoJogador.MODIFICADOR_PROJECAO));   // 5O (pedido)
         assertTrue(semRb.isValido());
@@ -76,7 +78,7 @@ class MapaGamepadEditavelTest {
 
     @Test
     void contextualProduzEntradaDoDpadEMoveSoPeloAnalogico() {
-        MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
+        MapaGamepad m = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         EstadoGamepad e = EstadoGamepad.repouso().com(BotaoGamepad.DPAD_ESQUERDA).com(BotaoGamepad.GATILHO_ESQ)
                 .com(BotaoGamepad.LB);
         EntradaContextual ent = m.entradaContextual(e, J1);
@@ -92,7 +94,7 @@ class MapaGamepadEditavelTest {
 
     @Test
     void lbArrastaComOAnalogicoMasNaoQuandoLtEstaSegurado() {
-        MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
+        MapaGamepad m = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         EstadoGamepad arrasto = EstadoGamepad.repouso().com(BotaoGamepad.LB).comEixo(EixoGamepad.ESQ_X, 1f);
         assertTrue(acoes(m, J1, arrasto).contains(AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO));
         // 5H (pedido): no Contextual o arrasto e automatico com o analogico; LT/LB nao interferem.
@@ -102,44 +104,44 @@ class MapaGamepadEditavelTest {
 
     @Test
     void remapearTrocarConflitosEReservados() {
-        MapaGamepad m = MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(AcaoJogador.CORRER), BotaoGamepad.SUL);
+        MapaGamepad m = MapaGamepad.classico().comBotao(J1, ItemGamepad.de(AcaoJogador.CORRER), BotaoGamepad.SUL);
         assertFalse(m.isValido(), "SUL ja e pular");
         assertTrue(m.problemas().get(0).descricao().contains("A/Cruz"), m.problemas().toString());
 
-        MapaGamepad t = MapaGamepad.padrao().trocandoSeNecessario(J1, ItemGamepad.de(AcaoJogador.CORRER), BotaoGamepad.SUL);
+        MapaGamepad t = MapaGamepad.classico().trocandoSeNecessario(J1, ItemGamepad.de(AcaoJogador.CORRER), BotaoGamepad.SUL);
         assertTrue(t.isValido());
         assertEquals(BotaoGamepad.SUL, t.botao(J1, ItemGamepad.de(AcaoJogador.CORRER)).orElseThrow());
         // 5G: o SUL agora e o pulo normal; o RB antigo do correr e dividido com o pulo alto,
         // entao o pulo normal fica sem botao (nunca um mapa invalido).
         assertTrue(t.botao(J1, ItemGamepad.de(AcaoJogador.PULO_CURTO)).isEmpty(), "trocados sem conflito");
         assertEquals(BotaoGamepad.RB, t.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).orElseThrow());
-        assertEquals(MapaGamepad.padrao().config(J2), t.config(J2), "slots independentes");
+        assertEquals(MapaGamepad.classico().config(J2), t.config(J2), "slots independentes");
 
-        assertFalse(MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(AcaoJogador.PULAR), BotaoGamepad.INICIAR).isValido());
-        assertFalse(MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(AcaoJogador.PULAR), BotaoGamepad.GUIA).isValido());
+        assertFalse(MapaGamepad.classico().comBotao(J1, ItemGamepad.de(AcaoJogador.PULAR), BotaoGamepad.INICIAR).isValido());
+        assertFalse(MapaGamepad.classico().comBotao(J1, ItemGamepad.de(AcaoJogador.PULAR), BotaoGamepad.GUIA).isValido());
         assertThrows(IllegalArgumentException.class,
-                () -> MapaGamepad.padrao().comBotao(J1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.SUL),
+                () -> MapaGamepad.classico().comBotao(J1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.SUL),
                 "comandos so no contextual");
         // 5I (pedido): antes assertThrows (o J2 nao tinha pegada); agora o J2 remapeia a pegada.
-        assertEquals(BotaoGamepad.SUL, MapaGamepad.padrao()
+        assertEquals(BotaoGamepad.SUL, MapaGamepad.classico()
                 .comBotao(J2, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA), BotaoGamepad.SUL)
                 .botao(J2, ItemGamepad.de(AcaoJogador.INICIAR_PEGADA)).orElseThrow());
     }
 
     @Test
     void restaurarPadroesDoSlotEDoEsquema() {
-        MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
+        MapaGamepad m = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.RB)
                 .semBotao(J1, ItemGamepad.de(AcaoJogador.PULAR));
         MapaGamepad r = m.comPadroesDo(J1);
         assertEquals(EsquemaGamepad.CONTEXTUAL, r.esquema(J1), "restaura os padroes do esquema escolhido");
         assertEquals(MapaGamepad.padraoDo(J1, EsquemaGamepad.CONTEXTUAL), r.config(J1));
-        assertEquals(MapaGamepad.padrao(), r.comEsquema(J1, EsquemaGamepad.CLASSICO));
+        assertEquals(MapaGamepad.classico(), r.comEsquema(J1, EsquemaGamepad.CLASSICO));
     }
 
     @Test
     void gatilhoComHisterese() {
-        MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
+        MapaGamepad m = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         FonteGamepad f = new FonteGamepad(J1, m);
         EstadoGamepad base = EstadoGamepad.repouso().com(BotaoGamepad.DPAD_CIMA);
         f.atualizar(EstadoGamepad.repouso().comEixo(EixoGamepad.GATILHO_ESQ, 0.45f));
@@ -156,7 +158,7 @@ class MapaGamepadEditavelTest {
 
     @Test
     void desconexaoEFocoLimpamOComandoContextual() {
-        MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
+        MapaGamepad m = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         FonteGamepad f = new FonteGamepad(J1, m);
         EstadoGamepad cima = EstadoGamepad.repouso().com(BotaoGamepad.DPAD_CIMA);
         f.atualizar(cima);

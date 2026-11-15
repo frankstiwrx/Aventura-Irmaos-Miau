@@ -725,6 +725,9 @@ public final class SistemaCombate {
             ultimoArrasto = new UltimoArrasto(sx, sy, 0, 0, sx != 0 && !xPossivel, sy != 0 && !yPossivel, r, tick);
             if (r == ResultadoAcaoTecnica.SUCESSO) {
                 deslocouNesteTick = true;
+                // 5O.2: acumulando a diagonal ele continua arrastando: sem recuperacao passiva neste tick
+                // (antes recuperava folego nos ticks em que a fracao de pixel nao completava).
+                aplicador.gastarFolegoEsforco(0.0, "arrasto");
             }
             return r;
         }

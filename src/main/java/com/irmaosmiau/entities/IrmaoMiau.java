@@ -1540,9 +1540,15 @@ public void alternarDeitado() {
     
     public double getVelocidadeRespirando() {
 
+    // 5O.2: depende da postura (em pe 0,15 como sempre; de joelhos e deitado mais devagar).
     return calcularVelocidadeNormal()
-            * 0.15;
+            * CustosFolego.velocidadeRespirando(posturaBase());
 }
+
+    /** 5O.2: postura para as regras (agachado conta como em pe). */
+    private EstadoCorporal posturaBase() {
+        return estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
+    }
 
     public double getVelocidadeCorrida() {
 
@@ -2652,7 +2658,19 @@ public void alternarDeitado() {
      * Acesso protegido que os renderers Branco/Preto usarao na etapa 8D.
      */
     protected int[] getPoseCombateExternaParaDesenho() {
-        return copiarPoseCombateExterna();
+        int[] p = copiarPoseCombateExterna();
+        // 5O.2: respirando de joelhos ou deitado = o peito e a cabeca sobem e descem 1-2 px (so desenho).
+        if (p != null && respirando && (isAjoelhado() || isDeitado())) {
+            int r = (int) Math.round(Math.sin(faseRespiracao) * (isDeitado() ? 1.0 : 1.5));
+            p[8] -= r;
+            p[13] -= r;
+        }
+        return p;
+    }
+
+    /** 5O.2: fase da respiracao (desenho e testes). */
+    public double getFaseRespiracao() {
+        return faseRespiracao;
     }
 
     public double getDeslocamentoVisualCombateX() {
@@ -2951,7 +2969,8 @@ private void recuperarFolegoRespirando() {
      */
     double taxa =
             calcularTaxaRecuperacaoFolego()
-            * 15.0;
+            * 15.0
+            * CustosFolego.recuperacaoRespirando(posturaBase());   // 5O.2: por postura
 
     folegoAtual += taxa;
 
@@ -2997,7 +3016,7 @@ private void recuperarCondicionamentoRespirando() {
      * a recuperação física.
      */
     condicionamentoAtual +=
-            taxaBase * 2.5;
+            taxaBase * 2.5 * CustosFolego.recuperacaoRespirando(posturaBase());   // 5O.2
 
     if (
             condicionamentoAtual
@@ -3046,11 +3065,15 @@ private void recuperarCondicionamentoRespirando() {
             boolean respirando
     ) {
 
+        // 5O.2: respira em pe, de joelhos E deitado (sem mudar a postura); nunca no ar,
+        // rolando, no sprawl, numa acrobacia ou no meio de uma transicao de postura.
         this.respirando =
         respirando
         && !pulando
         && !rolando
-                && !isDeitado()
+        && !fazendoSprawl
+        && acrobacia == null
+        && transicaoAtiva == null
         && condicionamentoAtual > 0;
 
         /*

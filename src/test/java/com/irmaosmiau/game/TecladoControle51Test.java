@@ -174,17 +174,19 @@ class TecladoControle51Test extends Base5OGamePanel {
 
     @Test
     void lRompeIReforcaZMudaPosturaQAgacha() throws Exception {
+        // 5O.2 (pedido): o padrao virou o Contextual. Nele o receptor rompe com o RS para baixo (seta para
+        // baixo), o B (L) e o agachamento suave e o LT (Q) e o modificador da camada 2 (antes: Classico).
         naEdt(() -> {
             novo(InicioLuta.EM_PE);
             j1Pega(1);
-            toqueCtl("L");                                       // B (Classico): romper como receptor
+            toqueCtl("DOWN");
             assertEquals(TipoDisputa.ROMPIMENTO_TECNICO, s().getUltimaDisputa().getTipo());
 
             novo(InicioLuta.EM_PE);
-            ctl("Q", true);                                      // LT = agachar (Classico)
+            ctl("L", true);                                      // B = agachar suave (Contextual)
             ticks(10);
             assertTrue(j2().isAgachado());
-            ctl("Q", false);
+            ctl("L", false);
             ticks(2);
             toqueCtl("Z");                                       // L3 = postura
             ticks(40);
@@ -194,14 +196,15 @@ class TecladoControle51Test extends Base5OGamePanel {
 
     @Test
     void dpadTHGFIndependenteDasSetas() throws Exception {
+        // 5O.2 (pedido): no Contextual o D-pad e das tecnicas (camadas), nao anda (antes: Classico).
         naEdt(() -> {
             novo(InicioLuta.EM_PE);
             int x = j2().getX();
-            ctl("H", true);                                      // D-pad direita (no Classico tambem move)
+            ctl("H", true);
             ticks(10);
             ctl("H", false);
-            assertTrue(j2().getX() > x);
-            assertFalse(s().estaEmInteracao(), "D-pad nao e o RS: nada de pegada");
+            assertEquals(x, j2().getX(), "D-pad nao e o LS");
+            assertFalse(s().estaEmInteracao(), "longe: a tecnica do D-pad nao alcanca");
             assertEquals(FamiliaTecnica.PEGADAS, painel.familiaDo(SlotJogador.JOGADOR_2));
         });
     }

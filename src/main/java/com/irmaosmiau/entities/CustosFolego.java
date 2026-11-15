@@ -62,6 +62,41 @@ public final class CustosFolego {
      */
     public static final double FATOR_DISTANCIA_GUARDA = 1.0;
 
+    // ---------------- Entrega 5O.2: respiracao por postura (RT sozinho ou a tecla de respirar)
+    /*
+     * Recuperacao ao respirar, como fracao da recuperacao em pe (a referencia:
+     * 15x a recuperacao parada). Vale para folego e condicionamento.
+     */
+    public static final double RECUPERACAO_RESPIRANDO_EM_PE = 1.0;
+    public static final double RECUPERACAO_RESPIRANDO_AJOELHADO = 0.7;
+    public static final double RECUPERACAO_RESPIRANDO_DEITADO = 0.4;
+    /*
+     * Velocidade andando enquanto respira, como fracao da velocidade NORMAL (uma
+     * penalidade so, nao multiplicada pela da postura): em pe 0,15 (a de sempre);
+     * de joelhos 0,08 (andar de joelhos e 0,18); deitado 0,03 (rastejar e 0,07).
+     */
+    public static final double VELOCIDADE_RESPIRANDO_EM_PE = 0.15;
+    public static final double VELOCIDADE_RESPIRANDO_AJOELHADO = 0.08;
+    public static final double VELOCIDADE_RESPIRANDO_DEITADO = 0.03;
+
+    /** Fator de recuperacao ao respirar na postura. */
+    public static double recuperacaoRespirando(IrmaoMiau.EstadoCorporal postura) {
+        return switch (postura) {
+            case AJOELHADO -> RECUPERACAO_RESPIRANDO_AJOELHADO;
+            case DEITADO -> RECUPERACAO_RESPIRANDO_DEITADO;
+            default -> RECUPERACAO_RESPIRANDO_EM_PE;
+        };
+    }
+
+    /** Velocidade ao respirar na postura (fracao da velocidade normal). */
+    public static double velocidadeRespirando(IrmaoMiau.EstadoCorporal postura) {
+        return switch (postura) {
+            case AJOELHADO -> VELOCIDADE_RESPIRANDO_AJOELHADO;
+            case DEITADO -> VELOCIDADE_RESPIRANDO_DEITADO;
+            default -> VELOCIDADE_RESPIRANDO_EM_PE;
+        };
+    }
+
     // ---------------- Transicoes de postura (custo unico por transicao)
     public static final double AJOELHAR = 0.5;            // em pe -> ajoelhado
     public static final double DEITAR = 0.5;              // ajoelhado -> deitado

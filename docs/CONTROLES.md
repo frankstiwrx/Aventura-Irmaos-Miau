@@ -1013,3 +1013,70 @@ reservadas nunca disparam nada e não mudam as ativas (RT + LB continua sendo de
 | Mortal para a frente / trás | 7,0 | 32 / 34 ticks |
 | Sprawl | 4,0 + recarga de 30 ticks | 26 ticks |
 | Guarda | 0,3 para entrar, 0,15 para trocar; não recupera | andando: caminhada × 1,0 (a metade por segundo) |
+
+
+# Entrega 5O.2 — Contextual como padrão, J2 rompendo e arrastando, respiração por postura
+
+## Esquema de controles × versão das animações
+
+- **Esquema de controles** (CONFIGURAÇÕES → CONTROLES → Gamepad, por jogador): **Clássico** ou
+  **Contextual (experimental)**. Vale para o Xbox **e** para o teclado-controle do J2 (que lê o mesmo mapa
+  do slot). Desde a 5O.2 o padrão é o **Contextual** nos dois jogadores (`MapaGamepad.ESQUEMA_PADRAO`).
+- **Versão das animações** (F7): ORIGINAL × EXPERIMENTAL 5O do rolamento e do sprawl. Não tem nada a ver
+  com o esquema de controles.
+- O F3 mostra `ESQUEMA J1 … J2 …` (CONTEXTUAL, CLASSICO ou TECLAS para as teclas livres).
+- As teclas livres do J1 não têm esquema: são ações diretas (5 rompe, CTRL + direção arrasta).
+
+Migração: um slot salvo no **Clássico com os botões padrão** e **sem** a marca `esquemaEscolhido` (arquivos
+de antes da 5O.2) é tratado como "nunca escolhido" e passa para o Contextual, com aviso. Salvar em
+CONTROLES grava `"esquemaEscolhido": true`, e a partir daí a escolha é respeitada. Um Clássico
+personalizado (botões trocados) nunca é alterado.
+
+## Causa real dos dois defeitos do J2
+
+1. **Esquema errado (causa principal).** `MapaGamepad.padrao()` punha os dois slots no **Clássico** e o
+   teclado-controle do J2 usa o mapa do J2. No Clássico:
+   - o RS só escolhe pegada com o lutador **livre** (`consumirPegadaClassica`); agarrado, RS ↓ (seta ↓)
+     não fazia nada — romper era o **B (L)**;
+   - o arrasto exige **segurar o LB (E)** junto com o LS; o arrasto automático só existe no Contextual.
+   O J1, no Xbox já configurado no Contextual, rompia e arrastava; o J2 não. Por isso "acontecia com os dois
+   Miaus": era o slot, não o personagem.
+2. **Arrasto diagonal recuperava fôlego (valia para os dois jogadores).** Na diagonal cada eixo anda 0,707 px
+   por tick; nos ticks em que a fração ainda não completava 1 px ninguém andava, e o aplicador ganhava a
+   recuperação passiva de fôlego. Agora esses ticks contam como esforço (`SistemaCombate`, sem custo e sem
+   recuperação).
+
+Nada no arrasto usa índice fixo de jogador: o motor usa o aplicador real (`getAplicadorInteracao`) e cada
+slot lê o próprio dispositivo. Os testes cobrem J1→J2 e J2→J1, com os personagens trocados de slot,
+teclado-controle e Xbox simulado.
+
+## J2 no Contextual (teclado-controle)
+
+| Tecla | Botão | No Contextual |
+|---|---|---|
+| WASD | LS | andar; sendo o aplicador, **arrasta** (automático, 8 direções) |
+| setas | RS | livre: as 4 pegadas · aplicador: ↑ reforço, → desequilíbrio · agarrado: **↓ romper** |
+| K | A | pulo (O/SHIFT + K = pulo alto) |
+| L | B | agachamento suave |
+| J | X | correr (nunca pega) |
+| I | Y | livre |
+| Z / M | L3 / R3 | postura / mobilidade (R3 + WASD) |
+| T H G F | D-pad | técnicas pelas camadas (não anda) |
+| O / SHIFT | RB / Select | modificador de quedas, pulo alto |
+| P | RT | sozinho respira; + seta = defesas |
+| E / Q | LB / LT | camadas 3 e 2 |
+| ENTER | Start | abre a pausa |
+
+## Respiração por postura (`CustosFolego`)
+
+| Postura | Recuperação (× em pé) | Velocidade andando enquanto respira (× normal) |
+|---|---|---|
+| Em pé | 1,0 (15× a recuperação parada, como antes) | 0,15 (como antes) |
+| De joelhos | **0,7** | **0,08** (andar de joelhos é 0,18) |
+| Deitado | **0,4** | **0,03** (rastejar é 0,07) |
+
+- A velocidade respirando é **uma** penalidade (fração da velocidade normal), não multiplicada pela da
+  postura.
+- Respirar não muda a postura; não respira no ar, rolando, no sprawl, numa acrobacia nem no meio de uma
+  transição. RT + direção = defesa (sem respirar). Deitado, RT + direção não vira guarda (solo) e não respira.
+- De joelhos e deitado o peito e a cabeça sobem e descem 1–2 px (só no desenho).

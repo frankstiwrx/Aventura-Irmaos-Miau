@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 /** Entrega 5O (testes de controle 1-19): mapeamento real e familias no gamepad. */
 class Familias5OTest {
 
+    // 5O.2 (pedido): o padrao virou o Contextual; este teste e do Classico (MapaGamepad.classico() = o padrao antigo).
+
     private static final SlotJogador J1 = SlotJogador.JOGADOR_1;
 
     private static EstadoGamepad r() {
@@ -31,7 +33,7 @@ class Familias5OTest {
     }
 
     private static FonteGamepad fonte(EsquemaGamepad esquema) {
-        FonteGamepad f = new FonteGamepad(J1, MapaGamepad.padrao().comEsquema(J1, esquema));
+        FonteGamepad f = new FonteGamepad(J1, MapaGamepad.classico().comEsquema(J1, esquema));
         f.atualizar(r());                                  // arma o leitor do RS no neutro
         return f;
     }
@@ -40,7 +42,7 @@ class Familias5OTest {
     @Test
     void mapeamentoDosBotoes() {
         for (EsquemaGamepad e : EsquemaGamepad.values()) {
-            MapaGamepad m = MapaGamepad.padrao().comEsquema(J1, e);
+            MapaGamepad m = MapaGamepad.classico().comEsquema(J1, e);
             assertTrue(m.isValido(), m.problemas().toString());
             assertEquals(BotaoGamepad.R3, m.botao(J1, ItemGamepad.de(AcaoJogador.ROLAR)).orElseThrow(), "R3 rola");
             assertEquals(BotaoGamepad.RB, m.botao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO)).orElseThrow());
@@ -51,9 +53,9 @@ class Familias5OTest {
             assertTrue(m.botao(J1, ItemGamepad.de(AcaoJogador.RESPIRAR)).isEmpty(), "respirar = RT sozinho");
             assertTrue(m.botao(J1, ItemGamepad.de(AcaoJogador.SPRAWL)).isEmpty(), "o sprawl agora e RT + RS para baixo");
         }
-        MapaGamepad ctx = MapaGamepad.padrao().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
+        MapaGamepad ctx = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL);
         assertEquals(BotaoGamepad.LESTE, ctx.botao(J1, ItemGamepad.de(AcaoJogador.AGACHAR)).orElseThrow(), "B agacha");
-        MapaGamepad cls = MapaGamepad.padrao();
+        MapaGamepad cls = MapaGamepad.classico();
         assertEquals(BotaoGamepad.RB, cls.botao(J1, ItemGamepad.de(AcaoJogador.CORRER)).orElseThrow(), "corrida no RB");
         assertEquals(BotaoGamepad.NORTE, cls.botao(J1, ItemGamepad.de(AcaoJogador.REFORCAR_PEGADA)).orElseThrow());
     }
