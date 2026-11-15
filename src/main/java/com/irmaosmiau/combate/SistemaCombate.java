@@ -688,6 +688,16 @@ public final class SistemaCombate {
         return lutador == insistente ? insistencia : 0;
     }
 
+    /** Entrega 5L.2 (diagnostico): quem esta insistindo agora (null = ninguem). */
+    public IrmaoMiau getInsistente() {
+        return insistencia > 0 ? insistente : null;
+    }
+
+    /** Entrega 5L.2 (diagnostico): tipo da disputa da insistencia atual (null = nenhuma). */
+    public TipoDisputa getTipoInsistencia() {
+        return insistencia > 0 && tipoInsistencia != null ? TipoDisputa.valueOf(tipoInsistencia) : null;
+    }
+
     /** Ticks seguidos em que o receptor forcou (0 = nao esta forcando). */
     public long getTicksResistindo() {
         return estaEmInteracao() ? ticksResistindo : 0;

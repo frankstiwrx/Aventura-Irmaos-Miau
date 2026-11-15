@@ -2540,7 +2540,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         int y = 268;
         for (String linha : linhasTecnicas()) {
             d.drawString(linha, 270, y);
-            y += 17;
+            y += 15;                                       // 5L.2: 15 (antes 17) para caber a linha da insistencia
         }
         d.dispose();
     }
@@ -2599,6 +2599,17 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 + " | DEFESA: " + (ev == null ? "-" : ev.tipo() + " " + ev.detalhe() + " (" + rotuloSlot(ev.defensor()) + ")")
                 + " | FIM: " + (sistemaCombate.getUltimoMotivoEncerramento() == null ? "-"
                         : sistemaCombate.getUltimoMotivoEncerramento()));
+        // Entrega 5L.2: insistencia da 5L.1 (dados do proprio motor; zera no sucesso e no fim da pegada).
+        IrmaoMiau insistente = sistemaCombate.getInsistente();
+        if (insistente == null) {
+            l.add("INSISTENCIA: - (bonus 0%)");
+        } else {
+            int falhas = sistemaCombate.getInsistencia(insistente);
+            String acao = sistemaCombate.getTipoInsistencia() == com.irmaosmiau.combate.TipoDisputa.DESEQUILIBRIO
+                    ? "DESEQUILIBRAR" : "ROMPER";
+            l.add("INSISTENCIA: " + rotuloSlot(insistente) + " " + acao + " | falhas seguidas " + falhas
+                    + String.format(" | bonus +%.0f%%", 100 * com.irmaosmiau.combate.SistemaCombate.BONUS_INSISTENCIA * falhas));
+        }
         return l;
     }
 
