@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 701, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 737, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -23,7 +23,7 @@ Esperado: vazio, a menos que a entrega tenha autorização explícita para tocar
 
 ## 2. Manual no NetBeans
 
-### Menu oficial (`Main` — Run Project, F6)
+### Menu oficial (`Main` — Run Project, F6) — fluxo antigo; desde a 5M vale "Título, menu e seleção" abaixo
 
 - [ ] Abre o menu com o fundo `menuprincipal.png` e o botão COMEÇAR
 - [ ] COMEÇAR → seleção: MIAU BRANCO, MIAU PRETO, OS DOIS MIAUS
@@ -318,6 +318,23 @@ Gamepad (Xbox):
 - [ ] Preto aplicando no Branco: desequilibrar funciona em poucas tentativas (antes nunca)
 - [ ] Preto receptor do Branco: romper funciona em poucas tentativas, não na primeira
 - [ ] Pegada parada dura ~27 s; reforço dá +30 por 2 de fôlego; o fôlego sobra para testar as técnicas
+
+### Título, menu e seleção (Entrega 5M)
+
+- [ ] O jogo abre na tela de título: pátio do dojo, letreiro descendo, Branco e Preto se olhando (idle)
+- [ ] ENTER, ESPAÇO, A ou START vão ao menu uma vez só; segurar A/START ao abrir não pula a tela
+- [ ] Menu: JOGAR, TREINO, PERSONAGENS, CONFIGURAÇÕES, SAIR (setas/D-pad, ENTER/A); não há "1 JOGADOR"
+- [ ] TREINO, PERSONAGENS e CONFIGURAÇÕES abrem as telas de antes; SAIR pergunta e fecha
+- [ ] JOGAR → grade: J1 (azul, WASD + ESPAÇO/H, Q cancela) e J2 (vermelho, setas + ENTER/END, BACKSPACE) ao mesmo tempo
+- [ ] Com gamepads associados (Configurações → dispositivos), cada controle move o seu cursor
+- [ ] Espaços com cadeado: "BLOQUEADO", não confirmam e não revelam nada
+- [ ] Prévia, "MIAU BRANCO"/"MIAU PRETO", "Estilo: Jiu-Jitsu" e barras de atributos reais; perfis salvos aparecem como "< Perfil >"
+- [ ] Mesmo personagem nos dois lados funciona
+- [ ] J1 pronto: MAPA (Dojo/Original) e TEMPO (SEM LIMITE/60/90/180); DIFICULDADE "EM BREVE" e pulada; LUTAR espera o J2
+- [ ] A luta usa o mapa escolhido e começa com os dois em pé
+- [ ] Relógio no topo; ESC pausa e o relógio para; ao zerar: FIM "TEMPO ESGOTADO" + vantagem/empate
+- [ ] TENTAR NOVAMENTE repete mapa e tempo; SELECIONAR PERSONAGENS volta à grade
+- [ ] Treino, F5, F3, F6, as quatro pegadas e os dois esquemas do Xbox continuam iguais
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

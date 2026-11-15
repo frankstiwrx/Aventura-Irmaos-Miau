@@ -24,7 +24,6 @@ import com.irmaosmiau.ui.SelecaoLutadoresPanel;
 import com.irmaosmiau.game.GamePanel;
 import com.irmaosmiau.entities.TipoPersonagem;
 import com.irmaosmiau.treino.ConfiguracaoTreino;
-import com.irmaosmiau.ui.MenuPanel;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -67,7 +66,8 @@ public class Main {
             // Entrega 5F: esquema e botoes do gamepad (gamepad.json).
             PreferenciasGamepad gamepad = prepararGamepad();
 
-            mostrarMenu(janela);
+            // Entrega 5M: o jogo abre na tela de titulo.
+            mostrarAbertura(janela);
 
             janela.setVisible(true);
 
@@ -139,13 +139,29 @@ public class Main {
         return gamepad;
     }
 
+    /** Entrega 5M: tela de titulo (ENTER / A / START vai para o menu). */
+    private static void mostrarAbertura(JFrame janela) {
+        trocarTela(janela, new com.irmaosmiau.ui.AberturaPanel(() -> mostrarMenu(janela), ServicoGamepads::global));
+        AudioJogo.servico().tocarMusica(AudioJogo.MUSICA_MENU);
+    }
+
+    /** Entrega 5M: SAIR pergunta e fecha a janela pelo caminho normal (EXIT_ON_CLOSE + gancho do gamepad). */
+    private static void sair(JFrame janela) {
+        int r = JOptionPane.showConfirmDialog(janela, "Sair do jogo?", "Sair", JOptionPane.YES_NO_OPTION);
+        if (r == JOptionPane.YES_OPTION) {
+            janela.dispatchEvent(new java.awt.event.WindowEvent(janela, java.awt.event.WindowEvent.WINDOW_CLOSING));
+        }
+    }
+
     private static void mostrarMenu(JFrame janela) {
 
-        MenuPanel menu = new MenuPanel(
+        // Entrega 5M: menu reorganizado (JOGAR, TREINO, PERSONAGENS, CONFIGURACOES, SAIR).
+        JPanel menu = new com.irmaosmiau.ui.MenuPrincipalPanel(
                 () -> mostrarSelecao(janela),
                 () -> abrirTreino(janela),
+                () -> mostrarPerfis(janela),
                 () -> mostrarConfiguracoes(janela),
-                () -> mostrarPerfis(janela)
+                () -> sair(janela)
         );
 
         trocarTela(janela, menu);
@@ -245,62 +261,41 @@ public class Main {
         ));
     }
 
+    /**
+     * Entrega 5M: selecao em grade de JOGAR (2 jogadores, cursores
+     * independentes, perfis personalizados, MAPA e TEMPO). A selecao antiga
+     * (SelecaoLutadoresPanel) continua no TREINO.
+     */
     private static void mostrarSelecao(JFrame janela) {
 
-        // Entrega 4D: oficiais + perfis personalizados (lidos a cada abertura).
-        SelecaoLutadoresPanel selecao
-                = new SelecaoLutadoresPanel(
-                        OpcoesDeLutadores.padrao(),
-                        false,
-                        (tipo, branco, preto) -> iniciarJogo(janela, tipo, branco, preto,
-                                SelecaoLutadoresPanel.inicioDaSessao()),
-                        () -> mostrarMenu(janela)
-                );
-
-        trocarTela(janela, selecao);
+        trocarTela(janela, new com.irmaosmiau.ui.SelecaoPartidaPanel(
+                CatalogoPersonagens.padrao(),
+                OpcoesDeLutadores.padrao(),
+                RegistroCenarios.padrao(),
+                PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao()),
+                (j1, j2, cenario, segundos) -> iniciarPartida(janela, j1, j2, cenario, segundos),
+                () -> mostrarMenu(janela),
+                ServicoGamepads::global,
+                () -> PreferenciasDispositivos.global().getAtual()
+        ));
     }
 
-private static void iniciarJogo(
-        JFrame janela,
-        TipoPersonagem tipo,
-        EscolhaLutador slotBranco,
-        EscolhaLutador slotPreto,
-        com.irmaosmiau.entities.InicioLuta inicio
-) {
-
-    GamePanel jogo = new GamePanel(
-            tipo,
-            slotBranco,
-            slotPreto,
-            inicio,
-
-            // MENU PRINCIPAL
-            () -> mostrarMenu(
-                    janela
-            ),
-
-            // SELECIONAR PERSONAGENS
-            () -> mostrarSelecao(
-                    janela
-            ),
-
-            // TENTAR NOVAMENTE
-            () -> iniciarJogo(
-                    janela,
-                    tipo,
-                    slotBranco,
-                    slotPreto,
-                    inicio
-            )
-    );
-
-    trocarTela(
-            janela,
-            jogo
-    );
-
-    jogo.requestFocusInWindow();
-}
+    /** Entrega 5M: luta de JOGAR: sempre EM PE, no mapa e com o tempo escolhidos. */
+    private static void iniciarPartida(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
+            int segundos) {
+        GamePanel jogo = new GamePanel(
+                TipoPersonagem.AMBOS,
+                j1,
+                j2,
+                com.irmaosmiau.entities.InicioLuta.EM_PE,
+                () -> mostrarMenu(janela),
+                () -> mostrarSelecao(janela),
+                () -> iniciarPartida(janela, j1, j2, cenario, segundos)
+        );
+        jogo.configurarPartida(cenario, segundos);
+        trocarTela(janela, jogo);
+        jogo.requestFocusInWindow();
+    }
 
     private static void trocarTela(
             JFrame janela,

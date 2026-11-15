@@ -883,3 +883,14 @@ mais fraco naquilo. O Branco continua desequilibrando o Preto de primeira (difer
   linha (mesma regra de borda de linha 1..5 para os dois, senão nada se move), `transladado(dx, dy)` nos
   retratos, a mesma velocidade lenta e o mesmo custo por distância (incluindo |dy|). A `CamadaPoseCombate`
   já avança os passos pela distância: basta somar |Δy|. Diagonal = dx e dy no mesmo tick.
+
+## Telas de menu (Entrega 5M)
+
+| Tela | J1 | J2 | Gamepad |
+|---|---|---|---|
+| Título | ENTER / ESPAÇO | ENTER / ESPAÇO | A ou START (só depois de soltar) |
+| Menu principal | setas, ENTER, ESC | — | D-pad/analógico, A, B (qualquer controle) |
+| Seleção (grade) | W A S D, ESPAÇO ou H confirma, Q cancela | setas, ENTER ou END confirma, BACKSPACE cancela | cada slot associado a GAMEPAD usa o seu controle (D-pad, A, B) |
+
+Na seleção, ESC volta ao menu. Cada tecla age uma vez por aperto. Com o J1 pronto, ↑/↓ escolhem
+MAPA / TEMPO / LUTAR e ←/→ mudam o valor; só o J1 configura a partida.

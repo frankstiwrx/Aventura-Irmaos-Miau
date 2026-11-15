@@ -345,3 +345,18 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
   (`FonteGamepad.consumirPegadaClassica` → `GamePanel.executarPegadaClassica`).
 - `animacao.ReacoesDefesa`, `CamadaPoseCombate` (força/defesa falhou), fuga de quadril no `AnimadorPartida`.
 - `ModoAnimacoesPegada.padraoDoJogo()` (PROPOSTA) aplicado pelo `Main`.
+
+## Título, menu e seleção de partida (Entrega 5M)
+
+Fluxo do `Main`: `AberturaPanel` → `MenuPrincipalPanel` → (JOGAR) `SelecaoPartidaPanel` → `GamePanel`.
+TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` antigo continua no projeto.
+
+- `ui.ArteMenus`: paleta, cenário original "Pátio do Dojo Miau" (Java2D), letreiro, botões e
+  lutadores pelo renderizador oficial (instâncias só da tela).
+- `AberturaPanel` e `SelecaoPartidaPanel` têm `aceitaNavegacao() = false`: leem teclado e gamepads
+  sozinhos. A seleção tem um cursor por jogador (teclado por slot + gamepad por `AssociacaoDispositivos`,
+  na ordem de conexão), fases ESCOLHENDO → PERFIL (se houver perfis) → PRONTO.
+- Espaços bloqueados são só visuais (não há personagens para eles).
+- `GamePanel.configurarPartida(idCenario, segundos)`: aplica o mapa e o limite de tempo (só em JOGAR;
+  no treino é ignorado). O relógio conta ticks de luta ativa (pausa e fim de jogo não chegam ao contador);
+  ao zerar, `fimDeJogo` com "TEMPO ESGOTADO · VANTAGEM: Jn NOME" ou "EMPATE" (condicionamento proporcional).

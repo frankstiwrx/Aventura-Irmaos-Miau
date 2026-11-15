@@ -608,8 +608,87 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 sistemaCombate, deslocandoConjunto, tick);
 
         tick++;
+        contarTempoDeLuta();
         verificarFimDeJogo();
         repaint();
+    }
+
+    // =====================================================
+    // ENTREGA 5M: MAPA E TEMPO DA PARTIDA
+    // =====================================================
+    /* Limite de tempo da luta (0 = sem limite) e ticks de luta ATIVA contados. */
+    private int limiteSegundos;
+    private long ticksDeLuta;
+
+    /**
+     * Entrega 5M: aplica as escolhas da selecao (antes do primeiro tick).
+     * Mapa inexistente = o atual. O tempo so vale em JOGAR (dois jogadores,
+     * fora do treino); 0 = sem limite.
+     */
+    public void configurarPartida(String idCenario, int segundosLimite) {
+        if (idCenario != null && cenarios.contem(idCenario)) {
+            cenario = cenarios.exigir(idCenario);
+        }
+        limiteSegundos = modoDoisMiaus && !modoTreino ? Math.max(0, segundosLimite) : 0;
+        ticksDeLuta = 0;
+    }
+
+    /** So corre nos ticks de luta (pausa e fim de jogo nao chegam aqui). */
+    private void contarTempoDeLuta() {
+        if (limiteSegundos <= 0 || fimDeJogo) {
+            return;
+        }
+        ticksDeLuta++;
+        if (getSegundosRestantes() <= 0) {
+            fimDeJogo = true;
+            mensagemFim = "TEMPO ESGOTADO · " + resultadoPorTempo();
+        }
+    }
+
+    /** Segundos que faltam (arredondados para cima); -1 sem limite. */
+    public int getSegundosRestantes() {
+        if (limiteSegundos <= 0) {
+            return -1;
+        }
+        long ms = (long) limiteSegundos * 1000 - ticksDeLuta * INTERVALO_GAME_LOOP_MS;
+        return (int) Math.max(0, Math.ceil(ms / 1000.0));
+    }
+
+    /** Quem terminou com mais condicionamento (proporcional ao maximo de cada um). */
+    private String resultadoPorTempo() {
+        return resultadoPorTempo(
+                jogadorBranco.getCondicionamentoAtual() / jogadorBranco.getAtributos().getCondicionamento(),
+                jogadorPreto.getCondicionamentoAtual() / jogadorPreto.getAtributos().getCondicionamento(),
+                jogadorBranco.getNome(), jogadorPreto.getNome());
+    }
+
+    /** Fracoes de condicionamento (0..1) do J1 e do J2; diferenca menor que 1% = empate. */
+    static String resultadoPorTempo(double j1, double j2, String nomeJ1, String nomeJ2) {
+        if (Math.abs(j1 - j2) < 0.01) {
+            return "EMPATE";
+        }
+        boolean j1Melhor = j1 > j2;
+        String nome = j1Melhor ? nomeJ1 : nomeJ2;
+        return "VANTAGEM: " + (j1Melhor ? "J1 " : "J2 ") + nome.replace("Irmão ", "").toUpperCase();
+    }
+
+    /** Relogio no topo da tela (so com limite). */
+    private void desenharRelogio(Graphics2D g2) {
+        int s = getSegundosRestantes();
+        if (s < 0) {
+            return;
+        }
+        String t = (s / 60) + ":" + String.format("%02d", s % 60);
+        g2.setColor(new Color(10, 30, 80, 190));
+        g2.fillRoundRect(LARGURA / 2 - 34, 4, 68, 26, 10, 10);
+        g2.setFont(new Font("Arial", Font.BOLD, 18));
+        g2.setColor(s <= 10 ? new Color(255, 120, 90) : new Color(255, 206, 46));
+        int w = g2.getFontMetrics().stringWidth(t);
+        g2.drawString(t, LARGURA / 2 - w / 2, 24);
+    }
+
+    String getIdCenario() {
+        return cenario.getId();
     }
 
     // =====================================================
@@ -2104,8 +2183,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         label.getName()
                 )) {
 
+                    // 5M: "TEMPO ESGOTADO · resultado" em duas linhas (cabe na caixa).
                     label.setText(
-                            mensagemFim
+                            mensagemFim.contains(" · ")
+                            ? "<html><div style='text-align:center'>"
+                            + mensagemFim.replace("&", "&amp;").replace("<", "&lt;").replace(" · ", "<br>")
+                            + "</div></html>"
+                            : mensagemFim
                     );
 
                     break;
@@ -2183,6 +2267,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // HUD DO JOGADOR E DEBUG
         // =========================
         hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
+        desenharRelogio(g2);
 
         // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
         PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
@@ -2740,6 +2825,20 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     void atualizarUmTickParaTestes() {
         atualizar();
+    }
+
+    /** 5M: fim de jogo e motivo (para testes). */
+    boolean isFimDeJogo() {
+        return fimDeJogo;
+    }
+
+    String getMensagemFim() {
+        return mensagemFim;
+    }
+
+    /** 5M: aciona ESC (pausa) pelo mapa de acoes, como o teclado. */
+    void alternarPausaParaTestes() {
+        getActionMap().get("alternarPausa").actionPerformed(null);
     }
 
     boolean isModoTreino() {
