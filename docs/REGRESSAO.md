@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 617, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 661, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -281,6 +281,22 @@ Gamepad (Xbox):
 - [ ] De joelhos: andar é bem lento e não levanta; F/L3 levanta; pulo/rolar/sprawl não fazem nada
 - [ ] Treino de joelhos controlando o Preto; F5 mantém de joelhos
 - [ ] INÍCIO "Em pé": tudo como na 5I
+
+### Posturas, fôlego e pegada experimental (Entrega 5K)
+
+- [ ] Em pé, F (ou L3) uma vez: depois de ~¼ s ajoelha; de novo: deita; de novo: ajoelha; de novo: levanta
+- [ ] Em pé, F F rápido: deita direto (sem passar por joelhos); deitado, F F: levanta com impulso
+- [ ] De joelhos (início da luta), L3 L3: levanta rápido
+- [ ] Segurar F/L3: só uma mudança
+- [ ] J1 no teclado e J2 no Xbox mudando de postura ao mesmo tempo, sem interferência
+- [ ] Na pegada, F/L3 não muda a postura (aviso) — nem aplicador nem receptor
+- [ ] F3: postura (sobe/desce), clique pendente, transição, fôlego e último custo mudam como esperado
+- [ ] Andar ~10 s: o fôlego cai ~1; parado volta a subir; de joelhos gasta menos
+- [ ] Gastar o fôlego e tentar F F: "SEM FÔLEGO" e nada muda; esperar parado e tentar de novo
+- [ ] Arrastar (J1 e J2, Clássico e Contextual): só o aplicador gasta; dupla parada não gasta; passinhos continuam
+- [ ] Desequilíbrio com sucesso: F3 mostra "DESEQUILIBRADO"; receptor lento por ~2 s; reação visual
+- [ ] F6: "EXPERIMENTAL"; nova pegada em pé e de joelhos, Branco e Preto aplicando, dos dois lados; F6 volta à autoral
+- [ ] Pausar com clique pendente / com o A segurado: nada muda ao voltar
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

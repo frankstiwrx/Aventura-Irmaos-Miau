@@ -34,6 +34,11 @@ public record DefinicaoAnimacao(String id, EstadoVisual estado, String rig, Font
                 referencia, null);
     }
 
+    /** Entrega 5K: animacao gerada em codigo a partir do rig (fallback substituivel). */
+    public static DefinicaoAnimacao procedural(String id, EstadoVisual estado, String referencia) {
+        return new DefinicaoAnimacao(id, estado, "miau_v1", FonteAnimacao.PROCEDURAL, referencia, null);
+    }
+
     public static DefinicaoAnimacao json(String id, String recurso, AnimacaoIndividual dados) {
         return new DefinicaoAnimacao(id, dados.getEstado(), dados.getRig(), FonteAnimacao.JSON_INDIVIDUAL,
                 recurso, dados);

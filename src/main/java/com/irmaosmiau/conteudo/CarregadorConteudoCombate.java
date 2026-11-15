@@ -42,7 +42,8 @@ public final class CarregadorConteudoCombate {
     public static final String FORMATO_MIAUSTUDIO_V2 = "MIAUSTUDIO_PROJECT_V2";
 
     private static final Set<String> CAMPOS_ANIMACAO = Set.of(
-            "id", "formato", "arquivo", "duracaoFrames", "duracoesQuadros", "descricao", "varianteDe");
+            "id", "formato", "arquivo", "duracaoFrames", "duracoesQuadros", "descricao", "varianteDe",
+            "experimental", "postura");
 
     private static final Set<String> CAMPOS_TECNICA = Set.of(
             "id", "nome", "categoria", "disponibilidade", "descricao",
@@ -144,6 +145,17 @@ public final class CarregadorConteudoCombate {
             registro.registrarIdentidades(id,
                     com.irmaosmiau.combate.IdentidadeRig.doNome(importada.getNomeAplicador()),
                     com.irmaosmiau.combate.IdentidadeRig.doNome(importada.getNomeReceptor()));
+            // 5K: variantes experimentais (so no modo de comparacao) e postura do aplicador.
+            if (item.contem("experimental") && item.booleano("experimental")) {
+                registro.registrarExperimental(id);
+            }
+            if (item.contem("postura")) {
+                try {
+                    registro.registrarPostura(id, item.texto("postura"));
+                } catch (IllegalArgumentException ex) {
+                    throw item.erro("postura", ex.getMessage());
+                }
+            }
             if (item.contem("varianteDe")) {
                 String base = item.texto("varianteDe");
                 if (!registro.contem(base)) {

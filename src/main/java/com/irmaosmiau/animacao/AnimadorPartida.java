@@ -54,6 +54,8 @@ public final class AnimadorPartida {
     private final Map<IrmaoMiau, OrigemVisual> origens = new IdentityHashMap<>();
     // Entrega 5J: passos do arrasto e reacao ao desequilibrio sobre a pose da pegada.
     private final CamadaPoseCombate camada = new CamadaPoseCombate();
+    // Entrega 5K: transicoes de postura (procedurais); deitado = quadro 1 do JSON do chao.
+    private final TransicoesPostura transicoes = new TransicoesPostura(this::poseDeitado);
 
     /** @param msPorTick duracao nominal de um tick do loop logico (GamePanel: 16 ms) */
     public AnimadorPartida(ControladorAnimacoes controlador, double msPorTick) {
@@ -92,6 +94,14 @@ public final class AnimadorPartida {
 
     private void atualizar(IrmaoMiau l, SistemaCombate sistema, boolean deslocandoConjunto, long tick) {
         EstadoVisual estado = ControladorAnimacoes.estadoVisual(l, sistema, deslocandoConjunto);
+        if (estado == EstadoVisual.TRANSICAO_POSTURA) {
+            liberar(l);                                   // solta o JSON da postura anterior
+            boolean desenhou = transicoes.aplicar(l);
+            origens.put(l, new OrigemVisual(desenhou ? FonteAnimacao.PROCEDURAL : FonteAnimacao.LEGADA_CODIGO,
+                    l.getTransicaoAtiva().getContrato(), (int) Math.round(l.getProgressoTransicao() * 100), estado));
+            return;
+        }
+        transicoes.liberar(l);
         Optional<AnimacaoResolvida> r = controlador.resolver(l, sistema, deslocandoConjunto);
         if (r.isEmpty() || r.get().usaCodigoLegado()) {
             liberar(l);
@@ -136,6 +146,23 @@ public final class AnimadorPartida {
     /** De onde vem o desenho do lutador no ultimo tick (vazio = ainda nao atualizado). */
     public Optional<OrigemVisual> origem(IrmaoMiau lutador) {
         return Optional.ofNullable(origens.get(lutador));
+    }
+
+    /** Pose deitado pelo JSON do movimento no chao do perfil (quadro 1), se houver. */
+    private TransicoesPostura.Pose poseDeitado(IrmaoMiau l) {
+        return controlador.getPerfis().doLutador(l)
+                .flatMap(p -> p.resolver(EstadoVisual.MOVIMENTO_CHAO, controlador.getPerfis().getCatalogo()))
+                .flatMap(r -> r.definicao().getDados())
+                .map(a -> {
+                    int[] q = a.quadro(0);
+                    q[3] = 1;
+                    return new TransicoesPostura.Pose(q, a.getDeslocamentoVisualY());
+                })
+                .orElse(null);
+    }
+
+    public TransicoesPostura getTransicoes() {
+        return transicoes;
     }
 
     /** 5J: camada de arrasto/desequilibrio (HUD tecnico e testes). */

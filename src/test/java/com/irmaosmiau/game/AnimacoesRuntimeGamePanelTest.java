@@ -75,6 +75,17 @@ class AnimacoesRuntimeGamePanelTest {
         ticks(1);
     }
 
+    /**
+     * 5K (pedido): F/L3 virou o ciclo de posturas; um toque simples agora
+     * ajoelha. Deitar ou levantar direto (o que estes testes faziam com um
+     * toque) e o DUPLO clique, mais o fim da animacao de transicao.
+     */
+    private void deitarOuLevantar(String nome) {
+        toque(nome);
+        toque(nome);
+        ticks(com.irmaosmiau.entities.TransicaoPostura.RAPIDA_LEVANTAR_DO_CHAO.getDuracaoTicks() + 2);
+    }
+
     private OrigemVisual origem(IrmaoMiau l) {
         return painel.getAnimador().origem(l).orElseThrow();
     }
@@ -98,8 +109,8 @@ class AnimacoesRuntimeGamePanelTest {
             criar(false);
             IrmaoMiau b = painel.getLutador1();
             IrmaoMiau p = painel.getLutador2();
-            toque("brancoDeitar");
-            toque("pretoDeitar");
+            deitarOuLevantar("brancoDeitar");
+            deitarOuLevantar("pretoDeitar");
             assertEquals(EstadoVisual.DEITADO, origem(b).estado());
             assertFalse(origem(b).isJson(), "deitado parado: desenho legado (quadro 1 igual ao JSON)");
             tecla("brancoEsquerda", true);
@@ -136,7 +147,7 @@ class AnimacoesRuntimeGamePanelTest {
         naEdt(() -> {
             criar(false);
             IrmaoMiau b = painel.getLutador1();
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             List<Integer> vistos = new ArrayList<>();
             for (int t = 0; t < 76; t++) {                   // 75 ticks x 16 ms = 1200 ms = 8 quadros
@@ -155,7 +166,7 @@ class AnimacoesRuntimeGamePanelTest {
         naEdt(() -> {
             criar(false);
             IrmaoMiau b = painel.getLutador1();
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             try {
                 Method legado = IrmaoMiauBranco.class.getDeclaredMethod("desenharPoseChaoMiauStudio",
@@ -192,7 +203,7 @@ class AnimacoesRuntimeGamePanelTest {
         PerfisAnimacoes.instalarGlobal(perfis);
         criar(false);
         IrmaoMiau b = painel.getLutador1();
-        toque("brancoDeitar");
+        deitarOuLevantar("brancoDeitar");
         tecla("brancoDireita", true);
         tecla("brancoBaixo", true);
         List<int[]> trajeto = new ArrayList<>();
@@ -227,7 +238,7 @@ class AnimacoesRuntimeGamePanelTest {
         naEdt(() -> {
             criar(false);
             IrmaoMiau b = painel.getLutador1();
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             ticks(20);
             int quadro = origem(b).quadro();
@@ -250,11 +261,11 @@ class AnimacoesRuntimeGamePanelTest {
             ticks(1);
             assertEquals(EstadoVisual.DEITADO, origem(b).estado());
             assertFalse(b.isPoseCombateExternaAtiva());
-            toque("brancoDeitar");                           // levantar
+            deitarOuLevantar("brancoDeitar");                           // levantar
             assertEquals(EstadoVisual.PARADO, origem(b).estado());
             assertFalse(b.isPoseCombateExternaAtiva(), "em pe: nada do JSON interfere");
 
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             ticks(1);
             assertEquals(0, origem(b).quadro(), "novo movimento recomeca do 1o quadro");
@@ -298,7 +309,7 @@ class AnimacoesRuntimeGamePanelTest {
         naEdt(() -> {
             criar(true);
             IrmaoMiau antigo = painel.getLutador1();
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             ticks(5);
             assertTrue(origem(antigo).isJson());
@@ -307,7 +318,7 @@ class AnimacoesRuntimeGamePanelTest {
             ticks(1);
             assertTrue(painel.getAnimador().origem(antigo).isEmpty(), "lutador antigo esquecido");
             IrmaoMiau novo = painel.getLutador1();
-            toque("brancoDeitar");
+            deitarOuLevantar("brancoDeitar");
             tecla("brancoDireita", true);
             ticks(3);
             assertTrue(origem(novo).isJson());
@@ -342,8 +353,8 @@ class AnimacoesRuntimeGamePanelTest {
         naEdt(() -> {
             PerfisAnimacoes.instalarGlobal(semBranco);
             criar(false);
-            toque("brancoDeitar");
-            toque("pretoDeitar");
+            deitarOuLevantar("brancoDeitar");
+            deitarOuLevantar("pretoDeitar");
             tecla("brancoDireita", true);
             tecla("pretoEsquerda", true);
             ticks(30);
@@ -354,7 +365,7 @@ class AnimacoesRuntimeGamePanelTest {
             ticks(100);
             PerfisAnimacoes.instalarGlobal(invalido);
             criar(false);
-            toque("pretoDeitar");
+            deitarOuLevantar("pretoDeitar");
             tecla("pretoEsquerda", true);
             ticks(30);
             assertFalse(origem(painel.getLutador2()).isJson(), "Preto com JSON invalido: legado, sem quebrar");

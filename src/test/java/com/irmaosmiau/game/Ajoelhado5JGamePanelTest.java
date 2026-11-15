@@ -219,17 +219,22 @@ class Ajoelhado5JGamePanelTest {
     }
 
     @Test
-    void levantarNoMeioDaPegadaRompeComoDeitar() throws Exception {
+    void posturaNaoMudaNoMeioDaPegada() throws Exception {
+        // 5K (pedido): antes "levantarNoMeioDaPegadaRompeComoDeitar" (F rompia a pegada).
+        // Agora o comando de postura e bloqueado na pegada: nada de fuga gratuita.
         naEdt(() -> {
             painel = dois(null, null, InicioLuta.DE_JOELHOS);
             ticks(1);
             toque("brancoPegada1");
             ticks(40);
             assertTrue(s().isInteracaoEstabelecida());
-            toque("pretoDeitar");                            // F/L3 do receptor: levanta
-            ticks(1);
-            assertFalse(s().estaEmInteracao());
-            assertEquals(MotivoEncerramentoInteracao.DEITAR_OU_LEVANTAR, s().getUltimoMotivoEncerramento());
+            toque("pretoDeitar");                            // F/L3 do receptor (simples)
+            ticks(30);
+            toque("pretoDeitar");                            // e duplo
+            toque("pretoDeitar");
+            ticks(30);
+            assertTrue(s().isInteracaoEstabelecida(), "a pegada continua");
+            assertTrue(painel.getLutador2().isAjoelhado(), "a postura nao mudou");
         });
     }
 

@@ -612,6 +612,9 @@ public final class SistemaCombate {
         }
         aplicador.deslocarFisicamente(dx);
         receptor.deslocarFisicamente(dx);
+        // Entrega 5K: so o aplicador paga o esforco, pelo deslocamento real da dupla.
+        aplicador.gastarFolegoEsforco(
+                com.irmaosmiau.entities.CustosFolego.ARRASTO_POR_PIXEL * Math.abs(dx), "arrasto");
         // A politica compara com estes retratos: deslocar a referencia junto
         // evita romper por MOVIMENTO, sem esconder outras mudancas do corpo.
         referenciaAplicador = referenciaAplicador.transladado(dx);

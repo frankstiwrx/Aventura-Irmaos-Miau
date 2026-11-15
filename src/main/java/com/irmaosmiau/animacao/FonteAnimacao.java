@@ -11,5 +11,7 @@ public enum FonteAnimacao {
     /** Arquivo de animacao individual (conteudo/animacoes/individuais/*.json). */
     JSON_INDIVIDUAL,
     /** Animacao conjunta do MiauStudio (PEGADA_1.json via RegistroAnimacoesCombate). */
-    MIAUSTUDIO_CONJUNTA
+    MIAUSTUDIO_CONJUNTA,
+    /** Entrega 5K: gerada em codigo a partir do rig (ex.: transicoes de postura). Substituivel. */
+    PROCEDURAL
 }

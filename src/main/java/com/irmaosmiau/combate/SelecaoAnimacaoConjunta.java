@@ -14,7 +14,14 @@ public record SelecaoAnimacaoConjunta(
         String idTrilhaAplicador,
         String idTrilhaReceptor,
         AnimacaoConjuntaQuadros quadros,
-        Tipo tipo) {
+        Tipo tipo,
+        boolean experimental) {
+
+    /** Como na 5J (nao experimental). */
+    public SelecaoAnimacaoConjunta(String idBase, String idTrilhaAplicador, String idTrilhaReceptor,
+            AnimacaoConjuntaQuadros quadros, Tipo tipo) {
+        this(idBase, idTrilhaAplicador, idTrilhaReceptor, quadros, tipo, false);
+    }
 
     /** Como a variante foi escolhida. */
     public enum Tipo {
@@ -31,6 +38,11 @@ public record SelecaoAnimacaoConjunta(
 
     /** Texto curto para o HUD tecnico. */
     public String descricao() {
+        if (experimental) {
+            return tipo == Tipo.COMPOSTA_POR_PAPEL
+                    ? "aplicador " + idTrilhaAplicador + " + receptor " + idTrilhaReceptor + " (EXPERIMENTAL, composta)"
+                    : idTrilhaAplicador + " (EXPERIMENTAL)";
+        }
         return switch (tipo) {
             case AUTORAL -> idTrilhaAplicador + " (autoral)";
             case COMPOSTA_POR_PAPEL -> "aplicador " + idTrilhaAplicador + " + receptor " + idTrilhaReceptor

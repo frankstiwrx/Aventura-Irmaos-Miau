@@ -133,6 +133,9 @@ public final class CatalogoAnimacoes {
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO[0]"));
             c.registrar(DefinicaoAnimacao.legada(p + ".movimento_chao.legada", EstadoVisual.MOVIMENTO_CHAO,
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO"));
+            // 5K: transicoes de postura (TRANSICAO_AJOELHAR, _DEITAR, _ERGUER_JOELHOS, _LEVANTAR, _RAPIDA_*).
+            c.registrar(DefinicaoAnimacao.procedural(p + ".transicao_postura.legada", EstadoVisual.TRANSICAO_POSTURA,
+                    "animacao.TransicoesPostura (procedural 5K, interpola as poses das posturas no rig)"));
             // 5J: fallback em codigo (PosturaAjoelhada) quando o JSON nao carrega.
             c.registrar(DefinicaoAnimacao.legada(p + ".ajoelhado.legada", EstadoVisual.AJOELHADO,
                     classe + ".desenhar + PosturaAjoelhada.poseParado (fallback procedural 5J)"));

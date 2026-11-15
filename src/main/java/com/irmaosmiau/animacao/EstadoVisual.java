@@ -20,6 +20,8 @@ public enum EstadoVisual {
     AJOELHADO,
     /** Entrega 5J: de joelhos, deslocando (POSTURA_AJOELHADO_MOVIMENTO). */
     AJOELHADO_MOVIMENTO,
+    /** Entrega 5K: mudando de postura (contratos TRANSICAO_*; procedural por enquanto). */
+    TRANSICAO_POSTURA,
     /** Conjunta: os 30 quadros de entrada da PEGADA_1. */
     PEGADA_ENTRADA,
     /** Conjunta: pose final persistente da PEGADA_1. */

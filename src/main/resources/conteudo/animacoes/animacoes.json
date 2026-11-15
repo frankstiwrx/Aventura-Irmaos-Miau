@@ -16,6 +16,50 @@
       "duracaoFrames": 30,
       "varianteDe": "pegada_1_entrada",
       "descricao": "Entrada da PEGADA_1 desenhada pelo usuario com o Preto aplicador e o Branco receptor (Entrega 5J)."
+    },
+    {
+      "id": "pegada_1_entrada_branco_experimental",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1_BRANCO_EXPERIMENTAL.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_1_entrada",
+      "experimental": true,
+      "postura": "EM_PE",
+      "descricao": "EXPERIMENTAL 5K (feita pelo Claude com o rig): Branco aplicador em pe. So no modo de comparacao (F6)."
+    },
+    {
+      "id": "pegada_1_entrada_preto_experimental",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1_PRETO_EXPERIMENTAL.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_1_entrada",
+      "experimental": true,
+      "postura": "EM_PE",
+      "descricao": "EXPERIMENTAL 5K (feita pelo Claude com o rig): Preto aplicador em pe. So no modo de comparacao (F6)."
+    },
+    {
+      "id": "pegada_1_entrada_branco_ajoelhado_experimental",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1_BRANCO_AJOELHADO_EXPERIMENTAL.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_1_entrada",
+      "experimental": true,
+      "postura": "AJOELHADO",
+      "descricao": "EXPERIMENTAL 5K (feita pelo Claude com o rig): Branco aplicador de joelhos. So no modo de comparacao (F6)."
+    },
+    {
+      "id": "pegada_1_entrada_preto_ajoelhado_experimental",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1_PRETO_AJOELHADO_EXPERIMENTAL.json",
+      "duracaoFrames": 30,
+      "duracoesQuadros": [7, 7, 8, 8],
+      "varianteDe": "pegada_1_entrada",
+      "experimental": true,
+      "postura": "AJOELHADO",
+      "descricao": "EXPERIMENTAL 5K (feita pelo Claude com o rig): Preto aplicador de joelhos. So no modo de comparacao (F6)."
     }
   ]
 }

@@ -45,6 +45,9 @@ public final class ControladorAnimacoes {
             }
             return deslocandoConjunto ? EstadoVisual.ARRASTO_CONJUNTO : EstadoVisual.PEGADA_ESTABELECIDA;
         }
+        if (lutador.getTransicaoAtiva() != null) {
+            return EstadoVisual.TRANSICAO_POSTURA;
+        }
         if (lutador.isRolando()) {
             return EstadoVisual.ROLAMENTO;
         }

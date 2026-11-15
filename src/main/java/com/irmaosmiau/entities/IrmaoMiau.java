@@ -227,6 +227,22 @@ public enum EstadoCorporal {
 
 private EstadoCorporal estadoCorporal =
         EstadoCorporal.EM_PE;
+
+    // =============================
+    // ENTREGA 5K: CICLO DE POSTURAS E ESFORCO
+    // =============================
+    /* Ajoelhado: true = veio de deitado (o proximo clique simples levanta). */
+    private boolean cicloSubindo;
+    /* Transicao em andamento (so visual: a postura logica ja mudou). */
+    private TransicaoPostura transicaoAtiva;
+    private int ticksTransicao;
+    /* Distancia que o PROPRIO lutador andou neste tick (moverX/moverVertical). */
+    private double deslocamentoProprioTick;
+    /* Houve esforco neste tick (arrasto, transicao): sem recuperacao passiva. */
+    private boolean esforcoNesteTick;
+    private double ultimoCustoFolego;
+    private String ultimoCustoMotivo = "";
+
     
     // =============================
     // MOVIMENTO
@@ -588,6 +604,15 @@ public void iniciarSprawl() {
         // Entrega 5A: duracao dos efeitos avanca no loop logico.
         efeitos.atualizar();
 
+        // Entrega 5K: distancia andada e esforco deste tick (zerados para o proximo).
+        double deslocouNesteTick = deslocamentoProprioTick;
+        deslocamentoProprioTick = 0;
+        boolean esforcou = esforcoNesteTick;
+        esforcoNesteTick = false;
+        if (transicaoAtiva != null && ++ticksTransicao >= transicaoAtiva.getDuracaoTicks()) {
+            transicaoAtiva = null;
+        }
+
         // =========================
         // ESTADO ATUAL
         // =========================
@@ -621,6 +646,7 @@ public void iniciarSprawl() {
     respirando = false;
 
     atualizarRolamento();
+    deslocamentoProprioTick = 0;   // 5K: o rolamento tem custo proprio (nao e caminhada)
 
     /*
      * O rolamento também pode alterar
@@ -715,6 +741,15 @@ if (
     gastarCondicionamento(
             0.025
     );
+
+} else if (deslocouNesteTick > 0) {
+
+    // Entrega 5K: andar (em pe, de joelhos ou deitado) gasta pouco e nao recupera.
+    gastarEnergia(CustosFolego.caminhada(deslocouNesteTick, calcularVelocidadeSemEfeitos(), estadoCorporal));
+
+} else if (esforcou) {
+
+    // Entrega 5K: arrasto/transicao neste tick: sem recuperacao passiva.
 
 } else {
 
@@ -982,6 +1017,7 @@ if (
                 + (TOTAL_LINHAS - 1)
                 * ESPACO_ENTRE_LINHAS;
 
+        double antesY = yBase + restoMovimentoY;       // 5K: distancia efetiva
         // Guarda a parte decimal
         restoMovimentoY += quantidade;
 
@@ -1013,6 +1049,8 @@ if (
             restoMovimentoY = 0;
         }
 
+        deslocamentoProprioTick += Math.abs(yBase + restoMovimentoY - antesY);
+
         // Descobre qual das 5 linhas
         // está mais próxima.
         linhaAtual
@@ -1030,15 +1068,14 @@ if (
             double quantidade
     ) {
 
-        restoMovimentoX += quantidade;
-
+                restoMovimentoX += quantidade;
         int deslocamentoInteiro
                 = (int) restoMovimentoX;
-
         x += deslocamentoInteiro;
-
         restoMovimentoX
                 -= deslocamentoInteiro;
+        // 5K: a caminhada cobra pelo que o lutador realmente andou.
+        deslocamentoProprioTick += Math.abs(quantidade);
     }
 
     // =============================
@@ -1803,6 +1840,106 @@ public void alternarDeitado() {
         return pulando;
     }
     
+    // =============================
+    // ENTREGA 5K: TRANSICOES DE POSTURA
+    // =============================
+    /** Transicao do proximo clique SIMPLES (ciclo em pe -> joelhos -> deitado -> joelhos -> em pe). */
+    public TransicaoPostura proximaTransicaoSimples() {
+        return switch (estadoCorporal) {
+            case DEITADO -> TransicaoPostura.ERGUER_JOELHOS;
+            case AJOELHADO -> cicloSubindo ? TransicaoPostura.LEVANTAR : TransicaoPostura.DEITAR;
+            default -> TransicaoPostura.AJOELHAR;
+        };
+    }
+
+    /** Transicao do DUPLO clique: em pe deita direto; de joelhos ou deitado, levanta direto. */
+    public TransicaoPostura proximaTransicaoRapida() {
+        return switch (estadoCorporal) {
+            case DEITADO -> TransicaoPostura.RAPIDA_LEVANTAR_DO_CHAO;
+            case AJOELHADO -> TransicaoPostura.RAPIDA_LEVANTAR;
+            default -> TransicaoPostura.RAPIDA_DEITAR;
+        };
+    }
+
+    /**
+     * Executa uma transicao inteira ou nada: confere bloqueios e folego,
+     * cobra UM custo e muda a postura logica (a animacao acompanha).
+     */
+    public TransicaoPostura.Resultado executarTransicao(TransicaoPostura t) {
+        if (t == null || pulando || rolando || fazendoSprawl || bloqueadoPorAnimacaoCombate) {
+            return TransicaoPostura.Resultado.BLOQUEADA;
+        }
+        EstadoCorporal atual = estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
+        if (atual != t.getOrigem()) {
+            return TransicaoPostura.Resultado.BLOQUEADA;
+        }
+        if (folegoAtual < t.getCusto()) {
+            return TransicaoPostura.Resultado.SEM_FOLEGO;
+        }
+        gastarEnergia(t.getCusto());
+        registrarCusto(t.getCusto(), t.getContrato());
+        esforcoNesteTick = true;
+        correndo = false;
+        respirando = false;
+        agachado = false;
+        faseRespiracao = 0;
+        estadoCorporal = t.getDestino();
+        // Direcao do ciclo: de joelhos vindo de deitado sobe; vindo de em pe desce.
+        cicloSubindo = t == TransicaoPostura.ERGUER_JOELHOS;
+        transicaoAtiva = t;
+        ticksTransicao = 0;
+        ultimaAtividade = System.currentTimeMillis();
+        return TransicaoPostura.Resultado.FEITA;
+    }
+
+    /** Animacao de transicao em andamento (null = nenhuma). */
+    public TransicaoPostura getTransicaoAtiva() {
+        return transicaoAtiva;
+    }
+
+    /** 0..1 da animacao de transicao atual. */
+    public double getProgressoTransicao() {
+        return transicaoAtiva == null ? 1.0
+                : Math.min(1.0, (ticksTransicao + 1) / (double) transicaoAtiva.getDuracaoTicks());
+    }
+
+    /** De joelhos: o proximo clique simples levanta (true) ou deita (false). */
+    public boolean isCicloSubindo() {
+        return cicloSubindo;
+    }
+
+    /**
+     * Esforco do motor de combate (ex.: arrastar): gasta o que der, sem
+     * deixar negativo, e suspende a recuperacao passiva neste tick.
+     */
+    public void gastarFolegoEsforco(double quantidade, String motivo) {
+        if (quantidade < 0) {
+            throw new IllegalArgumentException("O custo de folego nao pode ser negativo.");
+        }
+        gastarEnergia(quantidade);
+        registrarCusto(quantidade, motivo);
+        esforcoNesteTick = true;
+    }
+
+    private void registrarCusto(double valor, String motivo) {
+        ultimoCustoFolego = valor;
+        ultimoCustoMotivo = motivo == null ? "" : motivo;
+    }
+
+    /** Ultimo custo pontual de folego (HUD tecnico). */
+    public double getUltimoCustoFolego() {
+        return ultimoCustoFolego;
+    }
+
+    public String getUltimoCustoMotivo() {
+        return ultimoCustoMotivo;
+    }
+
+    /** Velocidade normal sem efeitos temporarios (referencia do custo da caminhada). */
+    private double calcularVelocidadeSemEfeitos() {
+        return 3.2 + (atributos.getVelocidade() / 100.0) * 1.6;
+    }
+
     /** Entrega 5J: de joelhos. */
     public boolean isAjoelhado() {
         return estadoCorporal == EstadoCorporal.AJOELHADO;
@@ -1820,6 +1957,8 @@ public void alternarDeitado() {
         correndo = false;
         agachado = false;
         andando = false;
+        cicloSubindo = false;       // 5K: como quem acabou de ajoelhar (proximo clique deita)
+        transicaoAtiva = null;
     }
 
     /** Postura corporal atual (5J: para o HUD tecnico e as animacoes). */
@@ -2363,10 +2502,9 @@ protected boolean isRolamentoParaTras() {
             return false;
         }
 
-        gastarEnergia(quantidade);
-
+                gastarEnergia(quantidade);
+        registrarCusto(quantidade, "combate");
         ultimaAtividade = System.currentTimeMillis();
-
         return true;
     }
 

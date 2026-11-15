@@ -319,3 +319,16 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
 - `animacao.CamadaPoseCombate`, chamada pelo `AnimadorPartida` depois do combate: passos do arrasto e
   reação ao desequilíbrio, aditivos e sem acúmulo.
 - `GamePanel.linhasTecnicas()`: linhas extras do HUD técnico (F3).
+
+## Posturas, fôlego e comparação de animações (Entrega 5K)
+
+- `entities.TransicaoPostura` (7 transições: origem, destino, custo, duração, contrato) e
+  `entities.CustosFolego` (valores centralizados). `IrmaoMiau`: `proximaTransicaoSimples/Rapida`,
+  `executarTransicao` (tudo ou nada, um custo), `isCicloSubindo`, `getTransicaoAtiva`,
+  `gastarFolegoEsforco`, caminhada cobrada pela distância própria (`moverX`/`moverVertical`).
+- `controles.ReconhecedorCliqueDuplo` (ticks lógicos). `GamePanel.processarPostura` por slot; limpa em
+  pausa, perda de foco e F5; bloqueia na pegada.
+- `SistemaCombate.deslocarPegadaControlada` cobra o arrasto do aplicador.
+- `animacao.TransicoesPostura` (procedural, estado `TRANSICAO_POSTURA`, fonte `PROCEDURAL`) no `AnimadorPartida`.
+- `combate.ModoAnimacoesPegada` (AUTORAL/EXPERIMENTAL, F6). `RegistroAnimacoesCombate`: experimentais e
+  postura por animação; `resolver(..., modo)`. Catálogo: `"experimental"`, `"postura"`.

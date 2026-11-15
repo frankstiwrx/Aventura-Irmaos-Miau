@@ -712,3 +712,77 @@ Os botões de jogar sozinho mostram o irmão escolhido na coluna. No gamepad: �
 - Como em pé, a caminhada normal não tem borda própria (o limite da arena vale para o arrasto).
 - F3 (HUD técnico) mostra a postura dos dois, aplicador e receptor, a variante da animação, e se os
   passos do arrasto/reação ao desequilíbrio (fallback) estão ativos.
+
+---
+
+# Entrega 5K — Posturas por F/L3 e fôlego
+
+## Comando de postura (DEITAR_LEVANTAR: F no J1, J no J2, L3 no Xbox; remapeável)
+
+**Clique simples** — uma transição por clique, no ciclo:
+
+EM PÉ → AJOELHADO → DEITADO → AJOELHADO → EM PÉ
+
+De joelhos, o lutador lembra de onde veio (`IrmaoMiau.isCicloSubindo`): veio de em pé → o próximo clique
+deita; veio de deitado → o próximo clique levanta. No início de joelhos conta como "veio de em pé".
+
+**Duplo clique** (dois toques em até 250 ms = 16 ticks lógicos):
+
+| Postura | Duplo clique | Resultado |
+|---|---|---|
+| Em pé | F/L3 + F/L3 | deitado direto |
+| Ajoelhado (descendo ou subindo) | F/L3 + F/L3 | em pé direto |
+| Deitado | F/L3 + F/L3 | em pé direto |
+
+- Bordas reais: segurar não repete. O 2º toque dentro da janela vira **uma** ação rápida (um custo, uma
+  animação); o simples pendente não executa. Um 3º toque começa uma nova contagem.
+- **Compromisso de ergonomia:** o clique simples só acontece quando a janela fecha (~250 ms depois do
+  toque), porque até lá ele ainda pode virar duplo. O duplo responde na hora do 2º toque. A janela é uma
+  constante (`ReconhecedorCliqueDuplo.JANELA_MS_PADRAO`); vale testar no Xbox se 250 ms está confortável.
+- Pausa, perda de foco e F5 descartam o clique pendente. O botão usado para sair do menu não vira postura.
+- **Na pegada (aplicador ou receptor) a postura não muda** (aviso "POSTURA SÓ FORA DA PEGADA"): nada de fuga
+  gratuita. Pulo, rolamento, sprawl e a entrada de uma técnica também bloqueiam.
+- Sem fôlego para a transição: nada acontece (nem parte dela) e aparece "SEM FÔLEGO".
+
+## Início da luta
+
+O padrão continua **de joelhos** (5J). O campo INÍCIO da seleção foi mantido (De joelhos / Em pé): ele
+não atrapalha o fluxo e preserva o início em pé para treinos, testes e estilos futuros.
+
+## Fôlego (valores; todos em `entities.CustosFolego`, exceto os de combate que já existiam)
+
+| Item | Antes (5J) | 5K | Observação |
+|---|---|---|---|
+| Caminhar em pé | **recuperava** enquanto andava | ~0,10/s (10 s ≈ 1 ponto) e não recupera | cobrado pela distância real |
+| Andar de joelhos | recuperava | ~0,045/s (fator 2,5 por distância) | metade do custo de andar em pé |
+| Rastejar deitado | recuperava | ~0,035/s (fator 5 por distância) | |
+| Correr | 0,12/tick | igual | sem custo de caminhada somado |
+| Pulo alto / curto / rolamento / sprawl | 8 / 3,5 / 6 / 4 | igual | o rolamento não conta como caminhada |
+| Em pé → joelhos / joelhos → deitado | — | 0,5 / 0,5 | |
+| Deitado → joelhos / joelhos → em pé | — | 0,8 / 1,2 | |
+| Rápida: em pé → deitado | — | 2,5 | lento: 1,0 |
+| Rápida: deitado → em pé | — | 4,0 | lento: 2,0 |
+| Rápida: joelhos → em pé | — | 2,0 | lento: 1,2 |
+| Pegada / reforço / desequilíbrio / rompimento | 3 / 3 / 4 / 3 | igual | não duplicado |
+| Arrasto (só o aplicador) | só firmeza | + 0,0025 por px real (~0,16/s) | receptor não paga; dupla parada não paga |
+| Recuperação parado | 0,008 + recuperação × 0,0002 por tick (~1,1/s) | igual | não recupera no tick de esforço |
+
+- Parado em qualquer postura recupera; nenhuma postura estática gasta.
+- Alternar posturas sempre gasta (não existe recuperação "artificial").
+- Fôlego nunca negativo; recupera até o máximo de cada irmão (Branco e Preto continuam diferentes).
+- Ninguém fica preso sem fôlego: parado sempre recupera e os custos de postura são pequenos.
+
+## Desequilíbrio
+
+A consequência mecânica já existia (5B) e foi mantida: com **sucesso**, o receptor fica DESEQUILIBRADO por
+120 ticks (~2 s) com velocidade a 60%; o aplicador paga 4. Quem perde a disputa não paga fôlego (regra
+5B, preservada). Tentativa inválida ou resistida não aplica nada. O HUD (F3) mostra a consequência
+("DESEQUILIBRADO: velocidade 60% (N ticks)") e a reação visual da 5J só aparece com o efeito do motor.
+Futuro: a mesma janela de instabilidade pode reduzir a defesa contra quedas e raspagens.
+
+## Atalho de desenvolvimento
+
+- **F6** alterna as animações de pegada entre AUTORAL (padrão) e EXPERIMENTAL; vale a partir da próxima
+  pegada e fica até fechar o jogo. Também por `-Dirmaosmiau.animacoes.pegada=experimental`.
+- **F3** mostra postura e direção do ciclo, clique pendente/duplo, transição ativa, fôlego atual/máximo,
+  último custo, firmeza, consequência do desequilíbrio, arrasto, variante e origem da animação.

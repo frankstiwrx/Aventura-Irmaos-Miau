@@ -28,6 +28,8 @@ public final class RegistroAnimacoesCombate {
     private final Map<String, IdentidadeRig[]> identidades = new LinkedHashMap<>();
     private final Map<String, java.util.List<String>> variantes = new LinkedHashMap<>();
     private final Map<String, AnimacaoConjuntaQuadros> composicoes = new java.util.HashMap<>();
+    private final java.util.Set<String> experimentais = new java.util.HashSet<>();
+    private final Map<String, String> posturas = new LinkedHashMap<>();
 
     public RegistroAnimacoesCombate() {
         // Dados gerados a partir de PEGADA_1.json, MiauStudio projeto v2.
@@ -156,9 +158,12 @@ public final class RegistroAnimacoesCombate {
         if (b.equals(nv) || variantes.containsKey(nv)) {
             throw new IllegalArgumentException("Variante invalida: " + idVariante + " de " + idBase);
         }
-        if (base.quantidadeQuadros() != v.quantidadeQuadros()
+        // 5K: uma EXPERIMENTAL pode ter outros quadros (mesma duracao total); as autorais, nao.
+        boolean mesmosQuadros = experimentais.contains(nv)
+                || (base.quantidadeQuadros() == v.quantidadeQuadros()
+                        && java.util.Arrays.equals(base.copiarDuracoesQuadros(), v.copiarDuracoesQuadros()));
+        if (!mesmosQuadros
                 || base.getDuracaoTotalFrames() != v.getDuracaoTotalFrames()
-                || !java.util.Arrays.equals(base.copiarDuracoesQuadros(), v.copiarDuracoesQuadros())
                 || base.getOffsetVisualX() != v.getOffsetVisualX()
                 || base.getOffsetVisualY() != v.getOffsetVisualY()) {
             throw new IllegalArgumentException("A variante " + idVariante + " precisa ter os mesmos quadros,"
@@ -187,41 +192,109 @@ public final class RegistroAnimacoesCombate {
      * 3. Senao: a base, como ate a 5I.
      */
     public SelecaoAnimacaoConjunta resolver(String idBase, IrmaoMiau aplicador, IrmaoMiau receptor) {
+        return resolver(idBase, aplicador, receptor, ModoAnimacoesPegada.atual());
+    }
+
+    /**
+     * Entrega 5K: com o modo de comparacao. No EXPERIMENTAL, primeiro as
+     * variantes experimentais compativeis (molde, papel e postura do
+     * aplicador); sem nenhuma, cai no caminho autoral de sempre. No AUTORAL,
+     * as experimentais nunca sao escolhidas.
+     */
+    public SelecaoAnimacaoConjunta resolver(String idBase, IrmaoMiau aplicador, IrmaoMiau receptor,
+            ModoAnimacoesPegada modo) {
         AnimacaoConjuntaQuadros base = exigir(idBase);
         String b = normalizar(idBase);
         IdentidadeRig ia = IdentidadeRig.de(aplicador);
         IdentidadeRig ir = IdentidadeRig.de(receptor);
-        java.util.List<String> candidatas = new java.util.ArrayList<>();
-        candidatas.add(b);
-        candidatas.addAll(variantes.getOrDefault(b, java.util.List.of()));
         if (ia == null || ir == null) {
-            return new SelecaoAnimacaoConjunta(b, b, b, base, SelecaoAnimacaoConjunta.Tipo.BASE);
+            return new SelecaoAnimacaoConjunta(b, b, b, base, SelecaoAnimacaoConjunta.Tipo.BASE, false);
         }
+        java.util.List<String> todas = new java.util.ArrayList<>();
+        todas.add(b);
+        todas.addAll(variantes.getOrDefault(b, java.util.List.of()));
+        String posturaAplicador = aplicador.isAjoelhado() ? "AJOELHADO" : "EM_PE";
+        if (modo == ModoAnimacoesPegada.EXPERIMENTAL) {
+            java.util.List<String> exp = new java.util.ArrayList<>();
+            for (String c : todas) {
+                if (experimentais.contains(c) && posturaCompativel(c, posturaAplicador)) {
+                    exp.add(c);
+                }
+            }
+            java.util.Optional<SelecaoAnimacaoConjunta> s = escolher(b, exp, ia, ir, true);
+            if (s.isPresent()) {
+                return s.get();
+            }
+        }
+        java.util.List<String> autorais = new java.util.ArrayList<>();
+        for (String c : todas) {
+            if (!experimentais.contains(c) && posturaCompativel(c, posturaAplicador)) {
+                autorais.add(c);
+            }
+        }
+        return escolher(b, autorais, ia, ir, false)
+                .orElse(new SelecaoAnimacaoConjunta(b, b, b, base, SelecaoAnimacaoConjunta.Tipo.BASE, false));
+    }
+
+    private boolean posturaCompativel(String id, String posturaAplicador) {
+        String p = posturas.get(id);
+        return p == null || p.equals(posturaAplicador);
+    }
+
+    /** Dupla exata (AUTORAL) ou composicao por papel entre animacoes compativeis. */
+    private java.util.Optional<SelecaoAnimacaoConjunta> escolher(String b, java.util.List<String> candidatas,
+            IdentidadeRig ia, IdentidadeRig ir, boolean experimental) {
         for (String c : candidatas) {
             if (getIdentidadeAplicador(c) == ia && getIdentidadeReceptor(c) == ir) {
-                return new SelecaoAnimacaoConjunta(b, c, c, animacoes.get(c),
-                        SelecaoAnimacaoConjunta.Tipo.AUTORAL);
+                return java.util.Optional.of(new SelecaoAnimacaoConjunta(b, c, c, animacoes.get(c),
+                        SelecaoAnimacaoConjunta.Tipo.AUTORAL, experimental));
             }
         }
-        String trilhaAplicador = null;
-        String trilhaReceptor = null;
-        for (String c : candidatas) {
-            if (trilhaAplicador == null && getIdentidadeAplicador(c) == ia) {
-                trilhaAplicador = c;
+        for (String ca : candidatas) {
+            if (getIdentidadeAplicador(ca) != ia) {
+                continue;
             }
-            if (trilhaReceptor == null && getIdentidadeReceptor(c) == ir) {
-                trilhaReceptor = c;
+            for (String cr : candidatas) {
+                if (getIdentidadeReceptor(cr) != ir) {
+                    continue;
+                }
+                AnimacaoConjuntaQuadros a = animacoes.get(ca);
+                AnimacaoConjuntaQuadros r = animacoes.get(cr);
+                // So compoe trilhas com o mesmo tempo (mesmos quadros e distribuicao).
+                if (a.quantidadeQuadros() != r.quantidadeQuadros()
+                        || !java.util.Arrays.equals(a.copiarDuracoesQuadros(), r.copiarDuracoesQuadros())) {
+                    continue;
+                }
+                AnimacaoConjuntaQuadros composta = composicoes.computeIfAbsent(ca + "|" + cr, k -> compor(a, r));
+                return java.util.Optional.of(new SelecaoAnimacaoConjunta(b, ca, cr, composta,
+                        SelecaoAnimacaoConjunta.Tipo.COMPOSTA_POR_PAPEL, experimental));
             }
         }
-        if (trilhaAplicador == null || trilhaReceptor == null) {
-            return new SelecaoAnimacaoConjunta(b, b, b, base, SelecaoAnimacaoConjunta.Tipo.BASE);
+        return java.util.Optional.empty();
+    }
+
+    // ---------------- Entrega 5K: metadados de experimentais e postura
+    /** Marca a animacao como EXPERIMENTAL (so usada no modo de comparacao). */
+    public void registrarExperimental(String id) {
+        exigir(id);
+        experimentais.add(normalizar(id));
+    }
+
+    public boolean isExperimental(String id) {
+        return id != null && experimentais.contains(normalizar(id));
+    }
+
+    /** Postura do aplicador para a qual a animacao foi feita ("EM_PE" ou "AJOELHADO"). */
+    public void registrarPostura(String id, String postura) {
+        exigir(id);
+        if (!"EM_PE".equals(postura) && !"AJOELHADO".equals(postura)) {
+            throw new IllegalArgumentException("Postura invalida: " + postura + " (use EM_PE ou AJOELHADO)");
         }
-        String chave = trilhaAplicador + "|" + trilhaReceptor;
-        AnimacaoConjuntaQuadros a = animacoes.get(trilhaAplicador);
-        AnimacaoConjuntaQuadros r = animacoes.get(trilhaReceptor);
-        AnimacaoConjuntaQuadros composta = composicoes.computeIfAbsent(chave, k -> compor(a, r));
-        return new SelecaoAnimacaoConjunta(b, trilhaAplicador, trilhaReceptor, composta,
-                SelecaoAnimacaoConjunta.Tipo.COMPOSTA_POR_PAPEL);
+        posturas.put(normalizar(id), postura);
+    }
+
+    public String getPostura(String id) {
+        return id == null ? null : posturas.get(normalizar(id));
     }
 
     /** Trilha do aplicador de a + trilha do receptor de r (compatibilidade garantida no registro). */

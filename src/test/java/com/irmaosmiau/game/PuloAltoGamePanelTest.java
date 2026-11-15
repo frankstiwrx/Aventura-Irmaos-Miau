@@ -105,14 +105,22 @@ class PuloAltoGamePanelTest {
             assertTrue(b.isRolando(), "R3 = rolamento");
             sim.definir("g1", EstadoGamepad.repouso());
             ticks(80);
-            sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.L3));
-            ticks(1);
-            assertTrue(b.isDeitado(), "L3 = deitar");
-            sim.definir("g1", EstadoGamepad.repouso());
-            ticks(1);
-            sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.L3));
-            ticks(1);
-            assertFalse(b.isDeitado(), "L3 de novo = levantar");
+            // 5K (pedido): L3 e o comando de postura; L3 + L3 rapido = deitar direto, de novo = levantar.
+            for (int vez = 0; vez < 2; vez++) {
+                sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.L3));
+                ticks(1);
+                sim.definir("g1", EstadoGamepad.repouso());
+                ticks(1);
+            }
+            assertTrue(b.isDeitado(), "L3 duplo = deitar");
+            ticks(20);
+            for (int vez = 0; vez < 2; vez++) {
+                sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.L3));
+                ticks(1);
+                sim.definir("g1", EstadoGamepad.repouso());
+                ticks(1);
+            }
+            assertFalse(b.isDeitado(), "L3 duplo de novo = levantar");
         });
     }
 }

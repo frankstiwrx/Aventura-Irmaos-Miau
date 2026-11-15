@@ -285,3 +285,89 @@ Nenhum arquivo vazio foi cadastrado: os JSON de joelhos são poses reais e dizem
 3. **PEGADA_1 ajoelhada** (Branco aplicador e Preto aplicador): 3 quadros como a PEGADA_1, de joelhos.
 4. **Arrasto na pegada** (em pé e de joelhos): 4 quadros em loop, braços fixos na pegada.
 5. **Reação ao desequilíbrio** (receptor): 3 quadros (inclina, apoia, volta).
+
+---
+
+# Entrega 5K — Transições de postura, PEGADA_1 experimental e fluxo artístico
+
+## Transições de postura (procedurais, `animacao.TransicoesPostura`)
+
+Feitas com o rig de 30 valores de cada irmão: interpolam a pose da postura de origem até a de destino
+(pernas, tronco, rotação global e altura do corpo). Em pé = pose neutra do rig (idêntica ao desenho em pé
+legado); de joelhos = `PosturaAjoelhada`; deitado = quadro 1 do JSON do movimento no chão.
+
+| Contrato | Transição | Ticks | Curva |
+|---|---|---|---|
+| `TRANSICAO_AJOELHAR` | em pé → joelhos | 12 | suave |
+| `TRANSICAO_DEITAR` | joelhos → deitado | 14 | suave |
+| `TRANSICAO_ERGUER_JOELHOS` | deitado → joelhos | 14 | suave |
+| `TRANSICAO_LEVANTAR` | joelhos → em pé | 12 | suave |
+| `TRANSICAO_RAPIDA_DEITAR` | em pé → deitado | 10 | cai acelerando, braços à frente |
+| `TRANSICAO_RAPIDA_LEVANTAR_DO_CHAO` | deitado → em pé | 16 | explosiva: passa do ponto e assenta, braços impulsionam |
+| `TRANSICAO_RAPIDA_LEVANTAR` | joelhos → em pé | 8 | explosiva |
+
+A postura lógica muda no início; a animação só desenha (posição, linha e colisão não mudam). Estado
+visual `TRANSICAO_POSTURA`, fonte `PROCEDURAL`. Se o combate assumir a pose, a transição para de desenhar.
+
+## PEGADA_1 experimental
+
+Quatro projetos MiauStudio v2 **novos** (abríveis no editor), gerados com os pivôs dos rigs:
+
+| Arquivo | Aplicador | Postura |
+|---|---|---|
+| `PEGADA_1_BRANCO_EXPERIMENTAL.json` | Branco | em pé |
+| `PEGADA_1_PRETO_EXPERIMENTAL.json` | Preto | em pé |
+| `PEGADA_1_BRANCO_AJOELHADO_EXPERIMENTAL.json` | Branco | de joelhos |
+| `PEGADA_1_PRETO_AJOELHADO_EXPERIMENTAL.json` | Preto | de joelhos |
+
+4 quadros (7/7/8/8 frames, mesmos 30 da técnica): **preparo** (tronco inclina, mãos sobem), **alcance**,
+**contato** (mão da frente na gola, mão de trás na manga do adversário, calculadas para a dupla a 84 px)
+e **pegada assentada** (puxa um pouco, apoio ajusta). O receptor reage com cabeça, tronco e a mão da
+frente. Sem deslocamento horizontal entre quadros (evita a diferença de coordenadas da 5J). Nas de
+joelhos o quadril vem à frente; as pernas continuam com o adaptador de joelhos.
+
+`PEGADA_1.json` e `PEGADA_1_PRETO.json` **não foram tocados** (teste por SHA-256).
+
+## Como comparar
+
+1. No jogo, **F6** → "ANIMAÇÕES DE PEGADA: EXPERIMENTAL" (vale na próxima pegada). F6 de novo volta à autoral.
+2. F3 mostra a variante usada: "… (autoral)", "… (EXPERIMENTAL)" ou "… (EXPERIMENTAL, composta)".
+3. Seleção no modo EXPERIMENTAL: experimental do mesmo molde, papel e postura; Branco × Branco e Preto ×
+   Preto compõem por papel entre as experimentais; sem nenhuma compatível, cai na autoral.
+4. O padrão de cada execução é AUTORAL. Nada é gravado.
+
+## Catálogo (`animacoes.json`): campos novos
+
+- `"experimental": true` — só é escolhida no modo de comparação. Pode ter outro número de quadros
+  (mesma duração total); as autorais continuam exigindo os mesmos quadros da base.
+- `"postura": "EM_PE" | "AJOELHADO"` — postura do aplicador para a qual foi desenhada.
+
+## Fluxo artístico
+
+1. Criar ou editar no MiauStudio (modo CONJUNTA, `aplicadorConjunto` correto).
+2. Exportar o projeto (JSON v2) para `conteudo/miaustudio/` com nome próprio (nunca sobre um autoral).
+3. Definir técnica e postura: em `animacoes.json`, `varianteDe` = a animação base da técnica e `postura`.
+4. Aplicador e receptor vêm do próprio projeto (`aplicadorConjunto`); o motor compõe por papel para
+   duplas do mesmo molde.
+5. Registrar primeiro como `"experimental": true`.
+6. Validar esquerda/direita (o espelho vem da orientação; nada a fazer no arquivo).
+7. Testar Branco×Preto, Preto×Branco, Branco×Branco, Preto×Preto, em pé e de joelhos.
+8. Comparar no jogo com F6 e F3.
+9. Aprovar: tirar `"experimental"` (vira autoral).
+10. Voltar atrás: recolocar `"experimental": true` ou remover a entrada; o arquivo anterior continua lá.
+
+Limitação conhecida (5J): `offsetCentroX` é posição de cena no editor e deslocamento local no motor.
+Só diverge para quem foi desenhado olhando para a esquerda e se desloca entre quadros. Recomendação:
+desenhar a dupla sem deslocamento horizontal entre quadros, ou com quem se move olhando para a direita.
+A correção global continua pendente de validação visual da PEGADA_1 original.
+
+## Contratos (referências estáveis)
+
+| Contrato | Hoje | Substituir por |
+|---|---|---|
+| `PEGADA_1_ENTRADA` | `pegada_1_entrada` + variantes | novo projeto + `varianteDe` |
+| `PEGADA_1_SUSTENTACAO` | último quadro da entrada | (idem) |
+| `PEGADA_1_ARRASTO` | `CamadaPoseCombate` (passos) | animação conjunta em loop (pendente) |
+| `PEGADA_1_DESEQUILIBRIO` | `CamadaPoseCombate` (reação) | animação do receptor (pendente) |
+| `POSTURA_AJOELHADO_IDLE` / `_MOVIMENTO` | JSON de fallback (5J) | trocar os quadros do JSON |
+| `TRANSICAO_*` | `TransicoesPostura` (procedural) | animação individual por transição (pendente: falta o estado no carregador) |

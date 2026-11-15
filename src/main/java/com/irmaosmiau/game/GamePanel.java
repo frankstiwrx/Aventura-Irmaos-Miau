@@ -623,11 +623,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-        if (input.isDeitar()
-                && !deitarAnterior) {
-
-            jogadorPrincipal.alternarDeitado();
-        }
+        // Entrega 5K: F/L3 = ciclo de posturas (clique simples) ou transicao rapida (duplo).
+        processarPostura(SlotJogador.JOGADOR_1, jogadorPrincipal, input.isDeitar() && !deitarAnterior);
 
         // =========================
         // RESPIRAÇÃO
@@ -755,11 +752,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-        if (input.isDeitar()
-                && !deitarBrancoAnterior) {
-
-            jogadorBranco.alternarDeitado();
-        }
+        // Entrega 5K: F/L3 = ciclo de posturas (clique simples) ou transicao rapida (duplo).
+        processarPostura(SlotJogador.JOGADOR_1, jogadorBranco, input.isDeitar() && !deitarBrancoAnterior);
 
         // =========================
         // RESPIRAÇÃO
@@ -908,11 +902,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // DEITAR / LEVANTAR
 // =========================
-        if (input.isPretoDeitar()
-                && !deitarPretoAnterior) {
-
-            jogadorPreto.alternarDeitado();
-        }
+        // Entrega 5K: F/L3 = ciclo de posturas (clique simples) ou transicao rapida (duplo).
+        processarPostura(SlotJogador.JOGADOR_2, jogadorPreto, input.isPretoDeitar() && !deitarPretoAnterior);
         // =========================
         // RESPIRAÇÃO
         // =========================
@@ -1638,6 +1629,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         pausado
                 = !pausado;
+        limparPosturasPendentes();       // 5K: nada de clique de postura atravessando o menu
 
         menuPausa.setVisible(
                 pausado
@@ -1764,6 +1756,57 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             dispositivos.setFocado(false);
         }
         input.liberarTodas();
+        limparPosturasPendentes();
+    }
+
+    // =====================================================
+    // ENTREGA 5K: POSTURAS POR F/L3 (CLIQUE SIMPLES E DUPLO)
+    // =====================================================
+    static final int JANELA_DUPLO_CLIQUE_TICKS = com.irmaosmiau.controles.ReconhecedorCliqueDuplo.ticksDaJanela(
+            com.irmaosmiau.controles.ReconhecedorCliqueDuplo.JANELA_MS_PADRAO, INTERVALO_GAME_LOOP_MS);
+    private final java.util.Map<SlotJogador, com.irmaosmiau.controles.ReconhecedorCliqueDuplo> cliquesPostura =
+            new java.util.EnumMap<>(SlotJogador.class);
+    private final java.util.Map<SlotJogador, String> ultimoCliquePostura = new java.util.EnumMap<>(SlotJogador.class);
+
+    private com.irmaosmiau.controles.ReconhecedorCliqueDuplo cliques(SlotJogador slot) {
+        return cliquesPostura.computeIfAbsent(slot,
+                s -> new com.irmaosmiau.controles.ReconhecedorCliqueDuplo(JANELA_DUPLO_CLIQUE_TICKS));
+    }
+
+    /**
+     * Um tick do comando de postura do slot. O clique simples so e resolvido
+     * quando a janela do duplo clique fecha; o duplo vira UMA transicao rapida.
+     * Na pegada (aplicador ou receptor) a postura nao muda: nada de fuga gratuita.
+     */
+    private void processarPostura(SlotJogador slot, IrmaoMiau lutador, boolean borda) {
+        com.irmaosmiau.controles.ReconhecedorCliqueDuplo.Evento e = cliques(slot).atualizar(borda, tick);
+        if (e == com.irmaosmiau.controles.ReconhecedorCliqueDuplo.Evento.NADA) {
+            return;
+        }
+        boolean duplo = e == com.irmaosmiau.controles.ReconhecedorCliqueDuplo.Evento.DUPLO;
+        ultimoCliquePostura.put(slot, duplo ? "duplo" : "simples");
+        if (sistemaCombate != null && sistemaCombate.estaEmInteracao()
+                && (sistemaCombate.getAplicadorInteracao() == lutador
+                        || sistemaCombate.getReceptorInteracao() == lutador)) {
+            feedback.mostrarInfo(slot.getSigla() + ": POSTURA SÓ FORA DA PEGADA", tick);
+            return;
+        }
+        com.irmaosmiau.entities.TransicaoPostura t = duplo
+                ? lutador.proximaTransicaoRapida() : lutador.proximaTransicaoSimples();
+        com.irmaosmiau.entities.TransicaoPostura.Resultado r = lutador.executarTransicao(t);
+        if (r == com.irmaosmiau.entities.TransicaoPostura.Resultado.SEM_FOLEGO) {
+            feedback.mostrarInfo(slot.getSigla() + ": SEM FÔLEGO (" + t.getContrato() + ")", tick);
+        }
+    }
+
+    /** Pausa, perda de foco, F5: nenhum clique pendente sobrevive. */
+    private void limparPosturasPendentes() {
+        cliquesPostura.values().forEach(com.irmaosmiau.controles.ReconhecedorCliqueDuplo::limpar);
+    }
+
+    /** HUD/testes: o slot tem um clique simples esperando a janela. */
+    boolean isCliquePosturaPendente(SlotJogador slot) {
+        return cliques(slot).isPendente();
     }
 
     @Override
@@ -2456,7 +2499,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         Graphics2D d = (Graphics2D) g2.create();
         d.translate(0, 30);
         d.setColor(new Color(255, 255, 255, 170));
-        d.fillRoundRect(262, 32, 400, 224 + 74, 8, 8);
+        d.fillRoundRect(262, 32, 400, 224 + 74 + 68, 8, 8);
         desenharDebugCombate(d);
         // Entrega 5J: postura, papeis, variante da animacao e camadas visuais.
         d.setColor(new Color(20, 40, 90));
@@ -2474,13 +2517,15 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (sistemaCombate == null) {
             return l;
         }
-        l.add("POSTURA J1: " + jogadorBranco.getEstadoCorporal() + " | J2: " + jogadorPreto.getEstadoCorporal());
+        l.add("POSTURA J1: " + jogadorBranco.getEstadoCorporal() + descricaoCiclo(SlotJogador.JOGADOR_1, jogadorBranco)
+                + " | J2: " + jogadorPreto.getEstadoCorporal() + descricaoCiclo(SlotJogador.JOGADOR_2, jogadorPreto));
         IrmaoMiau apl = sistemaCombate.getAplicadorInteracao();
         IrmaoMiau rec = sistemaCombate.getReceptorInteracao();
         if (sistemaCombate.estaEmInteracao() && apl != null && rec != null) {
             l.add("APLICADOR: " + rotuloSlot(apl) + " | RECEPTOR: " + rotuloSlot(rec) + " | "
                     + sistemaCombate.getIdAcaoInteracao()
-                    + (sistemaCombate.isInteracaoEstabelecida() ? " ESTABELECIDA" : " ENTRADA"));
+                    + (sistemaCombate.isInteracaoEstabelecida() ? " ESTABELECIDA" : " ENTRADA")
+                    + String.format(" | FIRMEZA %.0f", sistemaCombate.getFirmeza()));
         } else {
             l.add("APLICADOR: - | RECEPTOR: - | sem tecnica ativa");
         }
@@ -2499,7 +2544,37 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             }
         }
         l.add("ARRASTO: " + arrasto + " | DESEQUILIBRIO: " + deseq);
+        // Entrega 5K: modo de comparacao, folego, custo e consequencia do desequilibrio.
+        l.add("ANIMACOES PEGADA (F6): " + com.irmaosmiau.combate.ModoAnimacoesPegada.atual());
+        l.add("FOLEGO J1: " + folego(jogadorBranco) + " | J2: " + folego(jogadorPreto));
+        StringBuilder efeitos = new StringBuilder();
+        for (IrmaoMiau x : List.of(jogadorBranco, jogadorPreto)) {
+            int t = x.getEfeitos().getTicksRestantes(com.irmaosmiau.entities.EfeitosTemporarios.Tipo.DESEQUILIBRIO);
+            if (t > 0) {
+                efeitos.append(rotuloSlot(x)).append(" DESEQUILIBRADO: velocidade 60% (").append(t).append(" ticks) ");
+            }
+        }
+        l.add(efeitos.length() == 0 ? "CONSEQUENCIA: -" : "CONSEQUENCIA: " + efeitos.toString().trim());
+        l.add("TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto));
         return l;
+    }
+
+    private String descricaoCiclo(SlotJogador slot, IrmaoMiau x) {
+        String ciclo = x.isAjoelhado() ? (x.isCicloSubindo() ? " (sobe)" : " (desce)") : "";
+        String clique = cliques(slot).isPendente() ? " clique..." : "";
+        String ultimo = ultimoCliquePostura.containsKey(slot) ? " [" + ultimoCliquePostura.get(slot) + "]" : "";
+        return ciclo + clique + ultimo;
+    }
+
+    private static String folego(IrmaoMiau x) {
+        String custo = x.getUltimoCustoMotivo().isEmpty() ? ""
+                : String.format(" ult %.2f %s", x.getUltimoCustoFolego(), x.getUltimoCustoMotivo());
+        return String.format("%.1f/%.0f", x.getFolegoAtual(), x.getAtributos().getFolego()) + custo;
+    }
+
+    private static String transicao(IrmaoMiau x) {
+        return x.getTransicaoAtiva() == null ? "-"
+                : x.getTransicaoAtiva().getContrato() + String.format(" %.0f%%", x.getProgressoTransicao() * 100);
     }
 
     private String rotuloSlot(IrmaoMiau x) {
@@ -2515,6 +2590,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      */
     private void configurarAtalhos() {
         atalho("F3", "alternarDebug", () -> setDebugVisivel(!debugVisivel));
+        // Entrega 5K: F6 = compara animacoes de pegada (AUTORAL <-> EXPERIMENTAL), vale na proxima pegada.
+        atalho("F6", "alternarAnimacoesPegada", () -> {
+            com.irmaosmiau.combate.ModoAnimacoesPegada m = com.irmaosmiau.combate.ModoAnimacoesPegada.alternar();
+            feedback.mostrarInfo("ANIMAÇÕES DE PEGADA: " + m + " (na próxima pegada)", tick);
+            repaint();
+        });
         atalho("F4", "proximoCenario", () -> {
             cenario = cenarios.proximo(cenario);
             mostrarPreferencia("Cenário: " + cenario.getNome(),
@@ -2554,6 +2635,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
 
         sessaoTreino.reiniciar();
+        limparPosturasPendentes();
 
         jogadorBranco = sessaoTreino.getJogador();
         jogadorPreto = sessaoTreino.getParceiro();
