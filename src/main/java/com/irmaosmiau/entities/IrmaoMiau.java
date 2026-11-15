@@ -551,7 +551,7 @@ public void iniciarSprawl() {
     // =============================
     private void recuperarCondicionamentoLeve() {
 
-        if (vinculadoEmPegada) {
+        if (vinculadoEmPegada || vinculadoNoSolo) {
             return;                                     // 5O.3
         }
 
@@ -2688,6 +2688,55 @@ public void alternarDeitado() {
         return vinculadoEmPegada;
     }
 
+    /**
+     * 5P: ligado ao outro numa posicao de solo (guarda, cem quilos, montada,
+     * costas...). Marcado pelo MotorSolo; como na pegada (5O.3), nenhuma
+     * recuperacao de folego ou condicionamento enquanto durar.
+     */
+    private boolean vinculadoNoSolo;
+
+    public void setVinculadoNoSolo(boolean vinculado) {
+        this.vinculadoNoSolo = vinculado;
+    }
+
+    public boolean isVinculadoNoSolo() {
+        return vinculadoNoSolo;
+    }
+
+    /**
+     * 5P: o MotorSolo muda a postura (cair, acompanhar, raspar, levantar) sem
+     * cobrar o custo de uma transicao comum; a animacao de transicao de postura
+     * mais proxima e usada para nao "teletransportar" o corpo. Interrompe pulo,
+     * rolamento, sprawl, acrobacia e guarda.
+     */
+    public void aplicarPosturaDoSolo(EstadoCorporal destino) {
+        EstadoCorporal atual = estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
+        rolando = false;
+        fazendoSprawl = false;
+        acrobacia = null;
+        pulando = false;
+        alturaPulo = 0;
+        velocidadePulo = 0;
+        correndo = false;
+        respirando = false;
+        agachado = false;
+        defesa.interromper();
+        if (atual == destino) {
+            return;
+        }
+        TransicaoPostura escolhida = null;
+        for (TransicaoPostura t : TransicaoPostura.values()) {
+            if (t.getOrigem() == atual && t.getDestino() == destino && (escolhida == null || t.isRapida())) {
+                escolhida = t;
+            }
+        }
+        estadoCorporal = destino;
+        cicloSubindo = destino == EstadoCorporal.AJOELHADO && atual == EstadoCorporal.DEITADO;
+        transicaoAtiva = escolhida;
+        ticksTransicao = 0;
+        ultimaAtividade = System.currentTimeMillis();
+    }
+
     /** 5O.2: fase da respiracao (desenho e testes). */
     public double getFaseRespiracao() {
         return faseRespiracao;
@@ -2953,7 +3002,7 @@ protected boolean isRolamentoParaTras() {
 
 private void recuperarFolego() {
 
-    if (vinculadoEmPegada) {
+    if (vinculadoEmPegada || vinculadoNoSolo) {
         return;                                         // 5O.3: aplicando ou sofrendo pegada
     }
 
@@ -2981,7 +3030,7 @@ private void recuperarFolego() {
 
 private void recuperarFolegoRespirando() {
 
-    if (vinculadoEmPegada) {
+    if (vinculadoEmPegada || vinculadoNoSolo) {
         return;                                         // 5O.3: RT na pegada nao recupera (nem cobra)
     }
 
@@ -3014,7 +3063,7 @@ private void recuperarFolegoRespirando() {
 
 private void recuperarCondicionamentoRespirando() {
 
-    if (vinculadoEmPegada) {
+    if (vinculadoEmPegada || vinculadoNoSolo) {
         return;                                         // 5O.3
     }
 

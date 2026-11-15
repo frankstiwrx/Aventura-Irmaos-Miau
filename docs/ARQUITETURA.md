@@ -449,3 +449,12 @@ mesmo cache em imagem do `CenarioDojo`, registrados em `RegistroCenarios.padrao(
 Regras de escala iguais às do Dojo: o chão começa em y = 296 e cada linha de movimentação é uma faixa de 20 px
 centrada nos pés (y = 326 + 20 × linha); nada de primeiro plano acima de y ≈ 412. O campo original e o Dojo
 não foram tocados.
+
+## Quedas e combate de solo (Entrega 5P)
+
+Ver `docs/COMBATE_SOLO.md`. Resumo: `posicional.MotorSolo` é o dono único da relação entre os dois lutadores
+(posição, por cima, controle, técnica em andamento, janela, exposição, estabilidade, aterrissagem) e muda os
+dois juntos; `posicional.CatalogoTecnicasSolo` guarda o repertório como dados; `animacao.AnimadorSolo` desenha
+as posições. O GamePanel só encaminha os comandos (RS / RB + RS / teclas de técnica) quando o lutador está no
+chão ou num um-em-pé-contra-o-solo, e chama `atualizarSolo()` depois das entradas de combate. O vínculo de solo
+(`IrmaoMiau.setVinculadoNoSolo`) usa o mesmo bloqueio de recuperação da 5O.3.

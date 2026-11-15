@@ -1094,3 +1094,12 @@ pegada. Ao acabar a pegada, a recuperação volta pelas regras normais (respira�
 Implementação: o `SistemaCombate` marca `IrmaoMiau.setVinculadoEmPegada` nos dois lutadores no início da
 interação e desmarca no fim (e num combate novo); as quatro funções de recuperação do `IrmaoMiau` param
 enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jogador.
+
+
+# Entrega 5P — Quedas e solo
+
+- **RB/Select + RS** (J1: **4** + 2/6/7/8; J2: **O/SHIFT** + setas) em pé deixou de ser reservado:
+  ↑ empurrão, → queda com a pegada, ↓ entrada nas pernas, ← puxar guarda.
+- No chão, **RS** (J1: 2/6/7/8; J2: setas) e **RB + RS** mudam de técnica conforme a posição e o papel
+  (↑ avançar, ↓ segurar, ←/→ quadril e laterais, RB = explosivo). **RT** segurado = base contra quedas e
+  empurrões. Tabela completa em `docs/COMBATE_SOLO.md`.

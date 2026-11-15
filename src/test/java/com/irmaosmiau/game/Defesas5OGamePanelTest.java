@@ -286,7 +286,8 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
             assertTrue(painel.montarQuadroDpad(SlotJogador.JOGADOR_1).nomeCamada().startsWith("QUEDAS"));
             toque("brancoPegada1");
             assertFalse(s().estaEmInteracao(), "nao pega nem derruba");
-            assertEquals("EM PREPARAÇÃO", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
+            // 5P (pedido): RB + RS deixou de ser reservado (quedas); de joelhos o empurrao e recusado.
+            assertEquals("SÓ EM PÉ", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
             tecla("brancoModProjecao", false);
             tecla("brancoModDefesa", true);
             tecla("brancoModProjecao", true);

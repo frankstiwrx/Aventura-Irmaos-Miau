@@ -471,6 +471,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     )
                     : null;
         }
+        criarMotorSolo();                                        // 5P
 
         // =========================
         // INPUT
@@ -605,6 +606,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 audio.tocarEfeito(AudioJogo.EFEITO_ROMPIMENTO);
             }
             atualizarEntradasCombate();
+            atualizarSolo();                                     // 5P
 
         } else {
 
@@ -854,7 +856,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
-        boolean preso = receptorPreso(jogadorBranco);
+        boolean preso = receptorPreso(jogadorBranco) || presoNoSolo(jogadorBranco);   // 5P
         boolean agachando = !preso && input.isAgachar();
 
         // =========================
@@ -918,7 +920,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         boolean horizontal = input.isEsquerda() ^ input.isDireita();
         // 5N: com o modo controle, cima/baixo (e as diagonais) tambem conduzem a dupla.
         boolean vertical = input.isCima() ^ input.isBaixo();
-        boolean conjunto = (horizontal || vertical)
+        boolean conjunto = (horizontal || vertical) && !preso                   // 5P: entrada em curso
                 && input.isControle()
                 && sistemaCombate != null
                 && sistemaCombate.isInteracaoEstabelecida()
@@ -1003,7 +1005,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         // Entrega 5L: receptor de pegada estabelecida nao anda, nao muda de linha, nao pula,
         // nao rola, nao agacha e nao faz sprawl: forcar so desgasta a firmeza (resistencia).
-        boolean preso = receptorPreso(jogadorPreto);
+        boolean preso = receptorPreso(jogadorPreto) || presoNoSolo(jogadorPreto);   // 5P
         boolean agachando = !preso && input.isPretoAgachar();
 
         // =========================
@@ -1065,7 +1067,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
          */
         boolean horizontal = input.isPretoEsquerda() ^ input.isPretoDireita();
         boolean vertical = input.isPretoCima() ^ input.isPretoBaixo();     // 5N
-        boolean conjunto = (horizontal || vertical)
+        boolean conjunto = (horizontal || vertical) && !preso                   // 5P: entrada em curso
                 && input.isAtiva(SlotJogador.JOGADOR_2, AcaoJogador.MODO_DESLOCAMENTO_CONTROLADO)
                 && sistemaCombate != null
                 && sistemaCombate.isInteracaoEstabelecida()
@@ -1198,6 +1200,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
          *   Classico): vale a do papel real (aplicador desequilibra, receptor
          *   rompe, livre fica com o desequilibrio, que so avisa).
          */
+        pedidosSolo.clear();
         java.util.Map<SlotJogador, java.util.EnumSet<AcaoJogador>> tocadas = new java.util.EnumMap<>(SlotJogador.class);
         for (SlotJogador slot : SlotJogador.values()) {
             java.util.EnumSet<AcaoJogador> doSlot = java.util.EnumSet.noneOf(AcaoJogador.class);
@@ -1214,6 +1217,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             }
             resolverBotaoCompartilhado(slot, doSlot);
             tocadas.put(slot, doSlot);
+            // 5P: no chao (ou um em pe contra o solo) as teclas/direcoes de tecnica vao para o MotorSolo.
+            if (soloConduz(slot)) {
+                for (AcaoJogador a : ACOES_PEGADA) {
+                    if (doSlot.contains(a) && !input.isAtiva(slot, AcaoJogador.MODIFICADOR_PROJECAO)
+                            && !input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA)) {
+                        pedirSolo(slot, direcaoDaAcao(a), false);
+                    }
+                }
+                doSlot.clear();
+            }
         }
         // Entrega 5O: RT/RB + direcao da tecnica = defesas/quedas (nunca pegada); Y + direcao = acrobacia.
         atualizarFamilias(tocadas);
@@ -1232,10 +1245,18 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         // Entrega 5F: D-pad contextual (3 camadas), pelo mesmo caminho das teclas.
         for (SlotJogador slot : SlotJogador.values()) {
+            if (soloConduz(slot)) {
+                // 5P: RS (Contextual ou Classico) no chao = tecnica de solo (camada 1).
+                dispositivos.consumirComandoContextual(slot).filter(p -> p.camada() == CamadaComando.UM)
+                        .ifPresent(p -> pedirSolo(slot, p.direcao(), false));
+                dispositivos.consumirPegadaClassica(slot).ifPresent(d -> pedirSolo(slot, d, false));
+                continue;
+            }
             dispositivos.consumirComandoContextual(slot).ifPresent(p -> executarComandoContextual(slot, p));
             // Entrega 5L: no Classico o RS so escolhe a pegada, e so com o lutador livre.
             dispositivos.consumirPegadaClassica(slot).ifPresent(d -> executarPegadaClassica(slot, d));
         }
+        enviarPedidosSolo();                                      // 5P
     }
 
         // =====================================================
@@ -1282,6 +1303,142 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             }
         }
         return true;
+    }
+
+    // =====================================================
+    // ENTREGA 5P: QUEDAS E COMBATE DE SOLO (MotorSolo)
+    // =====================================================
+    private com.irmaosmiau.posicional.MotorSolo solo;
+    private final java.util.Map<com.irmaosmiau.posicional.Lado, com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo>
+            pedidosSolo = new java.util.EnumMap<>(com.irmaosmiau.posicional.Lado.class);
+
+    /** Motor de solo da partida (dois Miaus). Novo a cada luta e a cada F5 (nenhum vinculo sobra). */
+    private void criarMotorSolo() {
+        if (solo != null) {
+            solo.reiniciar();
+        }
+        solo = sistemaCombate == null ? null
+                : new com.irmaosmiau.posicional.MotorSolo(jogadorBranco, jogadorPreto, sistemaCombate,
+                        LIMITE_ESQUERDO_ARENA, LIMITE_DIREITO_ARENA);
+        animador.setMotorSolo(solo);
+    }
+
+    /** Acesso para testes e HUD. */
+    com.irmaosmiau.posicional.MotorSolo getMotorSolo() {
+        return solo;
+    }
+
+    private static com.irmaosmiau.posicional.Lado lado(SlotJogador s) {
+        return s == SlotJogador.JOGADOR_1 ? com.irmaosmiau.posicional.Lado.A : com.irmaosmiau.posicional.Lado.B;
+    }
+
+    /** O lutador esta ligado numa posicao de solo (nao anda, nao rola, nao muda de postura sozinho). */
+    private boolean presoNoSolo(IrmaoMiau l) {
+        return solo != null && (solo.conectado(l) || comprometidoNaEntrada(l));
+    }
+
+    /**
+     * 5P: quem esta no meio da PROPRIA entrada (queda, pernas, empurrao, puxar
+     * guarda) nao anda nem arrasta: o LS vira so a intencao de acompanhar (e
+     * andar com a pegada nao a rompe no meio da tecnica).
+     */
+    private boolean comprometidoNaEntrada(IrmaoMiau l) {
+        return solo.getTentativa().map(t -> solo.lutador(t.iniciador()) == l
+                && !t.tecnica().origens().stream().anyMatch(com.irmaosmiau.posicional.Posicao::isNoChao)).orElse(false);
+    }
+
+    /** O motor de solo recebe os comandos de tecnica deste slot agora. */
+    private boolean soloConduz(SlotJogador slot) {
+        return solo != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+                && solo.conduzComandos(slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto);
+    }
+
+    private void pedirSolo(SlotJogador slot, com.irmaosmiau.controles.DirecaoTecnica d, boolean explosivo) {
+        if (solo == null || d == null || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+            return;
+        }
+        pedidosSolo.putIfAbsent(lado(slot), new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
+                com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), explosivo));
+    }
+
+    /** Os comandos dos dois do MESMO tick vao juntos (o motor decide a prioridade). */
+    private void enviarPedidosSolo() {
+        if (solo == null || pedidosSolo.isEmpty()) {
+            return;
+        }
+        java.util.Map<com.irmaosmiau.posicional.Lado, com.irmaosmiau.posicional.MotorSolo.Resposta> r =
+                solo.comandos(new java.util.EnumMap<>(pedidosSolo));
+        pedidosSolo.clear();
+        r.forEach((l, resp) -> {
+            String sigla = l == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
+            String nome = resp.tecnica() == null ? "" : resp.tecnica().nome().toUpperCase(java.util.Locale.ROOT) + " · ";
+            String txt = switch (resp.resultado()) {
+                case INICIADA -> nome + "ENTRANDO";
+                case CONTRA -> nome + "CONTRA!";
+                case CONCLUIDA -> nome.isEmpty() ? resp.motivo() : nome + "OK";
+                case ABANDONADA -> "ABANDONOU A TÉCNICA";
+                case RECUSADA -> nome + resp.motivo();
+            };
+            ultimoMotivoFamilia.put(l == com.irmaosmiau.posicional.Lado.A ? SlotJogador.JOGADOR_1
+                    : SlotJogador.JOGADOR_2, resp.aceito() ? "-" : resp.motivo());
+            feedback.mostrarInfo(sigla + ": " + txt, tick);
+        });
+    }
+
+    private com.irmaosmiau.posicional.MotorSolo.Intencao intencao(SlotJogador s) {
+        if (modoTreino && s == SlotJogador.JOGADOR_2) {
+            return com.irmaosmiau.posicional.MotorSolo.Intencao.NENHUMA;
+        }
+        int dx = (input.isAtiva(s, AcaoJogador.MOVER_DIREITA) ? 1 : 0)
+                - (input.isAtiva(s, AcaoJogador.MOVER_ESQUERDA) ? 1 : 0);
+        int dy = (input.isAtiva(s, AcaoJogador.MOVER_BAIXO) ? 1 : 0)
+                - (input.isAtiva(s, AcaoJogador.MOVER_CIMA) ? 1 : 0);
+        return new com.irmaosmiau.posicional.MotorSolo.Intencao(dx, dy,
+                input.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA));           // RT = base
+    }
+
+    /** Um tick do motor de solo (depois das entradas): janelas, quedas, encaixe e orientacao. */
+    private void atualizarSolo() {
+        if (solo == null) {
+            return;
+        }
+        com.irmaosmiau.posicional.MotorSolo.Intencao ia = intencao(SlotJogador.JOGADOR_1);
+        com.irmaosmiau.posicional.MotorSolo.Intencao ib = intencao(SlotJogador.JOGADOR_2);
+        com.irmaosmiau.posicional.MotorSolo.Evento antes = solo.getUltimoEvento();
+        solo.informarIntencoes(ia, ib);
+        solo.atualizar(ia, ib);
+        com.irmaosmiau.posicional.MotorSolo.Evento ev = solo.getUltimoEvento();
+        if (ev != null && ev != antes && !ev.tipo().equals("INICIOU") && !ev.tipo().equals("AJUSTE")) {
+            String sigla = ev.lado() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
+            feedback.mostrarInfo(sigla + ": " + ev.tipo() + " · " + solo.getCatalogo().buscar(ev.tecnica())
+                    .map(t -> t.nome().toUpperCase(java.util.Locale.ROOT)).orElse(ev.tecnica())
+                    + (ev.detalhe().isEmpty() ? "" : " (" + ev.detalhe() + ")"), tick);
+        }
+        for (IrmaoMiau l : List.of(jogadorBranco, jogadorPreto)) {
+            solo.orientacao(l).ifPresent(l::setViradoParaDireita);
+            manterNaArena(l);
+        }
+    }
+
+    /** 5P: cruz de comandos do solo (o que cada direcao faz AGORA, deste lado). */
+    PainelDpadContextual.Quadro quadroSolo(SlotJogador slot, boolean explosivo) {
+        com.irmaosmiau.posicional.Lado l = lado(slot);
+        com.irmaosmiau.posicional.EstadoPosicional e = solo.getEstado();
+        java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m =
+                new java.util.EnumMap<>(com.irmaosmiau.controles.DirecaoTecnica.class);
+        for (com.irmaosmiau.controles.DirecaoTecnica d : com.irmaosmiau.controles.DirecaoTecnica.values()) {
+            java.util.Optional<com.irmaosmiau.posicional.TecnicaSolo> t = solo.getCatalogo().para(e, l,
+                    new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
+                            com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), explosivo));
+            if (t.isPresent()) {
+                m.put(d, new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
+                        CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null,
+                        solo.motivoSem(l, t.get()) == null));
+            }
+        }
+        String nome = (explosivo ? (e.getPosicao().isNoChao() ? "RB · " : "QUEDAS (RB) · ") : "")
+                + e.getPosicao().getNome().toUpperCase(java.util.Locale.ROOT) + " · " + solo.papel(l);
+        return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, nome, m);
     }
 
     /** As quatro teclas/botoes de pegada como direcoes da tecnica (mesma ordem do RS). */
@@ -1345,10 +1502,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             com.irmaosmiau.controles.DirecaoTecnica nova = pad.filter(e -> e.familia() == fam)
                     .map(com.irmaosmiau.controles.FamiliaTecnica.Escolha::direcao).orElse(teclaNova);
             if (fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS) {
-                atualizarDefesas(slot, ator, outro, segurada, nova);
+                if (presoNoSolo(ator)) {
+                    ator.getDefesa().soltar();                     // 5P: ligado no solo nao ha guarda em pe
+                } else {
+                    atualizarDefesas(slot, ator, outro, segurada, nova);
+                }
             } else {
                 ator.getDefesa().soltar();
-                if (nova != null) {
+                if (nova != null && solo != null) {
+                    pedirSolo(slot, nova, true);                   // 5P: RB + RS = quedas / explosivo no chao
+                } else if (nova != null) {
                     String m = com.irmaosmiau.combate.ResolvedorFamilias.resolver(fam, nova, ator, outro,
                             sistemaCombate).motivo();
                     ultimoMotivoFamilia.put(slot, m);
@@ -1553,6 +1716,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      */
     PainelDpadContextual.Quadro montarQuadroDpad(SlotJogador slot) {
         // 5O: com RT/RB (ou 3/4, INSERT/HOME) segurado, a cruz mostra a FAMILIA (qualquer esquema).
+        if (soloConduz(slot)) {
+            return quadroSolo(slot, familiaDo(slot) == com.irmaosmiau.controles.FamiliaTecnica.PROJECOES);   // 5P
+        }
+        if (solo != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+                && familiaDo(slot) == com.irmaosmiau.controles.FamiliaTecnica.PROJECOES) {
+            return quadroSolo(slot, true);                                         // 5P: quedas em pe
+        }
         if (sistemaCombate != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
                 && familiaDo(slot) != com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
             return quadroDaFamilia(slot, familiaDo(slot));
@@ -2254,6 +2424,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             return;
         }
         boolean duplo = e == com.irmaosmiau.controles.ReconhecedorCliqueDuplo.Evento.DUPLO;
+        if (presoNoSolo(lutador)) {
+            feedback.mostrarInfo(slot.getSigla() + ": POSTURA · LIGADO NO SOLO (use as técnicas)", tick);
+            return;                                          // 5P: no solo a postura e do MotorSolo
+        }
         ultimoCliquePostura.put(slot, duplo ? "duplo" : "simples");
         if (sistemaCombate != null && sistemaCombate.estaEmInteracao()
                 && (sistemaCombate.getAplicadorInteracao() == lutador
@@ -3042,7 +3216,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         l.add((efeitos.length() == 0 ? "CONSEQUENCIA: -" : "CONSEQUENCIA: " + efeitos.toString().trim())
                 + " | " + diagnosticoRb() + " | RECUSA J1 " + ultimoMotivoFamilia(SlotJogador.JOGADOR_1)
                 + " J2 " + ultimoMotivoFamilia(SlotJogador.JOGADOR_2));
-        l.add("TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto)
+        l.add((solo == null ? "" : solo.resumo() + " | ")                         // 5P
+                + "TRANSICAO J1: " + transicao(jogadorBranco) + " | J2: " + transicao(jogadorPreto)
                 + " | DEFESA J1: " + defesaDe(jogadorBranco) + " J2: " + defesaDe(jogadorPreto));
         // Entrega 5L: tipo de pegada, defesa e encerramento.
         String tecnica = sistemaCombate.estaEmInteracao()
@@ -3208,6 +3383,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         jogadorBranco = sessaoTreino.getJogador();
         jogadorPreto = sessaoTreino.getParceiro();
         sistemaCombate = sessaoTreino.getSistema();
+        criarMotorSolo();                                        // 5P: F5 limpa todos os vinculos
         brancoViradoDireita = jogadorBranco.isViradoParaDireita();
         pretoViradoDireita = jogadorPreto.isViradoParaDireita();
 

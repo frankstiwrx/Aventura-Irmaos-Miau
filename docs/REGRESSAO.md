@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 918, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 947, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -413,3 +413,13 @@ Gamepad (Xbox):
 - [ ] A seleção de partida/treino e CONFIGURAÇÕES listam os 4 mapas; o F4 passa pelos quatro
 - [ ] Campo aberto remasterizado e Arena do Grande Torneio: pés nas faixas do chão nas 5 linhas, bordas da arena
 - [ ] Campo original e Dojo iguais aos de antes
+
+### Quedas e solo (Entrega 5P)
+- [ ] J1 agarra e derruba (RB + →) segurando o LS para o J2: aterrissa por cima; sem o LS: fica em pé
+- [ ] J2 reverte a queda com RB + → na janela; J2 com RT segurado faz base (os dois em pé)
+- [ ] Entrada nas pernas (RB + ↓) parada pelo sprawl (RT + ↓); com base sem sprawl: solo disputado
+- [ ] Puxar guarda (RB + ←); recuar com o LS recusa a guarda
+- [ ] Ao cair: ↑ fecha a guarda, ←/→ pega a meia, nada = cem quilos
+- [ ] Guarda: abrir → raspagem na janela; passar → cem quilos → montar → escape de quadril na janela
+- [ ] Montada: estabilizar segura a upa; montada alta deixa a upa entrar; costas → girar
+- [ ] Ligados no solo ninguém anda/rola/muda de postura; F5 e luta nova soltam tudo; F3 mostra a linha SOLO

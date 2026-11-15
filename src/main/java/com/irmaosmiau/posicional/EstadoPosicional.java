@@ -28,7 +28,7 @@ public final class EstadoPosicional {
         if (posicao == null) {
             throw new IllegalArgumentException("A posicao e obrigatoria.");
         }
-        if (posicao.isNoChao() && porCima == null) {
+        if (posicao.exigeAlguemPorCima() && porCima == null) {
             throw new IllegalArgumentException("No chao alguem precisa estar por cima: " + posicao);
         }
         if (!posicao.isNoChao() && porCima != null) {

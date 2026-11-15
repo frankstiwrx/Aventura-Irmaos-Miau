@@ -61,6 +61,18 @@ public final class AnimadorPartida {
     private final ReacoesDefesa reacoes = new ReacoesDefesa(transicoes, camada::snapshotReceptor);
     // 5O: guardas, acrobacias e as versoes experimentais do sprawl e do rolamento (F7).
     private final AnimadorMovimentos movimentos = new AnimadorMovimentos(BibliotecaMovimentos.padrao(), transicoes);
+    /** 5P: posicoes de solo (procedural, comandado pelo MotorSolo). */
+    private final AnimadorSolo solo = new AnimadorSolo(transicoes);
+    private com.irmaosmiau.posicional.MotorSolo motorSolo;
+
+    /** 5P: o motor de solo da partida (null = sem combate de solo). */
+    public void setMotorSolo(com.irmaosmiau.posicional.MotorSolo m) {
+        this.motorSolo = m;
+    }
+
+    public AnimadorSolo getSolo() {
+        return solo;
+    }
     // Entrega 5L: fuga de quadril: quadro pela distancia andada e sentido (frente/tras).
     private final Map<IrmaoMiau, double[]> trilhaChao = new IdentityHashMap<>();
     /** Pixels andados por quadro da fuga de quadril. */
@@ -112,6 +124,18 @@ public final class AnimadorPartida {
             return;
         }
         transicoes.liberar(l);
+        // 5P: ligado no solo, a posicao relacional desenha (os dois, coerentes com o motor).
+        if (solo.quer(l, motorSolo)) {
+            liberar(l);
+            movimentos.liberar(l);
+            String sd = solo.aplicar(l, motorSolo);
+            if (sd != null) {
+                origens.put(l, new OrigemVisual(FonteAnimacao.PROCEDURAL, sd, -1, estado));
+                return;
+            }
+        } else {
+            solo.liberar(l);
+        }
         // Entrega 5L: reacao defensiva (fora da pegada; o combate tem prioridade).
         boolean naPegada = sistema != null && sistema.estaEmInteracao()
                 && (sistema.getAplicadorInteracao() == l || sistema.getReceptorInteracao() == l);
