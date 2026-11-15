@@ -34,11 +34,15 @@ public final class SistemaCombate {
     private AnimacaoCombateAtiva animacaoCombateAtiva;
     // Entrega 5L: ultimo evento defensivo confirmado e resistencia do receptor neste tick.
     private EventoDefesa ultimoEventoDefesa;
+    // Entrega 5L.1: tentativas fracassadas seguidas (mesmo lutador, mesmo tipo de disputa).
+    private IrmaoMiau insistente;
+    private String tipoInsistencia;
+    private int insistencia;
     private long sequenciaEventos;
     private boolean resistiuNesteTick;
     private long ticksResistindo;
     /** Desgaste extra da firmeza quando o receptor forca para sair (por tick). */
-    public static final double DESGASTE_RESISTENCIA_POR_TICK = 0.12;
+    public static final double DESGASTE_RESISTENCIA_POR_TICK = 0.08;   // 5L.1: 0,12 -> 0,08
     // Entrega 5J: variante (molde + papel) da animacao conjunta em uso.
     private SelecaoAnimacaoConjunta selecaoAnimacao;
     private final RegistroAnimacoesCombate registroAnimacoes;
@@ -58,10 +62,21 @@ public final class SistemaCombate {
     // =====================================================
     // ACOES TECNICAS DURANTE A PEGADA (Entrega 5A)
     // =====================================================
-    /** Folego do aplicador para tentar o desequilibrio. */
-    public static final double CUSTO_DESEQUILIBRIO = 4.0;
-    /** Folego do receptor para tentar o rompimento tecnico (pago com ou sem sucesso). */
-    public static final double CUSTO_ROMPIMENTO_TECNICO = 3.0;
+    // Entrega 5L.1 (balanceamento): valores ANTES -> DEPOIS em docs/CONTROLES.md.
+    /** Folego do aplicador para tentar o desequilibrio (5L.1: 4 -> 3). */
+    public static final double CUSTO_DESEQUILIBRIO = 3.0;
+    /** Folego do receptor para tentar o rompimento tecnico, pago com ou sem sucesso (5L.1: 3 -> 2,5). */
+    public static final double CUSTO_ROMPIMENTO_TECNICO = 2.5;
+    /**
+     * Entrega 5L.1: insistencia. A disputa e deterministica; sem isto, quem
+     * perde uma vez perde sempre nas mesmas condicoes (ex.: o Preto oficial
+     * nunca desequilibrava o Branco). Cada tentativa FRACASSADA da mesma acao,
+     * na mesma pegada, soma este bonus ao proximo ataque (ate o maximo); zera
+     * no sucesso e quando a pegada acaba. Cada tentativa continua custando
+     * folego e recarga: insistir e possivel, mas tem preco.
+     */
+    public static final double BONUS_INSISTENCIA = 0.08;
+    public static final int MAX_INSISTENCIA = 4;
     /*
      * Entrega 5B: resistir PASSIVAMENTE nao custa nada (antes: 1 de folego).
      * Evita drenar o adversario so repetindo tentativas contra quem nao agiu.
@@ -76,14 +91,14 @@ public final class SistemaCombate {
     // =====================================================
     /** Firmeza de uma pegada recem-estabelecida (0..100). */
     public static final double FIRMEZA_INICIAL = 100.0;
-    /** Desgaste por tick depois da entrada: 100 -> 0 em 1000 ticks (~16,7 s a 60 tps). */
-    public static final double DESGASTE_FIRMEZA_POR_TICK = 0.10;
+    /** Desgaste por tick depois da entrada (5L.1: 0,10 -> 0,06): 100 -> 0 em ~27 s. */
+    public static final double DESGASTE_FIRMEZA_POR_TICK = 0.06;
     /** Desgaste extra nos ticks com deslocamento conjunto (total 0,25/tick: ~6,7 s). */
     public static final double DESGASTE_EXTRA_DESLOCAMENTO_POR_TICK = 0.15;
     /** Firmeza recuperada por um reforco (limitada a 100). */
-    public static final double REFORCO_FIRMEZA = 25.0;
+    public static final double REFORCO_FIRMEZA = 30.0;   // 5L.1: 25 -> 30
     /** Folego do aplicador por reforco. */
-    public static final double CUSTO_REFORCO = 3.0;
+    public static final double CUSTO_REFORCO = 2.0;   // 5L.1: 3 -> 2
     /** Recarga entre reforcos (~1 s), separada da recarga das acoes de disputa. */
     public static final int RECARGA_REFORCO_TICKS = 60;
     /** Abaixo disso o HUD avisa "controle enfraquecendo". */
@@ -494,6 +509,8 @@ public final class SistemaCombate {
 
     private void encerrarInteracao(MotivoEncerramentoInteracao motivo) {
 
+        insistencia = 0;                 // 5L.1: a insistencia vale so dentro da mesma pegada
+        insistente = null;
         if (estaEmInteracao()) {
             ultimoMotivoEncerramento = motivo;
         }
@@ -666,6 +683,11 @@ public final class SistemaCombate {
         return true;
     }
 
+    /** Entrega 5L.1: tentativas fracassadas seguidas do lutador (0 = nenhuma). */
+    public int getInsistencia(IrmaoMiau lutador) {
+        return lutador == insistente ? insistencia : 0;
+    }
+
     /** Ticks seguidos em que o receptor forcou (0 = nao esta forcando). */
     public long getTicksResistindo() {
         return estaEmInteracao() ? ticksResistindo : 0;
@@ -707,7 +729,19 @@ public final class SistemaCombate {
 
     private ResultadoDisputa disputar(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor, double custo,
             double firmezaDaDisputa) {
-        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor, firmezaDaDisputa);
+        String chave = tipo.name();
+        int falhas = atacante == insistente && chave.equals(tipoInsistencia) ? insistencia : 0;
+        ultimaDisputa = ResolvedorDisputa.resolver(tipo, atacante, defensor, firmezaDaDisputa,
+                1.0 + BONUS_INSISTENCIA * falhas);
+        // Entrega 5L.1: falhou = a proxima tentativa igual vem com mais pressao; acertou = zera.
+        if (ultimaDisputa.isSucessoDoAtaque()) {
+            insistencia = 0;
+            insistente = null;
+        } else {
+            insistente = atacante;
+            tipoInsistencia = chave;
+            insistencia = Math.min(MAX_INSISTENCIA, falhas + 1);
+        }
         atacante.consumirFolegoCombate(custo);
         recargaAte.put(atacante, tick + RECARGA_ACAO_TECNICA_TICKS);
         return ultimaDisputa;

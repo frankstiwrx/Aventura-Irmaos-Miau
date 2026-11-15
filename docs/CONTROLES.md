@@ -840,3 +840,46 @@ pegada e aparece "EVITADA". Depois do contato (entrada ou pegada estabelecida) n
   continuam os botões. LT, LB e LT+LB continuam reservados. D-pad no Contextual = as mesmas 4 pegadas.
   Teclado: as novas teclas são remapeáveis em CONTROLES.
 - Pegadas simultâneas: continua valendo a do J1 (regra 5I, agora para as quatro).
+
+---
+
+# Entrega 5L.1 — HUD do J2 e balanceamento
+
+## HUD de comandos do J2
+
+A cruz de comandos (RS) do J2 aparece no lado direito também quando o J2 está no **teclado**, com o mesmo
+desenho, as mesmas setas, o mesmo "RS" e os mesmos nomes do J1 (livre: PEGAR / CRUZADA / MANGAS / NUCA;
+na pegada: REFORÇO / DESEQ. / ROMPER pelo papel). Nada muda no J1, no Clássico nem no treino. A entrada
+não mudou: o J2 continua podendo usar um gamepad.
+
+## Balanceamento (valores em `SistemaCombate`)
+
+| Parâmetro | Antes (5L) | Depois (5L.1) |
+|---|---|---|
+| Custo de iniciar pegada | 3 / 3,5 / 2,5 / 4 | igual |
+| Custo de reforçar | 3 | **2** |
+| Ganho do reforço | +25 | **+30** (recarga 60 ticks, igual) |
+| Custo de desequilibrar | 4 | **3** |
+| Custo de romper | 3 | **2,5** |
+| Desgaste natural da firmeza | 0,10/tick (~16,7 s) | **0,06/tick (~27 s)** |
+| Desgaste extra do receptor forçando | 0,12/tick | **0,08/tick** (forçando sem parar: ~12 s) |
+| Insistência (novo) | — | **+8% no ataque por tentativa fracassada seguida** da mesma ação, na mesma pegada, até +32%; zera no sucesso e no fim da pegada |
+| Recuperação de fôlego | ~1,1/s parado | igual |
+| Fórmula da disputa, atributos, especialidades | — | iguais |
+
+**Causa da dificuldade:** a disputa é determinística. Com os oficiais, o Preto **nunca** desequilibrava o
+Branco (em nenhuma firmeza) e só rompia a pegada do Branco com firmeza abaixo de ~40; repetir a tentativa dava
+sempre o mesmo resultado. A insistência resolve a causa sem sorteio: quem perde uma vez consegue em poucas
+tentativas (cada uma custa fôlego e recarga), e ninguém rompe ou desequilibra "de graça" na primeira se for
+mais fraco naquilo. O Branco continua desequilibrando o Preto de primeira (diferença de atributos mantida).
+
+## Proposta: arrasto multidirecional (próxima entrega; nada mudou agora)
+
+- Hoje: 5 linhas de profundidade (`IrmaoMiau.moverVertical`, `ESPACO_ENTRE_LINHAS`). A pegada acaba ao
+  mudar de linha porque a política compara o Y com o retrato do estabelecimento (MOVIMENTO) e limita a
+  diferença de linhas (LINHAS). `SistemaCombate.deslocarPegadaControlada` só move X (os dois o mesmo dx) e
+  translada os retratos só em X (`EstadoCorporalObservado.transladado(dx)`).
+- Menor mudança segura: `deslocarPegadaControlada(aplicador, dx, dy)` movendo os dois pelo mesmo passo de
+  linha (mesma regra de borda de linha 1..5 para os dois, senão nada se move), `transladado(dx, dy)` nos
+  retratos, a mesma velocidade lenta e o mesmo custo por distância (incluindo |dy|). A `CamadaPoseCombate`
+  já avança os passos pela distância: basta somar |Δy|. Diagonal = dx e dy no mesmo tick.

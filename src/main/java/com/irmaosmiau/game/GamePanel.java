@@ -1205,9 +1205,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         };
     }
 
-    /** Entrega 5F: cruz do D-pad do slot (null se o slot nao usa o contextual agora). */
+    /**
+     * Entrega 5F: cruz do D-pad do slot (null se o slot nao usa o contextual agora).
+     * Entrega 5L.1: o J2 no TECLADO tambem ve a cruz, com o mesmo desenho, setas e
+     * "RS" do J1 (os comandos sao os mesmos por papel). O J1 e o Classico nao mudam.
+     */
     PainelDpadContextual.Quadro montarQuadroDpad(SlotJogador slot) {
-        if (sistemaCombate == null || !dispositivos.usaContextualAgora(slot)
+        boolean j2NoTeclado = slot == SlotJogador.JOGADOR_2 && !dispositivos.usaGamepadAgora(slot);
+        if (sistemaCombate == null || !(dispositivos.usaContextualAgora(slot) || j2NoTeclado)
                 || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
             return null;
         }

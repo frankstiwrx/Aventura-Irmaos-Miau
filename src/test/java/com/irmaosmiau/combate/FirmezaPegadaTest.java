@@ -38,7 +38,8 @@ class FirmezaPegadaTest {
         double fp = s.preto.getFolegoAtual();
 
         assertEquals(ResultadoAcaoTecnica.RESISTIDO, s.sistema.tentarDesequilibrio(s.branco));
-        assertEquals(fb - 4.0, s.branco.getFolegoAtual(), 1e-9, "T custa 4");
+        assertEquals(fb - SistemaCombate.CUSTO_DESEQUILIBRIO, s.branco.getFolegoAtual(), 1e-9,
+                "T custa o custo do desequilibrio (5L.1: 4 -> 3)");
         assertEquals(fp, s.preto.getFolegoAtual(), 1e-9, "resistir passivamente nao custa");
 
         // U com os oficiais: o Branco (firmeza 100) resiste sem pagar nada.
@@ -47,7 +48,8 @@ class FirmezaPegadaTest {
         double ob = o.branco.getFolegoAtual();
         double op = o.preto.getFolegoAtual();
         assertEquals(ResultadoAcaoTecnica.RESISTIDO, o.sistema.tentarRompimentoTecnico(o.preto));
-        assertEquals(op - 3.0, o.preto.getFolegoAtual(), 1e-9, "U custa 3");
+        assertEquals(op - SistemaCombate.CUSTO_ROMPIMENTO_TECNICO, o.preto.getFolegoAtual(), 1e-9,
+                "U custa o custo do rompimento (5L.1: 3 -> 2,5)");
         assertEquals(ob, o.branco.getFolegoAtual(), 1e-9, "aplicador resiste sem custo");
     }
 
@@ -91,7 +93,8 @@ class FirmezaPegadaTest {
             s.ticks(1);
             ticks++;
         }
-        assertEquals(1000, ticks, 1, "~1000 ticks (~16,7 s) sem reforco");
+        // 5L.1 (pedido): desgaste 0,10 -> 0,06 por tick (antes ~1000 ticks).
+        assertEquals(1667, ticks, 1, "~1667 ticks (~27 s) sem reforco");
         assertEquals(MotivoEncerramentoInteracao.SEM_CONTROLE, s.sistema.getUltimoMotivoEncerramento());
         assertEquals(0.0, s.sistema.getFirmeza());
         assertFalse(s.branco.isPoseCombateExternaAtiva());
@@ -167,7 +170,7 @@ class FirmezaPegadaTest {
         assertEquals(ResultadoAcaoTecnica.RESISTIDO, s.sistema.tentarRompimentoTecnico(s.preto));
 
         // Parado, o Branco tambem recupera o folego (25/25): precisa de firmeza ~30.
-        s.ticks(700);
+        s.ticks(1100);                    // 5L.1 (pedido): desgaste mais lento (antes 700 ticks)
         assertTrue(s.sistema.getFirmeza() < 35);
         assertEquals(ResultadoAcaoTecnica.SUCESSO, s.sistema.tentarRompimentoTecnico(s.preto),
                 String.valueOf(s.sistema.getUltimaDisputa()));
@@ -184,7 +187,7 @@ class FirmezaPegadaTest {
         assertEquals(ResultadoAcaoTecnica.SEM_EFEITO, s.sistema.tentarReforcarPegada(s.branco),
                 "com 100% nao cobra nada");
 
-        s.ticks(400);                     // firmeza 60
+        s.ticks(700);                     // firmeza ~58 (5L.1: desgaste mais lento; antes 400 ticks)
         double f = s.sistema.getFirmeza();
         double folego = s.branco.getFolegoAtual();
 

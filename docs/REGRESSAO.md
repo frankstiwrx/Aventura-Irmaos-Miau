@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 688, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 699, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -311,6 +311,13 @@ Gamepad (Xbox):
 - [ ] As 4 pegadas com Branco e Preto aplicando, dos dois lados, Branco×Branco e Preto×Preto, em pé e de joelhos
 - [ ] Deitado rastejando: fuga de quadril (joelhos dobram, quadril sai); parar volta ao deitado; F6 volta ao movimento antigo
 - [ ] F6: PEGADA_1 autoral ↔ proposta; o jogo abre na proposta
+
+### HUD do J2 e balanceamento (Entrega 5L.1)
+
+- [ ] J1 no Xbox e J2 no teclado: cruz "J2 · RS" à direita com PEGAR/CRUZADA/MANGAS/NUCA; na pegada, as ações do papel
+- [ ] Preto aplicando no Branco: desequilibrar funciona em poucas tentativas (antes nunca)
+- [ ] Preto receptor do Branco: romper funciona em poucas tentativas, não na primeira
+- [ ] Pegada parada dura ~27 s; reforço dá +30 por 2 de fôlego; o fôlego sobra para testar as técnicas
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

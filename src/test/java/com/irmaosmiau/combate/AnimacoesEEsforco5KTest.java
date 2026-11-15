@@ -337,9 +337,10 @@ class AnimacoesEEsforco5KTest {
 
     @Test
     void custosDeCombateExistentesPreservados() {
-        assertEquals(3.0, SistemaCombate.CUSTO_REFORCO);
-        assertEquals(4.0, SistemaCombate.CUSTO_DESEQUILIBRIO);
-        assertEquals(3.0, SistemaCombate.CUSTO_ROMPIMENTO_TECNICO);
+        // 5L.1 (pedido): balanceamento 3/4/3 -> 2/3/2,5.
+        assertEquals(2.0, SistemaCombate.CUSTO_REFORCO);
+        assertEquals(3.0, SistemaCombate.CUSTO_DESEQUILIBRIO);
+        assertEquals(2.5, SistemaCombate.CUSTO_ROMPIMENTO_TECNICO);
         IrmaoMiau apl = b(440);
         IrmaoMiau rec = p(500);
         SistemaCombate s = pegada(apl, rec);

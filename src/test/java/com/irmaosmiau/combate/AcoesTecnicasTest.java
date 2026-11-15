@@ -161,10 +161,12 @@ class AcoesTecnicasTest {
     void semFolegoNaoCobraNemDisputa() {
         SimuladorLuta s = new SimuladorLuta();
         s.estabelecerPegada1();
-        s.branco.consumirFolegoCombate(s.branco.getFolegoAtual() - 3.0);
+        // 5L.1 (pedido): o custo caiu de 4 para 3; o teste continua com folego abaixo do custo.
+        double abaixo = SistemaCombate.CUSTO_DESEQUILIBRIO - 1.0;
+        s.branco.consumirFolegoCombate(s.branco.getFolegoAtual() - abaixo);
 
         assertEquals(ResultadoAcaoTecnica.SEM_FOLEGO, s.sistema.tentarDesequilibrio(s.branco));
-        assertEquals(3.0, s.branco.getFolegoAtual(), 1e-9);
+        assertEquals(abaixo, s.branco.getFolegoAtual(), 1e-9);
         assertNull(s.sistema.getUltimaDisputa());
         assertEquals(0, s.sistema.getRecargaRestante(s.branco), "sem fôlego nao inicia recarga");
     }

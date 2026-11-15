@@ -157,7 +157,7 @@ class ControlesGamePanelTest {
             assertEquals(TipoDisputa.DESEQUILIBRIO, sistema().getUltimaDisputa().getTipo());
             assertTrue(painel.getLutador2().getEfeitos().isAtivo(EfeitosTemporarios.Tipo.DESEQUILIBRIO));
 
-            ticks(200);
+            ticks(500);                                    // 5L.1: desgaste mais lento (antes 200)
             double antes = sistema().getFirmeza();
             toqueFisico("E");
             assertEquals("PEGADA REFORÇADA", painel.montarEstadoHud().getMensagem());

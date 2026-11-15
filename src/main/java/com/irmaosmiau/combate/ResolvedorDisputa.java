@@ -47,6 +47,18 @@ public final class ResolvedorDisputa {
     }
 
     /** Entrega 5B: com a firmeza atual da pegada (0..100). */
+    /** Entrega 5L.1: com um multiplicador do ataque (insistencia; 1,0 = como antes). */
+    public static ResultadoDisputa resolver(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor,
+            double firmeza, double multiplicadorAtaque) {
+        ResultadoDisputa r = resolver(tipo, atacante, defensor, firmeza);
+        if (multiplicadorAtaque == 1.0) {
+            return r;
+        }
+        double ataque = r.getPontuacaoAtaque() * multiplicadorAtaque;
+        return new ResultadoDisputa(tipo, ataque, r.getPontuacaoDefesa(),
+                ataque > r.getPontuacaoDefesa() + TOLERANCIA_EMPATE);
+    }
+
     public static ResultadoDisputa resolver(TipoDisputa tipo, IrmaoMiau atacante, IrmaoMiau defensor,
             double firmeza) {
         return resolver(tipo,

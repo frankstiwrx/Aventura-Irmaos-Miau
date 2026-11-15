@@ -222,9 +222,9 @@ class ControlePegadaGamePanelTest {
         naEdt(() -> {
             painel = novo(false);
             estabelecerPegada();
-            ticks(705);                                    // cruza 30%
+            ticks(1170);                                   // cruza 30% (5L.1: desgaste mais lento; antes 705)
             assertEquals("CONTROLE ENFRAQUECENDO", painel.montarEstadoHud().getMensagem());
-            for (int i = 0; i < 400 && painel.getSistemaCombate().estaEmInteracao(); i++) {
+            for (int i = 0; i < 600 && painel.getSistemaCombate().estaEmInteracao(); i++) {
                 ticks(1);                                  // ate a firmeza chegar a 0
             }
             assertFalse(painel.getSistemaCombate().estaEmInteracao());
