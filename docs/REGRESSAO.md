@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 737, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 740, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -328,6 +328,7 @@ Gamepad (Xbox):
 - [ ] JOGAR → grade: J1 (azul, WASD + ESPAÇO/H, Q cancela) e J2 (vermelho, setas + ENTER/END, BACKSPACE) ao mesmo tempo
 - [ ] Com gamepads associados (Configurações → dispositivos), cada controle move o seu cursor
 - [ ] Espaços com cadeado: "BLOQUEADO", não confirmam e não revelam nada
+- [ ] Rostos finos em todas as telas (5M.1): bigodinho em traço fino, nunca "bolinhas"
 - [ ] Prévia, "MIAU BRANCO"/"MIAU PRETO", "Estilo: Jiu-Jitsu" e barras de atributos reais; perfis salvos aparecem como "< Perfil >"
 - [ ] Mesmo personagem nos dois lados funciona
 - [ ] J1 pronto: MAPA (Dojo/Original) e TEMPO (SEM LIMITE/60/90/180); DIFICULDADE "EM BREVE" e pulada; LUTAR espera o J2

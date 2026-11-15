@@ -175,6 +175,9 @@ public final class ArteMenus {
      */
     public static void desenharLutador(Graphics2D g0, IrmaoMiau l) {
         Graphics2D g = (Graphics2D) g0.create();
+        // 5M.1: no desenho "em pe" (idle dos menus) a boca usa o traco herdado de quem chama.
+        // Sem isto, o contorno do letreiro (6 px) ou dos cursores engrossava o bigodinho.
+        g.setStroke(tracoDoRosto(l.getEscala()));
         if (!l.isViradoParaDireita()) {
             double eixo = l.getX() + 35 * l.getEscala();
             g.translate(eixo, 0);
@@ -183,6 +186,14 @@ public final class ArteMenus {
         }
         l.desenhar(g);
         g.dispose();
+    }
+
+    /**
+     * Mesmo traco que o rig oficial usa na cabeca (IrmaoMiauBranco/Preto e
+     * MiauStudio): max(1, 1.5 * escala), pontas arredondadas.
+     */
+    static BasicStroke tracoDoRosto(double escala) {
+        return new BasicStroke((float) Math.max(1.0, 1.5 * escala), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
     }
 
     /** Sombra eliptica no chao embaixo do lutador. */
