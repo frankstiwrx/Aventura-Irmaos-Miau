@@ -54,6 +54,9 @@ public final class ControladorAnimacoes {
         if (lutador.isDeitado()) {
             return lutador.estaAndando() ? EstadoVisual.MOVIMENTO_CHAO : EstadoVisual.DEITADO;
         }
+        if (lutador.isAjoelhado()) {
+            return lutador.estaAndando() ? EstadoVisual.AJOELHADO_MOVIMENTO : EstadoVisual.AJOELHADO;
+        }
         if (lutador.isPulando()) {
             return EstadoVisual.PULO;
         }

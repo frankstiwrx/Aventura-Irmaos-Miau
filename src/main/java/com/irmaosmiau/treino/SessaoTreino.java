@@ -56,6 +56,8 @@ public final class SessaoTreino {
         boolean jogadorAEsquerda = jogador.getX() < parceiro.getX();
         jogador.setViradoParaDireita(jogadorAEsquerda);
         parceiro.setViradoParaDireita(!jogadorAEsquerda);
+        // 5J: de joelhos (tambem no F5, que passa por aqui).
+        configuracao.getInicio().aplicarPostura(jogador, parceiro);
 
         sistema = conteudo.criarSistema(jogador, parceiro);
     }

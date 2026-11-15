@@ -16,6 +16,10 @@ public enum EstadoVisual {
     SPRAWL,
     DEITADO,
     MOVIMENTO_CHAO,
+    /** Entrega 5J: de joelhos, parado (POSTURA_AJOELHADO_IDLE). */
+    AJOELHADO,
+    /** Entrega 5J: de joelhos, deslocando (POSTURA_AJOELHADO_MOVIMENTO). */
+    AJOELHADO_MOVIMENTO,
     /** Conjunta: os 30 quadros de entrada da PEGADA_1. */
     PEGADA_ENTRADA,
     /** Conjunta: pose final persistente da PEGADA_1. */

@@ -36,7 +36,9 @@ class CarregadorConteudoCombateTest {
 
         AnimacaoConjuntaQuadros json = c.getRegistroAnimacoes().exigir("pegada_1_entrada");
         AnimacaoConjuntaQuadros legado = new RegistroAnimacoesCombate().buscar("pegada_1_entrada");
-        assertEquals(1, c.getRegistroAnimacoes().quantidade());
+        // 5J (pedido): + a variante autoral do Preto (antes 1).
+        assertEquals(2, c.getRegistroAnimacoes().quantidade());
+        assertEquals(java.util.List.of("pegada_1_entrada_preto"), c.getRegistroAnimacoes().getVariantes("pegada_1_entrada"));
         assertEquals(30, json.getDuracaoTotalFrames());
         assertFalse(json.possuiDistribuicaoTemporal());
         for (int i = 0; i < 3; i++) {

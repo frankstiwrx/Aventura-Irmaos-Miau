@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 586, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 617, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 2 testes): manifesto, DLLs do GLFW
@@ -267,6 +267,20 @@ Gamepad (Xbox):
 - [ ] Menus só com o Xbox: D-pad/analógico movem a borda amarela, A confirma, B volta; nenhum A "vaza" para a tela seguinte
 - [ ] Pausa pelo Start: foco em CONTINUAR; A continua sem pular; B também continua
 - [ ] Teclado nos menus: setas, ENTER, ESC volta (na partida o ESC segue pausando)
+
+### De joelhos e variantes (Entrega 5J)
+
+- [ ] Seleção: INÍCIO vem "De joelhos"; OS DOIS MIAUS: os dois ajoelhados, perto, frente a frente, sem pegada
+- [ ] J2 (END) pega de joelhos: os dois continuam de joelhos durante toda a entrada e na pegada mantida
+- [ ] Preto aplicando (J2 da direita): a pegada usa o desenho novo do Preto; F3 mostra "pegada_1_entrada_preto (autoral)"
+- [ ] Preto aplicando da esquerda (J1 = Preto): a mesma pegada, espelhada, sem trocar mãos nem personagens
+- [ ] Branco aplicando no Preto: a PEGADA_1 original de sempre
+- [ ] Branco × Branco e Preto × Preto: F3 mostra "composta por papel"; nada atravessa o outro
+- [ ] Arrastando (LB/SHIFT/DELETE ou automático no Contextual): pernas dos dois dão passinhos; param quando a dupla para
+- [ ] Desequilíbrio com sucesso: o receptor inclina e volta; tentativa inválida ou resistida não mexe nada
+- [ ] De joelhos: andar é bem lento e não levanta; F/L3 levanta; pulo/rolar/sprawl não fazem nada
+- [ ] Treino de joelhos controlando o Preto; F5 mantém de joelhos
+- [ ] INÍCIO "Em pé": tudo como na 5I
 
 ### MiauStudio (`EditorDePoses` — Run File)
 

@@ -304,3 +304,18 @@ mesma `TravaComandos`) → `InputHandler` (teclado **ou** gamepad por slot) → 
   durante a captura). O "voltar" de cada tela é o botão marcado com `NavegadorMenus.marcarVoltar`.
 - Ao sair da pausa, `GamePanel.sincronizarBordasDeToque` impede que o toque que fechou o menu
   vire ação.
+
+## Variantes de animação, postura de joelhos e camadas (Entrega 5J)
+
+- `combate.IdentidadeRig` (molde BRANCO/PRETO) e `combate.SelecaoAnimacaoConjunta` (AUTORAL /
+  COMPOSTA_POR_PAPEL / BASE). `RegistroAnimacoesCombate` guarda identidades e variantes
+  (`registrarIdentidades`, `registrarVariante`, `resolver`). O catálogo aceita `"varianteDe"`.
+- `SistemaCombate` resolve a variante ao iniciar a técnica (`getSelecaoAnimacao`) e aplica cada quadro
+  pela postura (`aplicarPoseNaPostura`: de joelhos usa `PosturaAjoelhada.adaptar`).
+- `entities.PosturaAjoelhada`, `IrmaoMiau.EstadoCorporal.AJOELHADO`, `entities.InicioLuta`
+  (DE_JOELHOS / EM_PE; `ConfiguracaoTreino.comInicio`; `GamePanel(..., InicioLuta, ...)`).
+- `EstadoCorporalObservado` + `PoliticaInteracaoPadrao`: mudar de/para joelhos na pegada encerra como
+  deitar/levantar.
+- `animacao.CamadaPoseCombate`, chamada pelo `AnimadorPartida` depois do combate: passos do arrasto e
+  reação ao desequilíbrio, aditivos e sem acúmulo.
+- `GamePanel.linhasTecnicas()`: linhas extras do HUD técnico (F3).

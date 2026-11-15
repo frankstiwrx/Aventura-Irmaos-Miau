@@ -134,7 +134,7 @@ public abstract class IrmaoMiau {
      *
      * O formato continua sendo o padrao de 30 valores do MiauStudio.
      */
-    private static final int TAMANHO_POSE_MIAUSTUDIO = 30;
+    public static final int TAMANHO_POSE_MIAUSTUDIO = 30;
 
     private int[] poseCombateExterna;
     private double deslocamentoVisualCombateX;
@@ -220,7 +220,9 @@ private static final double CUSTO_SPRAWL = 4.0;
 public enum EstadoCorporal {
     EM_PE,
     AGACHADO,
-    DEITADO
+    DEITADO,
+    /** Entrega 5J: de joelhos (postura de inicio do jiu-jitsu). */
+    AJOELHADO
 }
 
 private EstadoCorporal estadoCorporal =
@@ -268,6 +270,11 @@ private EstadoCorporal estadoCorporal =
      * já está rolando.
      */
     if (rolando || fazendoSprawl) {
+        return;
+    }
+
+    // 5J: de joelhos nao rola (levante primeiro).
+    if (isAjoelhado()) {
         return;
     }
 
@@ -342,7 +349,8 @@ public void iniciarSprawl() {
      */
     if (pulando
             || rolando
-            || isDeitado()) {
+            || isDeitado()
+            || isAjoelhado()) {
 
         return;
     }
@@ -588,9 +596,10 @@ public void iniciarSprawl() {
         agachado =
         querAgachar
         && !pulando
-        && !isDeitado();
+        && !isDeitado()
+        && !isAjoelhado();
         
-        if (!isDeitado()) {
+        if (!isDeitado() && !isAjoelhado()) {
 
     if (agachado) {
 
@@ -1181,10 +1190,11 @@ public void alternarDeitado() {
     }
 
     /*
-     * Se já está deitado, levanta.
+     * Se já está deitado (ou de joelhos, 5J), levanta.
      */
     if (estadoCorporal
-            == EstadoCorporal.DEITADO) {
+            == EstadoCorporal.DEITADO
+            || estadoCorporal == EstadoCorporal.AJOELHADO) {
 
         estadoCorporal =
                 EstadoCorporal.EM_PE;
@@ -1254,6 +1264,7 @@ public void alternarDeitado() {
         || rolando
                 || fazendoSprawl
                 || isDeitado()
+                || isAjoelhado()
         || condicionamentoAtual <= 0) {
 
     return;
@@ -1300,6 +1311,7 @@ public void alternarDeitado() {
         && !respirando
         && !rolando
                 && !isDeitado()
+                && !isAjoelhado()
         && !isSemFolego()
         && condicionamentoAtual > 0;
     }
@@ -1344,6 +1356,7 @@ public void alternarDeitado() {
                 || rolando
                 || fazendoSprawl
                 || isDeitado()
+                || isAjoelhado()
                 || condicionamentoAtual <= 0) {
 
             return;
@@ -1790,6 +1803,35 @@ public void alternarDeitado() {
         return pulando;
     }
     
+    /** Entrega 5J: de joelhos. */
+    public boolean isAjoelhado() {
+        return estadoCorporal == EstadoCorporal.AJOELHADO;
+    }
+
+    /**
+     * Entrega 5J: fica de joelhos (inicio da luta). Nao vale no meio de
+     * pulo, rolamento ou sprawl.
+     */
+    public void ajoelhar() {
+        if (pulando || rolando || fazendoSprawl) {
+            return;
+        }
+        estadoCorporal = EstadoCorporal.AJOELHADO;
+        correndo = false;
+        agachado = false;
+        andando = false;
+    }
+
+    /** Postura corporal atual (5J: para o HUD tecnico e as animacoes). */
+    public EstadoCorporal getEstadoCorporal() {
+        return estadoCorporal;
+    }
+
+    /** Entrega 5J: de joelhos anda bem mais devagar que em pe. */
+    public double getVelocidadeAjoelhado() {
+        return calcularVelocidadeNormal() * 0.18;
+    }
+
     public boolean isDeitado() {
 
     return estadoCorporal

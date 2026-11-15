@@ -14,6 +14,13 @@ public final class CatalogoAnimacoes {
 
     public static final String RECURSO_BRANCO_CHAO = "/conteudo/animacoes/individuais/branco_movimento_chao.json";
     public static final String RECURSO_PRETO_CHAO = "/conteudo/animacoes/individuais/preto_movimento_chao.json";
+    // Entrega 5J: postura de joelhos (fallback procedural em JSON, substituivel pelo MiauStudio).
+    public static final String RECURSO_BRANCO_AJOELHADO = "/conteudo/animacoes/individuais/branco_ajoelhado.json";
+    public static final String RECURSO_PRETO_AJOELHADO = "/conteudo/animacoes/individuais/preto_ajoelhado.json";
+    public static final String RECURSO_BRANCO_AJOELHADO_MOV =
+            "/conteudo/animacoes/individuais/branco_ajoelhado_movimento.json";
+    public static final String RECURSO_PRETO_AJOELHADO_MOV =
+            "/conteudo/animacoes/individuais/preto_ajoelhado_movimento.json";
 
     private final Map<String, DefinicaoAnimacao> porId = new LinkedHashMap<>();
 
@@ -44,6 +51,9 @@ public final class CatalogoAnimacoes {
                 CarregadorAnimacaoJson.doRecurso(RECURSO_BRANCO_CHAO)));
         c.registrar(DefinicaoAnimacao.json("preto.movimento_chao.json", RECURSO_PRETO_CHAO,
                 CarregadorAnimacaoJson.doRecurso(RECURSO_PRETO_CHAO)));
+        for (java.util.Map.Entry<String, String> e : new java.util.TreeMap<>(JSON_AJOELHADO).entrySet()) {
+            c.registrar(DefinicaoAnimacao.json(e.getKey(), e.getValue(), CarregadorAnimacaoJson.doRecurso(e.getValue())));
+        }
         registrarConjuntas(c);
         return c;
     }
@@ -52,6 +62,13 @@ public final class CatalogoAnimacoes {
     public static final java.util.Map<String, String> JSON_MIGRADAS = java.util.Map.of(
             "branco.movimento_chao.json", RECURSO_BRANCO_CHAO,
             "preto.movimento_chao.json", RECURSO_PRETO_CHAO);
+
+    /** Entrega 5J: poses de joelhos (fallback em JSON; o usuario pode substituir pelo MiauStudio). */
+    public static final java.util.Map<String, String> JSON_AJOELHADO = java.util.Map.of(
+            "branco.ajoelhado.json", RECURSO_BRANCO_AJOELHADO,
+            "preto.ajoelhado.json", RECURSO_PRETO_AJOELHADO,
+            "branco.ajoelhado_movimento.json", RECURSO_BRANCO_AJOELHADO_MOV,
+            "preto.ajoelhado_movimento.json", RECURSO_PRETO_AJOELHADO_MOV);
 
     /**
      * Entrega 5G: catalogo do JOGO, tolerante. Um JSON ausente ou invalido NAO
@@ -64,8 +81,10 @@ public final class CatalogoAnimacoes {
             java.util.function.Consumer<String> aviso) {
         CatalogoAnimacoes c = new CatalogoAnimacoes();
         registrarLegadas(c);
-        for (String id : new java.util.TreeSet<>(JSON_MIGRADAS.keySet())) {
-            String recurso = JSON_MIGRADAS.get(id);
+        java.util.Map<String, String> todasJson = new java.util.TreeMap<>(JSON_MIGRADAS);
+        todasJson.putAll(JSON_AJOELHADO);
+        for (String id : todasJson.keySet()) {
+            String recurso = todasJson.get(id);
             try {
                 String texto = leitor.apply(recurso);
                 if (texto == null) {
@@ -114,6 +133,11 @@ public final class CatalogoAnimacoes {
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO[0]"));
             c.registrar(DefinicaoAnimacao.legada(p + ".movimento_chao.legada", EstadoVisual.MOVIMENTO_CHAO,
                     classe + ".MOVIMENTO_CHAO_MIAUSTUDIO"));
+            // 5J: fallback em codigo (PosturaAjoelhada) quando o JSON nao carrega.
+            c.registrar(DefinicaoAnimacao.legada(p + ".ajoelhado.legada", EstadoVisual.AJOELHADO,
+                    classe + ".desenhar + PosturaAjoelhada.poseParado (fallback procedural 5J)"));
+            c.registrar(DefinicaoAnimacao.legada(p + ".ajoelhado_movimento.legada", EstadoVisual.AJOELHADO_MOVIMENTO,
+                    classe + ".desenhar + PosturaAjoelhada.poseParado (fallback procedural 5J, sem passo)"));
         }
     }
 

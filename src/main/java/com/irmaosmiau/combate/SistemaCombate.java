@@ -32,6 +32,8 @@ public final class SistemaCombate {
     // ANIMACAO CONJUNTA ATIVA
     // =====================================================
     private AnimacaoCombateAtiva animacaoCombateAtiva;
+    // Entrega 5J: variante (molde + papel) da animacao conjunta em uso.
+    private SelecaoAnimacaoConjunta selecaoAnimacao;
     private final RegistroAnimacoesCombate registroAnimacoes;
 
     // Ultima tentativa: util para debug e, depois, feedback visual/sonoro.
@@ -298,21 +300,38 @@ public final class SistemaCombate {
         if (animacaoCombateAtiva == null) {
             return;
         }
-        AnimacaoConjuntaQuadros sequencia = registroAnimacoes.buscar(
-                animacaoCombateAtiva.getIdAnimacao());
+        // 5J: a variante escolhida pela dupla (molde + papel) ao iniciar a tecnica.
+        AnimacaoConjuntaQuadros sequencia = selecaoAnimacao != null
+                ? selecaoAnimacao.quadros()
+                : registroAnimacoes.buscar(animacaoCombateAtiva.getIdAnimacao());
         if (sequencia == null) {
             return;
         }
         int indice = sequencia.indiceParaProgresso(
                 animacaoCombateAtiva.getProgresso());
-        animacaoCombateAtiva.getAplicador().aplicarPoseCombateExterna(
+        aplicarPoseNaPostura(animacaoCombateAtiva.getAplicador(),
                 sequencia.copiarQuadroAplicador(indice),
                 sequencia.deslocamentoAplicadorX(indice),
                 sequencia.getOffsetVisualY());
-        animacaoCombateAtiva.getReceptor().aplicarPoseCombateExterna(
+        aplicarPoseNaPostura(animacaoCombateAtiva.getReceptor(),
                 sequencia.copiarQuadroReceptor(indice),
                 sequencia.deslocamentoReceptorX(indice),
                 sequencia.getOffsetVisualY());
+    }
+
+    /**
+     * Entrega 5J: quem esta de joelhos recebe a mesma pose de tronco, cabeca
+     * e bracos, com as pernas de joelhos e o corpo abaixado (fallback da
+     * PEGADA_AJOELHADA: nada de "levantar" no meio da pegada). Em pe: igual a 5I.
+     */
+    private static void aplicarPoseNaPostura(IrmaoMiau lutador, int[] pose, double dx, double dy) {
+        if (lutador.isAjoelhado()) {
+            lutador.aplicarPoseCombateExterna(
+                    com.irmaosmiau.entities.PosturaAjoelhada.adaptar(lutador, pose),
+                    dx, dy + com.irmaosmiau.entities.PosturaAjoelhada.quedaPx(lutador));
+            return;
+        }
+        lutador.aplicarPoseCombateExterna(pose, dx, dy);
     }
 
     private void atualizarManutencaoDaInteracao() {
@@ -410,6 +429,14 @@ public final class SistemaCombate {
 
     public boolean estaEmPegada1() {
         return estadoInteracao == EstadoInteracaoCombate.PEGADA_1;
+    }
+
+    /**
+     * 5J: variante da animacao conjunta da tecnica atual (entrada ou pose
+     * mantida); null sem interacao com animacao.
+     */
+    public SelecaoAnimacaoConjunta getSelecaoAnimacao() {
+        return estaEmInteracao() || animacaoCombateAtiva != null ? selecaoAnimacao : null;
     }
 
     public IrmaoMiau getAplicadorInteracao() {
@@ -843,6 +870,11 @@ public final class SistemaCombate {
     ) {
 
         cancelarAnimacaoCombateAtiva();
+
+        // 5J: escolhe a variante uma vez, no inicio (nada muda no meio da tecnica).
+        selecaoAnimacao = registroAnimacoes.contem(acao.getIdAnimacaoConjunta())
+                ? registroAnimacoes.resolver(acao.getIdAnimacaoConjunta(), aplicador, receptor)
+                : null;
 
         animacaoCombateAtiva = new AnimacaoCombateAtiva(
                 acao.getIdAnimacaoConjunta(),

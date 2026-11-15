@@ -694,3 +694,21 @@ Os botões de jogar sozinho mostram o irmão escolhido na coluna. No gamepad: �
   foi improvisado como música. A infraestrutura atual (`AudioJogo.tocarMusica`, uma faixa por
   vez, volume das configurações, arquivo ausente = silêncio) continua a base.
 - Fundo animado do menu: nada foi bloqueado (o navegador só mexe em foco e cliques).
+
+---
+
+# Entrega 5J — De joelhos
+
+- Na seleção (partida e treino) há o campo **INÍCIO: De joelhos / Em pé**. Padrão: **De joelhos**. A
+  escolha fica lembrada até fechar o jogo (não é gravada em arquivo). Navegável por mouse, setas e
+  D-pad/analógico (←→ trocam o valor).
+- **De joelhos:** os dois começam ajoelhados, frente a frente, na mesma linha, a 84 px (dentro do alcance
+  da PEGADA_1), simétricos em relação ao centro, sem pegada. F5 e TENTAR NOVAMENTE mantêm.
+- Ajoelhado: andar = deslocamento lento (18% da velocidade normal), sem levantar. Pegar, reforçar,
+  desequilibrar, romper e arrastar funcionam como em pé (mesmas regras e teclas).
+- Comandos incompatíveis são ignorados de joelhos: pulo, pulo curto, rolamento, sprawl, correr e agachar.
+- **DEITAR/LEVANTAR (F / J / L3) levanta.** Ainda não há comando para voltar a ajoelhar (só o início).
+  Levantar no meio de uma pegada a encerra (motivo "deitar ou levantar", como deitar).
+- Como em pé, a caminhada normal não tem borda própria (o limite da arena vale para o arrasto).
+- F3 (HUD técnico) mostra a postura dos dois, aplicador e receptor, a variante da animação, e se os
+  passos do arrasto/reação ao desequilíbrio (fallback) estão ativos.

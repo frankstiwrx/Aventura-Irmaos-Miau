@@ -70,6 +70,15 @@ public final class SelecaoLutadoresPanel extends JPanel {
     private final JButton botaoVoltar = NavegadorMenus.marcarVoltar(botao("VOLTAR"));
     private final JLabel rotuloAvisos = new JLabel(" ");
 
+    /*
+     * Entrega 5J: de joelhos ou em pe. Lembrado durante a sessao (a proxima
+     * selecao abre com a ultima escolha); padrao: de joelhos.
+     */
+    private static com.irmaosmiau.entities.InicioLuta inicioDaSessao =
+            com.irmaosmiau.entities.InicioLuta.PADRAO_TELAS;
+    final JComboBox<com.irmaosmiau.entities.InicioLuta> inicio =
+            new JComboBox<>(com.irmaosmiau.entities.InicioLuta.values());
+
     /** Os dois irmaos oficiais (bases possiveis de cada coluna). */
     static final String[] IRMAOS = {CatalogoPersonagens.ID_BRANCO, CatalogoPersonagens.ID_PRETO};
 
@@ -178,13 +187,24 @@ public final class SelecaoLutadoresPanel extends JPanel {
         }
         atualizarBotoes();
 
+        inicio.setSelectedItem(inicioDaSessao);
+        inicio.setFont(new Font("Arial", Font.BOLD, 13));
+        inicio.setToolTipText("Início da luta: de joelhos (jiu-jitsu) ou em pé");
+        inicio.addActionListener(e -> inicioDaSessao = getInicio());
+        JLabel rotuloInicio = new JLabel("INÍCIO:", SwingConstants.RIGHT);
+        rotuloInicio.setFont(new Font("Arial", Font.BOLD, 12));
+
         if (modoTreino) {
+            colocar(rotuloInicio, 30, 338, 80, 28);
+            colocar(inicio, 115, 338, 160, 28);
             colocar(botaoTreino, 300, 334, 200, 36);
             botaoTreino.addActionListener(e -> escolher(TipoPersonagem.AMBOS));
         } else {
             colocar(botaoBranco, 115, 316, 190, 32);
             colocar(botaoPreto, 495, 316, 190, 32);
             colocar(botaoAmbos, 300, 354, 200, 32);
+            colocar(rotuloInicio, 300, 318, 70, 28);
+            colocar(inicio, 375, 318, 110, 28);
             botaoBranco.addActionListener(e -> escolher(TipoPersonagem.BRANCO));
             botaoPreto.addActionListener(e -> escolher(TipoPersonagem.PRETO));
             botaoAmbos.addActionListener(e -> escolher(TipoPersonagem.AMBOS));
@@ -299,6 +319,22 @@ public final class SelecaoLutadoresPanel extends JPanel {
         }
         Image img = new ImageIcon(recurso).getImage().getScaledInstance(90, 90, Image.SCALE_SMOOTH);
         return new ImageIcon(img);
+    }
+
+    /** Entrega 5J: inicio escolhido nesta tela. */
+    public com.irmaosmiau.entities.InicioLuta getInicio() {
+        Object i = inicio.getSelectedItem();
+        return i instanceof com.irmaosmiau.entities.InicioLuta il ? il : com.irmaosmiau.entities.InicioLuta.PADRAO_TELAS;
+    }
+
+    /** Ultimo inicio escolhido nesta sessao (o Main usa ao comecar a luta). */
+    public static synchronized com.irmaosmiau.entities.InicioLuta inicioDaSessao() {
+        return inicioDaSessao;
+    }
+
+    /** Testes: volta ao padrao. */
+    static synchronized void reiniciarInicioDaSessao() {
+        inicioDaSessao = com.irmaosmiau.entities.InicioLuta.PADRAO_TELAS;
     }
 
     // =====================================================

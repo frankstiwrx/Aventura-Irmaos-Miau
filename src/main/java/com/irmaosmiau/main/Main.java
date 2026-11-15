@@ -170,7 +170,8 @@ public class Main {
         trocarTela(janela, new SelecaoLutadoresPanel(
                 opcoes,
                 true,
-                (tipo, jogador, parceiro) -> iniciarTreino(janela, jogador, parceiro),
+                (tipo, jogador, parceiro) -> iniciarTreino(janela, jogador, parceiro,
+                        SelecaoLutadoresPanel.inicioDaSessao()),
                 () -> mostrarMenu(janela)
         ));
     }
@@ -179,7 +180,8 @@ public class Main {
      * @param jogador  escolha do slot Branco (null = Branco oficial)
      * @param parceiro escolha do slot Preto (null = Preto oficial)
      */
-    private static void iniciarTreino(JFrame janela, EscolhaLutador jogador, EscolhaLutador parceiro) {
+    private static void iniciarTreino(JFrame janela, EscolhaLutador jogador, EscolhaLutador parceiro,
+            com.irmaosmiau.entities.InicioLuta inicio) {
 
         // Treino no cenario preferido (se ainda existir).
         String cenario = PreferenciasJogo.global()
@@ -192,12 +194,14 @@ public class Main {
         if (parceiro != null) {
             configuracao = configuracao.comParceiro(parceiro);
         }
+        // Entrega 5J: de joelhos ou em pe (F5 e TENTAR NOVAMENTE mantem).
+        configuracao = configuracao.comInicio(inicio);
 
         GamePanel treino = new GamePanel(
                 configuracao,
                 () -> mostrarMenu(janela),
                 () -> mostrarSelecaoTreino(janela, OpcoesDeLutadores.padrao()),
-                () -> iniciarTreino(janela, jogador, parceiro)
+                () -> iniciarTreino(janela, jogador, parceiro, inicio)
         );
 
         trocarTela(janela, treino);
@@ -244,7 +248,8 @@ public class Main {
                 = new SelecaoLutadoresPanel(
                         OpcoesDeLutadores.padrao(),
                         false,
-                        (tipo, branco, preto) -> iniciarJogo(janela, tipo, branco, preto),
+                        (tipo, branco, preto) -> iniciarJogo(janela, tipo, branco, preto,
+                                SelecaoLutadoresPanel.inicioDaSessao()),
                         () -> mostrarMenu(janela)
                 );
 
@@ -255,13 +260,15 @@ private static void iniciarJogo(
         JFrame janela,
         TipoPersonagem tipo,
         EscolhaLutador slotBranco,
-        EscolhaLutador slotPreto
+        EscolhaLutador slotPreto,
+        com.irmaosmiau.entities.InicioLuta inicio
 ) {
 
     GamePanel jogo = new GamePanel(
             tipo,
             slotBranco,
             slotPreto,
+            inicio,
 
             // MENU PRINCIPAL
             () -> mostrarMenu(
@@ -278,7 +285,8 @@ private static void iniciarJogo(
                     janela,
                     tipo,
                     slotBranco,
-                    slotPreto
+                    slotPreto,
+                    inicio
             )
     );
 

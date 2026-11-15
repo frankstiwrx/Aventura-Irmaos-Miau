@@ -52,6 +52,8 @@ public final class AnimadorPartida {
     private final double msPorTick;
     private final Map<IrmaoMiau, Reproducao> ativas = new IdentityHashMap<>();
     private final Map<IrmaoMiau, OrigemVisual> origens = new IdentityHashMap<>();
+    // Entrega 5J: passos do arrasto e reacao ao desequilibrio sobre a pose da pegada.
+    private final CamadaPoseCombate camada = new CamadaPoseCombate();
 
     /** @param msPorTick duracao nominal de um tick do loop logico (GamePanel: 16 ms) */
     public AnimadorPartida(ControladorAnimacoes controlador, double msPorTick) {
@@ -75,6 +77,7 @@ public final class AnimadorPartida {
         origens.keySet().removeIf(l -> !contem(lutadores, l));
         for (IrmaoMiau l : lutadores) {
             atualizar(l, sistema, deslocandoConjunto, tick);
+            camada.atualizar(l, sistema, deslocandoConjunto, tick);
         }
     }
 
@@ -133,6 +136,11 @@ public final class AnimadorPartida {
     /** De onde vem o desenho do lutador no ultimo tick (vazio = ainda nao atualizado). */
     public Optional<OrigemVisual> origem(IrmaoMiau lutador) {
         return Optional.ofNullable(origens.get(lutador));
+    }
+
+    /** 5J: camada de arrasto/desequilibrio (HUD tecnico e testes). */
+    public CamadaPoseCombate getCamada() {
+        return camada;
     }
 
     /** Lutadores com animacao JSON ativa agora. */

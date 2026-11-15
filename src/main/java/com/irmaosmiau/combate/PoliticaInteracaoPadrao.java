@@ -69,7 +69,8 @@ public final class PoliticaInteracaoPadrao implements PoliticaInteracao {
         if (agora.isPulando() && !antes.isPulando()) {
             return Optional.of(MotivoEncerramentoInteracao.PULO);
         }
-        if (agora.isDeitado() != antes.isDeitado()) {
+        // 5J: levantar de joelhos (ou ajoelhar) tambem e "deitar ou levantar".
+        if (agora.isDeitado() != antes.isDeitado() || agora.isAjoelhado() != antes.isAjoelhado()) {
             return Optional.of(MotivoEncerramentoInteracao.DEITAR_OU_LEVANTAR);
         }
         if (agora.isAgachado() != antes.isAgachado()) {

@@ -1671,6 +1671,12 @@ private static final int[][] SPRAWL_MIAUSTUDIO = {
             return;
         }
 
+        // Entrega 5J: de joelhos sem pose externa (sem animador/JSON): fallback procedural.
+        if (isAjoelhado()) {
+            desenharPoseMiauStudio(g2, PosturaAjoelhada.poseParado(this), 0.0, PosturaAjoelhada.quedaPx(this));
+            return;
+        }
+
         if (isRolando()) {
 
             desenharRolamento(g2);

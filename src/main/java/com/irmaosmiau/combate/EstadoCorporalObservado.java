@@ -20,6 +20,8 @@ public final class EstadoCorporalObservado {
     private final boolean deitado;
     private final boolean rolando;
     private final boolean fazendoSprawl;
+    // 5J: de joelhos (levantar no meio da pegada e uma mudanca corporal).
+    private final boolean ajoelhado;
 
     public EstadoCorporalObservado(
             int x,
@@ -37,8 +39,27 @@ public final class EstadoCorporalObservado {
         this.pulando = pulando;
         this.agachado = agachado;
         this.deitado = deitado;
+        this.ajoelhado = false;
         this.rolando = rolando;
         this.fazendoSprawl = fazendoSprawl;
+    }
+
+    /** Entrega 5J: com a postura de joelhos. */
+    public EstadoCorporalObservado(int x, int y, int linha, boolean pulando, boolean agachado, boolean deitado,
+            boolean rolando, boolean fazendoSprawl, boolean ajoelhado) {
+        this.x = x;
+        this.y = y;
+        this.linha = linha;
+        this.pulando = pulando;
+        this.agachado = agachado;
+        this.deitado = deitado;
+        this.rolando = rolando;
+        this.fazendoSprawl = fazendoSprawl;
+        this.ajoelhado = ajoelhado;
+    }
+
+    public boolean isAjoelhado() {
+        return ajoelhado;
     }
 
     public static EstadoCorporalObservado de(IrmaoMiau lutador) {
@@ -53,13 +74,15 @@ public final class EstadoCorporalObservado {
                 lutador.isAgachado(),
                 lutador.isDeitado(),
                 lutador.isRolando(),
-                lutador.isFazendoSprawl()
+                lutador.isFazendoSprawl(),
+                lutador.isAjoelhado()
         );
     }
 
     /** Mesmo retrato deslocado no eixo X (deslocamento conjunto, 5B). */
     public EstadoCorporalObservado transladado(int dx) {
-        return new EstadoCorporalObservado(x + dx, y, linha, pulando, agachado, deitado, rolando, fazendoSprawl);
+        return new EstadoCorporalObservado(x + dx, y, linha, pulando, agachado, deitado, rolando, fazendoSprawl,
+                ajoelhado);
     }
 
     public int getX() {

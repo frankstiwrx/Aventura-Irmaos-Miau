@@ -42,7 +42,7 @@ public final class CarregadorConteudoCombate {
     public static final String FORMATO_MIAUSTUDIO_V2 = "MIAUSTUDIO_PROJECT_V2";
 
     private static final Set<String> CAMPOS_ANIMACAO = Set.of(
-            "id", "formato", "arquivo", "duracaoFrames", "duracoesQuadros", "descricao");
+            "id", "formato", "arquivo", "duracaoFrames", "duracoesQuadros", "descricao", "varianteDe");
 
     private static final Set<String> CAMPOS_TECNICA = Set.of(
             "id", "nome", "categoria", "disponibilidade", "descricao",
@@ -140,6 +140,21 @@ public final class CarregadorConteudoCombate {
             }
 
             registro.registrar(id, quadros, arquivo);
+            // 5J: molde de quem aplica e de quem recebe vem do proprio projeto (aplicadorConjunto).
+            registro.registrarIdentidades(id,
+                    com.irmaosmiau.combate.IdentidadeRig.doNome(importada.getNomeAplicador()),
+                    com.irmaosmiau.combate.IdentidadeRig.doNome(importada.getNomeReceptor()));
+            if (item.contem("varianteDe")) {
+                String base = item.texto("varianteDe");
+                if (!registro.contem(base)) {
+                    throw item.erro("varianteDe", "animacao base inexistente (declare-a antes): " + base);
+                }
+                try {
+                    registro.registrarVariante(base, id);
+                } catch (IllegalArgumentException ex) {
+                    throw item.erro("varianteDe", ex.getMessage());
+                }
+            }
         }
         return registro;
     }

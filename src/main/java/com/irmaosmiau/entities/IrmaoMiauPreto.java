@@ -1566,6 +1566,12 @@ private void desenharEmPe(
             return;
         }
 
+        // Entrega 5J: de joelhos sem pose externa (sem animador/JSON): fallback procedural.
+        if (isAjoelhado()) {
+            desenharPoseMiauStudio(g2, PosturaAjoelhada.poseParado(this), 0.0, PosturaAjoelhada.quedaPx(this));
+            return;
+        }
+
         /*
          * O novo taunt do MiauStudio só assume o desenho
          * quando o Preto está realmente no estado de taunt

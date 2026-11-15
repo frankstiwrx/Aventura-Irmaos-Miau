@@ -193,6 +193,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private final DetectorToques toques = new DetectorToques();
     // Entrega 5B: deslocamento conjunto em andamento.
     private boolean deslocandoConjunto;
+    // Entrega 5J: postura inicial da luta (de joelhos ou em pe).
+    private final com.irmaosmiau.entities.InicioLuta inicioLuta;
     // 5I: arrasto por slot (o aplicador pode ser o J1 ou o J2); deslocandoConjunto = OU dos dois.
     private boolean deslocandoConjuntoJ1;
     private boolean deslocandoConjuntoJ2;
@@ -268,7 +270,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
-        this(tipo, null, null, null, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+        this(tipo, null, null, null, com.irmaosmiau.entities.InicioLuta.EM_PE,
+                aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
     }
 
     /**
@@ -285,7 +288,24 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
-        this(tipo, null, slotBranco, slotPreto, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+        this(tipo, null, slotBranco, slotPreto, com.irmaosmiau.entities.InicioLuta.EM_PE,
+                aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
+    }
+
+    /**
+     * Entrega 5J: partida com o inicio escolhido (de joelhos ou em pe). Vale
+     * para OS DOIS MIAUS; no modo individual nao ha adversario e o inicio e em pe.
+     */
+    public GamePanel(
+            TipoPersonagem tipo,
+            EscolhaLutador slotBranco,
+            EscolhaLutador slotPreto,
+            com.irmaosmiau.entities.InicioLuta inicio,
+            Runnable aoVoltarMenu,
+            Runnable aoTrocarPersonagem,
+            Runnable aoTentarNovamente
+    ) {
+        this(tipo, null, slotBranco, slotPreto, inicio, aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
     }
 
     /**
@@ -298,7 +318,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
-        this(TipoPersonagem.AMBOS, exigirTreino(treino), null, null,
+        this(TipoPersonagem.AMBOS, exigirTreino(treino), null, null, treino.getInicio(),
                 aoVoltarMenu, aoTrocarPersonagem, aoTentarNovamente);
     }
 
@@ -323,12 +343,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             ConfiguracaoTreino treino,
             EscolhaLutador slotBranco,
             EscolhaLutador slotPreto,
+            com.irmaosmiau.entities.InicioLuta inicio,
             Runnable aoVoltarMenu,
             Runnable aoTrocarPersonagem,
             Runnable aoTentarNovamente
     ) {
 
         this.aoVoltarMenu = aoVoltarMenu;
+        this.inicioLuta = inicio == null ? com.irmaosmiau.entities.InicioLuta.EM_PE : inicio;
         this.aoTrocarPersonagem = aoTrocarPersonagem;
         this.aoTentarNovamente = aoTentarNovamente;
 
@@ -378,21 +400,27 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
             jogadorPrincipal = null;
 
+            // 5J: de joelhos = perto e simetrico no centro; em pe = como antes.
+            boolean deJoelhos = inicioLuta == com.irmaosmiau.entities.InicioLuta.DE_JOELHOS;
+            int xJ1 = deJoelhos ? com.irmaosmiau.entities.InicioLuta.xEsquerdaDeJoelhos(ESCALA_PERSONAGEM) : X_BRANCO_DUO;
+            int xJ2 = deJoelhos ? com.irmaosmiau.entities.InicioLuta.xDireitaDeJoelhos(ESCALA_PERSONAGEM) : X_PRETO_DUO;
+
             jogadorBranco = slotBranco == null
                     ? new IrmaoMiauBranco(
-                            X_BRANCO_DUO,
+                            xJ1,
                             Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
                     )
-                    : criarDoSlot(slotBranco, CatalogoPersonagens.ID_BRANCO, X_BRANCO_DUO);
+                    : criarDoSlot(slotBranco, CatalogoPersonagens.ID_BRANCO, xJ1);
 
             jogadorPreto = slotPreto == null
                     ? new IrmaoMiauPreto(
-                            X_PRETO_DUO,
+                            xJ2,
                             Y_INICIAL_PERSONAGEM,
                             ESCALA_PERSONAGEM
                     )
-                    : criarDoSlot(slotPreto, CatalogoPersonagens.ID_PRETO, X_PRETO_DUO);
+                    : criarDoSlot(slotPreto, CatalogoPersonagens.ID_PRETO, xJ2);
+            inicioLuta.aplicarPostura(jogadorBranco, jogadorPreto);
 
         } else {
 
@@ -1280,6 +1308,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
             velocidadeAtual
                     = personagem.getVelocidadeRastejando();
+
+        } else if (personagem.isAjoelhado()) {
+
+            // 5J: de joelhos anda devagar (andar nao levanta).
+            velocidadeAtual
+                    = personagem.getVelocidadeAjoelhado();
 
         } else if (respirando) {
 
@@ -2422,9 +2456,54 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         Graphics2D d = (Graphics2D) g2.create();
         d.translate(0, 30);
         d.setColor(new Color(255, 255, 255, 170));
-        d.fillRoundRect(262, 32, 400, 224, 8, 8);
+        d.fillRoundRect(262, 32, 400, 224 + 74, 8, 8);
         desenharDebugCombate(d);
+        // Entrega 5J: postura, papeis, variante da animacao e camadas visuais.
+        d.setColor(new Color(20, 40, 90));
+        int y = 268;
+        for (String linha : linhasTecnicas()) {
+            d.drawString(linha, 270, y);
+            y += 17;
+        }
         d.dispose();
+    }
+
+    /** Entrega 5J: linhas do HUD tecnico (F3). Nada disso aparece no jogo normal. */
+    List<String> linhasTecnicas() {
+        List<String> l = new java.util.ArrayList<>();
+        if (sistemaCombate == null) {
+            return l;
+        }
+        l.add("POSTURA J1: " + jogadorBranco.getEstadoCorporal() + " | J2: " + jogadorPreto.getEstadoCorporal());
+        IrmaoMiau apl = sistemaCombate.getAplicadorInteracao();
+        IrmaoMiau rec = sistemaCombate.getReceptorInteracao();
+        if (sistemaCombate.estaEmInteracao() && apl != null && rec != null) {
+            l.add("APLICADOR: " + rotuloSlot(apl) + " | RECEPTOR: " + rotuloSlot(rec) + " | "
+                    + sistemaCombate.getIdAcaoInteracao()
+                    + (sistemaCombate.isInteracaoEstabelecida() ? " ESTABELECIDA" : " ENTRADA"));
+        } else {
+            l.add("APLICADOR: - | RECEPTOR: - | sem tecnica ativa");
+        }
+        com.irmaosmiau.combate.SelecaoAnimacaoConjunta sel = sistemaCombate.getSelecaoAnimacao();
+        l.add("ANIMACAO: " + (sel == null ? "-" : sel.descricao())
+                + (apl != null && apl.isAjoelhado() ? " + fallback ajoelhado" : ""));
+        com.irmaosmiau.animacao.CamadaPoseCombate c = animador.getCamada();
+        String arrasto = "-";
+        String deseq = "-";
+        for (IrmaoMiau x : List.of(jogadorBranco, jogadorPreto)) {
+            if (c.faseArrasto(x) >= 0) {
+                arrasto = "passos (fallback) fase " + c.faseArrasto(x);
+            }
+            if (c.intensidadeReacao(x) > 0) {
+                deseq = rotuloSlot(x) + " reagindo (fallback)";
+            }
+        }
+        l.add("ARRASTO: " + arrasto + " | DESEQUILIBRIO: " + deseq);
+        return l;
+    }
+
+    private String rotuloSlot(IrmaoMiau x) {
+        return (x == jogadorBranco ? "J1 " : "J2 ") + x.getNome();
     }
 
     // =====================================================
@@ -2529,6 +2608,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     boolean isModoTreino() {
         return modoTreino;
+    }
+
+    com.irmaosmiau.entities.InicioLuta getInicioLuta() {
+        return inicioLuta;
     }
 
     SessaoTreino getSessaoTreino() {

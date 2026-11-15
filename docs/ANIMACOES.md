@@ -160,3 +160,128 @@ própria de rig `miau_v1`.
    a pegada.
 4. Caminhada e corrida próprias em JSON (com `SincronizadorPassos`, por distância) para personagens
    novos; Branco e Preto continuam procedurais.
+
+---
+
+# Entrega 5J — Variantes por identidade e papel, postura de joelhos e camadas da pegada
+
+## Três coisas diferentes (nunca misturar)
+
+| Conceito | O que é | Quem decide |
+|---|---|---|
+| **Slot** | J1 / J2: de onde vêm teclas e gamepad | seleção |
+| **Molde (`IdentidadeRig`)** | geometria do rig: BRANCO ou PRETO (perfis usam o do base) | classe do lutador |
+| **Papel** | aplicador / receptor da técnica | `SistemaCombate` |
+| **Lado / orientação** | esquerda ou direita da tela | posição; o `GamePanel` espelha quem olha para a esquerda |
+
+As poses do MiauStudio estão no espaço **local** do lutador (sempre desenhadas olhando para a direita;
+o editor e o jogo espelham o personagem inteiro pela orientação). Por isso **espelhar a cena não
+troca papéis nem dados**: a mesma variante serve com o aplicador à esquerda ou à direita.
+
+## Como uma técnica escolhe a animação
+
+A técnica continua apontando para UMA animação base (`tecnicas.json`: `"animacao": "pegada_1_entrada"`).
+Ao iniciar a técnica, `RegistroAnimacoesCombate.resolver(base, aplicador, receptor)`:
+
+1. **AUTORAL** — existe uma animação (base ou variante) desenhada para (molde do aplicador, molde do
+   receptor): ela é usada inteira.
+2. **COMPOSTA_POR_PAPEL** — senão, cada trilha vem de uma animação em que aquele molde tem aquele
+   papel. Ex.: Branco × Branco = trilha do aplicador da base (Branco aplicador) + trilha do receptor da
+   variante do Preto (Branco receptor). Nenhum deslocamento é copiado de um molde para outro.
+3. **BASE** — sem metadados ou molde desconhecido: a base, como até a 5I.
+
+| Dupla (aplicador × receptor) | Resultado |
+|---|---|
+| Branco × Preto | `pegada_1_entrada` (autoral, original) |
+| Preto × Branco | `pegada_1_entrada_preto` (autoral, nova) |
+| Branco × Branco | composta: aplicador da original + receptor da nova |
+| Preto × Preto | composta: aplicador da nova + receptor da original |
+
+A escolha acontece uma vez, no início da técnica (nada troca no meio). O HUD técnico (F3) mostra a
+variante e se ela é autoral ou composta.
+
+## Registrar uma animação conjunta nova (convenção)
+
+1. Desenhe no MiauStudio em modo CONJUNTA, com `aplicadorConjunto` correto (Branco ou Preto). O lado da
+   tela em que você desenhou não importa.
+2. Copie o projeto para `src/main/resources/conteudo/miaustudio/` com um nome identificado (o original
+   fica onde estava). Só o `nomeAnimacao` pode ser ajustado na cópia.
+3. Em `conteudo/animacoes/animacoes.json`:
+   - técnica nova: uma entrada normal (`id`, `formato`, `arquivo`, `duracaoFrames`);
+   - outra dupla para uma técnica existente: a mesma entrada **+ `"varianteDe": "<id da base>"`**.
+4. O carregador lê do próprio projeto quem aplica e quem recebe. Uma variante precisa ter o mesmo número
+   de quadros, a mesma duração, a mesma distribuição temporal e o mesmo offset visual da base; se não
+   tiver, o jogo recusa com o arquivo e o campo no erro.
+
+O formato JSON v2 do MiauStudio **não mudou**: os metadados novos ficam só no catálogo do jogo.
+
+## Achado da auditoria: deslocamento horizontal entre editor e jogo
+
+No projeto, `offsetCentroX` é posição de **cena** (o editor desenha em `centroInteracaoX + offset`). O
+motor usa a variação em relação ao quadro 1 no espaço **local** do lutador. As duas coisas coincidem
+quando quem se desloca foi desenhado olhando para a direita, e se invertem quando foi desenhado olhando
+para a esquerda.
+
+- `PEGADA_1_PRETO`: quem se desloca é o Branco receptor (olhando para a direita, +12): **igual ao editor**.
+- `PEGADA_1` original: o Preto receptor (olhando para a esquerda, 140 → 125) se aproxima 15 no editor e,
+  no jogo, se afasta 15 no último quadro (a pose mantida fica uns 30 px mais aberta que no editor).
+
+Isso existe desde a 3A e foi validado visualmente nas entregas anteriores, então **não mudei** (mudaria a
+pegada aprovada e várias asserções antigas). Para corrigir: converter `cena → local` pelo
+`viradoDireita` do quadro autoral; é uma linha no ponto de aplicação, mas precisa de nova validação
+visual da PEGADA_1 original.
+
+## Fases visuais da PEGADA_1
+
+| Fase | Origem do desenho | Estado visual |
+|---|---|---|
+| Entrada | quadros da variante (uma vez, 30 frames) | `PEGADA_ENTRADA` |
+| Estabelecida | último quadro mantido (não reexecuta a entrada) | `PEGADA_ESTABELECIDA` |
+| Arrasto (`PEGADA_ARRASTO`) | último quadro + passos da `CamadaPoseCombate` | `ARRASTO_CONJUNTO` |
+| Desequilíbrio (`PEGADA_DESEQUILIBRIO`) | último quadro + reação da `CamadaPoseCombate` | (efeito do motor) |
+| Encerramento / rompimento | o motor limpa as poses; volta o desenho normal | — |
+
+### `animacao.CamadaPoseCombate` (fallback procedural, isolado e substituível)
+
+- Soma valores pequenos a uma **cópia** da pose que o motor deixou e devolve a pose original quando
+  nada acontece (sem acúmulo). Se o motor trocar a pose, a camada recomeça dela. Nunca move ninguém.
+- **Arrasto:** passos alternados (joelho e pé avançam 3 unidades ≈ 2 px; o pé levanta 2) nos dois
+  lutadores; a fase avança a cada 4 px de deslocamento **real** da dupla; para quando a dupla para e
+  continua de onde estava. Vale para J1 ou J2 aplicador, esquerda ou direita, Clássico (LB/SHIFT/DELETE)
+  ou Contextual (automático).
+- **Desequilíbrio:** só quando o motor aplica o efeito DESEQUILIBRIO no receptor (o que só acontece com
+  sucesso). Peito +8°, cintura +4°, cabeça −4°, joelho de apoio +3; sobe em 6 ticks, segura até 12 e
+  volta até 24. Braços continuam na pegada; posição e resultado mecânico não mudam.
+
+## Postura AJOELHADO
+
+- `IrmaoMiau.EstadoCorporal.AJOELHADO` (postura corporal). Posições técnicas (pegada, guarda...) continuam
+  sendo do motor de combate (`EstadoInteracaoCombate`).
+- `entities.PosturaAjoelhada`: pernas por molde (pivôs diferentes no Branco e no Preto), joelhos no
+  tatame, canelas deitadas para trás, corpo abaixado 38/39 unidades (≈ 27 px). Tronco, cabeça e braços
+  livres.
+- Estados visuais `AJOELHADO` e `AJOELHADO_MOVIMENTO` com JSON de fallback
+  (`individuais/<branco|preto>_ajoelhado*.json`, origem "FALLBACK PROCEDURAL 5J") e, se o JSON faltar, o
+  mesmo desenho em código no renderizador.
+- **PEGADA_AJOELHADA (fallback):** quem está de joelhos recebe a pose da pegada com as pernas de joelhos e
+  o corpo abaixado (`SistemaCombate.aplicarPoseNaPostura`). Nada de "levantar" visualmente.
+
+## Contrato: o que trocar quando houver animação desenhada
+
+| Identificador | Hoje | Para substituir |
+|---|---|---|
+| `POSTURA_AJOELHADO_IDLE` | `branco.ajoelhado.json` / `preto.ajoelhado.json` (1 quadro) | trocar os quadros do JSON pelo exportado do MiauStudio (mesmo id/estado) |
+| `POSTURA_AJOELHADO_MOVIMENTO` | `*_ajoelhado_movimento.json` (3 quadros, sequência 0-1-0-2) | idem |
+| `PEGADA_AJOELHADA` | adaptador `PosturaAjoelhada.adaptar` | registrar `pegada_1_ajoelhada` (+ variantes) e escolher pela postura no resolvedor |
+| `PEGADA_ARRASTO` | `CamadaPoseCombate` (passos) | animação conjunta em loop para o estado `ARRASTO_CONJUNTO` |
+| `PEGADA_DESEQUILIBRIO` | `CamadaPoseCombate` (reação) | animação do receptor disparada pelo efeito DESEQUILIBRIO |
+
+Nenhum arquivo vazio foi cadastrado: os JSON de joelhos são poses reais e dizem que são fallback.
+
+## Quadros para desenhar no MiauStudio (sugestão)
+
+1. **Ajoelhado parado** (Branco e Preto): 1–2 quadros, joelhos no tatame, tronco reto, mãos prontas.
+2. **Ajoelhado andando**: 4 quadros (neutro, joelho esquerdo à frente, neutro, joelho direito à frente).
+3. **PEGADA_1 ajoelhada** (Branco aplicador e Preto aplicador): 3 quadros como a PEGADA_1, de joelhos.
+4. **Arrasto na pegada** (em pé e de joelhos): 4 quadros em loop, braços fixos na pegada.
+5. **Reação ao desequilíbrio** (receptor): 3 quadros (inclina, apoia, volta).

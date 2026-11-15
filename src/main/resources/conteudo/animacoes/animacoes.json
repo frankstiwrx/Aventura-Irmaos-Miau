@@ -8,6 +8,14 @@
       "arquivo": "/conteudo/miaustudio/PEGADA_1.json",
       "duracaoFrames": 30,
       "descricao": "Entrada da PEGADA_1: Branco aplicador, Preto receptor, 3 quadros com tempos iguais."
+    },
+    {
+      "id": "pegada_1_entrada_preto",
+      "formato": "MIAUSTUDIO_PROJECT_V2",
+      "arquivo": "/conteudo/miaustudio/PEGADA_1_PRETO.json",
+      "duracaoFrames": 30,
+      "varianteDe": "pegada_1_entrada",
+      "descricao": "Entrada da PEGADA_1 desenhada pelo usuario com o Preto aplicador e o Branco receptor (Entrega 5J)."
     }
   ]
 }

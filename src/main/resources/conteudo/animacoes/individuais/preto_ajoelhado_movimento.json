@@ -1,0 +1,33 @@
+{
+  "tipo": "ANIMACAO_INDIVIDUAL_IRMAOS_MIAU",
+  "versaoEsquema": 1,
+  "id": "preto.ajoelhado_movimento",
+  "estado": "AJOELHADO_MOVIMENTO",
+  "rig": "miau_v1",
+  "uso": "INDIVIDUAL",
+  "loop": true,
+  "duracaoQuadroMs": 160,
+  "sequencia": [
+    0,
+    1,
+    0,
+    2
+  ],
+  "deslocamentoVisual": {
+    "x": 0,
+    "y": 27
+  },
+  "espelhamento": "LADO_DO_LUTADOR",
+  "origem": "FALLBACK PROCEDURAL 5J (PosturaAjoelhada.poseMovimento): substituir pelo MiauStudio",
+  "quadros": [
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, -10, -39, -3, 0, -50, -39]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, -6, -39, -5, 0, -50, -39]
+    },
+    {
+      "pose": [0, 0, 7, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 11, 0, -10, -39, 1, 0, -46, -39]
+    }
+  ]
+}
