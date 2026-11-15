@@ -551,6 +551,10 @@ public void iniciarSprawl() {
     // =============================
     private void recuperarCondicionamentoLeve() {
 
+        if (vinculadoEmPegada) {
+            return;                                     // 5O.3
+        }
+
         /*
      * Sem fôlego o corpo não consegue
      * recuperar condicionamento.
@@ -2668,6 +2672,22 @@ public void alternarDeitado() {
         return p;
     }
 
+    /**
+     * 5O.3: o lutador esta numa pegada (aplicando OU sofrendo), do inicio da
+     * entrada ate o fim do vinculo. Marcado pelo SistemaCombate; enquanto true,
+     * TODA recuperacao (folego e condicionamento, passiva e respirando) para.
+     * O consumo normal continua.
+     */
+    private boolean vinculadoEmPegada;
+
+    public void setVinculadoEmPegada(boolean vinculado) {
+        this.vinculadoEmPegada = vinculado;
+    }
+
+    public boolean isVinculadoEmPegada() {
+        return vinculadoEmPegada;
+    }
+
     /** 5O.2: fase da respiracao (desenho e testes). */
     public double getFaseRespiracao() {
         return faseRespiracao;
@@ -2933,6 +2953,10 @@ protected boolean isRolamentoParaTras() {
 
 private void recuperarFolego() {
 
+    if (vinculadoEmPegada) {
+        return;                                         // 5O.3: aplicando ou sofrendo pegada
+    }
+
     if (
             correndo
             || pulando
@@ -2956,6 +2980,10 @@ private void recuperarFolego() {
 }
 
 private void recuperarFolegoRespirando() {
+
+    if (vinculadoEmPegada) {
+        return;                                         // 5O.3: RT na pegada nao recupera (nem cobra)
+    }
 
     if (pulando) {
 
@@ -2985,6 +3013,10 @@ private void recuperarFolegoRespirando() {
 }
 
 private void recuperarCondicionamentoRespirando() {
+
+    if (vinculadoEmPegada) {
+        return;                                         // 5O.3
+    }
 
     /*
      * Precisa possuir pelo menos

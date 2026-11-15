@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 908, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 914, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -404,3 +404,7 @@ Gamepad (Xbox):
 - [ ] J2 no Contextual: L agacha, J corre (não pega), D-pad não anda
 - [ ] RT respira em pé, de joelhos e deitado (sem mudar a postura); andar respirando é mais lento embaixo
 - [ ] F3: `ESQUEMA J1 CONTEXTUAL J2 CONTEXTUAL`
+
+### Fôlego na pegada (Entrega 5O.3)
+- [ ] J1 agarrando o J2 (e o J2 agarrando o J1): ninguém recupera fôlego, nem segurando o RT
+- [ ] Soltou a pegada: parado e respirando, o fôlego volta a subir

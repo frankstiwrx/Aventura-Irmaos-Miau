@@ -229,6 +229,9 @@ public final class SistemaCombate {
         this.lutadorA = lutadorA;
         this.lutadorB = lutadorB;
         this.registroAcoes = registroAcoes;
+        // 5O.3: um combate novo comeca sem vinculo (nada sobra de um combate anterior).
+        lutadorA.setVinculadoEmPegada(false);
+        lutadorB.setVinculadoEmPegada(false);
 
         atualizar();
     }
@@ -529,6 +532,13 @@ public final class SistemaCombate {
             receptorInteracao.limparEstadoAnimacaoCombate();
         }
 
+        // 5O.3: acabou o vinculo: os dois voltam a recuperar folego pelas regras normais.
+        if (aplicadorInteracao != null) {
+            aplicadorInteracao.setVinculadoEmPegada(false);
+        }
+        if (receptorInteracao != null) {
+            receptorInteracao.setVinculadoEmPegada(false);
+        }
         estadoInteracao = EstadoInteracaoCombate.LIVRE;
         aplicadorInteracao = null;
         receptorInteracao = null;
@@ -1223,6 +1233,9 @@ public final class SistemaCombate {
         aplicadorInteracao = aplicador;
         receptorInteracao = receptor;
         idAcaoInteracao = idAcao;
+        // 5O.3: aplicador e receptor ficam vinculados: nenhuma recuperacao de folego enquanto durar.
+        aplicador.setVinculadoEmPegada(true);
+        receptor.setVinculadoEmPegada(true);
 
         // Ainda nao estabelecida: depende do fim da animacao de entrada.
         referenciaAplicador = null;

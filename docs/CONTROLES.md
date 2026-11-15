@@ -1080,3 +1080,17 @@ teclado-controle e Xbox simulado.
 - Respirar não muda a postura; não respira no ar, rolando, no sprawl, numa acrobacia nem no meio de uma
   transição. RT + direção = defesa (sem respirar). Deitado, RT + direção não vira guarda (solo) e não respira.
 - De joelhos e deitado o peito e a cabeça sobem e descem 1–2 px (só no desenho).
+
+
+## Fôlego durante a pegada (Entrega 5O.3)
+
+Enquanto existir uma pegada envolvendo o lutador — **aplicando ou sofrendo**, da entrada até o fim do
+vínculo — ele **não recupera** fôlego nem condicionamento: nem respirando (RT ou a tecla de respirar) nem
+parado. Vale durante arrasto, reforço, desequilíbrio, resistência e rompimento. O consumo normal continua
+(arrasto, resistência, técnicas). Segurar o RT agarrado não recupera nem cobra nada a mais, e não quebra a
+pegada. Ao acabar a pegada, a recuperação volta pelas regras normais (respiração por postura da 5O.2: em pé
+100%, de joelhos 70%, deitado 40%).
+
+Implementação: o `SistemaCombate` marca `IrmaoMiau.setVinculadoEmPegada` nos dois lutadores no início da
+interação e desmarca no fim (e num combate novo); as quatro funções de recuperação do `IrmaoMiau` param
+enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jogador.
