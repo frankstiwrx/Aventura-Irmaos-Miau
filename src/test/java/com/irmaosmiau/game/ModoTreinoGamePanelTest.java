@@ -238,6 +238,11 @@ class ModoTreinoGamePanelTest {
         assertTrue(painel.isDebugVisivel());
         atalho("proximoCenario");
         assertEquals("original", painel.getCenario().getId());
+        // 5O.4 (pedido): o F4 passa tambem pelos dois mapas novos antes de voltar ao dojo.
+        atalho("proximoCenario");
+        assertEquals("campo_remaster", painel.getCenario().getId());
+        atalho("proximoCenario");
+        assertEquals("torneio", painel.getCenario().getId());
         atalho("proximoCenario");
         assertEquals("dojo", painel.getCenario().getId());
         atalho("alternarMusica");

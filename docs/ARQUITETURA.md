@@ -429,3 +429,23 @@ TREINO segue com `ConfigurarTreinoPanel`/`SelecaoLutadoresPanel`; o `MenuPanel` 
 - `SistemaCombate.deslocarPegadaControlada`: tick de diagonal só acumulando = esforço (sem recuperação).
 - `CustosFolego.recuperacaoRespirando/velocidadeRespirando` por postura; `IrmaoMiau.setRespirando` aceita
   deitado; `getPoseCombateExternaParaDesenho` adiciona a respiração discreta no chão.
+
+## Arenas novas (Entrega 5O.4)
+
+Dois cenários desenhados só com Java2D (polígonos, degradês, elipses e linhas), no mesmo contrato e com o
+mesmo cache em imagem do `CenarioDojo`, registrados em `RegistroCenarios.padrao()` depois dos dois antigos
+(ordem: dojo, original, campo_remaster, torneio; o padrão continua o Dojo; o F4 passa pelos quatro):
+
+- `CenarioCampoRemaster` ("Campo aberto remasterizado"): céu em degradê, nuvens poligonais, duas camadas de
+  montanhas facetadas, arbustos no horizonte (com um caminho aberto no centro), árvores e pedras poligonais
+  nas laterais; grama em perspectiva com uma faixa por linha de movimentação; tufos e pedras pequenas no
+  primeiro plano só abaixo dos pés da linha 5.
+- `CenarioArenaTorneio` ("Arena do Grande Torneio"): atmosfera de torneio de artes marciais com desenho
+  próprio dos Irmãos Miau (pavilhão com telhados de palha, torre com o emblema de pata, faixa "GRANDE
+  TORNEIO", muralha de tijolos com portão, palmeiras); plataforma de lajes de pedra em perspectiva com borda
+  frontal abaixo da linha 5. Não reproduz elementos de obras de terceiros (sem letreiros, rostos ou
+  símbolos da referência).
+
+Regras de escala iguais às do Dojo: o chão começa em y = 296 e cada linha de movimentação é uma faixa de 20 px
+centrada nos pés (y = 326 + 20 × linha); nada de primeiro plano acima de y ≈ 412. O campo original e o Dojo
+não foram tocados.

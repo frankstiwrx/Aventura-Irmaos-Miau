@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 914, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 918, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -408,3 +408,8 @@ Gamepad (Xbox):
 ### Fôlego na pegada (Entrega 5O.3)
 - [ ] J1 agarrando o J2 (e o J2 agarrando o J1): ninguém recupera fôlego, nem segurando o RT
 - [ ] Soltou a pegada: parado e respirando, o fôlego volta a subir
+
+### Arenas novas (Entrega 5O.4)
+- [ ] A seleção de partida/treino e CONFIGURAÇÕES listam os 4 mapas; o F4 passa pelos quatro
+- [ ] Campo aberto remasterizado e Arena do Grande Torneio: pés nas faixas do chão nas 5 linhas, bordas da arena
+- [ ] Campo original e Dojo iguais aos de antes
