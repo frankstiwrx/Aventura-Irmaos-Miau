@@ -193,7 +193,7 @@ public final class ArteMenus {
      * MiauStudio): max(1, 1.5 * escala), pontas arredondadas.
      */
     static BasicStroke tracoDoRosto(double escala) {
-        return new BasicStroke((float) Math.max(1.0, 1.5 * escala), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        return IrmaoMiau.tracoDaBoca(escala);                  // 5M.2: uma definicao so
     }
 
     /** Sombra eliptica no chao embaixo do lutador. */

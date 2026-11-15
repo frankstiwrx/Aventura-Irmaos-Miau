@@ -2031,6 +2031,9 @@ public void alternarDeitado() {
             Graphics2D g2
     ) {
 
+        // 5M.2: o rosto nao deixa o traco dos olhos fechados vazar para quem chamou.
+        java.awt.Stroke tracoAnterior = g2.getStroke();
+
         int yCabeca
                 = getYVisual();
 
@@ -2190,6 +2193,16 @@ public void alternarDeitado() {
                 corRosto
         );
 
+        /*
+         * 5M.2: traco proprio da boca, igual ao do rig oficial na cabeca.
+         * Antes a boca herdava o traco atual: com os olhos fechados
+         * (2 x escala, pontas quadradas) ela engrossava a cada piscada;
+         * no desenho "em pe" herdava o traco de quem chamou.
+         */
+        g2.setStroke(
+                tracoDaBoca(escala)
+        );
+
         int bocaX
                 = x
                 + (int) (36
@@ -2220,6 +2233,24 @@ public void alternarDeitado() {
                 bocaX + (int) (5 * escala),
                 bocaY + (int) (9 * escala)
         );
+
+        g2.setStroke(
+                tracoAnterior
+        );
+    }
+
+    /** 5M.2: traco da boca: max(1, 1.5 x escala), pontas redondas (o mesmo do rig e do MiauStudio). */
+    public static BasicStroke tracoDaBoca(double escala) {
+        return new BasicStroke(
+                (float) Math.max(1.0, 1.5 * escala),
+                BasicStroke.CAP_ROUND,
+                BasicStroke.JOIN_ROUND
+        );
+    }
+
+    /** 5M.2: forca os olhos abertos/fechados (testes do rosto). */
+    void definirPiscandoParaTestes(boolean fechado) {
+        piscando = fechado;
     }
 
     protected void desenharPata(
