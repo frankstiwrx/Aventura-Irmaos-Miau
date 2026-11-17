@@ -152,3 +152,39 @@ Manual: ver `docs/REGRESSAO.md` (seção 5Q).
 - Defesas específicas por direção (empilhar no triângulo, girar para o lado certo no armlock) usando o RS ←/→.
 - Tabela oficial do modo campeonato (conferir o regulamento antes).
 - Persistir graduação e técnicas aprendidas nos perfis.
+
+## 10. Entrega 5Q.1 — graduação selecionável (fonte única)
+
+- A graduação do `IrmaoMiau` define ao mesmo tempo os **atributos**, a **cor da faixa** e a **elegibilidade**
+  das técnicas. **Padrão agora: faixa branca** (os atributos originais); na 5Q era preta. Os testes da 5Q que
+  usam o repertório completo colocam a faixa preta explicitamente.
+- Atributos: `regras/EvolucaoGraduacao`, evolução composta a partir da branca, `floor` a cada promoção
+  (Azul ×1,20, Roxa ×1,17, Marrom ×1,18, Preta ×1,15), conta exata em `BigDecimal`. O **peso não muda**.
+  A base nunca é alterada (`IrmaoMiau.getAtributosBase()`); trocar a faixa recalcula a partir dela.
+
+| Atributo | Branco: Br / Az / Rx / Mr / Pt | Preto: Br / Az / Rx / Mr / Pt |
+|---|---|---|
+| Condicionamento | 35 / 42 / 49 / 57 / 65 | 25 / 30 / 35 / 41 / 47 |
+| Fôlego | 25 / 30 / 35 / 41 / 47 | 40 / 48 / 56 / 66 / 75 |
+| Força | 42 / 50 / 58 / 68 / 78 | 18 / 21 / 24 / 28 / 32 |
+| Velocidade | 22 / 26 / 30 / 35 / 40 | 45 / 54 / 63 / 74 / 85 |
+| Agilidade | 25 / 30 / 35 / 41 / 47 | 45 / 54 / 63 / 74 / 85 |
+| Técnica | 25 / 30 / 35 / 41 / 47 | 28 / 33 / 38 / 44 / 50 |
+| Recuperação | 22 / 26 / 30 / 35 / 40 | 38 / 45 / 52 / 61 / 70 |
+| Peso | 72 (sempre) | 68 (sempre) |
+
+- Faixa desenhada: branca, azul, roxa, marrom, preta, com contorno cinza por dentro (visível em kimono da mesma
+  cor) e a tarja na ponta (vermelha na preta). Desenhada na mesma camada do corpo, então acompanha a cintura
+  em todas as poses e animações (nenhuma animação duplicada).
+- Kimono (casaco e calça juntos): branco, azul ou preto, para qualquer personagem. Padrões reais: Branco =
+  preto, Preto = branco.
+- Seleção (partida e treino): cada slot escolhe personagem, **FAIXA** e **KIMONO** (no painel do jogador, com
+  prévia e atributos calculados). J1 sobe da linha LUTAR até FAIXA/KIMONO; o J2 (partida) usa ↑/↓ para trocar
+  entre faixa e kimono e ←/→ para mudar; no treino, o J1 também escolhe FAIXA/KIMONO do parceiro. A escolha
+  segue na `EscolhaLutador`, então REINICIAR LUTA recria tudo igual (sem bônus duplicado).
+
+## 11. Arenas vivas (5Q.1)
+
+`Cenario.atualizarAmbiente(tick)` (uma vez por tick do loop; sem timer próprio). Camada dinâmica desenhada
+depois do cache estático e **atrás** dos lutadores: neve caindo na Fortaleza, bandeirinhas tremulando e torcida
+pulando no Campeonato, copa da árvore balançando na Academia dos Irmãos Miau.

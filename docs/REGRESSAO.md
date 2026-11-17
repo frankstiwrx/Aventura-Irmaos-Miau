@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1037, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1051, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -469,3 +469,12 @@ Gamepad (Xbox):
 - [ ] HUD: "DEFENDA: X 45%" / "ATACANDO X 62%"; com graduação baixa a célula mostra "·Az"
 - [ ] Empurrão: quem empurra inclina para frente, quem recebe recua o tronco; afastar e levantar têm pose própria
 - [ ] Treino: finalizar só avisa; REINICIAR LUTA depois da finalização volta tudo ao zero
+
+### Graduação, kimonos e arenas vivas (Entrega 5Q.1)
+- [ ] Seleção (partida): J1 escolhe FAIXA e KIMONO subindo da linha LUTAR; J2 usa ↑/↓ e ←/→; prévia e atributos mudam
+- [ ] Dois Miaus Brancos com faixas/kimonos diferentes; faixa preta em kimono preto e branca em kimono branco continuam visíveis
+- [ ] Faixa acompanha a cintura em pé, agachado, de joelhos, deitado, nas quedas e no solo
+- [ ] HUD mostra o fôlego da faixa (ex.: Branco preta 47/47); REINICIAR LUTA mantém faixa e kimono
+- [ ] Treino: faixa/kimono do jogador e do parceiro
+- [ ] Faixa branca: omoplata (azul) bloqueada ("·Az"); faixa azul libera
+- [ ] Fortaleza: neve caindo; Campeonato: bandeirinhas e torcida; Academia dos Irmãos Miau: árvore balançando

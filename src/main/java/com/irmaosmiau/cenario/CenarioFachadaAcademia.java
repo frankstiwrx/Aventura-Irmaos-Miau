@@ -55,6 +55,23 @@ public final class CenarioFachadaAcademia implements Cenario {
     private BufferedImage fundoCache;
     private BufferedImage chaoCache;
     private BufferedImage frenteCache;
+    private long tickAmbiente;
+
+    @Override
+    public void atualizarAmbiente(long tick) {
+        tickAmbiente = tick;
+    }
+
+    /** Camada dinamica: a copa da arvore balanca de leve (o tronco fica no cache). */
+    private void folhagem(Graphics2D g) {
+        int x = 34;
+        double b = 3 * Math.sin(tickAmbiente / 45.0);
+        g.setColor(FOLHA_ESCURA);
+        g.fill(new Ellipse2D.Double(x - 50 + b, -30, 150, 110));
+        g.setColor(FOLHA);
+        g.fill(new Ellipse2D.Double(x - 30 + b * 1.4, -20, 100, 80));
+        g.fill(new Ellipse2D.Double(x + 40 + b * 0.8, 10, 90, 60));
+    }
 
     @Override
     public String getId() {
@@ -72,6 +89,7 @@ public final class CenarioFachadaAcademia implements Cenario {
             fundoCache = renderizar(largura, altura, this::pintarFundo);
         }
         g2.drawImage(fundoCache, 0, 0, null);
+        folhagem(g2);                                          // 5Q.1: camada dinamica
     }
 
     private void pintarFundo(Graphics2D g, int w, int h) {
@@ -219,11 +237,7 @@ public final class CenarioFachadaAcademia implements Cenario {
     private static void arvore(Graphics2D g, int x, int base) {
         g.setColor(MADEIRA);
         g.fillPolygon(new int[] {x - 10, x + 10, x + 30, x + 18}, new int[] {base, base, 40, 40}, 4);
-        g.setColor(FOLHA_ESCURA);
-        g.fill(new Ellipse2D.Double(x - 50, -30, 150, 110));
-        g.setColor(FOLHA);
-        g.fill(new Ellipse2D.Double(x - 30, -20, 100, 80));
-        g.fill(new Ellipse2D.Double(x + 40, 10, 90, 60));
+        // 5Q.1: a copa e desenhada na camada dinamica (balancando)
     }
 
     private static void arbusto(Graphics2D g, int cx, int base, int r) {

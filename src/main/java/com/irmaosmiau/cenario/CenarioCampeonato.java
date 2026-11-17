@@ -49,6 +49,36 @@ public final class CenarioCampeonato implements Cenario {
     private BufferedImage fundoCache;
     private BufferedImage chaoCache;
     private BufferedImage frenteCache;
+    private long tickAmbiente;
+
+    @Override
+    public void atualizarAmbiente(long tick) {
+        tickAmbiente = tick;
+    }
+
+    /** Camada dinamica: bandeirinhas tremulando e alguns torcedores da frente pulando. */
+    private void ambiente(Graphics2D g, int w) {
+        double t = tickAmbiente / 12.0;
+        for (int i = 0; i < 2; i++) {
+            int x = i == 0 ? 120 : w - 120;
+            int y = 118;
+            int o = (int) Math.round(3 * Math.sin(t + i));
+            g.setColor(new Color(36, 36, 90));
+            g.fillPolygon(new int[] {x + 3, x + 40, x + 34 + o, x + 40, x + 3},
+                    new int[] {y, y + 2 + o, y + 14, y + 26 - o, y + 26}, 5);
+            pata(g, x + 18, y + 14 + o / 2, 7, BRANCO);
+        }
+        int fila = 5;
+        int y = 90 + fila * 24 + 14;
+        for (int k = 0; k < 10; k++) {
+            int x = 24 + k * 80 + (k % 2) * 9;
+            if (Math.abs(x - w / 2) < 130) {
+                continue;
+            }
+            int pulo = (int) Math.round(Math.max(0, 4 * Math.sin(t * 1.3 + k * 0.9)));
+            torcedor(g, x, y - pulo, new Color(80, 90, 160));
+        }
+    }
 
     @Override
     public String getId() {
@@ -66,6 +96,7 @@ public final class CenarioCampeonato implements Cenario {
             fundoCache = CenarioFachadaAcademia.renderizar(largura, altura, this::pintarFundo);
         }
         g2.drawImage(fundoCache, 0, 0, null);
+        ambiente(g2, largura);                                 // 5Q.1: camada dinamica
     }
 
     private void pintarFundo(Graphics2D g, int w, int h) {
@@ -119,9 +150,10 @@ public final class CenarioCampeonato implements Cenario {
         // estandartes com o rosto do Miau
         estandarte(g, 200, 50);
         estandarte(g, w - 200, 50);
-        // bandeirinhas de pata
-        bandeirinha(g, 120, 118);
-        bandeirinha(g, w - 120, 118);
+        // bandeirinhas de pata: 5Q.1 desenhadas na camada dinamica (tremulando)
+        g.setColor(new Color(200, 200, 210));
+        g.fillRect(120, 118, 3, 70);
+        g.fillRect(w - 120, 118, 3, 70);
         // mesa com trofeu, medalhas e plantas
         mesa(g, cx);
         // barreira de placas
@@ -217,13 +249,6 @@ public final class CenarioCampeonato implements Cenario {
         g.setStroke(new BasicStroke(1f));
     }
 
-    private static void bandeirinha(Graphics2D g, int x, int y) {
-        g.setColor(new Color(200, 200, 210));
-        g.fillRect(x, y, 3, 70);
-        g.setColor(new Color(36, 36, 90));
-        g.fillPolygon(new int[] {x + 3, x + 40, x + 34, x + 40, x + 3}, new int[] {y, y + 2, y + 14, y + 26, y + 26}, 5);
-        pata(g, x + 18, y + 14, 7, BRANCO);
-    }
 
     private static void mesa(Graphics2D g, int cx) {
         g.setColor(VERMELHO);

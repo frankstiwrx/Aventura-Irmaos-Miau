@@ -613,6 +613,8 @@ public void iniciarSprawl() {
         this.estilo = estilo;
 
         this.atributos = atributos;
+        this.atributosBase = atributos;                // 5Q.1: a faixa branca (referencia imutavel)
+        this.corKimonoPadrao = corKimono;
 
         this.condicionamentoAtual
                 = atributos.getCondicionamento();
@@ -2235,7 +2237,16 @@ public void alternarDeitado() {
      * deixar negativo, e suspende a recuperacao passiva neste tick.
      */
     // ---------------- 5Q: graduacao logica e tecnicas aprendidas (independentes da faixa desenhada)
-    private com.irmaosmiau.regras.Graduacao graduacao = com.irmaosmiau.regras.Graduacao.PRETA;
+    // 5Q.1: a graduacao e a FONTE UNICA de atributos, cor da faixa e elegibilidade das tecnicas.
+    // Padrao: faixa branca = os atributos originais (na 5Q o padrao era preta; mudou a pedido).
+    private com.irmaosmiau.regras.Graduacao graduacao = com.irmaosmiau.regras.Graduacao.BRANCA;
+    /** Atributos da faixa branca (os do personagem/perfil); nunca alterados. */
+    private AtributosLutador atributosBase;
+    private Color corKimonoPadrao;
+
+    public AtributosLutador getAtributosBase() {
+        return atributosBase;
+    }
     private final java.util.Set<String> naoAprendidas = new java.util.HashSet<>();
 
     /** Graduacao LOGICA (libera tecnicas); a cor da faixa desenhada e so cosmetica. */
@@ -2243,8 +2254,56 @@ public void alternarDeitado() {
         return graduacao;
     }
 
+    /**
+     * 5Q.1: troca a graduacao e RECALCULA os atributos a partir da base (nunca do valor
+     * atual: repetir ou reiniciar nao acumula bonus; voltar a branca restaura o original).
+     * Folego e condicionamento voltam ao novo maximo (escolha feita antes da luta).
+     */
     public void setGraduacao(com.irmaosmiau.regras.Graduacao g) {
         graduacao = g == null ? com.irmaosmiau.regras.Graduacao.BRANCA : g;
+        atributos = com.irmaosmiau.regras.EvolucaoGraduacao.aplicar(atributosBase, graduacao);
+        folegoAtual = atributos.getFolego();
+        condicionamentoAtual = atributos.getCondicionamento();
+    }
+
+    /** 5Q.1: cor do kimono escolhida (casaco e calca). null volta ao padrao do personagem. */
+    public void setCorKimono(CorKimono k) {
+        corKimono = k == null ? corKimonoPadrao : k.getCor();
+    }
+
+    public CorKimono getCorKimono() {
+        return CorKimono.de(corKimono);
+    }
+
+    public CorKimono getCorKimonoPadrao() {
+        return CorKimono.de(corKimonoPadrao);
+    }
+
+    /** 5Q.1: cor da faixa pela graduacao (fonte unica). */
+    public Color getCorFaixa() {
+        return switch (graduacao) {
+            case BRANCA -> new Color(244, 244, 238);
+            case AZUL -> new Color(55, 55, 220);
+            case ROXA -> new Color(122, 46, 168);
+            case MARROM -> new Color(116, 72, 36);
+            case PRETA -> new Color(24, 24, 26);
+        };
+    }
+
+    /**
+     * 5Q.1: a faixa no retangulo dado (no mesmo Graphics/rotacao do corpo, entao
+     * acompanha a cintura): cor da graduacao, contorno cinza (faixa branca em kimono
+     * branco / preta em kimono preto continuam visiveis) e a tarja na ponta
+     * (vermelha na preta, preta nas outras).
+     */
+    protected void desenharFaixa(Graphics2D g, int x, int y, int w, int h) {
+        g.setColor(getCorFaixa());
+        g.fillRect(x, y, w, h);
+        g.setColor(graduacao == com.irmaosmiau.regras.Graduacao.PRETA ? new Color(200, 30, 30) : new Color(22, 22, 22));
+        g.fillRect(x + (int) Math.round(w * 0.70), y, Math.max(2, (int) Math.round(w * 0.12)), h);
+        g.setColor(new Color(128, 128, 128));               // contorno POR DENTRO: a silhueta nao muda
+        g.fillRect(x, y, w, 1);
+        g.fillRect(x, y + h - 1, w, 1);
     }
 
     /** A tecnica (id base, ex.: "armlock") foi aprendida? Padrao: todas. */

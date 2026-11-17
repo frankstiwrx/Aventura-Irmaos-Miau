@@ -95,7 +95,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     public enum Fase { ESCOLHENDO, PERFIL, PRONTO }
 
     /** Linhas de configuracao (o J1 navega quando esta pronto). */
-    enum Linha { MAPA, TEMPO, DIFICULDADE, PARCEIRO, INICIO, LUTAR }
+    enum Linha { MAPA, TEMPO, DIFICULDADE, PARCEIRO, INICIO, LUTAR,
+        /** 5Q.1: faixa e kimono do J1 e (no treino) do parceiro. */
+        FAIXA, KIMONO, FAIXA_PARCEIRO, KIMONO_PARCEIRO }
 
     private static final class Jogador {
         int cursor;
@@ -105,6 +107,11 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         long avisoBloqueadoAte = -1;
         IrmaoMiau previa;
         String idPrevia;
+        /** 5Q.1: faixa (fonte dos atributos) e kimono (null = padrao do personagem) deste slot. */
+        com.irmaosmiau.regras.Graduacao faixa = com.irmaosmiau.regras.Graduacao.BRANCA;
+        com.irmaosmiau.entities.CorKimono kimono;
+        /** 5Q.1: linha do J2 na partida (0 = faixa, 1 = kimono). */
+        int linhaVisual;
     }
 
     private final transient List<DefinicaoPersonagem> elenco = new ArrayList<>();
@@ -303,6 +310,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 }
                 j.perfis = opcoes.paraBase(d.getId()).getValor();
                 j.perfil = 0;
+                j.kimono = null;                                  // 5Q.1: kimono padrao do novo personagem
                 j.fase = j.perfis.size() > 1 ? Fase.PERFIL : Fase.PRONTO;
                 if (j.fase == Fase.PRONTO && slot == SlotJogador.JOGADOR_1) {
                     linhaJ1 = Linha.LUTAR;
@@ -338,7 +346,15 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             return;
         }
         if (slot != SlotJogador.JOGADOR_1) {
-            return;                                             // a partida e configurada pelo J1
+            // 5Q.1: o J2 so escolhe a propria faixa e o proprio kimono (a partida e configurada pelo J1)
+            switch (c) {
+                case ANTERIOR, PROXIMO -> j.linhaVisual = 1 - j.linhaVisual;
+                case ESQUERDA -> mudarVisual(slot, j, j.linhaVisual == 0, -1);
+                case DIREITA -> mudarVisual(slot, j, j.linhaVisual == 0, 1);
+                default -> {
+                }
+            }
+            return;
         }
         switch (c) {
             case ANTERIOR -> linhaJ1 = linhaVizinha(-1);
@@ -361,9 +377,11 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
 
     /** DIFICULDADE e pulada: indisponivel enquanto nao houver IA. */
     private Linha linhaVizinha(int passo) {
+        // 5Q.1: faixa/kimono ficam ACIMA do mapa (o caminho antigo, de LUTAR para cima, nao muda)
         Linha[] ordem = modo == Modo.TREINO
-                ? new Linha[] {Linha.MAPA, Linha.PARCEIRO, Linha.INICIO, Linha.LUTAR}
-                : new Linha[] {Linha.MAPA, Linha.TEMPO, Linha.LUTAR};
+                ? new Linha[] {Linha.FAIXA, Linha.KIMONO, Linha.FAIXA_PARCEIRO, Linha.KIMONO_PARCEIRO, Linha.MAPA,
+                    Linha.PARCEIRO, Linha.INICIO, Linha.LUTAR}
+                : new Linha[] {Linha.FAIXA, Linha.KIMONO, Linha.MAPA, Linha.TEMPO, Linha.LUTAR};
         int i = java.util.Arrays.asList(ordem).indexOf(linhaJ1);
         return ordem[Math.max(0, Math.min(ordem.length - 1, i + passo))];
     }
@@ -377,7 +395,39 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             parceiro = Math.floorMod(parceiro + passo, parceiros.size());
         } else if (linhaJ1 == Linha.INICIO) {
             inicio = Math.floorMod(inicio + passo, InicioLuta.values().length);
+        } else if (linhaJ1 == Linha.FAIXA || linhaJ1 == Linha.KIMONO) {
+            mudarVisual(SlotJogador.JOGADOR_1, jogadores.get(SlotJogador.JOGADOR_1), linhaJ1 == Linha.FAIXA, passo);
+        } else if (linhaJ1 == Linha.FAIXA_PARCEIRO || linhaJ1 == Linha.KIMONO_PARCEIRO) {
+            mudarVisual(SlotJogador.JOGADOR_2, jogadores.get(SlotJogador.JOGADOR_2), linhaJ1 == Linha.FAIXA_PARCEIRO,
+                    passo);
         }
+    }
+
+    /** 5Q.1: proxima faixa ou proximo kimono do slot (circular). */
+    private void mudarVisual(SlotJogador slot, Jogador j, boolean faixa, int passo) {
+        if (faixa) {
+            j.faixa = com.irmaosmiau.regras.Graduacao.values()[Math.floorMod(j.faixa.ordinal() + passo, com.irmaosmiau.regras.Graduacao.values().length)];
+            return;
+        }
+        com.irmaosmiau.entities.CorKimono atual = kimonoEfetivo(slot);
+        int i = atual == null ? 0 : atual.ordinal();
+        j.kimono = com.irmaosmiau.entities.CorKimono.values()[Math.floorMod(i + passo, com.irmaosmiau.entities.CorKimono.values().length)];
+    }
+
+    /** Kimono que o slot vai usar (o escolhido ou o padrao do personagem). */
+    com.irmaosmiau.entities.CorKimono kimonoEfetivo(SlotJogador slot) {
+        Jogador j = jogadores.get(modo == Modo.TREINO ? slot : slot);
+        if (j.kimono != null) {
+            return j.kimono;
+        }
+        EscolhaLutador e = escolhaBase(slot);
+        return e == null ? null : padraoKimono(e);
+    }
+
+    private final transient Map<String, com.irmaosmiau.entities.CorKimono> kimonosPadrao = new HashMap<>();
+
+    private com.irmaosmiau.entities.CorKimono padraoKimono(EscolhaLutador e) {
+        return kimonosPadrao.computeIfAbsent(e.getIdBase(), k -> e.getBase().criarLutador(0, 0, 0.5).getCorKimonoPadrao());
     }
 
     /** Como no treino antigo: o parceiro e o outro irmao oficial (pode ser trocado depois). */
@@ -425,6 +475,13 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
 
     /** Escolha confirmada (ou em escolha) do jogador; null num espaco bloqueado. */
     EscolhaLutador escolha(SlotJogador slot) {
+        EscolhaLutador e = escolhaBase(slot);
+        Jogador j = jogadores.get(slot);
+        return e == null ? null : e.com(j.faixa, j.kimono);              // 5Q.1: faixa e kimono do slot
+    }
+
+    /** A escolha sem faixa/kimono (personagem ou perfil). */
+    private EscolhaLutador escolhaBase(SlotJogador slot) {
         if (modo == Modo.TREINO && slot == SlotJogador.JOGADOR_2) {
             return parceiros.isEmpty() ? null : parceiros.get(parceiro);       // o parceiro passivo
         }
@@ -474,7 +531,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     private void atualizarPrevia(SlotJogador s) {
         Jogador j = jogadores.get(s);
         EscolhaLutador e = escolha(s);
-        String id = e == null ? null : e.getId();
+        String id = e == null ? null : e.getId() + "|" + e.getGraduacao() + "|" + e.getKimono();
         if (id == null) {
             j.previa = null;
             j.idPrevia = null;
@@ -606,6 +663,8 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 : j.fase == Fase.PRONTO ? "PRONTO!" : j.fase == Fase.PERFIL ? "ESCOLHA O PERFIL" : "ESCOLHENDO";
         g.drawString(fase, x + 210 - g.getFontMetrics().stringWidth(fase), 78);
 
+        visual(g, s, j, x, parceiroTreino);
+
         // previa
         g.setColor(new Color(255, 255, 255, 30));
         g.fillOval(x + 40, 268, 140, 18);
@@ -647,6 +706,43 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         if (e != null) {
             atributos(g, e.getAtributos(), x + 12, 344);
         }
+    }
+
+    /** 5Q.1: "FAIXA < AZUL >" e "KIMONO < PRETO >" do slot, com a linha em foco destacada. */
+    private void visual(Graphics2D g, SlotJogador s, Jogador j, int x, boolean parceiroTreino) {
+        boolean pronto = jogadores.get(SlotJogador.JOGADOR_1).fase == Fase.PRONTO;
+        boolean focoFaixa;
+        boolean focoKimono;
+        if (s == SlotJogador.JOGADOR_1) {
+            focoFaixa = pronto && linhaJ1 == Linha.FAIXA;
+            focoKimono = pronto && linhaJ1 == Linha.KIMONO;
+        } else if (parceiroTreino) {
+            focoFaixa = pronto && linhaJ1 == Linha.FAIXA_PARCEIRO;
+            focoKimono = pronto && linhaJ1 == Linha.KIMONO_PARCEIRO;
+        } else {
+            focoFaixa = j.fase == Fase.PRONTO && j.linhaVisual == 0;
+            focoKimono = j.fase == Fase.PRONTO && j.linhaVisual == 1;
+        }
+        com.irmaosmiau.entities.CorKimono k = kimonoEfetivo(s);
+        linhaVisual(g, "FAIXA", j.faixa.name(), x, 94, focoFaixa);
+        linhaVisual(g, "KIMONO", k == null ? "-" : k.getNome().toUpperCase(Locale.ROOT), x, 108, focoKimono);
+    }
+
+    private static void linhaVisual(Graphics2D g, String rotulo, String valor, int x, int y, boolean foco) {
+        if (foco) {
+            g.setColor(new Color(255, 206, 46, 60));
+            g.fillRoundRect(x + 6, y - 10, 208, 13, 6, 6);
+        }
+        g.setFont(new Font("Arial", Font.BOLD, 10));
+        g.setColor(foco ? ArteMenus.AMARELO : ArteMenus.BRANCO);
+        g.drawString(rotulo, x + 12, y);
+        String v = (foco ? "< " : "") + valor + (foco ? " >" : "");
+        g.drawString(v, x + 208 - g.getFontMetrics().stringWidth(v), y);
+    }
+
+    // ---- 5Q.1: acesso para testes
+    com.irmaosmiau.regras.Graduacao faixa(SlotJogador s) {
+        return jogadores.get(s).faixa;
     }
 
     /** "Irmão Miau Branco" -> "MIAU BRANCO". */

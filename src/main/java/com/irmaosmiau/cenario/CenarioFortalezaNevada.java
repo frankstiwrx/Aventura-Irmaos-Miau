@@ -63,6 +63,35 @@ public final class CenarioFortalezaNevada implements Cenario {
     private BufferedImage fundoCache;
     private BufferedImage chaoCache;
     private BufferedImage frenteCache;
+    private long tickAmbiente;
+    private static final int FLOCOS = 70;
+    private static final int[][] SEMENTES = new int[FLOCOS][4];     // x0, y0, velocidade (x10), tamanho
+
+    static {
+        Random r = new Random(5310);
+        for (int[] f : SEMENTES) {
+            f[0] = r.nextInt(820) - 10;
+            f[1] = r.nextInt(Y_CHAO);
+            f[2] = 4 + r.nextInt(7);
+            f[3] = 2 + r.nextInt(2);
+        }
+    }
+
+    @Override
+    public void atualizarAmbiente(long tick) {
+        tickAmbiente = tick;
+    }
+
+    /** Neve caindo devagar, com balanco lateral, so ate o horizonte (atras dos lutadores). */
+    private void neveCaindo(Graphics2D g, int w) {
+        g.setColor(new Color(255, 255, 255, 200));
+        for (int i = 0; i < FLOCOS; i++) {
+            int[] f = SEMENTES[i];
+            double y = Math.floorMod(f[1] + tickAmbiente * f[2] / 10, Y_CHAO - 8);
+            double x = f[0] + 6 * Math.sin((tickAmbiente + i * 13) / 40.0);
+            g.fill(new Ellipse2D.Double(Math.floorMod((long) x, w + 20) - 10, y, f[3], f[3]));
+        }
+    }
 
     @Override
     public String getId() {
@@ -83,6 +112,7 @@ public final class CenarioFortalezaNevada implements Cenario {
             fundoCache = renderizar(largura, altura, this::pintarFundo);
         }
         g2.drawImage(fundoCache, 0, 0, null);
+        neveCaindo(g2, largura);                               // 5Q.1: camada dinamica
     }
 
     private void pintarFundo(Graphics2D g, int w, int h) {

@@ -29,6 +29,15 @@ public interface Cenario {
 
     void desenharChao(Graphics2D g2, int largura, int altura);
 
+    /**
+     * 5Q.1 (arenas vivas): avanca o ambiente para o tick do jogo (neve, torcida,
+     * folhas). Chamado uma vez por tick pelo loop do jogo; nada de timer proprio.
+     * Os efeitos sao desenhados em desenharFundo, por cima do cache estatico e
+     * ATRAS dos lutadores; o mesmo tick desenha sempre a mesma imagem.
+     */
+    default void atualizarAmbiente(long tick) {
+    }
+
     /** Opcional: por padrao nada e desenhado na frente dos personagens. */
     default void desenharPrimeiroPlano(Graphics2D g2, int largura, int altura) {
     }

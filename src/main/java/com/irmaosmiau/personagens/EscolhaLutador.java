@@ -16,13 +16,37 @@ public final class EscolhaLutador {
 
     private final DefinicaoPersonagem base;
     private final PerfilLutador perfil;     // null = oficial
+    /** 5Q.1: faixa escolhida (atributos, cor da faixa, tecnicas) e kimono (null = padrao do personagem). */
+    private final com.irmaosmiau.regras.Graduacao graduacao;
+    private final com.irmaosmiau.entities.CorKimono kimono;
 
     private EscolhaLutador(DefinicaoPersonagem base, PerfilLutador perfil) {
+        this(base, perfil, com.irmaosmiau.regras.Graduacao.BRANCA, null);
+    }
+
+    private EscolhaLutador(DefinicaoPersonagem base, PerfilLutador perfil, com.irmaosmiau.regras.Graduacao graduacao,
+            com.irmaosmiau.entities.CorKimono kimono) {
         if (base == null) {
             throw new IllegalArgumentException("O personagem-base e obrigatorio.");
         }
         this.base = base;
         this.perfil = perfil;
+        this.graduacao = graduacao == null ? com.irmaosmiau.regras.Graduacao.BRANCA : graduacao;
+        this.kimono = kimono;
+    }
+
+    /** 5Q.1: a mesma escolha com outra faixa e outro kimono (objeto novo; a base nao muda). */
+    public EscolhaLutador com(com.irmaosmiau.regras.Graduacao g, com.irmaosmiau.entities.CorKimono k) {
+        return new EscolhaLutador(base, perfil, g, k);
+    }
+
+    public com.irmaosmiau.regras.Graduacao getGraduacao() {
+        return graduacao;
+    }
+
+    /** Kimono escolhido (null = o padrao do personagem). */
+    public com.irmaosmiau.entities.CorKimono getKimono() {
+        return kimono;
     }
 
     public static EscolhaLutador oficial(DefinicaoPersonagem definicao) {
@@ -49,10 +73,12 @@ public final class EscolhaLutador {
 
     /** Cria a instancia para a partida (oficial ou com os atributos do perfil). */
     public IrmaoMiau criarLutador(int x, int y, double escala) {
-        if (perfil == null) {
-            return base.criarLutador(x, y, escala);
-        }
-        return base.criarLutadorPersonalizado(x, y, escala, perfil.getAtributos(), perfil.getNome());
+        IrmaoMiau l = perfil == null ? base.criarLutador(x, y, escala)
+                : base.criarLutadorPersonalizado(x, y, escala, perfil.getAtributos(), perfil.getNome());
+        // 5Q.1: a faixa deriva os atributos da base do proprio lutador (nunca acumula)
+        l.setGraduacao(graduacao);
+        l.setCorKimono(kimono);
+        return l;
     }
 
     public boolean isOficial() {
@@ -82,7 +108,13 @@ public final class EscolhaLutador {
     }
 
     /** Copia dos atributos que a instancia vai usar. */
+    /** 5Q.1: atributos CALCULADOS para a faixa escolhida (na branca = os originais). */
     public AtributosLutador getAtributos() {
+        return com.irmaosmiau.regras.EvolucaoGraduacao.aplicar(getAtributosBase(), graduacao);
+    }
+
+    /** Atributos da faixa branca (oficiais ou do perfil), sem nenhum bonus. */
+    public AtributosLutador getAtributosBase() {
         return perfil == null ? base.getAtributosPadrao().copiar() : perfil.getAtributos();
     }
 

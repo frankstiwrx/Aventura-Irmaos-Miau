@@ -645,6 +645,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 sistemaCombate, deslocandoConjunto, tick);
 
         avisos.atualizar();                                       // 5P.1
+        cenario.atualizarAmbiente(tick);                          // 5Q.1: arenas vivas
         tick++;
         contarTempoDeLuta();
         verificarFimDeJogo();

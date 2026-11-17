@@ -827,20 +827,7 @@ int[] poseInterpolada =
         );
 
         // Faixa cobre a emenda entre pelve e tronco.
-        raiz.setColor(
-                new Color(
-                        55,
-                        55,
-                        220
-                )
-        );
-
-        raiz.fillRect(
-                faixaX,
-                faixaY,
-                faixaLargura,
-                faixaAltura
-        );
+        desenharFaixa(raiz, faixaX, faixaY, faixaLargura, faixaAltura);   // 5Q.1: cor pela graduacao
 
         // =========================
         // TRONCO SUPERIOR
@@ -1536,16 +1523,12 @@ private void desenharEmPe(
         // =========================
         // FAIXA AZUL
         // =========================
-        g2.setColor(
-                new Color(55, 55, 220)
-        );
-
-        g2.fillRect(
+        desenharFaixa(g2,
                 x - (int) (6 * escala),
                 corpoY + (int) (80 * escala),
                 (int) (90 * escala),
                 (int) (12 * escala)
-        );
+        );   // 5Q.1: cor pela graduacao
 }
 
 

@@ -42,6 +42,9 @@ class MotorSolo5QTest {
         b = new IrmaoMiauPreto(380, 150, 0.7);
         a.setViradoParaDireita(true);
         b.setViradoParaDireita(false);
+        // 5Q.1 (pedido): o padrao virou a faixa branca; estes testes exercitam o repertorio completo
+        a.setGraduacao(Graduacao.PRETA);
+        b.setGraduacao(Graduacao.PRETA);
         m = new MotorSolo(a, b, null, 15, 715);
     }
 
