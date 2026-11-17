@@ -47,10 +47,23 @@ public final class NarradorSolo {
                         CatalogoTecnicasSolo.FUGIR_DO_JOELHO -> o + " segurou o escape!";
                 default -> null;
             };
+            case "FIN_CONTROLE" -> q + " encaixou: " + nomeFin(e) + "!";
+            case "FIN_DEFENDIDA" -> q + " defendeu: " + nomeFin(e) + "!";
+            case "FIN_ESCAPE" -> q + " escapou: " + nomeFin(e) + "!";
+            case "FINALIZOU" -> q + " finalizou com " + nomeFin(e) + "!";
+            case "RENDICAO" -> q + " bateu! " + o + " venceu: " + nomeFin(e) + ".";
             case "SOLO_LIVRE" -> q + " foi ao chão.";
             case "EXAUSTAO" -> q + " está exausto!";
             default -> null;
         };
+    }
+
+    private static final CatalogoFinalizacoes FINALIZACOES = CatalogoFinalizacoes.referencia();
+
+    /** Nome curto da finalizacao do evento (ex.: "armlock"). */
+    static String nomeFin(MotorSolo.Evento e) {
+        return FINALIZACOES.buscar(e.tecnica()).map(Finalizacao::nome).orElse(e.tecnica())
+                .toLowerCase(java.util.Locale.ROOT);
     }
 
     private static String sucesso(String t, String detalhe, String q, String o) {

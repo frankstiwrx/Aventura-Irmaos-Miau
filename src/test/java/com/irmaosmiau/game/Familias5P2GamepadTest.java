@@ -187,25 +187,43 @@ class Familias5P2GamepadTest {
             gp(r().com(BotaoGamepad.LB));
             ticks(1);
             PainelDpadContextual.Quadro q = painel.montarQuadroDpad(J1);
-            assertTrue(q.nomeCamada().contains("FINALIZ."), q.nomeCamada());
-            assertEquals("AMERICANA*", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA), "reservada, com *");
-            assertFalse(q.celulas().get(DirecaoTecnica.CIMA).isExecutavel());
-            double f = painel.getLutador1().getFolegoAtual();
-            gp(r().com(BotaoGamepad.LB).com(BotaoGamepad.DPAD_CIMA));
-            ticks(1);
-            gp(r());
-            ticks(1);
-            assertTrue(painel.montarEstadoHud().getMensagem().contains("FINALIZAÇÃO FUTURA"),
-                    painel.montarEstadoHud().getMensagem());
-            assertEquals(Posicao.MONTADA, m().getPosicao());
-            assertTrue(painel.getLutador1().getFolegoAtual() >= f - 1e-9, "nada cobrado");
+            // 5Q (pedido): as finalizacoes deixaram de ser reservadas: LB = chaves, LT = estrangulamentos
+            assertTrue(q.nomeCamada().contains("CHAVES"), q.nomeCamada());
+            assertEquals("ARMLOCK", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA));
+            assertTrue(q.celulas().get(DirecaoTecnica.CIMA).isExecutavel());
             gp(r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.LB));
             ticks(1);
-            assertEquals("TRIÂNGULO*", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
+            assertEquals("→ PERNA", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
+            gp(r().com(BotaoGamepad.GATILHO_ESQ));
+            ticks(1);
+            assertEquals("CRUZADO", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
             gp(r());
             ticks(1);
             // RS sozinho na montada continua com os fundamentos
             assertEquals("ALTA", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
+        });
+    }
+
+    /** 5Q: Xbox: LT + RS ^ nas costas = mata-leao; quem defende bate com RB + RS v. */
+    @Test
+    void xboxFinalizaNasCostasEOOutroBateNoMotor() throws Exception {
+        naEdt(() -> {
+            criar();
+            ticks(2);
+            m().forcarPosicao(Posicao.COSTAS, Lado.A, Lado.A);
+            ticks(40);
+            m().definirEstabilidade(70);
+            gp(r().com(BotaoGamepad.GATILHO_ESQ));
+            ticks(1);
+            gp(r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.DPAD_CIMA));
+            ticks(1);
+            gp(r());
+            ticks(1);
+            assertEquals("mata_leao", m().getAtaque().orElseThrow().finalizacao().tecnicaBase());
+            assertEquals(Lado.A, m().getAtaque().get().atacante());
+            m().comando(Lado.B, new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
+                    com.irmaosmiau.posicional.TecnicaSolo.Direcao.BAIXO, true));
+            assertTrue(m().getVitoria().orElseThrow().rendicao());
         });
     }
 }

@@ -1254,9 +1254,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             // 5P: no chao (ou um em pe contra o solo) as teclas/direcoes de tecnica vao para o MotorSolo.
             if (soloConduz(slot)) {
                 for (AcaoJogador a : ACOES_PEGADA) {
-                    if (doSlot.contains(a) && !input.isAtiva(slot, AcaoJogador.MODIFICADOR_PROJECAO)
-                            && !input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA)) {
-                        pedirSolo(slot, direcaoDaAcao(a), false);
+                    if (doSlot.contains(a) && !input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA)) {
+                        // 5Q: no teclado, 4 (R1) + tecla no chao tambem chega ao motor (antes a tecla era
+                        // consumida aqui e a familia R1 nunca a via)
+                        pedirSolo(slot, direcaoDaAcao(a), input.isAtiva(slot, AcaoJogador.MODIFICADOR_PROJECAO));
                     }
                 }
                 doSlot.clear();
@@ -1513,8 +1514,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         String botoes = nomeCamada(slot, fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? CamadaComando.TRES
                 : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? CamadaComando.DOIS : CamadaComando.QUATRO).replace(" + RS", "");
         boolean soReservadas = !m.isEmpty() && m.values().stream().noneMatch(CelulaContextual::isExecutavel);
+        // 5Q: finalizacoes reais (ids "tecnica@posicao") ou entradas na perna
+        boolean ataques = m.values().stream().anyMatch(c -> (c.idTransicao() != null && c.idTransicao().contains("@"))
+                || "→ PERNA".equals(c.rotulo()));
         String o;
-        if (soReservadas) {
+        if (ataques) {
+            o = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? "CHAVES"
+                    : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? "ESTRANG." : "PERNAS";
+        } else if (soReservadas) {
             o = "FINALIZ.";
         } else if (!e.getPosicao().isNoChao()) {
             o = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? "GUARDAS" : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? "QUEDAS" : "ESPECIAIS";
@@ -1541,6 +1548,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             case GUARDA_BORBOLETA -> "BORBOLETA";
             case DE_LA_RIVA -> "DLR";
             case GUARDA_LACO -> "LAÇO";
+            case GUARDA_ARANHA -> "ARANHA";
+            case SINGLE_LEG_X -> "SLX";
+            case ASHI_GARAMI -> "ASHI";
         };
     }
 
@@ -1562,6 +1572,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** 5P.2: cruz da familia no solo (ou em pe com o motor): tecnicas reais e espacos reservados. */
     PainelDpadContextual.Quadro quadroSolo(SlotJogador slot, com.irmaosmiau.posicional.TecnicaSolo.Familia fam) {
+        java.util.Optional<com.irmaosmiau.posicional.MotorSolo.Ataque> atk = solo.getAtaque();
+        if (atk.isPresent()) {
+            return quadroFinalizacao(slot, atk.get());                      // 5Q: disputa tem prioridade no HUD
+        }
         boolean explosivo = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.R1;
         com.irmaosmiau.posicional.Lado l = lado(slot);
         com.irmaosmiau.posicional.EstadoPosicional e = solo.getEstado();
@@ -1934,9 +1948,60 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             return java.util.Optional.of(new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
                     CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null, solo.motivoSem(l, t.get()) == null));
         }
+        java.util.Optional<com.irmaosmiau.posicional.Finalizacao> fz =
+                solo.getCatalogoFinalizacoes().para(solo.getEstado(), l, cmd);
+        if (fz.isPresent()) {
+            return java.util.Optional.of(celulaFinalizacao(l, d, fz.get()));      // 5Q
+        }
         return solo.getFinalizacoes().para(solo.getEstado(), l, cmd)
                 .map(e -> new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.RESERVADA,
                         e.rotuloCurto(), null, e.id(), false));
+    }
+
+    /**
+     * 5Q: celula de finalizacao. Disponivel = clara; requisito de posicao/controle = cinza;
+     * graduacao = cinza com a sigla exigida ("ARMLOCK·Az"); proibida no modo = cinza com "·X".
+     */
+    private CelulaContextual celulaFinalizacao(com.irmaosmiau.posicional.Lado l, com.irmaosmiau.controles.DirecaoTecnica d,
+            com.irmaosmiau.posicional.Finalizacao f) {
+        String m = solo.motivoFinalizacao(l, f);
+        String rot = f.rotulo();
+        if (m != null && m.startsWith("GRADUAÇÃO")) {
+            rot += "·" + f.graduacao().getSigla();
+        } else if ("PROIBIDA NO MODO".equals(m) || "NÃO APRENDIDA".equals(m)) {
+            rot += "·X";
+        }
+        return new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL, rot,
+                null, f.id(), m == null);
+    }
+
+    /** 5Q: cruz da finalizacao em disputa (quem ataca e quem defende veem suas acoes e a pressao). */
+    private PainelDpadContextual.Quadro quadroFinalizacao(SlotJogador slot, com.irmaosmiau.posicional.MotorSolo.Ataque a) {
+        com.irmaosmiau.posicional.Lado l = lado(slot);
+        java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m = new java.util.EnumMap<>(com.irmaosmiau.controles.DirecaoTecnica.class);
+        boolean disputa = a.fase() == com.irmaosmiau.posicional.MotorSolo.FaseFinalizacao.DISPUTA;
+        java.util.function.BiConsumer<com.irmaosmiau.controles.DirecaoTecnica, String> por = (d, t) -> m.put(d, new CelulaContextual(
+                new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL, t, null, null, true));
+        String nome = a.finalizacao().rotulo();
+        String titulo;
+        if (a.atacante() == l) {
+            if (disputa) {
+                por.accept(com.irmaosmiau.controles.DirecaoTecnica.CIMA, "APERTAR");
+            }
+            por.accept(com.irmaosmiau.controles.DirecaoTecnica.BAIXO, "SOLTAR");
+            titulo = (disputa ? "ATACANDO " : "ENTRANDO ") + nome;
+        } else {
+            por.accept(com.irmaosmiau.controles.DirecaoTecnica.BAIXO, a.finalizacao().categoria().getDefesa());
+            if (disputa) {
+                por.accept(com.irmaosmiau.controles.DirecaoTecnica.CIMA, "RB: ESCAPAR");
+            }
+            por.accept(com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA, "RB↓ BATER");
+            titulo = "DEFENDA: " + nome;
+        }
+        if (disputa) {
+            titulo += " " + Math.round(a.pressao()) + "%";
+        }
+        return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, titulo, m);
     }
 
     /** 5O: nome do modificador da familia no dispositivo do slot (RT/RB ou a tecla). */
@@ -2855,6 +2920,20 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     private void verificarFimDeJogo() {
+
+        // 5Q: vitoria por finalizacao (rendicao ou finalizacao consolidada); no treino so avisa e segue.
+        if (solo != null && !fimDeJogo && solo.getVitoria().isPresent()) {
+            com.irmaosmiau.posicional.MotorSolo.Vitoria v = solo.getVitoria().get();
+            String txt = (v.vencedor() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2") + " VENCEU POR FINALIZAÇÃO · "
+                    + v.finalizacao().nome().toUpperCase(java.util.Locale.ROOT) + (v.rendicao() ? " (BATEU)" : "");
+            if (modoTreino) {
+                avisos.adicionar(txt);
+                solo.limparVitoria();
+            } else {
+                fimDeJogo = true;
+                mensagemFim = txt;
+            }
+        }
 
         if (modoDoisMiaus) {
 

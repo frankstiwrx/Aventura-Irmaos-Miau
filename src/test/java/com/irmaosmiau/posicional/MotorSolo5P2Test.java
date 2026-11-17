@@ -107,9 +107,14 @@ class MotorSolo5P2Test {
                                 ComandoSolo cs = c(d, f);
                                 long n = cat.repertorio(e, lado).stream().filter(t -> t.aceita(cs)).count();
                                 assertTrue(n <= 1, p + " " + lado + " " + cs + ": " + n);
-                                // espaco de finalizacao nunca colide com uma tecnica real
-                                if (fin.para(e, lado, cs).isPresent()) {
-                                    assertEquals(0, n, "colisao com finalizacao em " + p + " " + cs);
+                                // 5Q (pedido): o espaco aponta para UMA tecnica: a do catalogo de solo (entrada na
+                                // perna) ou a finalizacao; nunca as duas
+                                java.util.Optional<RegistroFinalizacoes.Espaco> es = fin.para(e, lado, cs);
+                                long nf = CatalogoFinalizacoes.referencia().para(e, lado, cs).isPresent() ? 1 : 0;
+                                assertTrue(n + nf <= 1, "duas acoes em " + p + " " + lado + " " + cs);
+                                if (es.isPresent() && n == 1) {
+                                    assertEquals(es.get().idTecnica(), cat.repertorio(e, lado).stream()
+                                            .filter(t -> t.aceita(cs)).findFirst().orElseThrow().id());
                                 }
                             }
                         }
@@ -144,7 +149,8 @@ class MotorSolo5P2Test {
             assertEquals(12, es.size(), p.name());
             for (RegistroFinalizacoes.Espaco e : es) {
                 assertTrue(ids.add(e.id()), "id repetido " + e.id());
-                assertFalse(e.implementada(), "nada implementado nesta entrega: " + e.id());
+                // 5Q (pedido): os 48 espacos agora apontam para tecnicas reais
+                assertTrue(e.implementada(), "implementado na 5Q: " + e.id());
                 assertEquals(RegistroFinalizacoes.id(e.posicao(), e.familia(), e.direcao()), e.id());
             }
         }
@@ -153,32 +159,31 @@ class MotorSolo5P2Test {
                 RegistroFinalizacoes.id(Posicao.CONTROLE_LATERAL, Familia.L1_L2, Direcao.BAIXO));
         assertEquals("Mata-leão", r.buscar("fin.costas.l2.cima").orElseThrow().planejada());
         // registro futuro de uma tecnica real (sem mexer no original)
-        RegistroFinalizacoes r2 = r.comTecnica("fin.costas.l2.cima", "mata_leao");
-        assertTrue(r2.buscar("fin.costas.l2.cima").orElseThrow().implementada());
-        assertFalse(r.buscar("fin.costas.l2.cima").orElseThrow().implementada());
+        RegistroFinalizacoes r2 = r.comTecnica("fin.costas.l2.cima", "mata_leao_variante");
+        assertEquals("mata_leao_variante", r2.buscar("fin.costas.l2.cima").orElseThrow().idTecnica());
+        assertEquals("mata_leao@costas", r.buscar("fin.costas.l2.cima").orElseThrow().idTecnica(), "o original nao muda");
     }
 
     @Test
-    void comandoDeFinalizacaoFuturaNaoExecutaNemCusta() {
+    void comandoDeFinalizacaoNaMontadaAgoraERealSoParaQuemMonta() {
+        // 5Q (pedido): antes "FINALIZACAO FUTURA"; agora L1/L2 comecam finalizacoes reais e
+        // L1+L2 e a entrada no controle de perna. Quem esta por baixo continua sem esses ataques.
         for (Lado x : Lado.values()) {
             novo(300, 380);
             em(Posicao.MONTADA, x, x);
-            double f = l(x).getFolegoAtual();
-            double cond = l(x).getCondicionamentoAtual();
+            m.definirEstabilidade(80);
             for (Familia fam : RegistroFinalizacoes.FAMILIAS) {
                 for (Direcao d : Direcao.values()) {
-                    MotorSolo.Resposta r = cmd(x, d, fam);
-                    assertEquals(Resultado.RECUSADA, r.resultado());
-                    assertEquals("FINALIZAÇÃO FUTURA", r.motivo());
+                    assertTrue(m.getCatalogo().para(m.getEstado(), x, c(d, fam)).isPresent()
+                            || m.getCatalogoFinalizacoes().para(m.getEstado(), x, c(d, fam)).isPresent(), fam + " " + d);
                 }
             }
-            assertEquals(f, l(x).getFolegoAtual(), 1e-9, "nada cobrado");
-            assertEquals(cond, l(x).getCondicionamentoAtual(), 1e-9);
-            assertEquals(Posicao.MONTADA, m.getPosicao());
-            assertTrue(m.getTentativa().isEmpty());
-            // quem esta por baixo nao tem os espacos de quem monta
-            assertEquals("NADA NESTA POSIÇÃO", cmd(x.outro(), Direcao.CIMA, Familia.L2).motivo());
+            assertEquals(Resultado.INICIADA, cmd(x, Direcao.DIREITA, Familia.L1).resultado(), "americana");
+            assertTrue(m.getAtaque().isPresent());
         }
+        novo(300, 380);
+        em(Posicao.MONTADA, Lado.A, Lado.A);
+        assertEquals("NADA NESTA POSIÇÃO", cmd(Lado.B, Direcao.CIMA, Familia.L2).motivo());
     }
 
     // ================= 7. SOLO LIVRE

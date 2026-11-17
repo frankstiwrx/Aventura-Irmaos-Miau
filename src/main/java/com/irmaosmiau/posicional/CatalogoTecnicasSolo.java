@@ -131,6 +131,28 @@ public final class CatalogoTecnicasSolo {
     public static final String PASSAR_LACO = "passar_laco";
     public static final String POSTURA_LACO = "postura_laco";
     public static final String SOLTAR_MANGA = "soltar_manga";
+    // ---- 5Q: aranha, single-leg X, controle de perna (ashi garami)
+    public static final String IR_ARANHA = "ir_aranha";
+    public static final String RASPAGEM_ARANHA = "raspagem_aranha";
+    public static final String RETER_ARANHA = "reter_aranha";
+    public static final String DESEQ_ARANHA = "deseq_aranha";
+    public static final String PASSAR_ARANHA = "passar_aranha";
+    public static final String POSTURA_ARANHA = "postura_aranha";
+    public static final String LIVRAR_MANGAS = "livrar_mangas";
+    public static final String IR_SLX = "ir_slx";
+    public static final String RASPAGEM_SLX = "raspagem_slx";
+    public static final String RETER_SLX = "reter_slx";
+    public static final String PASSAR_SLX = "passar_slx";
+    public static final String POSTURA_SLX = "postura_slx";
+    public static final String LIVRAR_SLX = "livrar_slx";
+    public static final String ENTRADA_PERNA_GUARDA = "entrada_perna_guarda";
+    public static final String ENTRADA_PERNA_DOMINANTE = "entrada_perna_dominante";
+    public static final String ENTRADA_PERNA_ABERTA = "entrada_perna_aberta";
+    public static final String CONSOLIDAR_ASHI = "consolidar_ashi";
+    public static final String SOLTAR_PERNA = "soltar_perna";
+    public static final String GIRAR_LIVRAR_PERNA = "girar_livrar_perna";
+    public static final String ESCONDER_PE = "esconder_pe";
+    public static final String LEVANTAR_DO_ASHI = "levantar_do_ashi";
 
     /** Custos de folego (o explosivo custa mais; ajustes custam pouco). */
     public static final double CUSTO_AJUSTE = 1.5;
@@ -146,6 +168,13 @@ public final class CatalogoTecnicasSolo {
 
     private void exigir(String id, RequisitoTecnica... r) {
         requisitos.put(id, Set.of(r));
+    }
+
+    /** 5Q: posicao quando a tecnica e DEFENDIDA (relativa a quem tentou; vazio = continua onde estava). */
+    private final Map<String, Desfecho> falhas = new LinkedHashMap<>();
+
+    public Optional<Desfecho> falha(String id) {
+        return Optional.ofNullable(falhas.get(id));
     }
 
     /**
@@ -333,10 +362,11 @@ public final class CatalogoTecnicasSolo {
         c.transicao(RETENCAO, "Manter a guarda", "MANTER", aberta, baixo, lados(false),
                 1.5, 0, null, sempre, 0, null);
         c.transicao(LEVANTAR_DA_GUARDA, "Levantar da guarda", "LEVANTAR", EnumSet.of(Posicao.GUARDA_ABERTA,
-                Posicao.MEIA_GUARDA, Posicao.GUARDA_BORBOLETA, Posicao.DE_LA_RIVA, Posicao.GUARDA_LACO), baixo,
+                Posicao.MEIA_GUARDA, Posicao.GUARDA_BORBOLETA, Posicao.DE_LA_RIVA, Posicao.GUARDA_LACO,
+                Posicao.GUARDA_ARANHA, Posicao.SINGLE_LEG_X), baixo,
                 List.of(rb(Direcao.CIMA)), 4.0, 16, Exposicao.BASE, sempre, 0,
                 para(Posicao.EM_PE_SEPARADOS, NADA, NADA), PASSAR_GUARDA, LIBERAR_PERNA, PASSAR_BORBOLETA,
-                PASSAR_DLR, PASSAR_LACO);
+                PASSAR_DLR, PASSAR_LACO, PASSAR_ARANHA, PASSAR_SLX);
 
         // ================= MEIA-GUARDA (quem esta por baixo controla a perna)
         Set<Posicao> meia = EnumSet.of(Posicao.MEIA_GUARDA);
@@ -418,10 +448,12 @@ public final class CatalogoTecnicasSolo {
         Set<Posicao> dlr = EnumSet.of(Posicao.DE_LA_RIVA);
         Set<Posicao> laco = EnumSet.of(Posicao.GUARDA_LACO);
         Set<Posicao> guardas = EnumSet.of(Posicao.GUARDA, Posicao.GUARDA_ABERTA, Posicao.MEIA_GUARDA,
-                Posicao.GUARDA_BORBOLETA, Posicao.DE_LA_RIVA, Posicao.GUARDA_LACO);
+                Posicao.GUARDA_BORBOLETA, Posicao.DE_LA_RIVA, Posicao.GUARDA_LACO, Posicao.GUARDA_ARANHA,
+                Posicao.SINGLE_LEG_X);
         Set<Posicao> dominantes = EnumSet.of(Posicao.CONTROLE_LATERAL, Posicao.JOELHO_BARRIGA, Posicao.MONTADA,
                 Posicao.COSTAS);
-        String[] passes = {PASSAR_GUARDA, LIBERAR_PERNA, PASSAR_BORBOLETA, PASSAR_DLR, PASSAR_LACO};
+        String[] passes = {PASSAR_GUARDA, LIBERAR_PERNA, PASSAR_BORBOLETA, PASSAR_DLR, PASSAR_LACO, PASSAR_ARANHA,
+            PASSAR_SLX};
 
         // ---------- pegada ativa (aplicador): RS <- tiro de guarda, RS v derrubada forcada
         // (RS ^ reforco e RS -> desequilibrio continuam no SistemaCombate; o receptor continua com o romper)
@@ -482,7 +514,7 @@ public final class CatalogoTecnicasSolo {
                 passes);
         c.transicao(SAIR_DA_GUARDA, "Criar espaço e levantar", "LEVANTAR", guardas, cima, List.of(rb(Direcao.BAIXO)),
                 3.5, 16, Exposicao.BASE, estab, 60, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA),
-                QUEBRAR_POSTURA, RETENCAO, RETER_BORBOLETA, RETER_DLR, TRAVAR_LACO);
+                QUEBRAR_POSTURA, RETENCAO, RETER_BORBOLETA, RETER_DLR, TRAVAR_LACO, RETER_ARANHA, RETER_SLX);
         c.transicao(ABANDONAR_POSICAO, "Soltar a posição", "SOLTAR", dominantes, ctrl, List.of(rb(Direcao.BAIXO)),
                 1.5, 6, Exposicao.CONTROLE_REDUZIDO, sempre, 0, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA));
 
@@ -491,17 +523,20 @@ public final class CatalogoTecnicasSolo {
                 Posicao.GUARDA_LACO);
         c.ajuste(PEGAR_MANGA, "Pegar a manga", "MANGA", EnumSet.of(Posicao.GUARDA_ABERTA, Posicao.GUARDA_BORBOLETA,
                 Posicao.DE_LA_RIVA), baixo, List.of(l2(Direcao.BAIXO)), Efeito.PEGAR_MANGA);
-        c.transicao(IR_BORBOLETA, "Para a guarda borboleta", "BORBOLETA", menos(abertas, Posicao.GUARDA_BORBOLETA),
+        c.transicao(IR_BORBOLETA, "Para a guarda borboleta", "BORBOLETA", EnumSet.of(Posicao.GUARDA_ABERTA,
+                Posicao.DE_LA_RIVA),
                 baixo, List.of(l1(Direcao.ESQUERDA)), 1.5, 6, Exposicao.BASE, sempre, 0,
                 para(Posicao.GUARDA_BORBOLETA, MANTEM, MANTEM), passes);
         c.transicao(IR_DLR, "Para a De La Riva", "DE LA RIVA", menos(abertas, Posicao.DE_LA_RIVA), baixo,
                 List.of(l1(Direcao.DIREITA)), 1.5, 6, Exposicao.BASE, sempre, 0,
                 para(Posicao.DE_LA_RIVA, MANTEM, MANTEM), passes);
-        c.transicao(IR_LACO, "Para a guarda laço", "LAÇO", menos(abertas, Posicao.GUARDA_LACO), baixo,
+        c.transicao(IR_LACO, "Para a guarda laço", "LAÇO", EnumSet.of(Posicao.GUARDA_ABERTA, Posicao.GUARDA_BORBOLETA,
+                Posicao.DE_LA_RIVA, Posicao.GUARDA_ARANHA), baixo,
                 List.of(l1(Direcao.BAIXO)), 1.5, 6, Exposicao.BASE, sempre, 0,
                 para(Posicao.GUARDA_LACO, MANTEM, MANTEM), passes);
         c.exigir(IR_LACO, RequisitoTecnica.CONEXAO_MANGA);
-        c.transicao(IR_ABERTA, "Voltar à guarda aberta", "ABERTA", menos(abertas, Posicao.GUARDA_ABERTA), baixo,
+        c.transicao(IR_ABERTA, "Voltar à guarda aberta", "ABERTA", EnumSet.of(Posicao.GUARDA_BORBOLETA,
+                Posicao.DE_LA_RIVA, Posicao.GUARDA_LACO, Posicao.GUARDA_ARANHA, Posicao.SINGLE_LEG_X), baixo,
                 List.of(l1(Direcao.CIMA)), 1.5, 6, Exposicao.BASE, sempre, 0,
                 para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM), passes);
 
@@ -543,6 +578,72 @@ public final class CatalogoTecnicasSolo {
         c.ajuste(POSTURA_LACO, "Base", "BASE", laco, cima, List.of(rs(Direcao.BAIXO)), Efeito.POSTURA);
         c.transicao(SOLTAR_MANGA, "Soltar a manga", "SOLTAR MANGA", laco, cima, lados(false),
                 2.5, 10, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM), TRAVAR_LACO);
+
+        // =====================================================================
+        // ENTREGA 5Q
+        // =====================================================================
+        // ---------- GUARDA ARANHA (exige a manga): pes nos biceps, distancia; por cima: livrar as mangas
+        Set<Posicao> aranha = EnumSet.of(Posicao.GUARDA_ARANHA);
+        c.transicao(IR_ARANHA, "Para a guarda aranha", "ARANHA", EnumSet.of(Posicao.GUARDA_ABERTA, Posicao.GUARDA_LACO),
+                baixo, List.of(l2(Direcao.ESQUERDA)), 1.5, 6, Exposicao.BASE, sempre, 0,
+                para(Posicao.GUARDA_ARANHA, MANTEM, MANTEM), passes);
+        c.exigir(IR_ARANHA, RequisitoTecnica.CONEXAO_MANGA);
+        c.transicao(RASPAGEM_ARANHA, "Raspagem da aranha", "RASPAR", aranha, baixo, List.of(rs(Direcao.CIMA)),
+                4.5, 14, null, semPostura, 0, para(Posicao.GUARDA_ABERTA, INI, OUT), POSTURA_ARANHA);
+        c.ajuste(RETER_ARANHA, "Esticar e recolher (manter)", "MANTER", aranha, baixo, List.of(rs(Direcao.BAIXO)),
+                Efeito.CONSOLIDAR);
+        c.efeitoComJanela(DESEQ_ARANHA, "Desequilibrar com os pés", "DESEQ.", aranha, baixo, lados(false),
+                2.0, 8, null, Efeito.DESEQUILIBRAR, POSTURA_ARANHA);
+        c.transicao(PASSAR_ARANHA, "Passar a aranha", "PASSAR", aranha, cima, List.of(rs(Direcao.CIMA)),
+                5.0, 20, Exposicao.BASE, estab, 50, para(Posicao.CONTROLE_LATERAL, INI, INI), RASPAGEM_ARANHA);
+        c.ajuste(POSTURA_ARANHA, "Base (cotovelos para dentro)", "BASE", aranha, cima, List.of(rs(Direcao.BAIXO)),
+                Efeito.POSTURA);
+        c.transicao(LIVRAR_MANGAS, "Livrar as mangas", "LIVRAR", aranha, cima, lados(false),
+                2.5, 10, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM), RETER_ARANHA);
+
+        // ---------- SINGLE-LEG X (contra quem esta em pe): raspagem de levantar, entrada na perna
+        Set<Posicao> slx = EnumSet.of(Posicao.SINGLE_LEG_X);
+        c.transicao(IR_SLX, "Para a single-leg X", "SLX", EnumSet.of(Posicao.GUARDA_BORBOLETA, Posicao.DE_LA_RIVA),
+                baixo, List.of(l2(Direcao.DIREITA)), 1.5, 8, Exposicao.BASE, sempre, 0,
+                para(Posicao.SINGLE_LEG_X, MANTEM, MANTEM), passes);
+        c.transicao(RASPAGEM_SLX, "Raspagem da single-leg X", "RASPAR", slx, baixo, List.of(rs(Direcao.CIMA)),
+                4.0, 12, null, semPostura, 0, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA), POSTURA_SLX);
+        c.ajuste(RETER_SLX, "Manter o X", "MANTER", slx, baixo, List.of(rs(Direcao.BAIXO)), Efeito.CONSOLIDAR);
+        c.transicao(PASSAR_SLX, "Livrar a perna e passar", "PASSAR", slx, cima, List.of(rs(Direcao.CIMA)),
+                4.5, 18, Exposicao.BASE, estab, 55, para(Posicao.CONTROLE_LATERAL, INI, INI), RASPAGEM_SLX);
+        c.ajuste(POSTURA_SLX, "Base (peso na perna presa)", "BASE", slx, cima, List.of(rs(Direcao.BAIXO)),
+                Efeito.POSTURA);
+        c.transicao(LIVRAR_SLX, "Tirar a perna do X", "LIVRAR", slx, cima, lados(false),
+                2.5, 10, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM), RETER_SLX);
+
+        // ---------- ENTRADAS NO CONTROLE DE PERNA (L1+L2): transicoes reais, defensaveis, com risco
+        List<ComandoSolo> quatroL12 = List.of(l12(Direcao.CIMA), l12(Direcao.DIREITA), l12(Direcao.BAIXO),
+                l12(Direcao.ESQUERDA));
+        Desfecho ashi = para(Posicao.ASHI_GARAMI, OUT, INI);
+        c.transicao(ENTRADA_PERNA_GUARDA, "Abrir a guarda e entrar na perna", "→ PERNA", fechada, baixo, quatroL12,
+                3.5, 14, Exposicao.BASE, Criterio.CONTROLE_PROPRIO, 30, ashi, POSTURA);
+        c.falhas.put(ENTRADA_PERNA_GUARDA, para(Posicao.GUARDA_ABERTA, OUT, INI));      // a guarda ja abriu
+        c.transicao(ENTRADA_PERNA_DOMINANTE, "Abandonar o controle e disputar a perna", "→ PERNA", dominantes, ctrl,
+                quatroL12, 3.5, 16, Exposicao.CONTROLE_REDUZIDO, Criterio.CONTROLE_PROPRIO, 50, ashi,
+                ESCAPE_QUADRIL, RECUPERAR_MEIA, ESCAPE_MONTADA, GIRAR_NAS_COSTAS, FUGIR_DO_JOELHO);
+        c.falhas.put(ENTRADA_PERNA_DOMINANTE, para(Posicao.GUARDA_ABERTA, INI, OUT));   // o outro recupera a guarda
+        c.transicao(ENTRADA_PERNA_ABERTA, "Controlar a perna (ashi garami)", "ASHI", EnumSet.of(Posicao.GUARDA_ABERTA,
+                Posicao.SINGLE_LEG_X), baixo, List.of(l12(Direcao.CIMA)), 3.0, 10, Exposicao.BASE, semPostura, 0, ashi,
+                CONTROLAR_PERNAS, POSTURA_SLX);
+        c.transicao(ENTRADA_PERNA_ABERTA + "_dlr", "Da De La Riva para a perna", "ASHI", dlr, baixo,
+                List.of(l12(Direcao.BAIXO)), 3.0, 10, Exposicao.BASE, semPostura, 0, ashi, POSTURA_DLR);
+
+        // ---------- ASHI GARAMI: quem controla consolida/solta; o outro gira, esconde o pe ou levanta
+        Set<Posicao> perna = EnumSet.of(Posicao.ASHI_GARAMI);
+        c.ajuste(CONSOLIDAR_ASHI, "Ajustar o controle da perna", "AJUSTAR", perna, ctrl, List.of(rs(Direcao.BAIXO)),
+                Efeito.CONSOLIDAR);
+        c.transicao(SOLTAR_PERNA, "Soltar a perna", "SOLTAR", perna, ctrl, List.of(rb(Direcao.BAIXO)),
+                1.5, 6, null, sempre, 0, para(Posicao.SOLO_DISPUTADO, NADA, NADA));
+        c.ajuste(ESCONDER_PE, "Esconder o pé", "ESCONDER", perna, ctrlado, List.of(rs(Direcao.BAIXO)), Efeito.ENQUADRAR);
+        c.transicao(GIRAR_LIVRAR_PERNA, "Girar e livrar a perna", "GIRAR", perna, ctrlado, lados(false),
+                4.0, 14, null, estab, 60, para(Posicao.SOLO_DISPUTADO, NADA, NADA), CONSOLIDAR_ASHI);
+        c.transicao(LEVANTAR_DO_ASHI, "Levantar e puxar a perna", "LEVANTAR", perna, ctrlado, List.of(rb(Direcao.CIMA)),
+                4.5, 12, Exposicao.BASE, estab, 45, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA), CONSOLIDAR_ASHI);
         return c;
     }
 

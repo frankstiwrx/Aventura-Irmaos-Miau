@@ -1,5 +1,8 @@
 # Planejamento das finalizações (Entrega 5P.2)
 
+> **5Q:** os espaços agora têm técnicas reais; o catálogo implementado está em `docs/FINALIZACOES.md`. Este
+> documento fica como histórico do planejamento.
+
 > **Nada aqui está implementado.** Nesta entrega existem só os **espaços** (`posicional/RegistroFinalizacoes`):
 > 12 por posição (L1, L2, L1+L2 × 4 direções do RS), em 4 posições = 48. Todo espaço é recusado pelo motor
 > ("FINALIZAÇÃO FUTURA", sem custo) e aparece no HUD com `*` só quando a família é segurada.

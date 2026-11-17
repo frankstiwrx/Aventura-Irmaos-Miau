@@ -32,7 +32,17 @@ public enum Posicao {
     /** De La Riva: gancho por fora de uma perna de quem esta EM PE. */
     DE_LA_RIVA("Guarda De La Riva", true, false),
     /** Laco: a perna enrolada na MANGA do outro (exige a conexao de manga); quem esta por cima em pe. */
-    GUARDA_LACO("Guarda laço", true, false);
+    GUARDA_LACO("Guarda laço", true, false),
+    // ---- Entrega 5Q ----
+    /** Aranha: pes nos biceps e as duas mangas presas (exige a manga). */
+    GUARDA_ARANHA("Guarda aranha", true, false),
+    /** Single-leg X: controle de uma perna de quem esta EM PE, por baixo. */
+    SINGLE_LEG_X("Single-leg X", true, false),
+    /**
+     * Ashi garami: controle de perna. "Por cima" = o dono da perna (de joelhos),
+     * controlador = quem segura a perna (sentado/deitado). Base das chaves de perna.
+     */
+    ASHI_GARAMI("Ashi garami (controle de perna)", true, false);
 
     private final String nome;
     private final boolean noChao;
@@ -69,12 +79,12 @@ public enum Posicao {
     /** 5P.2: alguma guarda (quem esta por baixo controla a posicao). */
     public boolean isGuarda() {
         return this == GUARDA || this == GUARDA_ABERTA || this == MEIA_GUARDA || this == GUARDA_BORBOLETA
-                || this == DE_LA_RIVA || this == GUARDA_LACO;
+                || this == DE_LA_RIVA || this == GUARDA_LACO || this == GUARDA_ARANHA || this == SINGLE_LEG_X;
     }
 
     /** 5P.2: guardas em que quem esta por cima fica EM PE (o gancho/laco prende uma perna de pe). */
     public boolean isGuardaComOutroEmPe() {
-        return this == DE_LA_RIVA || this == GUARDA_LACO;
+        return this == DE_LA_RIVA || this == GUARDA_LACO || this == SINGLE_LEG_X;
     }
 
     public boolean isJogavelNoJogo() {

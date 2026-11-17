@@ -31,7 +31,9 @@ public final class AnimadorSolo {
     }
 
     public boolean quer(IrmaoMiau l, MotorSolo m) {
-        return m != null && m.conectado(l) && l.getTransicaoAtiva() == null && !m.isAterrissando();
+        // 5Q: tambem fora do vinculo enquanto houver um efeito do motor (empurrar, ser empurrado, levantar...)
+        return m != null && l.getTransicaoAtiva() == null && !m.isAterrissando()
+                && (m.conectado(l) || m.efeitoVisual(m.ladoDe(l)).isPresent());
     }
 
     /** Altura extra (px; negativo = mais alto) de quem esta por cima, por posicao. */
@@ -81,15 +83,63 @@ public final class AnimadorSolo {
                 }
             }
         }
+        java.util.Optional<MotorSolo.EfeitoVisual> ef = m.efeitoVisual(lado);
+        ef.ifPresent(e -> aplicarEfeito(pose, e));
         int[] nossa = aplicadas.get(l);
         if (l.isPoseCombateExternaAtiva() && (nossa == null || !Arrays.equals(nossa, l.copiarPoseCombateExterna()))) {
             return null;                                        // outro dono da pose
         }
         l.aplicarPoseCombateExterna(pose, 0.0, dy);
         aplicadas.put(l, pose);
-        String id = "solo:" + p.name() + ":" + (cima ? "CIMA" : "BAIXO");
+        String id = "solo:" + p.name() + ":" + (cima ? "CIMA" : "BAIXO")
+                + ef.map(e -> ":" + e.tipo().name() + (e.categoria() == null ? "" : "_" + e.categoria().name())).orElse("");
         descricao.put(l, id);
         return id;
+    }
+
+    /**
+     * 5Q: poses PROVISORIAS (procedurais) por cima da pose da posicao. So refletem
+     * o que o motor ja decidiu (nao movem o lutador nem decidem quedas).
+     * Indices do rig: 9 = tronco, 16/17 = braco de tras (ombro/cotovelo),
+     * 20/21 = braco da frente (ombro/cotovelo).
+     */
+    public static void aplicarEfeito(int[] pose, MotorSolo.EfeitoVisual e) {
+        double p = Math.max(0, Math.min(1, e.progresso()));
+        double pico = Math.sin(Math.PI * p);                    // sobe e volta (acoes curtas)
+        double firme = 0.4 + 0.6 * p;                          // cresce com a pressao (finalizacoes)
+        switch (e.tipo()) {
+            case EMPURRANDO -> mexer(pose, pico, 24, 50, -30, 50, -30);
+            case EMPURRADO -> mexer(pose, pico, -26, -40, 10, -40, 10);
+            case AFASTANDO -> mexer(pose, pico, -16, 40, -20, 40, -20);
+            case SOLTANDO -> mexer(pose, pico, -10, -25, 0, 25, 0);
+            case LEVANTANDO -> mexer(pose, pico, 18, -20, 10, -10, 10);
+            case FINALIZANDO -> {
+                switch (e.categoria()) {
+                    case BRACO -> mexer(pose, firme, -20, 40, 40, 40, 0);
+                    case ESTRANGULAMENTO -> mexer(pose, firme, 14, 70, 90, 70, 90);
+                    default -> mexer(pose, firme, -30, 30, 0, 30, 0);
+                }
+            }
+            case DEFENDENDO_FINALIZACAO -> {
+                switch (e.categoria()) {
+                    case BRACO -> mexer(pose, firme, 0, -30, 60, 0, 30);
+                    case ESTRANGULAMENTO -> mexer(pose, firme, 0, 80, 110, 80, 110);
+                    default -> mexer(pose, firme, 25, 40, 0, 0, 0);
+                }
+            }
+            case BATENDO -> {
+                pose[16] += (int) Math.round(60 + 25 * Math.sin(p * 6 * Math.PI));   // bate a mao no tatame
+                pose[17] += 20;
+            }
+        }
+    }
+
+    private static void mexer(int[] pose, double w, int tronco, int ombroF, int cotoveloF, int ombroT, int cotoveloT) {
+        pose[9] += (int) Math.round(tronco * w);
+        pose[20] += (int) Math.round(ombroF * w);
+        pose[21] += (int) Math.round(cotoveloF * w);
+        pose[16] += (int) Math.round(ombroT * w);
+        pose[17] += (int) Math.round(cotoveloT * w);
     }
 
     public void liberar(IrmaoMiau l) {

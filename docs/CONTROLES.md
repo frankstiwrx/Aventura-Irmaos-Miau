@@ -1132,3 +1132,15 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
 - **R1 ↓** = sair: abrir e afastar (por baixo), criar espaço e levantar (por cima), soltar a posição (dominando).
 - Na guarda, montada, 100 kg e costas, L1/L2/L1+L2 mostram as **finalizações futuras** com `*` (não executam).
 - Tabelas completas em `docs/COMBATE_SOLO.md`; plano das finalizações em `docs/FINALIZACOES_PLANEJAMENTO.md`.
+
+# Entrega 5Q — Finalizações
+
+- Nas posições de controle (guarda fechada por baixo, 100 kg, montada, costas): **L1 + RS** = chaves de braço,
+  **L2 + RS** = estrangulamentos, **L1 + L2 + RS** = entrar no controle de perna (no ashi garami, L1 + L2 + RS = as
+  chaves de perna). Aranha/laço: L1 ←/→ e L2 →.
+- Durante uma finalização: quem ataca **RS ↑ aperta**, **RS ↓ solta**; quem defende **RS ↓ defende**,
+  **R1 ↑ escapa** (com pressão baixa) e **R1 ↓ bate** (J1 teclado: 4 + 7).
+- Guardas novas: **L2 ←** aranha (com a manga), **L2 →** single-leg X (da borboleta ou da DLR).
+- J1 no teclado: 4 + tecla no chão agora funciona (antes a tecla era consumida antes do R1). L1/L2 continuam só
+  no Xbox e no teclado virtual do J2 (E/Q).
+- Detalhes em `docs/FINALIZACOES.md`.

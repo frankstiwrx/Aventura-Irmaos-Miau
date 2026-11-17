@@ -18,12 +18,10 @@ import java.util.Set;
  * cada um com as 4 direcoes do RS) nas posicoes de controle: guarda fechada
  * (quem esta por baixo), cem quilos, montada e costas (quem controla).
  *
- * NADA aqui executa: nenhum espaco tem tecnica real nesta entrega. O MotorSolo
- * recusa o comando ("FINALIZAÇÃO FUTURA") sem custo; o HUD mostra o espaco como
- * reservado (com o nome planejado quando existe). Quando uma finalizacao for
- * implementada, ela entra no catalogo como uma TecnicaSolo e o espaco passa a
- * apontar para ela ({@link #comTecnica}); a tecnica do catalogo sempre vence o
- * espaco reservado (uma acao por comando, no maximo).
+ * 5Q: todos os 48 espacos apontam para uma tecnica real (finalizacao do
+ * CatalogoFinalizacoes ou, no L1+L2, a entrada no controle de perna). Um espaco
+ * sem tecnica continuaria recusado ("FINALIZAÇÃO FUTURA", sem custo); a tecnica
+ * do catalogo sempre vence (uma acao por comando, no maximo).
  *
  * Identificador estavel: "fin.<posicao>.<familia>.<direcao>" em minusculas,
  * ex.: "fin.montada.l2.cima".
@@ -110,54 +108,34 @@ public final class RegistroFinalizacoes {
     }
 
     // =====================================================
-    // REFERENCIA: planos coerentes por posicao (nem todo espaco tem plano)
-    // L1 = chaves de articulacao; L2 = estrangulamentos; L1+L2 = triangulos e especiais.
+    // REFERENCIA (5Q): cada espaco aponta para a tecnica REAL
+    // L1 / L2 -> a finalizacao do CatalogoFinalizacoes nesta posicao;
+    // L1+L2 -> a ENTRADA no controle de perna (a chave de perna em si so existe no ashi garami).
     // =====================================================
-    private static final Object[][] PLANOS = {
-        // guarda fechada (por baixo)
-        {Posicao.GUARDA, Familia.L1, Direcao.CIMA, "Chave de braço", "ARMLOCK"},
-        {Posicao.GUARDA, Familia.L1, Direcao.DIREITA, "Kimura", "KIMURA"},
-        {Posicao.GUARDA, Familia.L1, Direcao.BAIXO, "Omoplata", "OMOPLATA"},
-        {Posicao.GUARDA, Familia.L2, Direcao.CIMA, "Estrangulamento cruzado (gola)", "CRUZADO"},
-        {Posicao.GUARDA, Familia.L2, Direcao.BAIXO, "Guilhotina", "GUILHOT."},
-        {Posicao.GUARDA, Familia.L1_L2, Direcao.CIMA, "Triângulo", "TRIÂNGULO"},
-        // cem quilos (quem controla)
-        {Posicao.CONTROLE_LATERAL, Familia.L1, Direcao.CIMA, "Americana", "AMERICANA"},
-        {Posicao.CONTROLE_LATERAL, Familia.L1, Direcao.DIREITA, "Kimura", "KIMURA"},
-        {Posicao.CONTROLE_LATERAL, Familia.L1, Direcao.BAIXO, "Chave de braço (girando)", "ARMLOCK"},
-        {Posicao.CONTROLE_LATERAL, Familia.L2, Direcao.CIMA, "Estrangulamento pela gola", "GOLA"},
-        {Posicao.CONTROLE_LATERAL, Familia.L2, Direcao.BAIXO, "Kata-gatame (braço e pescoço)", "KATA-GAT."},
-        {Posicao.CONTROLE_LATERAL, Familia.L1_L2, Direcao.CIMA, "Estrangulamento norte-sul", "NORTE-SUL"},
-        // montada (quem controla)
-        {Posicao.MONTADA, Familia.L1, Direcao.CIMA, "Americana", "AMERICANA"},
-        {Posicao.MONTADA, Familia.L1, Direcao.DIREITA, "Chave de braço", "ARMLOCK"},
-        {Posicao.MONTADA, Familia.L2, Direcao.CIMA, "Estrangulamento cruzado (gola)", "CRUZADO"},
-        {Posicao.MONTADA, Familia.L2, Direcao.DIREITA, "Ezequiel", "EZEQUIEL"},
-        {Posicao.MONTADA, Familia.L2, Direcao.BAIXO, "Kata-gatame (braço e pescoço)", "KATA-GAT."},
-        {Posicao.MONTADA, Familia.L1_L2, Direcao.CIMA, "Triângulo da montada", "TRIÂNGULO"},
-        // costas (quem controla)
-        {Posicao.COSTAS, Familia.L1, Direcao.CIMA, "Chave de braço (das costas)", "ARMLOCK"},
-        {Posicao.COSTAS, Familia.L2, Direcao.CIMA, "Mata-leão", "MATA-LEÃO"},
-        {Posicao.COSTAS, Familia.L2, Direcao.DIREITA, "Arco e flecha (gola)", "ARCO"},
-        {Posicao.COSTAS, Familia.L2, Direcao.BAIXO, "Estrangulamento pela gola", "GOLA"},
-        {Posicao.COSTAS, Familia.L1_L2, Direcao.CIMA, "Triângulo de costas", "TRIÂNGULO"},
-    };
-
     public static RegistroFinalizacoes referencia() {
+        CatalogoFinalizacoes cat = CatalogoFinalizacoes.referencia();
         Map<String, Espaco> m = new LinkedHashMap<>();
         for (Map.Entry<Posicao, PapelPosicional> pp : POSICOES.entrySet()) {
+            Posicao p = pp.getKey();
             for (Familia f : FAMILIAS) {
                 for (Direcao d : Direcao.values()) {
-                    String id = id(pp.getKey(), f, d);
-                    String nome = null;
-                    String curto = "LIVRE";
-                    for (Object[] pl : PLANOS) {
-                        if (pl[0] == pp.getKey() && pl[1] == f && pl[2] == d) {
-                            nome = (String) pl[3];
-                            curto = (String) pl[4];
-                        }
+                    String id = id(p, f, d);
+                    String nome;
+                    String curto;
+                    String tecnica;
+                    if (f == Familia.L1_L2) {
+                        Finalizacao alvo = cat.naPosicao(Posicao.ASHI_GARAMI, Familia.L1_L2, d).orElseThrow();
+                        nome = "Entrada na perna (depois: " + alvo.nome() + ")";
+                        curto = "→ PERNA";
+                        tecnica = p == Posicao.GUARDA ? CatalogoTecnicasSolo.ENTRADA_PERNA_GUARDA
+                                : CatalogoTecnicasSolo.ENTRADA_PERNA_DOMINANTE;
+                    } else {
+                        Finalizacao fz = cat.naPosicao(p, f, d).orElse(null);
+                        nome = fz == null ? null : fz.nome();
+                        curto = fz == null ? "LIVRE" : fz.rotulo();
+                        tecnica = fz == null ? null : fz.id();
                     }
-                    m.put(id, new Espaco(id, pp.getKey(), pp.getValue(), f, d, nome, curto, null));
+                    m.put(id, new Espaco(id, p, pp.getValue(), f, d, nome, curto, tecnica));
                 }
             }
         }

@@ -2234,6 +2234,32 @@ public void alternarDeitado() {
      * Esforco do motor de combate (ex.: arrastar): gasta o que der, sem
      * deixar negativo, e suspende a recuperacao passiva neste tick.
      */
+    // ---------------- 5Q: graduacao logica e tecnicas aprendidas (independentes da faixa desenhada)
+    private com.irmaosmiau.regras.Graduacao graduacao = com.irmaosmiau.regras.Graduacao.PRETA;
+    private final java.util.Set<String> naoAprendidas = new java.util.HashSet<>();
+
+    /** Graduacao LOGICA (libera tecnicas); a cor da faixa desenhada e so cosmetica. */
+    public com.irmaosmiau.regras.Graduacao getGraduacao() {
+        return graduacao;
+    }
+
+    public void setGraduacao(com.irmaosmiau.regras.Graduacao g) {
+        graduacao = g == null ? com.irmaosmiau.regras.Graduacao.BRANCA : g;
+    }
+
+    /** A tecnica (id base, ex.: "armlock") foi aprendida? Padrao: todas. */
+    public boolean aprendeu(String tecnicaBase) {
+        return !naoAprendidas.contains(tecnicaBase);
+    }
+
+    public void esquecerTecnica(String tecnicaBase) {
+        naoAprendidas.add(tecnicaBase);
+    }
+
+    public void aprenderTecnica(String tecnicaBase) {
+        naoAprendidas.remove(tecnicaBase);
+    }
+
     /** 5P.2: desgaste de CONDICIONAMENTO de uma acao/impacto (nunca negativo). */
     public void gastarCondicionamentoEsforco(double quantidade, String motivo) {
         if (quantidade < 0) {

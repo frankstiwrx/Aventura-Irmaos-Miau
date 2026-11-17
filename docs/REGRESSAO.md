@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1017, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1037, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -458,3 +458,14 @@ Gamepad (Xbox):
 ### Mapas novos (Entrega 5P.4)
 - [ ] Seleção, treino, configurações e F4: oito mapas; depois da fortaleza vêm "Academia dos Irmãos Miau" e "Campeonato Miau"
 - [ ] Os dois: pés nas faixas do tatame nas 5 linhas; nada cobre os lutadores; placar do campeonato só decorativo
+
+### Finalizações (Entrega 5Q)
+- [ ] Guarda fechada por baixo: LB ↑ armlock → o outro defende (↓) → escapa (RB ↑) com pressão baixa → guarda aberta
+- [ ] Montada: LB → americana; sem defesa a luta termina ("J1 VENCEU POR FINALIZAÇÃO · AMERICANA")
+- [ ] Costas: LT ↑ mata-leão; quem defende bate com RB ↓ (J1 teclado: 4 + 7) e a luta termina "(BATEU)"
+- [ ] DLR: LT+LB ↑ ainda é o berimbolo; LT+LB ↓ entra na perna; no ashi, LT+LB ↑ chave de pé reta
+- [ ] Montada com controle baixo: LT+LB → perde a montada (o outro recupera a guarda)
+- [ ] Aranha (pegar a manga com LT ↓, depois LT ←), laço (LB ↓ da aranha), single-leg X (LT → da borboleta)
+- [ ] HUD: "DEFENDA: X 45%" / "ATACANDO X 62%"; com graduação baixa a célula mostra "·Az"
+- [ ] Empurrão: quem empurra inclina para frente, quem recebe recua o tronco; afastar e levantar têm pose própria
+- [ ] Treino: finalizar só avisa; REINICIAR LUTA depois da finalização volta tudo ao zero

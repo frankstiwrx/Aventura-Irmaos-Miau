@@ -17,7 +17,9 @@ public enum EventoLuta {
     ESCAPE,
     RECUPERACAO_GUARDA,
     ABANDONO,
-    EXAUSTAO_CRITICA;
+    EXAUSTAO_CRITICA,
+    /** 5Q: luta encerrada por finalizacao (rendicao ou consolidada). */
+    FINALIZACAO;
 
     /** Um evento de luta com quem o causou. */
     public record Registro(long tick, EventoLuta tipo, Lado lado, String tecnica) {
@@ -68,6 +70,8 @@ public enum EventoLuta {
             }
             case "REVERSAO" -> Optional.of(QUEDA);
             case "EXAUSTAO" -> Optional.of(EXAUSTAO_CRITICA);
+            case "FINALIZOU", "RENDICAO" -> Optional.of(FINALIZACAO);
+            case "FIN_ESCAPE" -> Optional.of(ESCAPE);
             default -> Optional.empty();
         };
     }

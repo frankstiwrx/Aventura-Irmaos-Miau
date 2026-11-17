@@ -164,6 +164,335 @@ public final class MotorSolo {
     private final Deque<EventoLuta.Registro> eventosLuta = new ArrayDeque<>();
     private final java.util.EnumSet<Lado> exaustaoAvisada = java.util.EnumSet.noneOf(Lado.class);
 
+    // =====================================================
+    // ENTREGA 5Q: FINALIZACOES
+    // =====================================================
+    /** Pressao (0-100) no inicio da disputa, depois da entrada. */
+    public static final double PRESSAO_INICIAL = 30;
+    /** Apertar (quem ataca) e defender (quem e atacado), por acao, com eficiencia 1. */
+    public static final double PRESSAO_APERTO = 14;
+    public static final double PRESSAO_DEFESA = 22;
+    /** Escapar so funciona com a pressao ate aqui. */
+    public static final double LIMIAR_ESCAPE_FINALIZACAO = 45;
+    public static final double ESCAPE_FALHO_PRESSAO = 8;
+    /** Ticks entre duas acoes do mesmo lado na disputa. */
+    public static final int RECARGA_ACAO_FINALIZACAO = 12;
+    /** Custos base (passam pelo CustosFolego.custoSolo). */
+    public static final double CUSTO_APERTO = 1.0;
+    public static final double CUSTO_DEFESA = 1.0;
+    public static final double CUSTO_ESCAPE = 2.5;
+
+    /** Fases da tentativa de finalizacao (preparacao = requisitos, verificados antes da entrada). */
+    public enum FaseFinalizacao {
+        /** Entrada: quem ataca esta exposto; a defesa corta a entrada. */
+        ENTRADA,
+        /** Controle/ameaca: disputa de pressao ate o desfecho. */
+        DISPUTA
+    }
+
+    /** O ataque de finalizacao em andamento (no maximo um). */
+    public static final class Ataque {
+        private final Finalizacao finalizacao;
+        private final Lado atacante;
+        private FaseFinalizacao fase = FaseFinalizacao.ENTRADA;
+        private int ticks;
+        private final int entradaTotal;
+        private double pressao;
+        private int recargaAtaque;
+        private int recargaDefesa;
+
+        Ataque(Finalizacao f, Lado atacante, int entrada) {
+            this.finalizacao = f;
+            this.atacante = atacante;
+            this.ticks = entrada;
+            this.entradaTotal = entrada;
+        }
+
+        public Finalizacao finalizacao() {
+            return finalizacao;
+        }
+
+        public Lado atacante() {
+            return atacante;
+        }
+
+        public Lado defensor() {
+            return atacante.outro();
+        }
+
+        public FaseFinalizacao fase() {
+            return fase;
+        }
+
+        public double pressao() {
+            return pressao;
+        }
+
+        /** Progresso da entrada (0-1). */
+        public double progressoEntrada() {
+            return fase == FaseFinalizacao.DISPUTA ? 1.0 : 1.0 - (double) ticks / Math.max(1, entradaTotal);
+        }
+    }
+
+    /** Fim da luta por finalizacao (rendicao ou finalizacao consolidada). */
+    public record Vitoria(Lado vencedor, Finalizacao finalizacao, boolean rendicao) {
+    }
+
+    /** 5Q: efeito visual de um lado (o desenho reflete o motor, nunca decide nada). */
+    public enum TipoEfeitoVisual {
+        EMPURRANDO, EMPURRADO, AFASTANDO, SOLTANDO, LEVANTANDO, FINALIZANDO, DEFENDENDO_FINALIZACAO, BATENDO
+    }
+
+    public record EfeitoVisual(TipoEfeitoVisual tipo, double progresso, CategoriaFinalizacao categoria) {
+    }
+
+    private final CatalogoFinalizacoes catalogoFinalizacoes = CatalogoFinalizacoes.referencia();
+    private com.irmaosmiau.regras.ModoRegras modoRegras = com.irmaosmiau.regras.ModoRegras.LIVRE;
+    private Ataque ataque;
+    private Vitoria vitoria;
+    private final Map<Lado, int[]> efeitos = new EnumMap<>(Lado.class);           // {ordinal, restante, total}
+
+    public CatalogoFinalizacoes getCatalogoFinalizacoes() {
+        return catalogoFinalizacoes;
+    }
+
+    public com.irmaosmiau.regras.ModoRegras getModoRegras() {
+        return modoRegras;
+    }
+
+    public void setModoRegras(com.irmaosmiau.regras.ModoRegras m) {
+        modoRegras = m == null ? com.irmaosmiau.regras.ModoRegras.LIVRE : m;
+    }
+
+    public Optional<Ataque> getAtaque() {
+        return Optional.ofNullable(ataque);
+    }
+
+    public Optional<Vitoria> getVitoria() {
+        return Optional.ofNullable(vitoria);
+    }
+
+    /** Treino: depois da finalizacao a luta segue (a vitoria e so avisada). */
+    public void limparVitoria() {
+        vitoria = null;
+    }
+
+    /** Efeito visual do lado agora (vazio = so a pose da posicao). */
+    public Optional<EfeitoVisual> efeitoVisual(Lado l) {
+        if (ataque != null) {
+            boolean ataca = ataque.atacante == l;
+            return Optional.of(new EfeitoVisual(ataca ? TipoEfeitoVisual.FINALIZANDO
+                    : TipoEfeitoVisual.DEFENDENDO_FINALIZACAO, ataque.fase == FaseFinalizacao.ENTRADA
+                    ? ataque.progressoEntrada() : Math.min(1.0, ataque.pressao / 100.0), ataque.finalizacao.categoria()));
+        }
+        int[] e = efeitos.get(l);
+        if (e == null || e[1] <= 0) {
+            return Optional.empty();
+        }
+        return Optional.of(new EfeitoVisual(TipoEfeitoVisual.values()[e[0]], 1.0 - (double) e[1] / e[2], null));
+    }
+
+    private void efeito(Lado l, TipoEfeitoVisual t, int ticks) {
+        efeitos.put(l, new int[] {t.ordinal(), ticks, ticks});
+    }
+
+    /** Efeito visual de uma tecnica que comeca (empurrar, afastar, soltar, levantar). */
+    private static TipoEfeitoVisual efeitoDaTecnica(String id) {
+        return switch (id) {
+            case CatalogoTecnicasSolo.EMPURRAO, CatalogoTecnicasSolo.DERRUBADA_FORCADA -> TipoEfeitoVisual.EMPURRANDO;
+            case CatalogoTecnicasSolo.AFASTAR_DA_GUARDA, CatalogoTecnicasSolo.AFASTAR_DO_CHAO, CatalogoTecnicasSolo.RECUAR,
+                    CatalogoTecnicasSolo.RETENCAO_PES -> TipoEfeitoVisual.AFASTANDO;
+            case CatalogoTecnicasSolo.ABANDONAR_POSICAO, CatalogoTecnicasSolo.SOLTAR_PERNA, CatalogoTecnicasSolo.SOLTAR_GUARDA,
+                    CatalogoTecnicasSolo.SAIR_DA_GUARDA, CatalogoTecnicasSolo.TIRAR_GANCHOS, CatalogoTecnicasSolo.LIVRAR_MANGAS,
+                    CatalogoTecnicasSolo.SOLTAR_MANGA -> TipoEfeitoVisual.SOLTANDO;
+            case CatalogoTecnicasSolo.LEVANTAR_TECNICO, CatalogoTecnicasSolo.LEVANTAR_DA_GUARDA,
+                    CatalogoTecnicasSolo.LEVANTAR_DO_SOLO, CatalogoTecnicasSolo.LEVANTAR_DO_ASHI -> TipoEfeitoVisual.LEVANTANDO;
+            default -> null;
+        };
+    }
+
+    /** Por que a finalizacao nao pode comecar agora (null = pode). Nada e cobrado na recusa. */
+    public String motivoFinalizacao(Lado lado, Finalizacao f) {
+        IrmaoMiau eu = lutador(lado);
+        if (!eu.getGraduacao().alcanca(f.graduacao())) {
+            return "GRADUAÇÃO " + f.graduacao().name();
+        }
+        if (!eu.aprendeu(f.tecnicaBase())) {
+            return "NÃO APRENDIDA";
+        }
+        if (!modoRegras.permite(f)) {
+            return "PROIBIDA NO MODO";
+        }
+        if (recarga.get(lado) > 0) {
+            return "EM RECUPERAÇÃO";
+        }
+        boolean ok = switch (f.requisito()) {
+            case NENHUM -> true;
+            case OUTRO_SEM_POSTURA -> !emPostura(lado.outro()) || exposto(lado.outro());
+            case OUTRO_EXPOSTO -> exposto(lado.outro());
+            case CONTROLE -> estabilidade >= f.limiarControle() || exposto(lado.outro());
+            case MANGA -> temConexao(lado, Conexao.MANGA);
+        };
+        if (!ok) {
+            return f.requisito().getMotivo();
+        }
+        if (eu.getFolegoAtual() < com.irmaosmiau.entities.CustosFolego.custoSolo(f.custo(), eu.getAtributos().getFolego())) {
+            return "SEM FÔLEGO";
+        }
+        return null;
+    }
+
+    private Resposta iniciarFinalizacao(Lado lado, Finalizacao f) {
+        String m = motivoFinalizacao(lado, f);
+        if (m != null) {
+            registrar("RECUSA", f.id(), lado, m);
+            return new Resposta(Resultado.RECUSADA, f.nome().toUpperCase(java.util.Locale.ROOT) + " · " + m, null);
+        }
+        IrmaoMiau eu = lutador(lado);
+        double custo = com.irmaosmiau.entities.CustosFolego.custoSolo(f.custo(), eu.getAtributos().getFolego());
+        eu.gastarFolegoEsforco(custo, f.id());
+        eu.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.condicionamentoDaTecnica(custo, false), f.id());
+        int janela = Math.max(1, (int) Math.round(f.janelaEntrada() * FATOR_JANELA
+                * (1.0 + com.irmaosmiau.entities.CustosFolego.EXAUSTAO_JANELA * eu.fatorExaustao())));
+        ataque = new Ataque(f, lado, janela);
+        exposicao.put(lado, new Exposto(Exposicao.BASE, janela + 6));
+        registrar("FIN_ENTRADA", f.id(), lado, "");
+        return new Resposta(Resultado.INICIADA, f.nome(), null);
+    }
+
+    private double eficienciaAtaque() {
+        IrmaoMiau a = lutador(ataque.atacante);
+        return (0.6 + 0.4 * estabilidade / 100.0) * (1.0 - 0.4 * a.fatorExaustao());
+    }
+
+    private double eficienciaDefesa() {
+        IrmaoMiau d = lutador(ataque.defensor());
+        double folego = d.getFolegoAtual() / Math.max(1.0, d.getAtributos().getFolego());
+        return (0.5 + 0.5 * Math.min(1.0, folego)) * (1.0 - 0.4 * d.fatorExaustao());
+    }
+
+    private double custoAcao(Lado l, double base) {
+        return com.irmaosmiau.entities.CustosFolego.custoSolo(base, lutador(l).getAtributos().getFolego());
+    }
+
+    private static boolean eh(ComandoSolo c, TecnicaSolo.Familia f, TecnicaSolo.Direcao d) {
+        return c != null && c.familia() == f && c.direcao() == d;
+    }
+
+    /** Comandos dos dois durante uma finalizacao (nada mais acontece no solo enquanto ela dura). */
+    private Resposta comandoNaFinalizacao(Lado lado, ComandoSolo c) {
+        Ataque a = ataque;
+        Finalizacao f = a.finalizacao;
+        if (lado == a.defensor()) {
+            if (eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO)) {
+                vitoria = new Vitoria(a.atacante, f, true);   // BATER: prioridade, solta na hora
+                ataque = null;
+                efeito(lado, TipoEfeitoVisual.BATENDO, 40);
+                registrar("RENDICAO", f.id(), lado, f.nome());
+                return new Resposta(Resultado.CONCLUIDA, "BATEU", null);
+            }
+            if (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.BAIXO)) {
+                if (a.recargaDefesa > 0) {
+                    return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
+                }
+                double ef = eficienciaDefesa();
+                lutador(lado).gastarFolegoEsforco(custoAcao(lado, CUSTO_DEFESA), "defesa");
+                if (a.fase == FaseFinalizacao.ENTRADA) {
+                    falharFinalizacao("entrada cortada");
+                    return new Resposta(Resultado.CONTRA, "CORTOU A ENTRADA", null);
+                }
+                a.pressao -= PRESSAO_DEFESA * ef;
+                a.recargaDefesa = RECARGA_ACAO_FINALIZACAO;
+                if (a.pressao <= 0) {
+                    falharFinalizacao("defendida");
+                    return new Resposta(Resultado.CONTRA, "DEFENDEU", null);
+                }
+                return new Resposta(Resultado.CONCLUIDA, f.categoria().getDefesa(), null);
+            }
+            if (eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.CIMA) && a.fase == FaseFinalizacao.DISPUTA) {
+                if (a.recargaDefesa > 0) {
+                    return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
+                }
+                lutador(lado).gastarFolegoEsforco(custoAcao(lado, CUSTO_ESCAPE), "escape");
+                if (a.pressao <= LIMIAR_ESCAPE_FINALIZACAO) {
+                    escaparFinalizacao();
+                    return new Resposta(Resultado.CONTRA, "ESCAPOU", null);
+                }
+                a.pressao += ESCAPE_FALHO_PRESSAO;
+                a.recargaDefesa = RECARGA_ACAO_FINALIZACAO * 2;
+                return new Resposta(Resultado.RECUSADA, "SEM ESPAÇO PARA ESCAPAR", null);
+            }
+            return new Resposta(Resultado.RECUSADA, "SOB FINALIZAÇÃO", null);
+        }
+        if (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.BAIXO)) {
+            ataque = null;                                     // soltar: a posicao continua
+            recarga.put(lado, RECARGA_TICKS);
+            registrar("FIN_SOLTOU", f.id(), lado, "");
+            return new Resposta(Resultado.ABANDONADA, "SOLTOU", null);
+        }
+        if (a.fase == FaseFinalizacao.DISPUTA && (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.CIMA) || f.aceita(c))) {
+            if (a.recargaAtaque > 0) {
+                return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
+            }
+            lutador(lado).gastarFolegoEsforco(custoAcao(lado, CUSTO_APERTO), "apertar");
+            a.pressao += PRESSAO_APERTO * eficienciaAtaque();
+            a.recargaAtaque = RECARGA_ACAO_FINALIZACAO;
+            verificarConsolidada();
+            return new Resposta(Resultado.CONCLUIDA, "APERTOU", null);
+        }
+        return new Resposta(Resultado.RECUSADA, "EM FINALIZAÇÃO", null);
+    }
+
+    private void verificarConsolidada() {
+        if (ataque != null && ataque.pressao >= 100) {
+            Ataque a = ataque;
+            vitoria = new Vitoria(a.atacante, a.finalizacao, false);
+            ataque = null;
+            registrar("FINALIZOU", a.finalizacao.id(), a.atacante, a.finalizacao.nome());
+        }
+    }
+
+    private void falharFinalizacao(String motivo) {
+        Ataque a = ataque;
+        ataque = null;
+        Finalizacao f = a.finalizacao;
+        if (f.falha() != null) {
+            entrar(f.falha().aplicar(estado, a.atacante), a.defensor(), true);   // perdeu a posicao
+        }
+        exposicao.put(a.atacante, new Exposto(Exposicao.BASE, 30));
+        recarga.put(a.atacante, RECARGA_FALHA_TICKS);
+        registrar("FIN_DEFENDIDA", f.id(), a.defensor(), motivo);
+    }
+
+    private void escaparFinalizacao() {
+        Ataque a = ataque;
+        ataque = null;
+        entrar(a.finalizacao.escape().aplicar(estado, a.atacante), a.defensor(), true);
+        recarga.put(a.atacante, RECARGA_TICKS);
+        registrar("FIN_ESCAPE", a.finalizacao.id(), a.defensor(), "");
+    }
+
+    /** Um tick da finalizacao (antes das tentativas comuns). */
+    private void atualizarFinalizacao() {
+        if (ataque == null) {
+            return;
+        }
+        Ataque a = ataque;
+        a.recargaAtaque = Math.max(0, a.recargaAtaque - 1);
+        a.recargaDefesa = Math.max(0, a.recargaDefesa - 1);
+        if (a.fase == FaseFinalizacao.ENTRADA) {
+            if (--a.ticks <= 0) {
+                a.fase = FaseFinalizacao.DISPUTA;
+                a.pressao = PRESSAO_INICIAL;
+                registrar("FIN_CONTROLE", a.finalizacao.id(), a.atacante, "");
+            }
+            return;
+        }
+        a.pressao += a.finalizacao.ganhoPorTick() * eficienciaAtaque();
+        lutador(a.atacante).gastarFolegoEsforco(0.004, "manter");
+        verificarConsolidada();
+    }
+
     /** 5P.2: contato de quimono que habilita guardas (o laco exige a manga). */
     public enum Conexao {
         MANGA
@@ -198,6 +527,9 @@ public final class MotorSolo {
         desorientado.clear();
         eventosLuta.clear();
         exaustaoAvisada.clear();
+        ataque = null;
+        vitoria = null;
+        efeitos.clear();
         for (Lado l : Lado.values()) {
             conexoes.put(l, java.util.EnumSet.noneOf(Conexao.class));
             postura.put(l, 0);
@@ -353,6 +685,25 @@ public final class MotorSolo {
      */
     public Map<Lado, Resposta> comandos(Map<Lado, ComandoSolo> pedidos) {
         Map<Lado, Resposta> r = new EnumMap<>(Lado.class);
+        if (vitoria != null) {
+            for (Lado l : pedidos.keySet()) {
+                r.put(l, new Resposta(Resultado.RECUSADA, "LUTA ENCERRADA", null));
+            }
+            return r;
+        }
+        if (ataque != null) {
+            Lado d = ataque.defensor();                        // 5Q: a defesa (e o bater) vem primeiro
+            if (pedidos.containsKey(d)) {
+                r.put(d, comandoNaFinalizacao(d, pedidos.get(d)));
+            }
+            for (Lado l : Lado.values()) {
+                if (l != d && pedidos.containsKey(l)) {
+                    r.put(l, ataque == null ? new Resposta(Resultado.RECUSADA, "FINALIZAÇÃO ENCERRADA", null)
+                            : comandoNaFinalizacao(l, pedidos.get(l)));
+                }
+            }
+            return r;
+        }
         sincronizarEmPe();
         if (pedidos.size() == 2 && tentativa == null && aterrissagemCima == null) {
             Optional<TecnicaSolo> ta = catalogo.para(estado, Lado.A, pedidos.get(Lado.A));
@@ -429,6 +780,10 @@ public final class MotorSolo {
         }
         Optional<TecnicaSolo> ot = catalogo.para(estado, lado, c);
         if (ot.isEmpty()) {
+            Optional<Finalizacao> fz = catalogoFinalizacoes.para(estado, lado, c);
+            if (fz.isPresent()) {
+                return iniciarFinalizacao(lado, fz.get());   // 5Q
+            }
             // 5P.2: espaco de finalizacao reservado: nao executa nem custa
             if (finalizacoes.para(estado, lado, c).isPresent()) {
                 return new Resposta(Resultado.RECUSADA, "FINALIZAÇÃO FUTURA", null);
@@ -447,6 +802,10 @@ public final class MotorSolo {
                 custo(lado, t), explosiva(t)), t.id());
         eu.registrarAtividadeDeCombate();
         if (t.isInstantanea()) {
+            TipoEfeitoVisual evi = efeitoDaTecnica(t.id());
+            if (evi != null) {
+                efeito(lado, evi, 14);
+            }
             instantanea(lado, t);
             recarga.put(lado, RECARGA_TICKS / 2);
             return new Resposta(Resultado.CONCLUIDA, t.nome(), t);
@@ -468,6 +827,10 @@ public final class MotorSolo {
             exposicao.put(lado, new Exposto(t.exposicao(), janela + 6));
         }
         registrar("INICIOU", t.id(), lado, "");
+        TipoEfeitoVisual ev = efeitoDaTecnica(t.id());
+        if (ev != null) {
+            efeito(lado, ev, janela);                          // 5Q: a pose acompanha a janela
+        }
         return new Resposta(Resultado.INICIADA, t.nome(), t);
     }
 
@@ -591,6 +954,8 @@ public final class MotorSolo {
                 base.put(l, Math.min(BASE_MAXIMA, base.get(l) + RECUPERACAO_BASE));
             }
         }
+        efeitos.values().forEach(e -> e[1] = Math.max(0, e[1] - 1));
+        atualizarFinalizacao();                                   // 5Q
         sincronizarEmPe();
         coerencia();
         if (aterrissagemCima != null && --aterrissagemTicks <= 0) {
@@ -680,7 +1045,7 @@ public final class MotorSolo {
      * (controle fraco) a 0,15 (controle total do outro). Livre: 1.
      */
     public double fatorRespiracao(Lado l) {
-        if (tentativa != null && tentativa.iniciador() == l) {
+        if ((tentativa != null && tentativa.iniciador() == l) || (ataque != null && ataque.atacante == l)) {
             return com.irmaosmiau.entities.CustosFolego.RESPIRACAO_EM_ACAO;
         }
         if (!estado.getPosicao().isVinculoDeSolo()) {
@@ -788,7 +1153,8 @@ public final class MotorSolo {
                     aplicarEfeito(ini, tec);                    // 5P.2: efeito com janela (desequilibrar, prender...)
                     registrar("SUCESSO", tec.id(), ini, "efeito");
                 } else if (ok) {
-                    if (tec.id().equals(CatalogoTecnicasSolo.SOLTAR_MANGA)) {
+                    if (tec.id().equals(CatalogoTecnicasSolo.SOLTAR_MANGA)
+                            || tec.id().equals(CatalogoTecnicasSolo.LIVRAR_MANGAS)) {
                         conexoes.get(out).remove(Conexao.MANGA);
                     }
                     entrar(tec.sucesso().aplicar(estado, ini), ini, tec.papel() == PapelPosicional.POR_BAIXO
@@ -800,6 +1166,10 @@ public final class MotorSolo {
                 } else {
                     recarga.put(ini, RECARGA_FALHA_TICKS);
                     estabilidade = Math.min(100, estabilidade + 10);
+                    Optional<Desfecho> perde = catalogo.falha(tec.id());
+                    if (perde.isPresent()) {
+                        entrar(perde.get().aplicar(estado, ini), out, true);   // 5Q: a entrada falhou e custou a posicao
+                    }
                     registrar("DEFENDIDA", tec.id(), ini, motivoDefesa(tec, out));
                 }
             }
@@ -885,6 +1255,7 @@ public final class MotorSolo {
         d.encostarNaBorda(recuo);
         base.put(def, base.get(def) - (exposto(def) ? BASE_MAXIMA : DANO_EMPURRAO));
         exposicao.put(def, new Exposto(Exposicao.BASE, 12));
+        efeito(def, TipoEfeitoVisual.EMPURRADO, 18);           // 5Q: recuo/desequilibrio visivel
         if (base.get(def) <= 0) {
             if (sistema != null && sistema.estaEmInteracao()) {
                 sistema.encerrarInteracao();
@@ -1037,6 +1408,7 @@ public final class MotorSolo {
         double dano = exposto(def) ? BASE_MAXIMA : 40 + sistema.getFirmeza() * 0.3;
         base.put(def, base.get(def) - dano);
         if (base.get(def) > 0) {
+            efeito(def, TipoEfeitoVisual.EMPURRADO, 18);
             exposicao.put(def, new Exposto(Exposicao.BASE, 12));
             exposicao.put(ini, new Exposto(Exposicao.AVANCO, 20));
             registrar("SUCESSO", CatalogoTecnicasSolo.DERRUBADA_FORCADA, ini,
@@ -1274,6 +1646,9 @@ public final class MotorSolo {
             case GUARDA_BORBOLETA -> 40;
             case DE_LA_RIVA -> 58;
             case GUARDA_LACO -> 62;
+            case GUARDA_ARANHA -> 66;
+            case SINGLE_LEG_X -> 44;
+            case ASHI_GARAMI -> 40;
             default -> 50;
         };
     }
