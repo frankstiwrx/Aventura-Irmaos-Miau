@@ -200,6 +200,8 @@ public final class MotorSolo {
         private double pressao;
         private int recargaAtaque;
         private int recargaDefesa;
+        /** So visual: ticks desde a ultima defesa (pulso da reacao). */
+        private int ticksDesdeDefesa = 99;
 
         Ataque(Finalizacao f, Lado atacante, int entrada) {
             this.finalizacao = f;
@@ -240,17 +242,60 @@ public final class MotorSolo {
 
     /** 5Q: efeito visual de um lado (o desenho reflete o motor, nunca decide nada). */
     public enum TipoEfeitoVisual {
-        EMPURRANDO, EMPURRADO, AFASTANDO, SOLTANDO, LEVANTANDO, FINALIZANDO, DEFENDENDO_FINALIZACAO, BATENDO
+        EMPURRANDO, EMPURRADO, AFASTANDO, SOLTANDO, LEVANTANDO, FINALIZANDO, DEFENDENDO_FINALIZACAO, BATENDO,
+        /** 5Q.3: quem recebe o afastamento com as pernas (perde o contato, recua o tronco). */
+        AFASTADO,
+        /** 5Q.3: volta suave da pose de uma tecnica interrompida/terminada para a pose da posicao. */
+        LIBERANDO,
+        /** 5Q.3: tecnica de solo com animacao propria (ex.: berimbolo): quem faz e quem recebe. */
+        TECNICA_ATAQUE, TECNICA_RECEBE
     }
 
-    public record EfeitoVisual(TipoEfeitoVisual tipo, double progresso, CategoriaFinalizacao categoria) {
+    /**
+     * Efeito visual (so desenho; o motor ja decidiu tudo).
+     *
+     * @param progresso   0-1 dentro do efeito (finalizacoes: 0-0,5 = entrada, 0,5-1 = pressao 0-100%)
+     * @param tecnica     id da tecnica/finalizacao que o efeito representa (null = generico)
+     * @param marco       fracao do efeito em que o motor resolve a tecnica (ex.: o empurrao chega)
+     * @param deslocamento px de tela que o motor ja moveu este lutador no inicio do efeito (recuo do empurrao)
+     * @param desde       LIBERANDO: de que ponto (progresso) da animacao interrompida a pose volta
+     * @param pulsoDefesa 0-1: 1 logo depois de uma defesa na disputa, cai para 0 em 12 ticks
+     */
+    public record EfeitoVisual(TipoEfeitoVisual tipo, double progresso, CategoriaFinalizacao categoria, String tecnica,
+            double marco, int deslocamento, double desde, double pulsoDefesa) {
+
+        public EfeitoVisual(TipoEfeitoVisual tipo, double progresso, CategoriaFinalizacao categoria) {
+            this(tipo, progresso, categoria, null, 1.0, 0, 0, 0);
+        }
+    }
+
+    /** Estado (so visual) de um efeito em andamento. */
+    private static final class Efeito {
+        final TipoEfeitoVisual tipo;
+        int restante;
+        final int total;
+        String tecnica;
+        double marco = 1.0;
+        int deslocamento;
+        double desde;
+        CategoriaFinalizacao categoria;
+
+        Efeito(TipoEfeitoVisual tipo, int total) {
+            this.tipo = tipo;
+            this.restante = total;
+            this.total = total;
+        }
+
+        double progresso() {
+            return 1.0 - (double) restante / Math.max(1, total);
+        }
     }
 
     private final CatalogoFinalizacoes catalogoFinalizacoes = CatalogoFinalizacoes.referencia();
     private com.irmaosmiau.regras.ModoRegras modoRegras = com.irmaosmiau.regras.ModoRegras.LIVRE;
     private Ataque ataque;
     private Vitoria vitoria;
-    private final Map<Lado, int[]> efeitos = new EnumMap<>(Lado.class);           // {ordinal, restante, total}
+    private final Map<Lado, Efeito> efeitos = new EnumMap<>(Lado.class);
 
     public CatalogoFinalizacoes getCatalogoFinalizacoes() {
         return catalogoFinalizacoes;
@@ -281,19 +326,56 @@ public final class MotorSolo {
     public Optional<EfeitoVisual> efeitoVisual(Lado l) {
         if (ataque != null) {
             boolean ataca = ataque.atacante == l;
+            double pulso = Math.max(0, 1.0 - ataque.ticksDesdeDefesa / 12.0);
             return Optional.of(new EfeitoVisual(ataca ? TipoEfeitoVisual.FINALIZANDO
-                    : TipoEfeitoVisual.DEFENDENDO_FINALIZACAO, ataque.fase == FaseFinalizacao.ENTRADA
-                    ? ataque.progressoEntrada() : Math.min(1.0, ataque.pressao / 100.0), ataque.finalizacao.categoria()));
+                    : TipoEfeitoVisual.DEFENDENDO_FINALIZACAO, progressoVisualAtaque(), ataque.finalizacao.categoria(),
+                    ataque.finalizacao.id(), 0.5, 0, 0, pulso));
         }
-        int[] e = efeitos.get(l);
-        if (e == null || e[1] <= 0) {
+        Efeito e = efeitos.get(l);
+        if (e == null || e.restante <= 0) {
             return Optional.empty();
         }
-        return Optional.of(new EfeitoVisual(TipoEfeitoVisual.values()[e[0]], 1.0 - (double) e[1] / e[2], null));
+        return Optional.of(new EfeitoVisual(e.tipo, e.progresso(), e.categoria, e.tecnica, e.marco, e.deslocamento,
+                e.desde, 0));
     }
 
-    private void efeito(Lado l, TipoEfeitoVisual t, int ticks) {
-        efeitos.put(l, new int[] {t.ordinal(), ticks, ticks});
+    /** Finalizacao: 0-0,5 = entrada; 0,5-1 = pressao 0-100% (so desenho). */
+    private double progressoVisualAtaque() {
+        return ataque.fase == FaseFinalizacao.ENTRADA ? 0.5 * ataque.progressoEntrada()
+                : 0.5 + 0.5 * Math.min(1.0, ataque.pressao / 100.0);
+    }
+
+    private Efeito efeito(Lado l, TipoEfeitoVisual t, int ticks) {
+        Efeito e = new Efeito(t, ticks);
+        efeitos.put(l, e);
+        return e;
+    }
+
+    /**
+     * 5Q.3: a pose especifica termina (defesa, escape, soltar, fim da janela): os dois voltam
+     * suavemente a pose da posicao a partir do ponto em que estavam (nada de estalo).
+     * {@code chave} = "tecnica:ATACA" ou "tecnica:RECEBE" (a pose de onde se volta).
+     */
+    private void liberarVisual(Lado l, String tecnica, double desde, CategoriaFinalizacao cat) {
+        Efeito e = efeito(l, TipoEfeitoVisual.LIBERANDO, 14);
+        e.tecnica = tecnica;
+        e.desde = desde;
+        e.categoria = cat;
+    }
+
+    /** Ao fim de uma tentativa com animacao propria, quem estava animando volta suave para a posicao. */
+    private void encerrarVisualDaTentativa() {
+        for (Lado l : Lado.values()) {
+            Efeito e = efeitos.get(l);
+            if (e != null && e.restante > 0 && (e.tipo == TipoEfeitoVisual.TECNICA_ATAQUE
+                    || e.tipo == TipoEfeitoVisual.TECNICA_RECEBE || e.tipo == TipoEfeitoVisual.AFASTANDO
+                    || e.tipo == TipoEfeitoVisual.AFASTADO)) {
+                boolean ataca = e.tipo == TipoEfeitoVisual.TECNICA_ATAQUE || e.tipo == TipoEfeitoVisual.AFASTANDO;
+                Efeito lib = efeito(l, TipoEfeitoVisual.LIBERANDO, 14);
+                lib.tecnica = (e.tecnica == null ? "-" : e.tecnica) + (ataca ? ":ATACA" : ":RECEBE");
+                lib.desde = e.progresso();
+            }
+        }
     }
 
     /** Efeito visual de uma tecnica que comeca (empurrar, afastar, soltar, levantar). */
@@ -380,12 +462,20 @@ public final class MotorSolo {
     }
 
     /** Comandos dos dois durante uma finalizacao (nada mais acontece no solo enquanto ela dura). */
+    /** 5Q.3: os dois saem da pose da finalizacao a partir de onde estavam. */
+    private void liberarFinalizacaoVisual(Ataque a) {
+        double desde = progressoVisualAtaque();
+        liberarVisual(a.atacante, a.finalizacao.id() + ":ATACA", desde, a.finalizacao.categoria());
+        liberarVisual(a.defensor(), a.finalizacao.id() + ":RECEBE", desde, a.finalizacao.categoria());
+    }
+
     private Resposta comandoNaFinalizacao(Lado lado, ComandoSolo c) {
         Ataque a = ataque;
         Finalizacao f = a.finalizacao;
         if (lado == a.defensor()) {
             if (eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO)) {
                 vitoria = new Vitoria(a.atacante, f, true);   // BATER: prioridade, solta na hora
+                liberarVisual(a.atacante, f.id() + ":ATACA", progressoVisualAtaque(), f.categoria());
                 ataque = null;
                 efeito(lado, TipoEfeitoVisual.BATENDO, 40);
                 registrar("RENDICAO", f.id(), lado, f.nome());
@@ -403,6 +493,7 @@ public final class MotorSolo {
                 }
                 a.pressao -= PRESSAO_DEFESA * ef;
                 a.recargaDefesa = RECARGA_ACAO_FINALIZACAO;
+                a.ticksDesdeDefesa = 0;
                 if (a.pressao <= 0) {
                     falharFinalizacao("defendida");
                     return new Resposta(Resultado.CONTRA, "DEFENDEU", null);
@@ -425,6 +516,7 @@ public final class MotorSolo {
             return new Resposta(Resultado.RECUSADA, "SOB FINALIZAÇÃO", null);
         }
         if (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.BAIXO)) {
+            liberarFinalizacaoVisual(a);
             ataque = null;                                     // soltar: a posicao continua
             recarga.put(lado, RECARGA_TICKS);
             registrar("FIN_SOLTOU", f.id(), lado, "");
@@ -446,6 +538,7 @@ public final class MotorSolo {
     private void verificarConsolidada() {
         if (ataque != null && ataque.pressao >= 100) {
             Ataque a = ataque;
+            liberarVisual(a.atacante, a.finalizacao.id() + ":ATACA", 1.0, a.finalizacao.categoria());
             vitoria = new Vitoria(a.atacante, a.finalizacao, false);
             ataque = null;
             registrar("FINALIZOU", a.finalizacao.id(), a.atacante, a.finalizacao.nome());
@@ -454,6 +547,7 @@ public final class MotorSolo {
 
     private void falharFinalizacao(String motivo) {
         Ataque a = ataque;
+        liberarFinalizacaoVisual(a);
         ataque = null;
         Finalizacao f = a.finalizacao;
         if (f.falha() != null) {
@@ -466,6 +560,7 @@ public final class MotorSolo {
 
     private void escaparFinalizacao() {
         Ataque a = ataque;
+        liberarFinalizacaoVisual(a);
         ataque = null;
         entrar(a.finalizacao.escape().aplicar(estado, a.atacante), a.defensor(), true);
         recarga.put(a.atacante, RECARGA_TICKS);
@@ -480,6 +575,7 @@ public final class MotorSolo {
         Ataque a = ataque;
         a.recargaAtaque = Math.max(0, a.recargaAtaque - 1);
         a.recargaDefesa = Math.max(0, a.recargaDefesa - 1);
+        a.ticksDesdeDefesa = Math.min(99, a.ticksDesdeDefesa + 1);
         if (a.fase == FaseFinalizacao.ENTRADA) {
             if (--a.ticks <= 0) {
                 a.fase = FaseFinalizacao.DISPUTA;
@@ -804,7 +900,7 @@ public final class MotorSolo {
         if (t.isInstantanea()) {
             TipoEfeitoVisual evi = efeitoDaTecnica(t.id());
             if (evi != null) {
-                efeito(lado, evi, 14);
+                efeito(lado, evi, 14).tecnica = t.id();
             }
             instantanea(lado, t);
             recarga.put(lado, RECARGA_TICKS / 2);
@@ -828,7 +924,18 @@ public final class MotorSolo {
         }
         registrar("INICIOU", t.id(), lado, "");
         TipoEfeitoVisual ev = efeitoDaTecnica(t.id());
-        if (ev != null) {
+        if (ev == TipoEfeitoVisual.EMPURRANDO) {
+            // 5Q.3: preparacao + empurrao (no fim da janela) + recuperacao (12 ticks depois)
+            Efeito e = efeito(lado, ev, janela + 12);
+            e.tecnica = t.id();
+            e.marco = (double) janela / (janela + 12);
+        } else if (t.id().equals(CatalogoTecnicasSolo.AFASTAR_DA_GUARDA)) {
+            efeito(lado, TipoEfeitoVisual.AFASTANDO, janela).tecnica = t.id();     // 5Q.3: pernas empurram
+            efeito(lado.outro(), TipoEfeitoVisual.AFASTADO, janela).tecnica = t.id();
+        } else if (t.id().equals(CatalogoTecnicasSolo.BERIMBOLO)) {
+            efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, janela).tecnica = t.id();  // 5Q.3: inversao
+            efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, janela).tecnica = t.id();
+        } else if (ev != null) {
             efeito(lado, ev, janela);                          // 5Q: a pose acompanha a janela
         }
         return new Resposta(Resultado.INICIADA, t.nome(), t);
@@ -924,6 +1031,7 @@ public final class MotorSolo {
     }
 
     private void abandonar() {
+        encerrarVisualDaTentativa();                          // 5Q.3 (so desenho)
         Tentativa t = tentativa;
         tentativa = null;
         if (t.tecnica().exposicao() != null) {
@@ -954,7 +1062,7 @@ public final class MotorSolo {
                 base.put(l, Math.min(BASE_MAXIMA, base.get(l) + RECUPERACAO_BASE));
             }
         }
-        efeitos.values().forEach(e -> e[1] = Math.max(0, e[1] - 1));
+        efeitos.values().forEach(e -> e.restante = Math.max(0, e.restante - 1));
         atualizarFinalizacao();                                   // 5Q
         sincronizarEmPe();
         coerencia();
@@ -1127,6 +1235,7 @@ public final class MotorSolo {
     }
 
     private void resolver(Tentativa t, Intencao intencaoIniciador) {
+        encerrarVisualDaTentativa();                          // 5Q.3 (so desenho)
         TecnicaSolo tec = t.tecnica();
         Lado ini = t.iniciador();
         Lado out = ini.outro();
@@ -1194,6 +1303,7 @@ public final class MotorSolo {
 
     /** Resposta certa dentro da janela: a contra resolve na hora (vale o SUCESSO dela). */
     private void contra(Lado quem, TecnicaSolo c) {
+        encerrarVisualDaTentativa();                          // 5Q.3 (so desenho)
         Tentativa t = tentativa;
         tentativa = null;
         if (t.tecnica().id().equals(CatalogoTecnicasSolo.QUEDA_PEGADA)) {
@@ -1255,7 +1365,9 @@ public final class MotorSolo {
         d.encostarNaBorda(recuo);
         base.put(def, base.get(def) - (exposto(def) ? BASE_MAXIMA : DANO_EMPURRAO));
         exposicao.put(def, new Exposto(Exposicao.BASE, 12));
-        efeito(def, TipoEfeitoVisual.EMPURRADO, 18);           // 5Q: recuo/desequilibrio visivel
+        Efeito emp = efeito(def, TipoEfeitoVisual.EMPURRADO, 22);   // 5Q/5Q.3: recuo/desequilibrio visivel
+        emp.tecnica = CatalogoTecnicasSolo.EMPURRAO;
+        emp.deslocamento = recuo;
         if (base.get(def) <= 0) {
             if (sistema != null && sistema.estaEmInteracao()) {
                 sistema.encerrarInteracao();
@@ -1408,7 +1520,7 @@ public final class MotorSolo {
         double dano = exposto(def) ? BASE_MAXIMA : 40 + sistema.getFirmeza() * 0.3;
         base.put(def, base.get(def) - dano);
         if (base.get(def) > 0) {
-            efeito(def, TipoEfeitoVisual.EMPURRADO, 18);
+            efeito(def, TipoEfeitoVisual.EMPURRADO, 22).tecnica = CatalogoTecnicasSolo.DERRUBADA_FORCADA;
             exposicao.put(def, new Exposto(Exposicao.BASE, 12));
             exposicao.put(ini, new Exposto(Exposicao.AVANCO, 20));
             registrar("SUCESSO", CatalogoTecnicasSolo.DERRUBADA_FORCADA, ini,

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1061, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1068, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -485,3 +485,11 @@ Gamepad (Xbox):
 - [ ] J2 CONTROLADO responde no teclado virtual/gamepad; PASSIVO continua parado
 - [ ] Partida normal sem o botão LABORATÓRIO e com o F5 de sempre
 - Checklist físico completo da 5Q/5Q.1 em `docs/LABORATORIO.md`
+
+### Animações (Entrega 5Q.3)
+- [ ] Empurrão: quem empurra carrega e estende os braços; quem recebe recua o tronco, dá um passo e desliza (sem pular)
+- [ ] Guarda fechada (laboratório): RB ↓ afastar — pernas recolhem e estendem; quem estava por cima recua o tronco
+- [ ] Armlock da guarda: perna sobe por cima, braço preso; defesa (↓) mostra a reação; escape volta suave
+- [ ] Americana da montada e mata-leão das costas: entrada, disputa (intensidade cresce com a pressão), defesa, saída
+- [ ] Berimbolo: inversão de cabeça para baixo e subida pelas costas; com J1 e com J2, Branco e Preto
+

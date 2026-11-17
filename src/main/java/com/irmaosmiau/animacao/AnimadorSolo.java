@@ -84,12 +84,18 @@ public final class AnimadorSolo {
             }
         }
         java.util.Optional<MotorSolo.EfeitoVisual> ef = m.efeitoVisual(lado);
-        ef.ifPresent(e -> aplicarEfeito(pose, e));
+        // 5Q.3: animacao propria da tecnica (aplicador/receptor); sem ela, a pose provisoria da 5Q
+        double[] desloc = ef.map(e -> AnimacoesTecnicas.aplicar(pose, e)).orElse(null);
+        if (desloc == null) {
+            ef.ifPresent(e -> aplicarEfeito(pose, e));
+        }
+        double dx = desloc == null ? 0.0 : desloc[0];
+        dy += desloc == null ? 0.0 : desloc[1];
         int[] nossa = aplicadas.get(l);
         if (l.isPoseCombateExternaAtiva() && (nossa == null || !Arrays.equals(nossa, l.copiarPoseCombateExterna()))) {
             return null;                                        // outro dono da pose
         }
-        l.aplicarPoseCombateExterna(pose, 0.0, dy);
+        l.aplicarPoseCombateExterna(pose, dx, dy);
         aplicadas.put(l, pose);
         String id = "solo:" + p.name() + ":" + (cima ? "CIMA" : "BAIXO")
                 + ef.map(e -> ":" + e.tipo().name() + (e.categoria() == null ? "" : "_" + e.categoria().name())).orElse("");
@@ -100,8 +106,10 @@ public final class AnimadorSolo {
     /**
      * 5Q: poses PROVISORIAS (procedurais) por cima da pose da posicao. So refletem
      * o que o motor ja decidiu (nao movem o lutador nem decidem quedas).
-     * Indices do rig: 9 = tronco, 16/17 = braco de tras (ombro/cotovelo),
-     * 20/21 = braco da frente (ombro/cotovelo).
+     * Indices do rig (corrigido na 5Q.3; o comentario da 5Q dizia "ombro/cotovelo"):
+     * 9 = rotacao do tronco, 16/17 = mao de tras (x/y em px), 20/21 = mao da frente (x/y),
+     * 17/21 tambem recebem os valores "cotovelo" daqui (deslocam a mao em y). So vale para
+     * os efeitos SEM animacao propria (AnimacoesTecnicas tem prioridade).
      */
     public static void aplicarEfeito(int[] pose, MotorSolo.EfeitoVisual e) {
         double p = Math.max(0, Math.min(1, e.progresso()));
