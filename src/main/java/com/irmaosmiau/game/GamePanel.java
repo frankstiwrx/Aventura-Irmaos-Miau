@@ -226,6 +226,149 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private JButton botaoContinuar;
     private JButton reiniciarLuta;
 
+    // =====================================================
+    // ENTREGA 5Q.2: LABORATORIO DO TREINO
+    // =====================================================
+    /** So o treino usa (a partida normal nunca liga o laboratorio). */
+    private final com.irmaosmiau.treino.LaboratorioTreino lab = new com.irmaosmiau.treino.LaboratorioTreino();
+    private boolean catalogoLabVisivel;
+    private final java.util.List<java.awt.Component> botoesPausaNormal = new java.util.ArrayList<>();
+    private final java.util.List<JButton> botoesLab = new java.util.ArrayList<>();
+    private JButton botaoLaboratorio;
+    private JButton botaoSituacao;
+    private JButton botaoControla;
+    private JButton botaoParceiroLab;
+    private JButton botaoReiniciarSituacao;
+
+    /** O J2 do treino esta parado (parceiro passivo)? No laboratorio pode ser controlado. */
+    boolean parceiroPassivo(SlotJogador slot) {
+        return modoTreino && slot == SlotJogador.JOGADOR_2 && !lab.isParceiroControlado();
+    }
+
+    com.irmaosmiau.treino.LaboratorioTreino getLaboratorio() {
+        return lab;
+    }
+
+    boolean isCatalogoLabVisivel() {
+        return catalogoLabVisivel;
+    }
+
+    /**
+     * 5Q.2: inicia (ou reinicia) a situacao do laboratorio: a sessao de treino recria os
+     * lutadores pelas escolhas (faixa, kimono, folego cheio) e o motor entra na posicao.
+     */
+    void iniciarSituacaoLaboratorio() {
+        if (!modoTreino || fimDeJogo) {
+            return;
+        }
+        reiniciarSessaoTreino();
+        religarDispositivosDoTreino();
+        lab.aplicar(solo, sistemaCombate, jogadorBranco, jogadorPreto);
+        avisos.limpar();
+        avisos.adicionar("LAB: " + lab.getSituacao().getNome().toUpperCase(java.util.Locale.ROOT)
+                + " · CONTROLA " + (lab.getAtivo() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2"));
+        atualizarBotoesLab();
+        if (pausado) {
+            mostrarLaboratorio(false);
+            alternarPausa();
+        }
+    }
+
+    /**
+     * 5Q.2: com o J2 controlado no laboratorio, liga os dispositivos do J2 (teclado virtual
+     * e/ou gamepad), como numa partida; com o parceiro passivo, o treino volta a ler so o J1.
+     */
+    private void religarDispositivosDoTreino() {
+        java.util.List<SlotJogador> slots = lab.isParceiroControlado()
+                ? java.util.List.of(SlotJogador.JOGADOR_1, SlotJogador.JOGADOR_2)
+                : java.util.List.of(SlotJogador.JOGADOR_1);
+        if (!lab.isParceiroControlado()) {
+            input.conectarFonte(SlotJogador.JOGADOR_2, null);
+        }
+        dispositivos = new SessaoDispositivos(PreferenciasDispositivos.global().getAtual(), ServicoGamepads.global(),
+                input, slots, mapaGamepad);
+    }
+
+    private void atualizarBotoesLab() {
+        if (botaoSituacao == null) {
+            return;
+        }
+        botaoSituacao.setText("SITUAÇÃO: " + lab.getSituacao().getNome().toUpperCase(java.util.Locale.ROOT));
+        botaoControla.setText("CONTROLA: " + (lab.getAtivo() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2"));
+        botaoParceiroLab.setText("J2: " + (lab.isParceiroControlado() ? "CONTROLADO" : "PASSIVO"));
+        botaoReiniciarSituacao.setVisible(modoTreino && lab.isAtiva() && botaoLaboratorio.isVisible());
+    }
+
+    /** Troca o menu de pausa entre a vista normal e a do laboratorio (o navegador segue os botoes visiveis). */
+    void mostrarLaboratorio(boolean sim) {
+        for (java.awt.Component c : botoesPausaNormal) {
+            c.setVisible(!sim && (c != reiniciarLuta || aoTentarNovamente != null));
+        }
+        botaoLaboratorio.setVisible(!sim && modoTreino);
+        for (JButton b : botoesLab) {
+            b.setVisible(sim);
+        }
+        atualizarBotoesLab();
+        botaoReiniciarSituacao.setVisible(!sim && modoTreino && lab.isAtiva());
+        if (sim) {
+            botaoSituacao.requestFocusInWindow();
+        } else if (botaoContinuar != null) {
+            botaoContinuar.requestFocusInWindow();
+        }
+        menuPausa.revalidate();
+        menuPausa.repaint();
+    }
+
+    /** HUD tecnico do laboratorio (centro, abaixo dos avisos) e o catalogo (F8). */
+    private void desenharLaboratorio(Graphics2D g0) {
+        if (!modoTreino || !lab.isAtiva() || solo == null) {
+            return;
+        }
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        java.util.List<String> linhas = lab.linhasHud(solo, jogadorBranco, jogadorPreto,
+                ultimoMotivoFamilia.get(SlotJogador.JOGADOR_1), ultimoMotivoFamilia.get(SlotJogador.JOGADOR_2));
+        int y = 60;
+        g.setColor(new Color(10, 16, 40, 150));
+        g.fillRoundRect(230, y, 340, 6 + 12 * linhas.size(), 8, 8);
+        g.setFont(new Font("Arial", Font.BOLD, 10));
+        g.setColor(new Color(190, 230, 255));
+        for (String l : linhas) {
+            String t = l;
+            while (g.getFontMetrics().stringWidth(t) > 330 && t.length() > 2) {
+                t = t.substring(0, t.length() - 2) + "…";
+            }
+            y += 12;
+            g.drawString(t, 236, y);
+        }
+        if (catalogoLabVisivel) {
+            java.util.List<com.irmaosmiau.treino.LaboratorioTreino.Item> cat = lab.catalogo(solo);
+            int yc = 140;
+            int alt = 22 + 12 * Math.max(1, cat.size());
+            g.setColor(new Color(10, 16, 40, 200));
+            g.fillRoundRect(200, yc, 400, alt, 8, 8);
+            g.setColor(new Color(255, 214, 120));
+            g.drawString("CATÁLOGO · " + solo.getPosicao().getNome().toUpperCase(java.util.Locale.ROOT) + "  (F8 fecha)",
+                    208, yc + 14);
+            int yy = yc + 14;
+            if (cat.isEmpty()) {
+                g.setColor(new Color(170, 170, 170));
+                g.drawString("nenhuma finalização nesta posição", 208, yy + 12);
+            }
+            for (com.irmaosmiau.treino.LaboratorioTreino.Item i : cat) {
+                yy += 12;
+                g.setColor(i.status() == com.irmaosmiau.treino.LaboratorioTreino.Status.LIBERADA
+                        ? new Color(150, 240, 150) : new Color(200, 180, 180));
+                String t = i.texto();
+                while (g.getFontMetrics().stringWidth(t) > 384 && t.length() > 2) {
+                    t = t.substring(0, t.length() - 2) + "…";
+                }
+                g.drawString(t, 208, yy);
+            }
+        }
+        g.dispose();
+    }
+
     /**
      * 5P.1: REINICIAR LUTA (pausa): recomeca a MESMA luta pelo mesmo caminho do
      * "tentar novamente" do fim de jogo: luta nova com os mesmos Miaus, arena,
@@ -604,8 +747,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             xAntesDoTick2 = jogadorPreto.getX();
             atualizarMiauBranco();
 
-            if (modoTreino) {
-                // Parceiro de treino: ignora as teclas do segundo jogador.
+            if (modoTreino && !lab.isParceiroControlado()) {
+                // Parceiro de treino: ignora as teclas do segundo jogador (5Q.2: salvo no laboratorio, se pedido).
                 sessaoTreino.atualizarParceiro();
                 deslocandoConjuntoJ2 = false;
             } else {
@@ -1234,7 +1377,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     continue;
                 }
                 // No treino o parceiro e passivo: as teclas do segundo jogador sao ignoradas.
-                boolean ativa = !(modoTreino && slot == SlotJogador.JOGADOR_2)
+                boolean ativa = !(parceiroPassivo(slot))
                         && input.isAtiva(slot, acao);
                 if (toques.tocou(slot, acao, ativa)) {
                     doSlot.add(acao);
@@ -1290,7 +1433,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 continue;
             }
             dispositivos.consumirComandoContextual(slot).ifPresent(p -> {
-                if (solo != null && p.camada() != CamadaComando.UM && !(modoTreino && slot == SlotJogador.JOGADOR_2)) {
+                if (solo != null && p.camada() != CamadaComando.UM && !(parceiroPassivo(slot))) {
                     pedirSolo(slot, p.direcao(), familiaDaCamada(p.camada()));   // 5P.2: L1 guardas / L2 quedas
                 } else if (p.camada() == CamadaComando.UM && aplicaPegadaEstabelecida(slot)
                         && direcaoDaPegadaNoMotor(p.direcao())) {
@@ -1406,7 +1549,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** O motor de solo recebe os comandos de tecnica deste slot agora. */
     private boolean soloConduz(SlotJogador slot) {
-        return solo != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+        return solo != null && !(parceiroPassivo(slot))
                 && solo.conduzComandos(slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto);
     }
 
@@ -1416,7 +1559,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** 5P.2: comando com a FAMILIA (RS, R1, L1, L2, L1+L2) para o MotorSolo. */
     private void pedirSolo(SlotJogador slot, com.irmaosmiau.controles.DirecaoTecnica d, com.irmaosmiau.posicional.TecnicaSolo.Familia familia) {
-        if (solo == null || d == null || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+        if (solo == null || d == null || (parceiroPassivo(slot))) {
             return;
         }
         pedidosSolo.putIfAbsent(lado(slot), new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
@@ -1476,7 +1619,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     private com.irmaosmiau.posicional.MotorSolo.Intencao intencao(SlotJogador s) {
-        if (modoTreino && s == SlotJogador.JOGADOR_2) {
+        if (parceiroPassivo(s)) {
             return com.irmaosmiau.posicional.MotorSolo.Intencao.NENHUMA;
         }
         int dx = (input.isAtiva(s, AcaoJogador.MOVER_DIREITA) ? 1 : 0)
@@ -1643,7 +1786,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         for (SlotJogador slot : SlotJogador.values()) {
             IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
             IrmaoMiau outro = ator == jogadorBranco ? jogadorPreto : jogadorBranco;
-            if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+            if (parceiroPassivo(slot)) {
                 dispositivos.consumirEscolhaFamilia(slot);
                 ator.getDefesa().soltar();
                 continue;                                 // parceiro passivo
@@ -1834,7 +1977,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** Uma das 12 posicoes: executa a acao existente, ou avisa que esta vazia/reservada. */
     private void executarComandoContextual(SlotJogador slot, PosicaoComando posicao) {
-        if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+        if (parceiroPassivo(slot)) {
             return;                                     // parceiro passivo
         }
         IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
@@ -1854,7 +1997,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** Entrega 5L: RS no Classico = as 4 pegadas (livre); com pegada, nada (os botoes do Classico agem). */
     private void executarPegadaClassica(SlotJogador slot, com.irmaosmiau.controles.DirecaoTecnica d) {
-        if (modoTreino && slot == SlotJogador.JOGADOR_2) {
+        if (parceiroPassivo(slot)) {
             return;
         }
         IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
@@ -1893,21 +2036,21 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (soloConduz(slot)) {
             return quadroSolo(slot, familiaHud(slot));                             // 5P / 5P.2
         }
-        if (solo != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+        if (solo != null && !(parceiroPassivo(slot))
                 && familiaDo(slot) == com.irmaosmiau.controles.FamiliaTecnica.PROJECOES) {
             return quadroSolo(slot, com.irmaosmiau.posicional.TecnicaSolo.Familia.R1);                               // 5P: quedas em pe
         }
-        if (solo != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+        if (solo != null && !(parceiroPassivo(slot))
                 && familiaHud(slot) != com.irmaosmiau.posicional.TecnicaSolo.Familia.RS && familiaHud(slot) != com.irmaosmiau.posicional.TecnicaSolo.Familia.R1) {
             return quadroSolo(slot, familiaHud(slot));                             // 5P.2: L1 / L2 / L1+L2 em pe
         }
-        if (sistemaCombate != null && !(modoTreino && slot == SlotJogador.JOGADOR_2)
+        if (sistemaCombate != null && !(parceiroPassivo(slot))
                 && familiaDo(slot) != com.irmaosmiau.controles.FamiliaTecnica.PEGADAS) {
             return quadroDaFamilia(slot, familiaDo(slot));
         }
         boolean j2NoTeclado = slot == SlotJogador.JOGADOR_2 && !dispositivos.usaGamepadAgora(slot);
         if (sistemaCombate == null || !(dispositivos.usaContextualAgora(slot) || j2NoTeclado)
-                || (modoTreino && slot == SlotJogador.JOGADOR_2)) {
+                || (parceiroPassivo(slot))) {
             return null;
         }
         IrmaoMiau ator = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
@@ -2484,6 +2627,58 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 menuPrincipal,
                 gbc
         );
+
+        // 5Q.2: LABORATORIO (so no treino): uma "vista" do proprio menu de pausa.
+        botoesPausaNormal.addAll(java.util.List.of(continuar, reiniciarLuta, trocarMiau, controles, menuPrincipal));
+        if (modoTreino) {
+            gbc.insets = new Insets(4, 20, 4, 20);
+        }
+        botaoReiniciarSituacao = new JButton("REINICIAR SITUAÇÃO");
+        botaoReiniciarSituacao.addActionListener(e -> iniciarSituacaoLaboratorio());
+        botaoLaboratorio = new JButton("LABORATÓRIO");
+        botaoLaboratorio.addActionListener(e -> mostrarLaboratorio(true));
+        botaoSituacao = new JButton();
+        botaoSituacao.addActionListener(e -> {
+            lab.proximaSituacao(1);
+            atualizarBotoesLab();
+        });
+        botaoControla = new JButton();
+        botaoControla.addActionListener(e -> {
+            lab.inverterPapeis();
+            atualizarBotoesLab();
+        });
+        botaoParceiroLab = new JButton();
+        botaoParceiroLab.addActionListener(e -> {
+            lab.setParceiroControlado(!lab.isParceiroControlado());
+            atualizarBotoesLab();
+        });
+        JButton iniciarLab = new JButton("INICIAR SITUAÇÃO");
+        iniciarLab.addActionListener(e -> iniciarSituacaoLaboratorio());
+        JButton desligarLab = new JButton("DESLIGAR LABORATÓRIO");
+        desligarLab.addActionListener(e -> {
+            lab.desativar();
+            catalogoLabVisivel = false;
+            mostrarLaboratorio(false);
+        });
+        JButton voltarLab = com.irmaosmiau.ui.NavegadorMenus.marcarVoltar(new JButton("VOLTAR"));
+        voltarLab.addActionListener(e -> mostrarLaboratorio(false));
+        botoesLab.addAll(java.util.List.of(botaoSituacao, botaoControla, botaoParceiroLab, iniciarLab, desligarLab,
+                voltarLab));
+        int linha = 6;
+        for (JButton b : new JButton[] {botaoReiniciarSituacao, botaoLaboratorio}) {
+            b.setFont(fonteBotao);
+            b.setVisible(false);
+            gbc.gridy = linha++;
+            menuPausa.add(b, gbc);
+        }
+        botaoLaboratorio.setVisible(modoTreino);
+        for (JButton b : botoesLab) {
+            b.setFont(fonteBotao.deriveFont(fonteBotao.getSize2D() * 0.85f));
+            b.setVisible(false);
+            gbc.gridy = linha++;
+            menuPausa.add(b, gbc);
+        }
+        atualizarBotoesLab();
 
         menuPausa.setVisible(false);
 
@@ -3088,6 +3283,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
         desenharRelogio(g2);
         avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
+        desenharLaboratorio(g2);                                  // 5Q.2: HUD tecnico (so no laboratorio)
 
         // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
         PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
@@ -3635,6 +3831,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             repaint();
         });
         atalho("F5", "reiniciarTreino", this::reiniciarTreino);
+        atalho("F8", "alternarCatalogoLab", () -> {                 // 5Q.2: catalogo do laboratorio
+            if (modoTreino && lab.isAtiva()) {
+                catalogoLabVisivel = !catalogoLabVisivel;
+                repaint();
+            }
+        });
         atalho("F9", "alternarMusica", () -> {
             java.util.Optional<String> erro = preferencias.alternarMusica();
             mostrarPreferencia("Música: "
@@ -3665,6 +3867,15 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (!modoTreino || pausado || fimDeJogo) {
             return;
         }
+        if (lab.isAtiva()) {
+            iniciarSituacaoLaboratorio();                    // 5Q.2: F5 repete a mesma situacao
+            return;
+        }
+        reiniciarSessaoTreino();
+    }
+
+    /** Recria a sessao de treino (lutadores pelas escolhas, motor e vinculos zerados). */
+    private void reiniciarSessaoTreino() {
 
         sessaoTreino.reiniciar();
         limparPosturasPendentes();

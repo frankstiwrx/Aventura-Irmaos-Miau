@@ -1144,3 +1144,8 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
 - J1 no teclado: 4 + tecla no chão agora funciona (antes a tecla era consumida antes do R1). L1/L2 continuam só
   no Xbox e no teclado virtual do J2 (E/Q).
 - Detalhes em `docs/FINALIZACOES.md`.
+
+# Entrega 5Q.2 — Laboratório do treino
+
+- Pausa do **treino** → **LABORATÓRIO**: escolher a situação, quem controla e se o J2 é controlado; INICIAR.
+- **F5** no laboratório repete a situação; **F8** mostra/esconde o catálogo da posição. Detalhes em `docs/LABORATORIO.md`.

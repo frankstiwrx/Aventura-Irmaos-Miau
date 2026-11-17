@@ -1708,6 +1708,41 @@ public final class MotorSolo {
         }
     }
 
+    /**
+     * 5Q.2 (laboratorio do treino): comeca uma SITUACAO num estado valido, pelas
+     * mesmas regras do motor: limpa tudo (reiniciar), entra na posicao pelos dois
+     * lados de uma vez (posturas, papeis, vinculo), da a manga quando a guarda exige,
+     * e encaixa a dupla JA na distancia da posicao, na mesma linha e dentro da arena
+     * (sem esperar o encaixe gradual). Nao mexe em folego/condicionamento (quem chama
+     * recria os lutadores).
+     */
+    public void iniciarSituacao(Posicao p, Lado porCima, Lado controlador, boolean manga) {
+        reiniciar();
+        if (p == Posicao.EM_PE_SEPARADOS || p == Posicao.EM_PE_PEGADA) {
+            entrar(EstadoPosicional.separados(), Lado.A, false);
+            return;                                          // em pe: o estado e a leitura do SistemaCombate
+        }
+        forcarPosicao(p, porCima, controlador);
+        if (manga && controlador != null) {
+            conexoes.get(controlador).add(Conexao.MANGA);
+        }
+        if (porCima != null) {
+            IrmaoMiau c = lutador(porCima);
+            IrmaoMiau b = lutador(porCima.outro());
+            while (c.getLinhaAtual() < b.getLinhaAtual()) {
+                c.descerLinha();
+            }
+            while (c.getLinhaAtual() > b.getLinhaAtual()) {
+                c.subirLinha();
+            }
+            int alvo = Math.max(xMin, Math.min(xMax, b.getX() + frente * afastamento(p)));
+            if (alvo != b.getX() + frente * afastamento(p)) {
+                b.encostarNaBorda(alvo - (b.getX() + frente * afastamento(p)));
+            }
+            c.encostarNaBorda(alvo - c.getX());
+        }
+    }
+
     /** Teste/depuracao: forca uma posicao (os dois mudam juntos). */
     public void forcarPosicao(Posicao p, Lado porCima, Lado controlador) {
         tentativa = null;

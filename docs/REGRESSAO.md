@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1051, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1061, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -478,3 +478,10 @@ Gamepad (Xbox):
 - [ ] Treino: faixa/kimono do jogador e do parceiro
 - [ ] Faixa branca: omoplata (azul) bloqueada ("·Az"); faixa azul libera
 - [ ] Fortaleza: neve caindo; Campeonato: bandeirinhas e torcida; Academia dos Irmãos Miau: árvore balançando
+
+### Laboratório do treino (Entrega 5Q.2)
+- [ ] Pausa do treino → LABORATÓRIO → situação/controla/J2 → INICIAR: começa direto na posição, com HUD técnico
+- [ ] F5 repete a situação (posição, papéis, fôlego); F8 mostra o catálogo com LIBERADA / FAIXA X / AGORA NÃO
+- [ ] J2 CONTROLADO responde no teclado virtual/gamepad; PASSIVO continua parado
+- [ ] Partida normal sem o botão LABORATÓRIO e com o F5 de sempre
+- Checklist físico completo da 5Q/5Q.1 em `docs/LABORATORIO.md`
