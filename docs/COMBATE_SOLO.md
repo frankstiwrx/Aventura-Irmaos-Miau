@@ -390,3 +390,60 @@ RECUPERACAO_GUARDA, ABANDONO, EXAUSTAO_CRITICA. Nenhum ponto é dado nesta entre
   teclado virtual do J2. O tiro de guarda e a derrubada forçada funcionam no teclado do J1 (teclas ← e ↓ da pegada).
 - Sem animações próprias (salto para a guarda, projeção, berimbolo usam as transições de postura).
 - Guarda aranha, X e de lapela: planejadas (ver "Sugestões" no relatório), não implementadas.
+
+## Entrega 5Q.6 — quedas
+
+### Rasteira
+
+- **Causa da dificuldade:** só entrava se o outro tivesse andado nos últimos 24 ticks, com base
+  < 85 ou exposto; parado (o normal numa luta) quase nunca.
+- **Agora (pontuação ≥ 40):** base perdida (100 − base) + passo recente do outro (+45) **ou** o
+  outro foi puxado/arrastado pela pegada (+40) + desequilíbrio/exposição (+60) + 0,3 × firmeza da
+  pegada. Janela do "passo recente": 40 ticks. Parado, com base cheia e pegada média, continua
+  não entrando; o RT na janela segura quem está parado.
+- **Rasteira defendida:** pequeno desequilíbrio (20 ticks) e volta à postura da pegada. Causa da
+  deformação: a janela acabava no mesmo tick da resolução (sem volta suave) e a pose da pegada
+  era apagada (a tentativa seguinte partia de outra pose e acumulava).
+
+### Quedas explosivas (sem pegada)
+
+| Queda | Comando | Alcance | Destino sem reação | Defesa |
+|---|---|---|---|---|
+| Single leg | LT ↑ em pé | 170 px | meia-guarda por cima | sprawl (RT sem sprawl: os dois ao chão sem controle) |
+| High crotch | LT → em pé | 170 px | cem quilos | sprawl |
+| Carregada no ombro | LT ↓ em pé | 160 px | cem quilos | sprawl |
+| Ankle pick | LT ← em pé | 130 px | o outro senta, quem pegou fica em pé | base (RT) |
+| Body lock | RB → em pé sem pegada | 150 px | cem quilos | base (RT) |
+| Single leg de joelhos | LT ↑ de joelhos | 120 px | meia-guarda por cima | base (RT) |
+| Double leg de joelhos | LT → de joelhos | 120 px | cem quilos | base (RT) |
+| Snap down | LT ↓ de joelhos | 110 px | cem quilos | base (RT) |
+| Arm drag | LT ← de joelhos | 110 px | costas | base (RT) |
+
+Todas: avanço **real** até o contato durante a janela (até 9 px/tick, sem teletransporte), custo
+de fôlego, recuar para longe no fim da janela faz falhar, a aterrissagem existente (o defensor
+ainda pode reagir com guarda/meia-guarda), animação própria de quem entra e de quem recebe.
+De joelhos não levanta: menos deslocamento e amplitude vertical.
+
+### Projeções e entradas de guarda com a pegada (LB + LT)
+
+| Técnica | Comando | Requisito | Resultado | Defesa |
+|---|---|---|---|---|
+| Uchi-mata | ↑ | pegada | projeta (cem quilos) | base (RT); pegada fraca falha |
+| Osoto-gari | → | pegada | projeta (cem quilos) | base (RT); pegada fraca falha |
+| Puxar para o laço | ↓ | pegada | guarda laço (segura a manga) | recuar / base |
+| Puxar para a aranha | ← | pegada nas mangas | guarda aranha | recuar / base |
+
+### Saída da guarda (quem está por cima, RB ↓)
+
+- **Guarda aberta** (borboleta, DLR, laço, aranha, SLX, meia, aberta): janela 9, o controle do
+  outro precisa estar ≥ 85 para segurar — sem controle efetivo é fácil criar distância.
+- **Guarda fechada:** com o controle de quem está por baixo ≥ 45 precisa de **postura antes**
+  ("FAÇA POSTURA ANTES (RS↓)"); janela 20 e segura com controle ≥ 45.
+- **Afastar com os pés** (por baixo): quem estava por cima recua até 122 px (3 px/tick) e quem
+  empurrou também escorrega 14 px para trás no chão (1 px/tick).
+
+### Cem quilos → costas (RB ↑)
+
+Antes só entrava com o outro **exposto** (virando para os joelhos): do cem quilos parado sempre
+falhava ao fim da janela. Agora também entra com o controle consolidado (≥ 70) e, sem isso,
+recusa na hora com "CONSOLIDE ANTES (n/70)".

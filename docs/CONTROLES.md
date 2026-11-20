@@ -1160,7 +1160,7 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
   apaga o destaque do mouse (`NavegadorMenus` + `ArteMenus.destacado`).
 - **Configurações**: a linha "Cenário preferido" saiu (o mapa é escolhido em cada seleção); o valor já salvo é
   preservado.
-- **Modo Desenvolvedor** (menu principal): F5 recomeça a luta, F4 troca o cenário da sessão, pausa com fôlego /
+- **Modo Desenvolvedor** (5Q.4; desde a 5Q.6 com F8 dentro da partida, sem opção no menu): F5 recomeça a luta, F4 troca o cenário da sessão, pausa com fôlego /
   condicionamento infinitos e restaurar recursos. Detalhes em `docs/MODO_DESENVOLVEDOR.md`.
 - **De joelhos** (venha de onde vier: início de joelhos, queda, troca de postura): pegadas, empurrão,
   desequilibrar, puxar guarda/borboleta, derrubada forçada e queda pela pegada valem; tiro de guarda e entrada
@@ -1197,3 +1197,50 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
    as finalizações de braço e de estrangulamento numa camada só quando a posição tiver no máximo 4 opções.
 
 Nenhuma dessas propostas foi aplicada: mudam o esquema de controles e precisam de aprovação.
+
+## Entrega 5Q.6 — novos comandos
+
+### Finalizações (quem defende)
+
+| Comando | Ação | Efeito |
+|---|---|---|
+| RS ← (com ou sem RB, LT ou LB segurados) | **BATER** | encerra a luta **na hora**, em qualquer fase e pressão (antes só RB + ↓ batia e o item ← da roda era recusado) |
+| RB + RS ↓ | BATER | continua valendo; segurar RS ↓ e apertar RB também bate |
+| RS ↓ (qualquer modificador) | DEFENDER (rótulo pela articulação: PROTEGER BRAÇO, PROTEGER O OMBRO, DOBRAR O PUNHO, MÃOS NO PESCOÇO, GIRAR O PÉ, ESCONDER O PÉ, DOBRAR O JOELHO, TIRAR A PERNA, FECHAR AS PERNAS) | tira 22 de pressão; na entrada, corta; abre a **janela de fuga** (45 ticks) |
+| RS ↑ (com ou sem RB) | ESCAPAR ("ESCAPAR (ESPAÇO)" com a janela aberta) | rompe se a pressão ≤ 45 (≤ 65 na janela de fuga); falhar sobe 8 de pressão, gasta a janela e dá recarga dobrada |
+
+### Quedas e projeções
+
+| Contexto | ↑ | → | ↓ | ← |
+|---|---|---|---|---|
+| **LT em pé, sem pegada** | Single leg | High crotch | Carregada no ombro | Ankle pick |
+| **LT de joelhos, sem pegada** | Single leg de joelhos | Double leg de joelhos | Snap down | Arm drag |
+| **RB em pé** | Empurrão | **sem pegada: Body lock (cintura)** · com pegada: Queda com a pegada | Entrada nas pernas (preservada) | Puxar guarda |
+| **LB + LT com pegada** (nova roda) | Uchi-mata | Osoto-gari | Puxar para o laço | Puxar para a aranha (precisa das mangas) |
+
+A extensão do RB usou o lado → que estava **vazio sem pegada** (com pegada continua a queda com a
+pegada): nenhum comando foi sobrescrito.
+
+### Ashi garami (quem controla)
+
+| Família | ↑ | → | ↓ | ← |
+|---|---|---|---|---|
+| LT (L2): tornozelo/pé | Aoki lock (Rx) | Estima lock (Mr) | Pé reta da 50/50 (Rx) | — |
+| LB (L1): joelho/quadril | Chave de joelho invertida (Mr) | Banana split (Mr) | Chave de joelho com giro (Mr) | — |
+| LB + LT (preservado) | Pé reta (Rx) | Joelho (Mr) | Toe hold (Mr) — antes "mão de vaca" | Panturrilha (Mr) |
+
+### De La Riva (LB + LT)
+
+↑ Berimbolo (preservado) · ← Kiss of the dragon · → Baby bolo · ↓ Ashi (preservado).
+
+### Modo Desenvolvedor
+
+**F8** dentro de uma partida normal liga/desliga (no treino o F8 continua sendo o catálogo do
+laboratório). Ver [MODO_DESENVOLVEDOR.md](MODO_DESENVOLVEDOR.md).
+
+### Cores das rodas
+
+Azul ■ = defesa · verde ▶ = transição · vermelho ● = finalização · âmbar ◆ = queda/projeção ·
+creme = controle/ajuste/pegada (a cor de antes) · BATER = branco com moldura dourada. Bloqueada
+(recarga, requisito, faixa) = a mesma cor apagada para o cinza, com a faixa exigida no nome
+("·Mr"). A classificação é central (`ClassificacaoAcoes`): técnica nova recebe a cor sozinha.

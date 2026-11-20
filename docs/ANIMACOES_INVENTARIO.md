@@ -171,3 +171,42 @@ outro e outra **pela frente** ao mesmo tempo (triângulo, laço) exige camadas p
   genérica.
 - Enquadrar e escapar dos domínios usam a pose da posição (sem quadros próprios).
 - O ajuste de estabilizar/consolidar (100 kg, joelho, montada) não tem quadros próprios.
+
+## Entrega 5Q.6
+
+### Novas (próprias, aplicador e receptor)
+
+| Animação | Observação |
+|---|---|
+| rasteira_defendida:RECEBE | pequeno desequilíbrio e volta à pose da pegada |
+| single_leg, high_crotch, ankle_pick, carregada_ombro, body_lock | quedas explosivas (referência: a entrada nas pernas aprovada) |
+| single_leg_joelhos, double_leg_joelhos, arm_drag, snap_down | de joelhos, menor amplitude |
+| uchi_mata, osoto_gari, puxar_aranha, puxar_laco | roda LB + LT com pegada |
+| berimbolo_kiss, berimbolo_invertido (baby bolo) | variações com giro/rota diferentes do berimbolo |
+| tiro_guarda | prepara, salta, encaixa as pernas, um instante encaixado, desce para a guarda |
+| puxar_guarda | senta devagar puxando (controlado): diferente do tiro |
+| desequilibrar_pes (deseq. guarda, borboleta, DLR, aranha) | pés recolhem e empurram; o outro tropeça |
+| microanimações: consolidar, postura_meia, pressao_joelho, estabilizar_montada, montada_alta, ajustar_ganchos, controlar_pernas, angulo_guarda, pegar_manga, reter_* (borboleta/DLR/aranha/SLX), travar_laco, postura_* (borboleta/DLR/laço/aranha/SLX) | gesto curto; as de efeito contínuo (controlar as pernas, base, montada alta) seguram a pose enquanto o efeito dura |
+| manga presa (persistente) | a mão continua segurando enquanto a conexão de manga existir |
+
+### Corrigidas
+
+- **Levantada depois da queda:** a transição era recusada (a pose do solo continuava "dona") e o
+  corpo ficava congelado deitado até aparecer de pé. Agora a `LEVANTADA_TECNICA` desenha do começo
+  ao fim (apoio das mãos, pernas, quadril, postura). A levantada do duplo LS não mudou.
+- **Corrida de joelhos para trás:** inclina para trás (relativo para onde o lutador olha).
+- **Rolamento de joelhos** 22 → 28 ticks e **sprawl** 26 → 32 (mesma distância; janela do sprawl
+  um pouco maior, recarga igual). Rolamento deitado e em pé não mudaram.
+
+### Preservadas
+
+Rasteira bem-sucedida, entrada nas pernas, berimbolo, underhook, levantada do duplo LS, recuo em
+pé e de joelhos, corrida de joelhos para frente, arrasto de joelhos, rolamento deitado e todas as
+anteriores.
+
+### Ainda provisórias
+
+Novas finalizações de perna (pose provisória da categoria PERNA), armlock das costas, hammerlock,
+parte das finalizações de perna antigas, escapes/enquadrar e consolidar (agora com gesto curto,
+mas sem pose final própria), quem está por cima nas guardas abertas. Rig 2.0 continua necessário
+para membros na frente/atrás do adversário (triângulo, laço, single leg com a perna entre os braços).

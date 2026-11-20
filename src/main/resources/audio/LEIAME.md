@@ -1,5 +1,8 @@
 # Áudio do jogo
 
+> **5Q.6:** cada tela tem a própria música e o combate tem 6 faixas em rodízio, substituíveis por
+> arquivos externos sem recompilar. Ver `docs/AUDIO.md`. Os arquivos abaixo são o fallback interno.
+
 Todos os arquivos são **WAV** (PCM; 16 bits recomendado) e são lidos pelo classpath,
 tanto no NetBeans quanto no JAR.
 

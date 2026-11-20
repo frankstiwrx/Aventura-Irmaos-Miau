@@ -55,7 +55,7 @@ Atualmente o projeto possui:
 - Estados de interação e pegada
 - Infraestrutura para animações conjuntas de combate
 - Editor próprio de poses e animações utilizado durante o desenvolvimento
-- Treino com laboratório de situações e Modo Desenvolvedor para testes (`docs/MODO_DESENVOLVEDOR.md`)
+- Treino com laboratório de situações e Modo Desenvolvedor para testes, ligado com F8 dentro da partida (`docs/MODO_DESENVOLVEDOR.md`)
 - Finalizações com tempo real de reação (bater, defender, soltar, escapar) e parâmetros de balanceamento centralizados (`docs/FINALIZACOES.md`)
 
 ---
@@ -172,3 +172,5 @@ Se você gostar do projeto, considere deixar uma ⭐ no repositório.
 Desenvolvido por **Frank William Araujo Souza**.
 
 Feito com Java, curiosidade, gatos e muito Jiu-Jitsu. 🐱🥋
+
+- **5Q.6:** bater pela roda corrigido, rasteira defendida sem deformar, 9 quedas explosivas (em pé e de joelhos) e body lock, projeções e entradas de guarda no LB+LT, 6 novas chaves de perna, duas variações do berimbolo, tiro de guarda com salto, microanimações de confirmação, cores nas rodas, modo desenvolvedor no F8 dentro da partida e trilha sonora por tela com pasta externa (`docs/AUDIO.md`).

@@ -55,7 +55,7 @@ The project currently includes:
 - Grappling interaction states
 - Shared combat animation infrastructure
 - Custom pose and animation editor used during development
-- Training with a situation laboratory and a Developer Mode for testing (`docs/MODO_DESENVOLVEDOR.md`)
+- Training with a situation laboratory and a Developer Mode for testing, toggled with F8 inside a match (`docs/MODO_DESENVOLVEDOR.md`)
 - Submissions with real reaction time (tap, defend, release, escape) and central balancing parameters (`docs/FINALIZACOES.md`)
 
 ---
@@ -172,3 +172,5 @@ If you find the project interesting, consider leaving a ⭐ on the repository.
 Developed by **Frank William Araujo Souza**.
 
 Built with Java, curiosity, cats and a lot of Jiu-Jitsu. 🐱🥋
+
+- **5Q.6:** fixed tap-out from the wheel, defended sweep recovery, 9 explosive takedowns (standing and kneeling) plus body lock, LB+LT throws and guard pulls, 6 new leg locks, two berimbolo variations, jumping guard pull, confirmation micro-animations, semantic wheel colors, F8 developer mode inside a match and per-screen soundtrack with an external music folder (`docs/AUDIO.md`).

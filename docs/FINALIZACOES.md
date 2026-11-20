@@ -233,3 +233,50 @@ sem custo nem recarga, e o enquadrar não construía nada além de −25 de esta
 
 O catálogo do código tem **40 finalizações executáveis** (23 técnicas-base, por posição). O spec da 5Q.5 cita
 47: nada foi adicionado nem removido; a divergência fica registrada aqui.
+
+## 13. Entrega 5Q.6
+
+### Defender x escapar x bater (como funciona)
+
+| Ação | Quando | Requisito | Efeito | Risco |
+|---|---|---|---|---|
+| **Defender** (RS ↓) | entrada ou disputa | recarga (12 ticks) | entrada: **corta**; disputa: −22 de pressão (× eficiência pelo fôlego), sai da ponta, abre a **janela de fuga** (45 ticks); pressão ≤ 0 = finalização defendida (quem atacou pode perder a posição) | custa fôlego; não termina sozinha |
+| **Escapar** (RS ↑) | disputa | recarga; pressão ≤ 45 (≤ 65 na janela de fuga) | rompe tudo e vai para a posição de escape da finalização | mal preparada: +8 de pressão, recarga dobrada, perde a janela |
+| **Bater** (RS ← / RB + ↓) | sempre | nenhum | **fim da luta na hora** (rendição), em qualquer pressão | — |
+
+Fluxo pensado: defender tecnicamente → (janela de fuga) → escapar. O GamePanel real foi testado
+com os dois jogadores no gamepad (simulado): `game/Finalizacao5Q6GamePanelTest`.
+
+**Causa do BATER que não funcionava:** a roda do defensor mostrava "RB↓ BATER" na direção ←, mas
+o motor só aceitava RB + ↓; escolher o item da roda (RS ←) era recusado com "SOB FINALIZAÇÃO".
+
+### Novas finalizações de perna (ashi garami)
+
+| Técnica | Comando | Faixa | Alvo | Controle mínimo | Se for defendida |
+|---|---|---|---|---|---|
+| Aoki lock | LT ↑ | Roxa | tornozelo | 45 | posição continua |
+| Estima lock | LT → | Marrom | pé | 50 | posição continua |
+| Pé reta da 50/50 (variação) | LT ↓ | Roxa | tornozelo | 30 (entra fácil) | **solo disputado** (ninguém controla) |
+| Chave de joelho invertida | LB ↑ | Marrom | joelho | 55 | posição continua |
+| Banana split | LB → | Marrom | quadril | 50 | posição continua |
+| Chave de joelho com giro (variação) | LB ↓ | Marrom | joelho | 35 (entra fácil) | **o outro fica por cima** (cem quilos) |
+
+Heel hook **não** entrou: regra do jogo (`ModoRegras`: nunca com kimono sem um modo próprio).
+No campeonato provisório só a pé reta e a pé reta da 50/50 valem entre as pernas.
+"Mão de vaca (toe hold)" foi corrigido para **Toe hold (mata-leão no pé)** (id `toe_hold`):
+mão de vaca é uma chave de punho. O comando (LB + LT ↓) não mudou.
+
+### Contagem do repertório (5Q.6)
+
+| | Quantidade |
+|---|---|
+| Técnicas-base de finalização | **29** (eram 23) |
+| Variações (a mesma base em outra posição/entrada) | **17** |
+| Entradas executáveis no catálogo | **46** (eram 40) |
+| Por posição | guarda 8 · cem quilos 8 · montada 8 · costas 8 · ashi 10 · aranha 3 · laço 1 |
+| Por faixa (modo livre) | branca 11 · azul 29 · roxa 39 · marrom 46 · preta 46 |
+| Por faixa (campeonato provisório) | branca 11 · azul 29 · roxa 38 · marrom 38 · preta 38 |
+| Técnicas de solo/quedas (`CatalogoTecnicasSolo`) | 130 |
+
+O "47" das especificações antigas não corresponde ao código: a contagem certa é a desta tabela
+(conferida por `Finalizacoes5Q5Test`).

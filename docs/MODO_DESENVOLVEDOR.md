@@ -1,4 +1,14 @@
-# Modo Desenvolvedor (Entrega 5Q.4)
+# Modo Desenvolvedor (Entrega 5Q.4; 5Q.6: tecla F8 dentro da partida)
+
+> **5Q.6:** a opção saiu do menu principal. Entre em **JOGAR**, escolha personagens, faixas,
+> kimonos e mapa, comece a luta e aperte **F8** para ligar; **F8** de novo desliga. O jogo sempre
+> começa no modo normal. Segurar a tecla não alterna várias vezes (só o aperto conta). No treino
+> o F8 continua sendo o catálogo do laboratório (o modo não existe no treino).
+> Ligado: fôlego e condicionamento infinitos, **sem relógio** (o tempo para), selo DEV, opções na
+> pausa, F4 troca o cenário só na sessão, F5 recomeça a luta com o modo ligado.
+> Desligado: recursos voltam a gastar a partir do valor atual, o relógio continua de onde parou,
+> F4/F5 voltam ao comportamento normal. (A tecla F10 já era o liga/desliga dos efeitos sonoros.)
+> As seções abaixo descrevem o funcionamento (iguais desde a 5Q.4), exceto o "Como abrir".
 
 Ferramenta de teste **separada do treino**: menu principal → **MODO DESENVOLVEDOR**. Usa as mesmas
 regras, o mesmo motor (`MotorSolo`/`SistemaCombate`), os mesmos personagens e os mesmos mapas de uma

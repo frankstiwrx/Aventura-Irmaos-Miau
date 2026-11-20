@@ -126,3 +126,12 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 - Quadros próprios para enquadrar/escapar dos domínios e para consolidar/estabilizar.
 - Propostas de simplificação de controles (bater por Select segurado, combo de escape sugerido no HUD, agrupar
   rodas quase vazias): ver `docs/CONTROLES.md` (5Q.5). Dependem de aprovação.
+
+## Depois da 5Q.6
+
+- Heel hook (interno/externo): só com um modo de regras próprio (sem kimono); hoje fora do catálogo.
+- Poses próprias das novas finalizações de perna e do enquadrar/consolidar (hoje gesto curto/provisória).
+- Transição suave (fade) entre músicas.
+- Rig 2.0: camadas por membro (perna entre os braços na single leg, triângulo, laço, pernas
+  em volta da cintura no tiro de guarda sem atravessar o tronco do outro).
+- Trocar as músicas provisórias pelas próprias (arquivos externos já suportados).

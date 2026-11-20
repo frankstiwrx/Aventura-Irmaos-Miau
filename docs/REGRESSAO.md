@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1123, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1168, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -553,3 +553,31 @@ Manual (Xbox no J1, teclado virtual no J2; repetir com os papéis trocados):
 16. **Rodas**: nenhuma roda vazia aparece; avisos "▶ … EM EXECUÇÃO" e "✕ … motivo".
 17. **Cenários**: nuvens andando devagar na Academia (externa), Campo Verde e Grande Torneio; prédio da Academia
     apoiado no chão; Campeonato com mais torcida viva e flashes discretos; neve da Fortaleza preservada.
+
+# Entrega 5Q.6 — combate, repertório, interface e trilha sonora
+
+Checklist da homologação física (Xbox no J1, teclado virtual no J2):
+
+1. Rasteira: parado e com base cheia não entra; depois de **puxar** o outro com a pegada, entra.
+2. Rasteira defendida 3× seguidas: o receptor balança e volta à postura da pegada (sem ficar torto).
+3. Em qualquer finalização, **RS ←** (o item BATER da roda) termina a luta na hora — J1 e J2.
+4. RB + RS ↓, e LT/LB ainda segurados + RS ←, também batem.
+5. Defender (↓) e logo escapar (↑ — "ESCAPAR (ESPAÇO)") com pressão média.
+6. Soltar o triângulo com o LT segurado (RS ↓).
+7. LT em pé sem pegada: single leg, high crotch, carregada, ankle pick; o sprawl para as três primeiras.
+8. De joelhos, LT: single leg, double leg, snap down, arm drag (sem levantar).
+9. RB → sem pegada: body lock; com pegada: a queda de sempre.
+10. Com pegada, LB + LT: uchi-mata, osoto, laço; aranha só com as mangas.
+11. Ashi: LT e LB com as novas; LB + LT igual; toe hold com o nome novo; faixa azul vê "·Rx/·Mr".
+12. De La Riva LB + LT: ↑ berimbolo, ← kiss of the dragon, → baby bolo, ↓ ashi.
+13. Tiro de guarda (salto) x puxar guarda (senta) visivelmente diferentes.
+14. Pressão, base, montada alta, ganchos, controlar pernas, ângulo, manga, desequilibrar com os pés: cada um mexe o corpo.
+15. Cem quilos → costas (RB ↑): recusa "CONSOLIDE ANTES"; depois de consolidar, entra.
+16. Guarda fechada: sem postura "FAÇA POSTURA ANTES"; guarda aberta sai rápido.
+17. Afastar com os pés: quem está embaixo também escorrega para trás.
+18. Levantar depois de uma queda: sobe aos poucos (sem aparecer de pé de repente).
+19. X de joelhos para trás: tronco para trás. Rolamento de joelhos e sprawl um pouco mais pesados.
+20. Cores das rodas (azul/verde/vermelho/âmbar, BATER com moldura) e bloqueadas apagadas.
+21. F8 numa partida normal liga o Modo Desenvolvedor (selo, fôlego ∞, sem relógio); F8 de novo desliga e o relógio continua; o menu não tem mais a opção.
+22. Música: título, menu, seleção, treino, laboratório, configurações, perfis, resultados; no combate a faixa troca ao terminar e não reinicia no F5/F4.
+23. Colocar um WAV em `audio/musicas/combate/combate_01.wav` e ouvir sem recompilar.
