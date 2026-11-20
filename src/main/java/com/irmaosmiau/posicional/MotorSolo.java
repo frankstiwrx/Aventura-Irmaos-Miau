@@ -1881,11 +1881,14 @@ public final class MotorSolo {
      * tentou recolhe a perna/bracos suavemente.
      */
     private void reacaoDefendida(Lado ini, String id) {
-        if (!ANIMACAO_PROPRIA.contains(id) || !AnimacoesDefendidas.TEM.contains(id)) {
+        if (!AnimacoesDefendidas.TEM.contains(id)) {
             return;
         }
         Efeito r = efeito(ini.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_REACAO_DEFENDIDA);
         r.tecnica = id + "_defendida";
+        if (!ANIMACAO_PROPRIA.contains(id)) {
+            return;                                            // 5Q.7: a derrubada forcada so tem a reacao de quem segurou
+        }
         Efeito a = efeito(ini, TipoEfeitoVisual.LIBERANDO, TICKS_REACAO_DEFENDIDA);
         a.tecnica = id + ":ATACA";
         a.desde = 1.0;
@@ -1896,7 +1899,8 @@ public final class MotorSolo {
 
     /** 5Q.6: quedas cuja falha tem a reacao curta propria ("id_defendida:RECEBE"). */
     static final class AnimacoesDefendidas {
-        static final java.util.Set<String> TEM = java.util.Set.of(CatalogoTecnicasSolo.RASTEIRA);
+        static final java.util.Set<String> TEM = java.util.Set.of(CatalogoTecnicasSolo.RASTEIRA,
+                CatalogoTecnicasSolo.DERRUBADA_FORCADA);                 // 5Q.7: derrubada forcada segurada (RT)
 
         private AnimacoesDefendidas() {
         }

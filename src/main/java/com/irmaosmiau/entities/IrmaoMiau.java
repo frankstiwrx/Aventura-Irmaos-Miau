@@ -61,6 +61,17 @@ public abstract class IrmaoMiau {
         return 157.0;
     }
 
+    /**
+     * 5Q.7: juntas dos bracos em REPOUSO no rig do MiauStudio (px locais, relativos ao topo do
+     * tronco): {ombro x, y, cotovelo x, y, mao x, y} do braco de tras e do braco da frente, os
+     * mesmos numeros do desenho da pose. Usado para preservar o comprimento dos bracos quando uma
+     * animacao soma deslocamentos (IntegridadeMembros). Um personagem com outras proporcoes
+     * sobrescreve.
+     */
+    public int[][] getBracosEmRepouso() {
+        return new int[][] {{3, 22, -14, 42, 3, 58}, {73, 20, 95, 36, 111, 29}};
+    }
+
     public double getEixoCinturaX() {
 
         return x

@@ -114,9 +114,15 @@ public final class AnimadorSolo {
             pose[19] += MAO_NA_MANGA[1] / 2;
         }
         // 5Q.3: animacao propria da tecnica (aplicador/receptor); sem ela, a pose provisoria da 5Q
+        int[] antesDaTecnica = Arrays.copyOf(pose, pose.length);
         double[] desloc = ef.map(e -> AnimacoesTecnicas.aplicar(pose, e)).orElse(null);
         if (desloc == null) {
             ef.ifPresent(e -> aplicarEfeito(pose, e));
+        }
+        // 5Q.7: a tecnica partiu da pose da PEGADA (bracos ja estendidos ate o kimono): os bracos giram
+        // e dobram sem mudar de tamanho (antes o antebraco esticava ate ~1,6x na rasteira/derrubada)
+        if (daPegada.containsKey(l)) {
+            IntegridadeMembros.preservarBracos(antesDaTecnica, pose, l.getBracosEmRepouso());
         }
         double dx = desloc == null ? 0.0 : desloc[0];
         dy += desloc == null ? 0.0 : desloc[1];

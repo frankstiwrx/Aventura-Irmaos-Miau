@@ -243,6 +243,13 @@ public final class AnimacoesTecnicas {
                 q(0.30, 9, -8, 11, -3, 28, 6, 29, -4, 20, 8, 21, -8, 18, 4, 19, -4, 16, -6, 17, -8, 14, -3, 15, -4),
                 q(0.60, 9, 4, 11, 2, 20, -2, 16, 2),                                                // recupera a base
                 q(1.00));
+        // 5Q.7: DERRUBADA FORCADA SEGURADA (RT): a referencia e o "ser empurrado" (aprovado), menor: o
+        // tronco cede um pouco, meio passo de tras, os bracos acompanham (sem esticar: IntegridadeMembros)
+        def("derrubada_forcada_defendida:RECEBE",
+                q(0.00),
+                q(0.25, 9, -10, 11, -5, 6, -3, 16, 6, 17, -10, 20, 4, 21, -12, 24, -4, 28, -2),
+                q(0.60, 9, -3, 11, -1, 16, 2, 17, -3, 20, 1, 21, -4, 24, -2),
+                q(1.00));
 
         // =====================================================================
         // ENTREGA 5Q.6: quedas explosivas (LT sem pegada), body lock (RB ->), projecoes do LB + LT
