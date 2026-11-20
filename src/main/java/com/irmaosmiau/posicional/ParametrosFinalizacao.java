@@ -31,6 +31,10 @@ public final class ParametrosFinalizacao {
     /** Escapar so funciona com a pressao ate aqui. */
     public static final double LIMIAR_ESCAPE = 45;
     public static final double ESCAPE_FALHO_PRESSAO = 8;
+    /** 5Q.6: depois de uma defesa tecnica, por estes ticks o escape aceita mais pressao. */
+    public static final int TICKS_JANELA_FUGA = 45;
+    /** 5Q.6: quanto a janela de fuga soma ao LIMIAR_ESCAPE (45 -> 65). */
+    public static final double BONUS_JANELA_FUGA = 20;
     /** Ticks entre duas acoes do mesmo lado na disputa. */
     public static final int RECARGA_ACAO = 12;
 

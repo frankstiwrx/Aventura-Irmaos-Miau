@@ -191,12 +191,33 @@ public final class AnimadorSolo {
     }
 
     public void liberar(IrmaoMiau l) {
-        daPegada.remove(l);
+        liberar(l, false);
+    }
+
+    /**
+     * 5Q.6: solta o lutador. Se a tecnica tinha assumido a pose da PEGADA (rasteira, derrubada...)
+     * e a pegada continua (a tecnica falhou), devolve exatamente a pose guardada da pegada: antes a
+     * pose era apagada (ou ficava a ultima da tecnica, que a camada da pegada passava a usar como
+     * base) e o receptor ficava torto/congelado; a tentativa seguinte partia dessa pose e acumulava.
+     */
+    public void liberar(IrmaoMiau l, boolean pegadaContinua) {
+        int[] pegada = daPegada.remove(l);
         int[] nossa = aplicadas.remove(l);
         descricao.remove(l);
-        if (nossa != null && l.isPoseCombateExternaAtiva() && Arrays.equals(nossa, l.copiarPoseCombateExterna())) {
+        if (pegada != null && pegadaContinua && nossa != null) {
+            l.aplicarPoseCombateExterna(Arrays.copyOf(pegada, pegada.length), 0.0, 0.0);
+            return;
+        }
+        if (nossa != null && l.isPoseCombateExternaAtiva() && (pegada != null
+                || Arrays.equals(nossa, l.copiarPoseCombateExterna()))) {
             l.limparPoseCombateExterna();
         }
+    }
+
+    /** 5Q.6: pose da pegada guardada enquanto uma tecnica propria assume (null = nenhuma). */
+    public int[] poseDaPegadaGuardada(IrmaoMiau l) {
+        int[] p = daPegada.get(l);
+        return p == null ? null : Arrays.copyOf(p, p.length);
     }
 
     public String descricao(IrmaoMiau l) {

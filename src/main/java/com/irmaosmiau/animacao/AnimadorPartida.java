@@ -126,6 +126,8 @@ public final class AnimadorPartida {
             return;
         }
         transicoes.liberar(l);
+        boolean naPegada = sistema != null && sistema.estaEmInteracao()
+                && (sistema.getAplicadorInteracao() == l || sistema.getReceptorInteracao() == l);
         // 5P: ligado no solo, a posicao relacional desenha (os dois, coerentes com o motor).
         if (solo.quer(l, motorSolo)) {
             liberar(l);
@@ -136,7 +138,7 @@ public final class AnimadorPartida {
                 return;
             }
         } else {
-            solo.liberar(l);
+            solo.liberar(l, naPegada);                    // 5Q.6: tecnica falhou na pegada: volta a pose dela
         }
         // 5Q.5: de joelhos acelerado (X): passada propria, sem levantar
         if (acelerado.quer(l)) {
@@ -151,8 +153,6 @@ public final class AnimadorPartida {
             acelerado.liberar(l);
         }
         // Entrega 5L: reacao defensiva (fora da pegada; o combate tem prioridade).
-        boolean naPegada = sistema != null && sistema.estaEmInteracao()
-                && (sistema.getAplicadorInteracao() == l || sistema.getReceptorInteracao() == l);
         if (!naPegada && reacoes.ativa(l, tick) != null) {
             liberar(l);                                   // solta o JSON so enquanto a reacao desenha
             ReacoesDefesa.Tipo r0 = reacoes.aplicar(l, tick);

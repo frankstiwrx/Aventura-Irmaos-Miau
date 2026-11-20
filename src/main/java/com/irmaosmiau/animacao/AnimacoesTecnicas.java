@@ -210,6 +210,15 @@ public final class AnimacoesTecnicas {
                 q(1.00, 9, -22, 11, -8, 26, 14, 27, -12, 28, 26, 29, -24, 20, 20, 21, -26, 18, 10, 19, -13,
                         16, -18, 17, -26, 14, -9, 15, -13, 31, -4));                                // perde a base
 
+        // 5Q.6: RASTEIRA DEFENDIDA: parte de onde a janela parou (o pe saindo do chao), recoloca o pe,
+        // um pequeno balanco e volta a postura da pegada (nada de ficar com a pose de queda)
+        def("rasteira_defendida:RECEBE",
+                q(0.00, 9, -22, 11, -8, 26, 14, 27, -12, 28, 26, 29, -24, 20, 20, 21, -26, 18, 10, 19, -13,
+                        16, -18, 17, -26, 14, -9, 15, -13, 31, -4),
+                q(0.30, 9, -8, 11, -3, 28, 6, 29, -4, 20, 8, 21, -8, 18, 4, 19, -4, 16, -6, 17, -8, 14, -3, 15, -4),
+                q(0.60, 9, 4, 11, 2, 20, -2, 16, 2),                                                // recupera a base
+                q(1.00));
+
         // ---------------- 11. ENTRADA NAS PERNAS (baixa o nivel, penetra, abraca e empurra)
         def("entrada_pernas:ATACA",
                 q(0.00),

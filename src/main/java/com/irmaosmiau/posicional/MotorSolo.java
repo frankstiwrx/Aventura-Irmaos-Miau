@@ -215,6 +215,18 @@ public final class MotorSolo {
         private int ticksDesdeDefesa = 99;
         /** 5Q.5: ticks em 100% (NA PONTA) antes de consolidar. */
         private int ticksNaPonta;
+        /** 5Q.6: depois de uma defesa tecnica abre uma janela em que o escape fica mais facil. */
+        private int ticksJanelaFuga;
+
+        /** 5Q.6: a defesa abriu espaco: escapar agora tem limiar maior. */
+        public boolean janelaDeFuga() {
+            return ticksJanelaFuga > 0;
+        }
+
+        /** 5Q.6: pressao maxima em que o escape ainda funciona agora. */
+        public double limiarEscape() {
+            return ParametrosFinalizacao.LIMIAR_ESCAPE + (ticksJanelaFuga > 0 ? ParametrosFinalizacao.BONUS_JANELA_FUGA : 0);
+        }
 
         Ataque(Finalizacao f, Lado atacante, int entrada) {
             this.finalizacao = f;
@@ -390,7 +402,10 @@ public final class MotorSolo {
     private void encerrarVisualDaTentativa() {
         for (Lado l : Lado.values()) {
             Efeito e = efeitos.get(l);
-            if (e != null && e.restante > 0 && (e.tipo == TipoEfeitoVisual.TECNICA_ATAQUE
+            // 5Q.6: o efeito da janela acaba no MESMO tick da resolucao (restante 0): antes nao havia
+            // volta suave e a pose saltava; agora o efeito da propria tentativa tambem e liberado
+            boolean daTentativa = e != null && tentativa != null && tentativa.tecnica().id().equals(e.tecnica);
+            if (e != null && (e.restante > 0 || daTentativa) && (e.tipo == TipoEfeitoVisual.TECNICA_ATAQUE
                     || e.tipo == TipoEfeitoVisual.TECNICA_RECEBE || e.tipo == TipoEfeitoVisual.AFASTANDO
                     || e.tipo == TipoEfeitoVisual.AFASTADO)) {
                 boolean ataca = e.tipo == TipoEfeitoVisual.TECNICA_ATAQUE || e.tipo == TipoEfeitoVisual.AFASTANDO;
@@ -523,11 +538,20 @@ public final class MotorSolo {
      * o gatilho ainda segurado era recusado ("EM FINALIZACAO").
      */
     public static boolean ehBater(ComandoSolo c) {
-        return eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO);
+        // 5Q.6: a roda do defensor mostra BATER na ESQUERDA: qualquer <- (RS puro, com RB ou com LT/LB
+        // ainda segurados) bate, alem do RB + RS v da 5Q.5. Antes so o RB + v batia e o item da roda
+        // (RS <-) era recusado ("SOB FINALIZACAO"): na homologacao a luta nao terminava.
+        return c != null && (c.direcao() == TecnicaSolo.Direcao.ESQUERDA
+                || eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO));
     }
 
     private static boolean ehBaixoNaoR1(ComandoSolo c) {
         return c != null && c.direcao() == TecnicaSolo.Direcao.BAIXO && c.familia() != TecnicaSolo.Familia.R1;
+    }
+
+    /** 5Q.6: escapar = ^ com qualquer familia (antes so RB + ^; RS ^ puro era recusado). */
+    private static boolean ehEscapar(ComandoSolo c) {
+        return c != null && c.direcao() == TecnicaSolo.Direcao.CIMA;
     }
 
     private Resposta comandoNaFinalizacao(Lado lado, ComandoSolo c) {
@@ -535,7 +559,7 @@ public final class MotorSolo {
         Finalizacao f = a.finalizacao;
         if (lado == a.defensor()) {
             if (ehBater(c)) {
-                vitoria = new Vitoria(a.atacante, f, true);   // BATER: prioridade, solta na hora
+                vitoria = new Vitoria(a.atacante, f, true);   // 5Q.6: em qualquer fase e pressao   // BATER: prioridade, solta na hora
                 liberarVisual(a.atacante, f.id() + ":ATACA", progressoVisualAtaque(), f.categoria());
                 ataque = null;
                 efeito(lado, TipoEfeitoVisual.BATENDO, 40);
@@ -556,23 +580,28 @@ public final class MotorSolo {
                 a.ticksNaPonta = 0;                            // 5Q.5: saiu da ponta, volta a disputa
                 a.recargaDefesa = RECARGA_ACAO_FINALIZACAO;
                 a.ticksDesdeDefesa = 0;
+                a.ticksJanelaFuga = ParametrosFinalizacao.TICKS_JANELA_FUGA;   // 5Q.6: defender abre a fuga
                 if (a.pressao <= 0) {
                     falharFinalizacao("defendida");
                     return new Resposta(Resultado.CONTRA, "DEFENDEU", null);
                 }
                 return new Resposta(Resultado.CONCLUIDA, f.categoria().getDefesa(), null);
             }
-            if (eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.CIMA) && a.fase == FaseFinalizacao.DISPUTA) {
+            if (ehEscapar(c) && a.fase == FaseFinalizacao.ENTRADA) {
+                return new Resposta(Resultado.RECUSADA, "DEFENDA A ENTRADA (↓)", null);
+            }
+            if (ehEscapar(c) && a.fase == FaseFinalizacao.DISPUTA) {
                 if (a.recargaDefesa > 0) {
                     return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
                 }
                 lutador(lado).gastarFolegoEsforco(custoAcao(lado, CUSTO_ESCAPE), "escape");
-                if (a.pressao <= LIMIAR_ESCAPE_FINALIZACAO) {
+                if (a.pressao <= a.limiarEscape()) {
                     escaparFinalizacao();
                     return new Resposta(Resultado.CONTRA, "ESCAPOU", null);
                 }
                 a.pressao = Math.min(100, a.pressao + ESCAPE_FALHO_PRESSAO);
                 a.recargaDefesa = RECARGA_ACAO_FINALIZACAO * 2;
+                a.ticksJanelaFuga = 0;                         // 5Q.6: o escape mal preparado gasta a janela
                 return new Resposta(Resultado.RECUSADA, "SEM ESPAÇO PARA ESCAPAR", null);
             }
             return new Resposta(Resultado.RECUSADA, "SOB FINALIZAÇÃO", null);
@@ -648,6 +677,7 @@ public final class MotorSolo {
         a.recargaAtaque = Math.max(0, a.recargaAtaque - 1);
         a.recargaDefesa = Math.max(0, a.recargaDefesa - 1);
         a.ticksDesdeDefesa = Math.min(99, a.ticksDesdeDefesa + 1);
+        a.ticksJanelaFuga = Math.max(0, a.ticksJanelaFuga - 1);
         if (a.fase == FaseFinalizacao.ENTRADA) {
             if (--a.ticks <= 0) {
                 a.fase = FaseFinalizacao.DISPUTA;
@@ -1617,6 +1647,7 @@ public final class MotorSolo {
     }
 
     private void falhouEmPe(Lado ini, String id, String motivo, Exposicao exp, int ticks) {
+        reacaoDefendida(ini, id);
         exposicao.put(ini, new Exposto(exp, ticks));
         recarga.put(ini, RECARGA_FALHA_TICKS);
         registrar("DEFENDIDA", id, ini, motivo);
@@ -1680,6 +1711,60 @@ public final class MotorSolo {
         derrubarPelaPegada(def, ini, intencao, CatalogoTecnicasSolo.DERRUBADA_FORCADA);
     }
 
+    /**
+     * 5Q.6: quem recebeu uma queda com animacao propria que FALHOU faz so um pequeno desequilibrio e
+     * volta a postura (antes ficava com a pose de "perdendo a base" ate a pegada redesenhar); quem
+     * tentou recolhe a perna/bracos suavemente.
+     */
+    private void reacaoDefendida(Lado ini, String id) {
+        if (!ANIMACAO_PROPRIA.contains(id) || !AnimacoesDefendidas.TEM.contains(id)) {
+            return;
+        }
+        Efeito r = efeito(ini.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_REACAO_DEFENDIDA);
+        r.tecnica = id + "_defendida";
+        Efeito a = efeito(ini, TipoEfeitoVisual.LIBERANDO, TICKS_REACAO_DEFENDIDA);
+        a.tecnica = id + ":ATACA";
+        a.desde = 1.0;
+    }
+
+    /** 5Q.6: duracao da reacao de quem segurou a queda (pequeno desequilibrio e volta). */
+    public static final int TICKS_REACAO_DEFENDIDA = 20;
+
+    /** 5Q.6: quedas cuja falha tem a reacao curta propria ("id_defendida:RECEBE"). */
+    static final class AnimacoesDefendidas {
+        static final java.util.Set<String> TEM = java.util.Set.of(CatalogoTecnicasSolo.RASTEIRA);
+
+        private AnimacoesDefendidas() {
+        }
+    }
+
+    /**
+     * 5Q.6: pontuacao da rasteira (deterministica). Antes: so entrava se o outro tivesse andado ha
+     * 24 ticks, base < 85 ou estivesse exposto, e na luta real quase nunca. Agora somam: base
+     * perdida, passo recente DE QUALQUER UM dos dois (puxar o outro na pegada tambem tira o pe
+     * dele do lugar), desequilibrio/exposicao e a firmeza da pegada. Parado, com base cheia e
+     * pegada media, continua nao entrando; o RT na janela segura quem esta parado.
+     */
+    public double pontuacaoRasteira(Lado def) {
+        Lado ini = def.outro();
+        Intencao id = intencoesAtuais.get(def);
+        boolean passoDele = (id != null && (id.dx() != 0 || id.dy() != 0))
+                || tick - ultimoMovimento.getOrDefault(def, Long.MIN_VALUE / 2) <= RASTEIRA_TICKS_DESDE_PASSO;
+        boolean puxado = tick - ultimoMovimento.getOrDefault(ini, Long.MIN_VALUE / 2) <= RASTEIRA_TICKS_DESDE_PASSO;
+        double p = 100 - base.get(def);
+        p += passoDele ? RASTEIRA_PONTOS_PASSO : puxado ? RASTEIRA_PONTOS_PUXADO : 0;
+        p += exposto(def) || desequilibrado(def) ? RASTEIRA_PONTOS_DESEQUILIBRIO : 0;
+        p += sistema == null ? 0 : RASTEIRA_FATOR_FIRMEZA * sistema.getFirmeza();
+        return p;
+    }
+
+    public static final double RASTEIRA_PONTOS_PASSO = 45;
+    public static final double RASTEIRA_PONTOS_PUXADO = 40;
+    public static final double RASTEIRA_PONTOS_DESEQUILIBRIO = 60;
+    public static final double RASTEIRA_FATOR_FIRMEZA = 0.3;
+    /** 5Q.6: a rasteira entra a partir desta pontuacao. */
+    public static final double RASTEIRA_LIMIAR = 40;
+
     /** Rasteira: de tempo (quem esta andando/sem base cai); contra pe firme nao entra. */
     private void resolverRasteira(Lado ini, Intencao intencao) {
         Lado def = ini.outro();
@@ -1690,14 +1775,14 @@ public final class MotorSolo {
         boolean andando = (id != null && (id.dx() != 0 || id.dy() != 0))
                 || tick - ultimoMovimento.getOrDefault(def, Long.MIN_VALUE / 2) <= RASTEIRA_TICKS_DESDE_PASSO;
         boolean vulneravel = exposto(def) || desequilibrado(def);              // 5Q.4: inclui o desequilibrio
-        boolean entra = andando || base.get(def) < RASTEIRA_BASE_LIMITE || vulneravel;
+        boolean entra = pontuacaoRasteira(def) >= RASTEIRA_LIMIAR;              // 5Q.6
         if (fazBase(def, inicioJanelaAtual) && !andando && !vulneravel) {
             falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "defendeu com base (RT)", Exposicao.BASE, 20);
             return;
         }
         if (!entra) {
             // 5Q.4: o outro nao defendeu: a base NATURAL dele (parado, base cheia) segurou
-            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "base natural firme (desequilibre ou espere ele andar)",
+            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "base natural firme (puxe, desequilibre ou espere ele andar)",
                     Exposicao.BASE, 20);
             return;
         }
@@ -1760,7 +1845,7 @@ public final class MotorSolo {
     /** 5Q.5: tick do ultimo passo de cada lado (a rasteira e de tempo: pega quem acabou de andar). */
     private final Map<Lado, Long> ultimoMovimento = new EnumMap<>(Lado.class);
     /** 5Q.5: a rasteira pega quem andou nestes ultimos ticks (antes: so no tick exato da resolucao). */
-    public static final int RASTEIRA_TICKS_DESDE_PASSO = 24;
+    public static final int RASTEIRA_TICKS_DESDE_PASSO = 40;   // 5Q.6: era 24
     /** 5Q.5: abaixo desta base a rasteira entra mesmo parado (antes 70: a base volta rapido a 100). */
     public static final double RASTEIRA_BASE_LIMITE = 85;
     private long inicioJanelaAtual;
