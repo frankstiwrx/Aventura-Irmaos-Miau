@@ -145,7 +145,7 @@ public class Main {
     /** Entrega 5M: tela de titulo (ENTER / A / START vai para o menu). */
     private static void mostrarAbertura(JFrame janela) {
         trocarTela(janela, new com.irmaosmiau.ui.AberturaPanel(() -> mostrarMenu(janela), ServicoGamepads::global));
-        AudioJogo.servico().tocarMusica(AudioJogo.MUSICA_MENU);
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.MENU_INICIAL);       // 5Q.6
     }
 
     /** Entrega 5M: SAIR pergunta e fecha a janela pelo caminho normal (EXIT_ON_CLOSE + gancho do gamepad). */
@@ -162,7 +162,6 @@ public class Main {
         JPanel menu = new com.irmaosmiau.ui.MenuPrincipalPanel(
                 () -> mostrarSelecao(janela),
                 () -> abrirTreino(janela),
-                () -> mostrarSelecaoDesenvolvedor(janela),         // 5Q.4
                 () -> mostrarPerfis(janela),
                 () -> mostrarConfiguracoes(janela),
                 () -> sair(janela)
@@ -170,8 +169,8 @@ public class Main {
 
         trocarTela(janela, menu);
 
-        // Musica do menu (arquivo ausente = silencio, sem erro).
-        AudioJogo.servico().tocarMusica(AudioJogo.MUSICA_MENU);
+        // Musica do menu (arquivo ausente = silencio, sem erro). 5Q.6: mapeamento proprio por tela
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.MENU_PRINCIPAL);
     }
 
     /**
@@ -195,6 +194,7 @@ public class Main {
      * O inicio continua lembrado na sessao (como na selecao antiga).
      */
     private static void mostrarSelecaoTreino(JFrame janela, OpcoesDeLutadores opcoes) {
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.MENU_TREINAMENTO);   // 5Q.6
 
         trocarTela(janela, com.irmaosmiau.ui.SelecaoPartidaPanel.treino(
                 CatalogoPersonagens.padrao(),
@@ -248,6 +248,7 @@ public class Main {
 
     /** Entrega 4C: tela de configuracoes (audio e cenario). */
     private static void mostrarConfiguracoes(JFrame janela) {
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.CONFIGURACOES);   // 5Q.6
 
         trocarTela(janela, new ConfiguracoesPanel(
                 PreferenciasJogo.global(),
@@ -260,6 +261,7 @@ public class Main {
 
     /** Entrega 5C: remapeamento das teclas dos dois jogadores. */
     private static void mostrarControles(JFrame janela) {
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.CONFIGURACOES);   // 5Q.6
 
         trocarTela(janela, new ControlesPanel(
                 PreferenciasControles.global(),
@@ -270,6 +272,7 @@ public class Main {
 
     /** Entrega 4C: criar/editar perfis personalizados (ainda nao usados nas lutas). */
     private static void mostrarPerfis(JFrame janela) {
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.CRIACAO_PERSONAGENS);   // 5Q.6
 
         trocarTela(janela, new PerfisPanel(
                 ServicoPerfis.padrao(),
@@ -284,6 +287,7 @@ public class Main {
      * (SelecaoLutadoresPanel) continua no TREINO.
      */
     private static void mostrarSelecao(JFrame janela) {
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.SELECAO_PERSONAGENS);   // 5Q.6
 
         trocarTela(janela, new com.irmaosmiau.ui.SelecaoPartidaPanel(
                 CatalogoPersonagens.padrao(),
@@ -297,45 +301,20 @@ public class Main {
         ));
     }
 
-    /**
-     * 5Q.4: MODO DESENVOLVEDOR: a mesma selecao da partida (personagem, faixa e kimono por slot,
-     * mapa); luta sem tempo, J1 e J2 controlaveis, recursos sem desgaste. A sessao vale para esta
-     * luta e os reinicios dela (F5); voltar ao menu a descarta.
-     */
-    private static void mostrarSelecaoDesenvolvedor(JFrame janela) {
-        trocarTela(janela, new com.irmaosmiau.ui.SelecaoPartidaPanel(
-                CatalogoPersonagens.padrao(),
-                OpcoesDeLutadores.padrao(),
-                RegistroCenarios.padrao(),
-                PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao()),
-                (j1, j2, cenario, segundos) -> iniciarDesenvolvedor(janela, j1, j2, cenario,
-                        new com.irmaosmiau.game.ModoDesenvolvedor()),
-                () -> mostrarMenu(janela),
-                ServicoGamepads::global,
-                () -> PreferenciasDispositivos.global().getAtual()
-        ));
-    }
-
-    private static void iniciarDesenvolvedor(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
-            com.irmaosmiau.game.ModoDesenvolvedor dev) {
-        GamePanel jogo = new GamePanel(
-                TipoPersonagem.AMBOS,
-                j1,
-                j2,
-                com.irmaosmiau.entities.InicioLuta.EM_PE,
-                () -> mostrarMenu(janela),
-                () -> mostrarSelecaoDesenvolvedor(janela),
-                () -> iniciarDesenvolvedor(janela, j1, j2, cenario, dev)
-        );
-        jogo.configurarPartida(dev.cenarioOu(cenario), 0);
-        jogo.configurarModoDesenvolvedor(dev);
-        trocarTela(janela, jogo);
-        jogo.requestFocusInWindow();
-    }
-
     /** Entrega 5M: luta de JOGAR: sempre EM PE, no mapa e com o tempo escolhidos. */
     private static void iniciarPartida(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
             int segundos) {
+        iniciarPartida(janela, j1, j2, cenario, segundos, null);
+    }
+
+    /**
+     * 5Q.6: a partida normal; o Modo Desenvolvedor liga/desliga dentro dela (F8). Se ele estiver
+     * ligado no F5, a luta recomeca com a mesma sessao (e no cenario do F4); o jogo sempre comeca
+     * no modo normal.
+     */
+    private static void iniciarPartida(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
+            int segundos, com.irmaosmiau.game.ModoDesenvolvedor dev) {
+        GamePanel[] atual = new GamePanel[1];
         GamePanel jogo = new GamePanel(
                 TipoPersonagem.AMBOS,
                 j1,
@@ -343,9 +322,11 @@ public class Main {
                 com.irmaosmiau.entities.InicioLuta.EM_PE,
                 () -> mostrarMenu(janela),
                 () -> mostrarSelecao(janela),
-                () -> iniciarPartida(janela, j1, j2, cenario, segundos)
+                () -> iniciarPartida(janela, j1, j2, cenario, segundos, atual[0].getModoDesenvolvedor())
         );
-        jogo.configurarPartida(cenario, segundos);
+        atual[0] = jogo;
+        jogo.configurarPartida(dev != null ? dev.cenarioOu(cenario) : cenario, segundos);
+        jogo.configurarModoDesenvolvedor(dev);
         trocarTela(janela, jogo);
         jogo.requestFocusInWindow();
     }

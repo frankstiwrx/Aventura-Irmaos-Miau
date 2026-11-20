@@ -168,8 +168,8 @@ class Menus5MTest {
     // 6. Opcoes na ordem, sem "1 JOGADOR"
     @Test
     void menuTemAsCincoOpcoes() {
-        // 5Q.4 (pedido): a especificacao pede o MODO DESENVOLVEDOR como opcao separada do menu
-        assertEquals(List.of("JOGAR", "TREINO", "MODO DESENVOLVEDOR", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR"),
+        // 5Q.6 (pedido): o MODO DESENVOLVEDOR saiu do menu principal (liga com F8 dentro da partida)
+        assertEquals(List.of("JOGAR", "TREINO", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR"),
                 MenuPrincipalPanel.OPCOES);
         assertFalse(MenuPrincipalPanel.OPCOES.stream().anyMatch(o -> o.contains("1 JOGADOR")));
     }
@@ -189,22 +189,8 @@ class Menus5MTest {
         assertEquals(List.of("jogar", "treino", "personagens", "config", "sair"), chamadas);
     }
 
-    // 5Q.4: com o construtor completo o MODO DESENVOLVEDOR aparece e chama a sua acao
-    @Test
-    void menuModoDesenvolvedorChamaSuaAcao() throws Exception {
-        List<String> chamadas = new ArrayList<>();
-        naEdt(() -> {
-            MenuPrincipalPanel m = new MenuPrincipalPanel(() -> chamadas.add("jogar"), () -> chamadas.add("treino"),
-                    () -> chamadas.add("dev"), () -> chamadas.add("personagens"), () -> chamadas.add("config"),
-                    () -> chamadas.add("sair"));
-            assertTrue(m.botao("MODO DESENVOLVEDOR").isVisible());
-            for (String o : MenuPrincipalPanel.OPCOES) {
-                m.botao(o).doClick();
-            }
-            pintar(m);
-        });
-        assertEquals(List.of("jogar", "treino", "dev", "personagens", "config", "sair"), chamadas);
-    }
+    // 5Q.6 (pedido): o teste do botao MODO DESENVOLVEDOR do menu saiu junto com a opcao; o modo
+    // agora e testado dentro da partida (Dev5Q6GamePanelTest)
 
     // 12. Navegacao pelo navegador de menus (setas / D-pad) percorre as opcoes
     @Test

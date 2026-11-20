@@ -77,6 +77,43 @@ public final class PainelDpadContextual {
         return c.isExecutavel() ? c.rotulo() : c.rotulo() + "*";
     }
 
+    // 5Q.6: cores semanticas (tons equilibrados, legiveis no fundo escuro)
+    public static final Color DEFESA = new Color(135, 190, 255);
+    public static final Color TRANSICAO = new Color(135, 220, 150);
+    public static final Color FINALIZACAO = new Color(255, 140, 128);
+    public static final Color QUEDA = new Color(255, 200, 110);
+    public static final Color DESISTENCIA = new Color(255, 255, 255);
+    public static final Color MOLDURA_DESISTENCIA = new Color(255, 214, 90);
+
+    /** 5Q.6: natureza da celula (informada; o romper da pegada e defesa; o resto, controle). */
+    public static com.irmaosmiau.controles.NaturezaAcao natureza(CelulaContextual c) {
+        if (c == null) {
+            return null;
+        }
+        if (c.natureza() != null) {
+            return c.natureza();
+        }
+        if (c.acao() == com.irmaosmiau.controles.AcaoJogador.ROMPIMENTO_TECNICO) {
+            return com.irmaosmiau.controles.NaturezaAcao.DEFESA;
+        }
+        return com.irmaosmiau.controles.NaturezaAcao.CONTROLE;
+    }
+
+    /** 5Q.6: cor da natureza (CONTROLE = o creme de antes). */
+    public static Color corDaNatureza(com.irmaosmiau.controles.NaturezaAcao n) {
+        if (n == null) {
+            return DISPONIVEL;
+        }
+        return switch (n) {
+            case DEFESA -> DEFESA;
+            case TRANSICAO -> TRANSICAO;
+            case FINALIZACAO -> FINALIZACAO;
+            case QUEDA -> QUEDA;
+            case DESISTENCIA -> DESISTENCIA;
+            case CONTROLE -> DISPONIVEL;
+        };
+    }
+
     static Color cor(Quadro q, DirecaoTecnica d) {
         CelulaContextual c = q.celulas().get(d);
         if (c == null) {
@@ -85,7 +122,14 @@ public final class PainelDpadContextual {
         if (!c.isExecutavel()) {
             return RESERVADA;
         }
-        return c.disponivelAgora() ? DISPONIVEL : BLOQUEADA;
+        Color n = corDaNatureza(natureza(c));
+        if (c.disponivelAgora()) {
+            return n;
+        }
+        // bloqueada (recarga, requisito, graduacao): a cor da natureza apagada para o cinza (o rotulo
+        // continua dizendo a faixa exigida, "·Az", ou "·X" no modo)
+        return new Color((n.getRed() + 2 * BLOQUEADA.getRed()) / 3, (n.getGreen() + 2 * BLOQUEADA.getGreen()) / 3,
+                (n.getBlue() + 2 * BLOQUEADA.getBlue()) / 3);
     }
 
     public static void desenhar(Graphics2D g0, int x, Quadro q) {
@@ -132,9 +176,31 @@ public final class PainelDpadContextual {
         FontMetrics fm = g.getFontMetrics();
         int w = fm.stringWidth(t);
         int x = alinhamento < 0 ? ax - w : alinhamento == 0 ? ax - w / 2 : ax;
+        CelulaContextual c = q.celulas().get(d);
+        com.irmaosmiau.controles.NaturezaAcao n = c != null && c.isExecutavel() ? natureza(c) : null;
+        if (n == com.irmaosmiau.controles.NaturezaAcao.DESISTENCIA) {
+            g.setColor(MOLDURA_DESISTENCIA);                   // 5Q.6: bater e uma acao especial
+            g.drawRoundRect(x - 3, y - fm.getAscent(), w + 5, fm.getAscent() + 3, 4, 4);
+        }
         g.setColor(cor(q, d));
+        if (n != null && n != com.irmaosmiau.controles.NaturezaAcao.CONTROLE
+                && n != com.irmaosmiau.controles.NaturezaAcao.DESISTENCIA) {
+            forma(g, n, alinhamento < 0 ? x + w + 2 : x - 6, y - 4);   // 5Q.6: nao depende so da cor
+        }
         g.drawString(t, x, y);
         g.setFont(ROTULO);
+    }
+
+    /** 5Q.6: forma de 4 px da natureza: quadrado (defesa), triangulo (transicao), circulo (finalizacao), losango (queda). */
+    static void forma(Graphics2D g, com.irmaosmiau.controles.NaturezaAcao n, int x, int y) {
+        switch (n) {
+            case DEFESA -> g.fillRect(x, y - 2, 4, 4);
+            case TRANSICAO -> g.fillPolygon(new int[] {x, x + 4, x}, new int[] {y - 2, y, y + 2}, 3);
+            case FINALIZACAO -> g.fillOval(x, y - 2, 4, 4);
+            case QUEDA -> g.fillPolygon(new int[] {x + 2, x + 4, x + 2, x}, new int[] {y - 3, y, y + 3, y}, 4);
+            default -> {
+            }
+        }
     }
 
     private static final Font PEQUENA = new Font("Arial", Font.BOLD, 8);

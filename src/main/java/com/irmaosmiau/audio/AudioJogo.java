@@ -18,6 +18,20 @@ public final class AudioJogo {
     public static final String EFEITO_ROMPIMENTO = "rompimento";
 
     private static ServicoAudio servico;
+    private static TrilhaSonora trilhas;
+
+    /** 5Q.6: a trilha sonora por contexto (menus, treino, laboratorio, combate, resultados). */
+    public static synchronized TrilhaSonora trilhas() {
+        if (trilhas == null) {
+            trilhas = TrilhaSonora.padrao(servico());
+        }
+        return trilhas;
+    }
+
+    /** 5Q.6: troca a trilha (testes). */
+    public static synchronized void instalarTrilhas(TrilhaSonora t) {
+        trilhas = t;
+    }
 
     private AudioJogo() {
     }

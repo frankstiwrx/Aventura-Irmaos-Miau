@@ -11,7 +11,18 @@ package com.irmaosmiau.controles;
  *                        decide de verdade continua sendo o SistemaCombate
  */
 public record CelulaContextual(PosicaoComando posicao, Tipo tipo, String rotulo, AcaoJogador acao,
-        String idTransicao, boolean disponivelAgora) {
+        String idTransicao, boolean disponivelAgora, NaturezaAcao natureza) {
+
+    /** Sem natureza informada (o HUD usa a cor de antes / a regra do painel). */
+    public CelulaContextual(PosicaoComando posicao, Tipo tipo, String rotulo, AcaoJogador acao, String idTransicao,
+            boolean disponivelAgora) {
+        this(posicao, tipo, rotulo, acao, idTransicao, disponivelAgora, null);
+    }
+
+    /** 5Q.6: a mesma celula com a natureza (cor semantica) da acao. */
+    public CelulaContextual comNatureza(NaturezaAcao n) {
+        return new CelulaContextual(posicao, tipo, rotulo, acao, idTransicao, disponivelAgora, n);
+    }
 
     public enum Tipo {
         EXECUTAVEL,

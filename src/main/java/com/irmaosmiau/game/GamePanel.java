@@ -256,13 +256,63 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (modoTreino || d == null) {
             return;                                              // ferramenta separada do treino
         }
+        if (dev == null) {
+            limiteAntesDoDev = limiteSegundos;                   // 5Q.6: o relogio para enquanto o modo dura
+        }
+        limiteSegundos = 0;
         dev = d;
         dev.aplicar(jogadorBranco, jogadorPreto);
         menuPausa.setBounds(250, 8, 300, 434);                   // cabem as 3 opcoes do desenvolvedor
         atualizarBotoesDev();
     }
 
-    ModoDesenvolvedor getModoDesenvolvedor() {
+    /**
+     * 5Q.6: desliga o Modo Desenvolvedor no meio da luta e volta as regras normais: recursos com
+     * desgaste (no valor em que estavam), o relogio da partida continua de onde parou e os atalhos
+     * do desenvolvedor (F4 sem gravar preferencia, F5 reinicia a luta) deixam de valer.
+     */
+    public void desligarModoDesenvolvedor() {
+        if (dev == null) {
+            return;
+        }
+        dev = null;
+        jogadorBranco.setRecursosInfinitos(false, false);
+        jogadorPreto.setRecursosInfinitos(false, false);
+        limiteSegundos = limiteAntesDoDev;
+        menuPausa.setBounds(250, 40, 300, 370);
+        atualizarBotoesDev();
+    }
+
+    /** 5Q.6: tecla do Modo Desenvolvedor na partida normal (no treino o F8 continua sendo o catalogo). */
+    public static final String TECLA_MODO_DESENVOLVEDOR = "F8";
+    private int limiteAntesDoDev;
+    private boolean teclaDevSegurada;
+
+    /** 5Q.6: F8 na partida normal liga/desliga (segurar nao alterna de novo: so o aperto conta). */
+    void alternarModoDesenvolvedor() {
+        if (modoTreino || fimDeJogo) {
+            return;
+        }
+        if (dev == null) {
+            configurarModoDesenvolvedor(new ModoDesenvolvedor());
+            avisos.adicionar("MODO DESENVOLVEDOR LIGADO (" + TECLA_MODO_DESENVOLVEDOR + " desliga)");
+        } else {
+            desligarModoDesenvolvedor();
+            avisos.adicionar("MODO DESENVOLVEDOR DESLIGADO · regras normais");
+        }
+        repaint();
+    }
+
+    /** 5Q.6: aperto/soltura da tecla (o auto-repeat do teclado nao alterna varias vezes). */
+    void teclaModoDesenvolvedor(boolean pressionada) {
+        if (pressionada && !teclaDevSegurada) {
+            alternarModoDesenvolvedor();
+        }
+        teclaDevSegurada = pressionada;
+    }
+
+    /** A sessao do Modo Desenvolvedor desta luta (null = desligado); o Main a passa para o F5. */
+    public ModoDesenvolvedor getModoDesenvolvedor() {
         return dev;
     }
 
@@ -327,6 +377,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (!modoTreino || fimDeJogo) {
             return;
         }
+        AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.LABORATORIO_TECNICO);   // 5Q.6
         reiniciarSessaoTreino();
         religarDispositivosDoTreino();
         lab.aplicar(solo, sistemaCombate, jogadorBranco, jogadorPreto);
@@ -742,12 +793,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         gameLoop.start();
 
-        // Musica da arena (arquivo ausente = silencio, sem erro).
-        audio.tocarMusica(
-                modoTreino
-                ? AudioJogo.MUSICA_TREINO
-                : AudioJogo.MUSICA_COMBATE
-        );
+        // Musica da arena (arquivo ausente = silencio, sem erro). 5Q.6: o combate faz rodizio das
+        // faixas combate_01..06 (o F5 e a troca de cenario nao reiniciam a musica)
+        AudioJogo.trilhas().tocar(modoTreino ? com.irmaosmiau.audio.ContextoMusical.TREINAMENTO
+                : com.irmaosmiau.audio.ContextoMusical.COMBATE_01);
     }
 
     /**
@@ -1804,11 +1853,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             m.clear();
             m.put(com.irmaosmiau.controles.DirecaoTecnica.CIMA, new CelulaContextual(new PosicaoComando(CamadaComando.UM,
                     com.irmaosmiau.controles.DirecaoTecnica.CIMA), CelulaContextual.Tipo.EXECUTAVEL, "FECHAR GUARDA",
-                    null, null, true));
+                    null, null, true, com.irmaosmiau.controles.NaturezaAcao.DEFESA));
             for (com.irmaosmiau.controles.DirecaoTecnica d : new com.irmaosmiau.controles.DirecaoTecnica[] {
                 com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA, com.irmaosmiau.controles.DirecaoTecnica.DIREITA}) {
                 m.put(d, new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL,
-                        "MEIA", null, null, true));
+                        "MEIA", null, null, true, com.irmaosmiau.controles.NaturezaAcao.DEFESA));
             }
             return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, "CAINDO: COMO RECEBER?", m);
         }
@@ -2171,7 +2220,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         java.util.Optional<com.irmaosmiau.posicional.TecnicaSolo> t = solo.tecnicaPara(l, cmd);              // 5Q.6: em pe x de joelhos
         if (t.isPresent()) {
             return java.util.Optional.of(new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
-                    CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null, solo.motivoSem(l, t.get()) == null));
+                    CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null, solo.motivoSem(l, t.get()) == null,
+                    com.irmaosmiau.posicional.ClassificacaoAcoes.de(t.get())));            // 5Q.6: cor pela natureza
         }
         java.util.Optional<com.irmaosmiau.posicional.Finalizacao> fz =
                 solo.getCatalogoFinalizacoes().para(solo.getEstado(), l, cmd);
@@ -2197,7 +2247,18 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             rot += "·X";
         }
         return new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL, rot,
-                null, f.id(), m == null);
+                null, f.id(), m == null, com.irmaosmiau.controles.NaturezaAcao.FINALIZACAO);   // 5Q.6
+    }
+
+    /** 5Q.6: atacante: apertar = finalizacao, soltar = controle; defensor: defender/escapar = defesa, bater = desistencia. */
+    static com.irmaosmiau.controles.NaturezaAcao naturezaNaFinalizacao(boolean atacante,
+            com.irmaosmiau.controles.DirecaoTecnica d) {
+        if (atacante) {
+            return d == com.irmaosmiau.controles.DirecaoTecnica.CIMA ? com.irmaosmiau.controles.NaturezaAcao.FINALIZACAO
+                    : com.irmaosmiau.controles.NaturezaAcao.CONTROLE;
+        }
+        return d == com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA ? com.irmaosmiau.controles.NaturezaAcao.DESISTENCIA
+                : com.irmaosmiau.controles.NaturezaAcao.DEFESA;
     }
 
     /** 5Q: cruz da finalizacao em disputa (quem ataca e quem defende veem suas acoes e a pressao). */
@@ -2206,7 +2267,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m = new java.util.EnumMap<>(com.irmaosmiau.controles.DirecaoTecnica.class);
         boolean disputa = a.fase() == com.irmaosmiau.posicional.MotorSolo.FaseFinalizacao.DISPUTA;
         java.util.function.BiConsumer<com.irmaosmiau.controles.DirecaoTecnica, String> por = (d, t) -> m.put(d, new CelulaContextual(
-                new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL, t, null, null, true));
+                new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL, t, null, null, true,
+                naturezaNaFinalizacao(a.atacante() == l, d)));            // 5Q.6: cor pela natureza
         String nome = a.finalizacao().rotulo();
         String titulo;
         if (a.atacante() == l) {
@@ -3233,7 +3295,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         add(menuFim);
     }
 
+    private boolean musicaDeResultado;
+
     private void verificarFimDeJogo() {
+        if (fimDeJogo && !musicaDeResultado && !modoTreino) {
+            musicaDeResultado = true;                            // 5Q.6: tela de resultado
+            AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.RESULTADOS);
+        }
 
         // 5Q: vitoria por finalizacao (rendicao ou finalizacao consolidada); no treino so avisa e segue.
         if (solo != null && !fimDeJogo && solo.getVitoria().isPresent()) {
@@ -3990,6 +4058,18 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             if (modoTreino && lab.isAtiva()) {
                 catalogoLabVisivel = !catalogoLabVisivel;
                 repaint();
+            } else if (!modoTreino) {
+                teclaModoDesenvolvedor(true);                       // 5Q.6: partida normal: Modo Desenvolvedor
+            }
+        });
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("released F8"), "soltouF8");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("shift released F8"), "soltouF8");
+        getActionMap().put("soltouF8", new javax.swing.AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                teclaModoDesenvolvedor(false);
             }
         });
         atalho("F9", "alternarMusica", () -> {

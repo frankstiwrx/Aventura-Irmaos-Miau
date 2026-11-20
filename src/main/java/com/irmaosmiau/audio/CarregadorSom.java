@@ -44,6 +44,29 @@ public final class CarregadorSom {
         }
     }
 
+    /**
+     * 5Q.6: le um arquivo do DISCO (pasta externa de musicas). Ausente, invalido ou num formato
+     * que o Java Sound nao le -> vazio, nunca excecao.
+     */
+    public static Optional<SomCarregado> carregarArquivo(java.nio.file.Path arquivo) {
+        if (arquivo == null || !java.nio.file.Files.isRegularFile(arquivo)) {
+            return Optional.empty();
+        }
+        String origem = arquivo.toString();
+        try (InputStream in = new BufferedInputStream(java.nio.file.Files.newInputStream(arquivo));
+                AudioInputStream original = AudioSystem.getAudioInputStream(in);
+                AudioInputStream pcm = paraPcm(original)) {
+            byte[] dados = pcm.readAllBytes();
+            if (dados.length == 0) {
+                return Optional.empty();
+            }
+            return Optional.of(new SomCarregado(origem, pcm.getFormat(), dados));
+        } catch (UnsupportedAudioFileException | IOException | IllegalArgumentException | SecurityException ex) {
+            System.err.println("[audio] Nao foi possivel ler " + origem + ": " + ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
     /** Converte para PCM 16 bits com sinal, se o arquivo vier em outro formato. */
     private static AudioInputStream paraPcm(AudioInputStream original) {
         AudioFormat f = original.getFormat();

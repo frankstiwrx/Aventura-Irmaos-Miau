@@ -43,6 +43,9 @@ public final class ServicoAudio {
 
     /* Musica pedida pelo jogo (mesmo com a musica desligada). */
     private String musicaDesejada;
+    /* 5Q.6: som ja carregado pela TrilhaSonora (vazio = procurar o id em /audio/musica/) e se repete. */
+    private Optional<SomCarregado> somDesejado = Optional.empty();
+    private boolean loopDesejado = true;
     private SaidaAudio.Reproducao reproducaoMusica = SaidaAudio.Reproducao.NENHUMA;
     private boolean fechado;
 
@@ -79,16 +82,43 @@ public final class ServicoAudio {
         }
         pararReproducaoMusica();
         musicaDesejada = id;
+        somDesejado = Optional.empty();
+        loopDesejado = true;
         iniciarMusicaDesejada();
+    }
+
+    /**
+     * 5Q.6: toca um som de musica ja carregado (TrilhaSonora: pasta externa, interno ou provisorio).
+     * Para a musica anterior antes (nunca duas juntas); respeita o mudo e o volume. Som vazio =
+     * silencio (o pedido fica registrado: religar a musica nao traz a anterior de volta).
+     */
+    public synchronized void tocarSom(String chave, Optional<SomCarregado> som, boolean emLoop) {
+        if (fechado || chave == null) {
+            return;
+        }
+        pararReproducaoMusica();
+        musicaDesejada = chave;
+        somDesejado = som == null ? Optional.empty() : som;
+        loopDesejado = emLoop;
+        if (somDesejado.isPresent()) {
+            if (musicaAtiva) {
+                reproducaoMusica = saida.tocar(somDesejado.get(), emLoop, volumeMusica);
+            }
+        }
     }
 
     public synchronized void pararMusica() {
         musicaDesejada = null;
+        somDesejado = Optional.empty();
         pararReproducaoMusica();
     }
 
     private void iniciarMusicaDesejada() {
         if (!musicaAtiva || musicaDesejada == null) {
+            return;
+        }
+        if (somDesejado.isPresent()) {
+            reproducaoMusica = saida.tocar(somDesejado.get(), loopDesejado, volumeMusica);   // 5Q.6
             return;
         }
         som(PASTA_MUSICAS + musicaDesejada + ".wav").ifPresent(s ->
