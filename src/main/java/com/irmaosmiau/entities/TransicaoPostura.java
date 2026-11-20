@@ -26,7 +26,14 @@ public enum TransicaoPostura {
     RAPIDA_LEVANTAR_DO_CHAO(EstadoCorporal.DEITADO, EstadoCorporal.EM_PE, true,
             CustosFolego.RAPIDA_LEVANTAR_DO_CHAO, 16, "TRANSICAO_RAPIDA_LEVANTAR_DO_CHAO"),
     RAPIDA_LEVANTAR(EstadoCorporal.AJOELHADO, EstadoCorporal.EM_PE, true, CustosFolego.RAPIDA_LEVANTAR, 8,
-            "TRANSICAO_RAPIDA_LEVANTAR");
+            "TRANSICAO_RAPIDA_LEVANTAR"),
+    /**
+     * 5Q.5: levantada TECNICA do solo livre (deitado -> em pe): senta, apoia a mao de tras,
+     * planta o pe, tira o quadril e passa a perna para tras. So o MotorSolo escolhe (comando
+     * de levantar no solo livre); nunca e a escolha automatica (nao e rapida).
+     */
+    LEVANTADA_TECNICA(EstadoCorporal.DEITADO, EstadoCorporal.EM_PE, false, CustosFolego.RAPIDA_LEVANTAR_DO_CHAO, 30,
+            "TRANSICAO_LEVANTADA_TECNICA");
 
     private final EstadoCorporal origem;
     private final EstadoCorporal destino;

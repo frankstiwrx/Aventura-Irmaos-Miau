@@ -63,6 +63,8 @@ public final class AnimadorPartida {
     private final AnimadorMovimentos movimentos = new AnimadorMovimentos(BibliotecaMovimentos.padrao(), transicoes);
     /** 5P: posicoes de solo (procedural, comandado pelo MotorSolo). */
     private final AnimadorSolo solo = new AnimadorSolo(transicoes);
+    /** 5Q.5: deslocamento acelerado de joelhos (X). */
+    private final AnimadorJoelhosAcelerado acelerado = new AnimadorJoelhosAcelerado();
     private com.irmaosmiau.posicional.MotorSolo motorSolo;
 
     /** 5P: o motor de solo da partida (null = sem combate de solo). */
@@ -136,6 +138,18 @@ public final class AnimadorPartida {
         } else {
             solo.liberar(l);
         }
+        // 5Q.5: de joelhos acelerado (X): passada propria, sem levantar
+        if (acelerado.quer(l)) {
+            liberar(l);
+            movimentos.liberar(l);
+            String a = acelerado.aplicar(l, tick);
+            if (a != null) {
+                origens.put(l, new OrigemVisual(FonteAnimacao.PROCEDURAL, a, -1, estado));
+                return;
+            }
+        } else {
+            acelerado.liberar(l);
+        }
         // Entrega 5L: reacao defensiva (fora da pegada; o combate tem prioridade).
         boolean naPegada = sistema != null && sistema.estaEmInteracao()
                 && (sistema.getAplicadorInteracao() == l || sistema.getReceptorInteracao() == l);
@@ -171,7 +185,8 @@ public final class AnimadorPartida {
         // Entrega 5L: no modo PROPOSTA (F6), o movimento no chao usa a fuga de quadril.
         boolean fuga = false;
         if (d.estado() == EstadoVisual.MOVIMENTO_CHAO
-                && com.irmaosmiau.combate.ModoAnimacoesPegada.atual() == com.irmaosmiau.combate.ModoAnimacoesPegada.EXPERIMENTAL) {
+                && (com.irmaosmiau.combate.ModoAnimacoesPegada.atual() == com.irmaosmiau.combate.ModoAnimacoesPegada.EXPERIMENTAL
+                        || l.isDeslocamentoAcelerado())) {         // 5Q.5: X deitado = impulsos de quadril
             Optional<DefinicaoAnimacao> f = controlador.getPerfis().getCatalogo()
                     .buscar(d.id().substring(0, d.id().indexOf('.')) + ".fuga_quadril.json");
             if (f.isPresent()) {

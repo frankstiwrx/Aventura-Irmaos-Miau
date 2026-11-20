@@ -92,16 +92,65 @@ public final class TransicoesPostura {
         return 1 + (c + 1) * v * v * v + c * v * v;
     }
 
+    /**
+     * 5Q.5: levantada tecnica em estagios: senta e apoia (0-0,4), tira o quadril e passa a
+     * perna (0,4-0,75), sobe e assenta (0,75-1). Devolve k (0-1) da interpolacao base.
+     */
+    static double curvaLevantada(double x) {
+        double u = Math.max(0, Math.min(1, x));
+        if (u < 0.4) {
+            return 0.35 * suave(u / 0.4);
+        }
+        if (u < 0.75) {
+            return 0.35 + 0.35 * suave((u - 0.4) / 0.35);
+        }
+        return 0.7 + 0.3 * suave((u - 0.75) / 0.25);
+    }
+
+    private static double suave(double u) {
+        return u * u * (3 - 2 * u);
+    }
+
+    /** Envelope 0 -> 1 rapido (1 tick) e de volta a 0 entre a e b. */
+    private static double envelope(double x, double a, double b) {
+        if (x <= 0 || x >= b) {
+            return 0;
+        }
+        double sobe = Math.min(1, x * 30);
+        double desce = x <= a ? 1 : 1 - suave((x - a) / (b - a));
+        return sobe * desce;
+    }
+
     /** Pose da transicao no progresso x (0..1). */
     public Pose quadro(IrmaoMiau l, TransicaoPostura t, double x) {
         Pose de = pose(l, t.getOrigem());
         Pose para = pose(l, t.getDestino());
-        double k = curva(t, x);
+        double k = t == TransicaoPostura.LEVANTADA_TECNICA ? curvaLevantada(x) : curva(t, x);
         int[] p = Arrays.copyOf(para.valores(), para.valores().length);
         for (int i = 4; i < p.length; i++) {
             p[i] = (int) Math.round(de.valores()[i] + (para.valores()[i] - de.valores()[i]) * k);
         }
         double dy = de.dy() + (para.dy() - de.dy()) * k;
+        if (t == TransicaoPostura.LEVANTADA_TECNICA) {
+            // 5Q.5: mao de tras apoiada e pe da frente plantado (o mesmo apoio do fim da janela)
+            double apoio = envelope(x, 0.45, 0.85);
+            p[10] += (int) Math.round(16 * apoio);                      // ja sentando
+            p[MAO_ESQ_X] += (int) Math.round(-16 * apoio);
+            p[MAO_ESQ_Y] += (int) Math.round(-22 * apoio);
+            p[COT_ESQ_X] += (int) Math.round(-8 * apoio);
+            p[26] += (int) Math.round(18 * apoio);
+            p[27] += (int) Math.round(-12 * apoio);
+            p[28] += (int) Math.round(12 * apoio);
+            // passa a perna de tras para tras com o quadril no alto
+            double passa = Math.sin(Math.PI * Math.max(0, Math.min(1, (x - 0.35) / 0.5)));
+            if (x > 0.35 && x < 0.85) {
+                p[22] += (int) Math.round(-14 * passa);
+                p[24] += (int) Math.round(-26 * passa);
+                p[25] += (int) Math.round(-10 * passa);
+                p[MAO_DIR_X] += (int) Math.round(12 * passa);           // braco da frente protege o rosto
+                p[MAO_DIR_Y] += (int) Math.round(-14 * passa);
+            }
+        }
         if (t.isRapida()) {
             double impulso = Math.sin(Math.PI * Math.max(0, Math.min(1, x)));   // 0 nas pontas
             if (t == TransicaoPostura.RAPIDA_DEITAR) {

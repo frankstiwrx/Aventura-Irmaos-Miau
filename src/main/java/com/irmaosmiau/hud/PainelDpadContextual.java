@@ -59,6 +59,15 @@ public final class PainelDpadContextual {
         return new Quadro(sigla, camada, nomeCamada, m);
     }
 
+    /**
+     * 5Q.5: roda completamente vazia no contexto atual nao aparece (a camada continua
+     * existindo internamente, para funcionalidades futuras). Antes desenhava um painel
+     * com "sem tecnica neste contexto".
+     */
+    public static boolean deveMostrar(Quadro q) {
+        return q != null && !q.celulas().isEmpty();
+    }
+
     /** Texto e cor de uma direcao. */
     public static String texto(Quadro q, DirecaoTecnica d) {
         CelulaContextual c = q.celulas().get(d);

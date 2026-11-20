@@ -1628,8 +1628,13 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (solo == null || d == null || (parceiroPassivo(slot))) {
             return;
         }
-        pedidosSolo.putIfAbsent(lado(slot), new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
-                com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), familia));
+        com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo cmd = new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
+                com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), familia);
+        if (com.irmaosmiau.posicional.MotorSolo.ehBater(cmd)) {
+            pedidosSolo.put(lado(slot), cmd);                  // 5Q.5: bater nunca perde para outro comando do tick
+        } else {
+            pedidosSolo.putIfAbsent(lado(slot), cmd);
+        }
     }
 
     /**
@@ -1672,11 +1677,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             String sigla = l == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
             String nome = resp.tecnica() == null ? "" : resp.tecnica().nome().toUpperCase(java.util.Locale.ROOT) + " · ";
             String txt = switch (resp.resultado()) {
-                case INICIADA -> nome + "ENTRANDO";
+                case INICIADA -> "▶ " + nome + "EM EXECUÇÃO";        // 5Q.5: em execucao != indisponivel
                 case CONTRA -> nome + "CONTRA!";
                 case CONCLUIDA -> nome.isEmpty() ? resp.motivo() : nome + "OK";
                 case ABANDONADA -> "ABANDONOU A TÉCNICA";
-                case RECUSADA -> nome + resp.motivo();
+                case RECUSADA -> "✕ " + nome + resp.motivo();
             };
             ultimoMotivoFamilia.put(l == com.irmaosmiau.posicional.Lado.A ? SlotJogador.JOGADOR_1
                     : SlotJogador.JOGADOR_2, resp.aceito() ? "-" : resp.motivo());
@@ -1845,6 +1850,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      * enquanto a direcao estiver segurada. Sprawl e quedas: uma vez por
      * inclinacao/toque. Acrobacia: uma vez quando Y + direcao comecam juntos.
      */
+    /** 5Q.5: este lutador esta defendendo uma finalizacao agora. */
+    private boolean sobFinalizacao(IrmaoMiau l) {
+        return solo != null && solo.getAtaque().map(x -> solo.lutador(x.defensor()) == l).orElse(false);
+    }
+
     private void atualizarFamilias(java.util.Map<SlotJogador, java.util.EnumSet<AcaoJogador>> tocadas) {
         for (IrmaoMiau l : List.of(jogadorBranco, jogadorPreto)) {
             manterDefesaCoerente(l);
@@ -1858,6 +1868,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 continue;                                 // parceiro passivo
             }
             com.irmaosmiau.controles.FamiliaTecnica fam = familiaPelosModificadores(input, slot);
+            com.irmaosmiau.controles.FamiliaTecnica famAntes = familiaAtual.get(slot);
             familiaAtual.put(slot, fam);
             com.irmaosmiau.controles.DirecaoTecnica teclaSegurada = null;
             com.irmaosmiau.controles.DirecaoTecnica teclaNova = null;
@@ -1892,6 +1903,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 }
             } else {
                 ator.getDefesa().soltar();
+                if (nova == null && famAntes != fam && segurada == com.irmaosmiau.controles.DirecaoTecnica.BAIXO
+                        && sobFinalizacao(ator)) {
+                    nova = segurada;                               // 5Q.5: RS v ja segurado + RB agora = bater na hora
+                }
                 if (nova != null && solo != null) {
                     pedirSolo(slot, nova, true);                   // 5P: RB + RS = quedas / explosivo no chao
                 } else if (nova != null) {
@@ -2208,7 +2223,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             por.accept(com.irmaosmiau.controles.DirecaoTecnica.ESQUERDA, "RB↓ BATER");
             titulo = "DEFENDA: " + nome;
         }
-        if (disputa) {
+        if (a.naPonta()) {
+            titulo = (a.atacante() == l ? "NA PONTA: " : "BATA OU DEFENDA: ") + nome + " 100%";   // 5Q.5
+        } else if (disputa) {
             titulo += " " + Math.round(a.pressao()) + "%";
         }
         return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, titulo, m);
@@ -2393,6 +2410,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             correndo = false;
             respirando = false;
         }
+        personagem.setDeslocamentoAcelerado(correndo && !respirando);   // 5Q.5 (de joelhos / deitado)
         double velocidadeAtual;
 
         // =========================
@@ -2403,6 +2421,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             // 5O.2: respirando anda devagar em qualquer postura (velocidade propria da postura).
             velocidadeAtual
                     = personagem.getVelocidadeRespirando();
+
+        } else if ((personagem.isDeitado() || personagem.isAjoelhado()) && correndo
+                && (esquerda || direita || cima || baixo) && personagem.isDeslocamentoAceleradoPedido()) {
+
+            // 5Q.5: X segurado no chao: de joelhos mais rapido (sem levantar) / deitado em impulsos de quadril
+            velocidadeAtual
+                    = personagem.getVelocidadeChaoAcelerada();
+            personagem.cobrarDeslocamentoAcelerado();
 
         } else if (personagem.isDeitado()) {
 
@@ -3380,11 +3406,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
         // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
         PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
-        if (dpad1 != null) {
+        if (PainelDpadContextual.deveMostrar(dpad1)) {             // 5Q.5: roda vazia nao aparece
             PainelDpadContextual.desenhar(g2, 10, dpad1);
         }
         PainelDpadContextual.Quadro dpad2 = montarQuadroDpad(SlotJogador.JOGADOR_2);
-        if (dpad2 != null) {
+        if (PainelDpadContextual.deveMostrar(dpad2)) {
             PainelDpadContextual.desenhar(g2, LARGURA - 10 - PainelDpadContextual.LARGURA, dpad2);
         }
 
@@ -3427,7 +3453,31 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** Lutadores na ordem em que sao desenhados (fundo -> frente). */
     List<IrmaoMiau> ordemDeDesenho() {
-        return OrdemProfundidade.doFundoParaFrente(jogadorBranco, jogadorPreto);
+        List<IrmaoMiau> base = OrdemProfundidade.doFundoParaFrente(jogadorBranco, jogadorPreto);
+        java.util.Optional<IrmaoMiau> frente = frenteNoSolo();
+        if (frente.isEmpty() || jogadorBranco.getLinhaAtual() != jogadorPreto.getLinhaAtual()) {
+            return base;                                          // linhas diferentes: a profundidade manda
+        }
+        IrmaoMiau f = frente.get();
+        return List.of(f == jogadorBranco ? jogadorPreto : jogadorBranco, f);
+    }
+
+    /**
+     * 5Q.5: prioridade de desenho pela POSICAO (nao por J1/J2), so ligados no solo e na
+     * mesma linha. Guardas e controle de perna: quem esta POR BAIXO na frente (as pernas
+     * da guarda envolvem quem esta por cima e ficam visiveis). Dominio por cima (cem quilos,
+     * joelho na barriga, montada, costas): quem esta POR CIMA na frente. Fora do vinculo
+     * (em pe, solo livre, solo disputado): a ordem antiga (estavel).
+     */
+    java.util.Optional<IrmaoMiau> frenteNoSolo() {
+        if (solo == null || !solo.getPosicao().isVinculoDeSolo()) {
+            return java.util.Optional.empty();
+        }
+        com.irmaosmiau.posicional.Posicao p = solo.getPosicao();
+        return solo.getEstado().getPorCima().map(cima -> {
+            boolean baixoNaFrente = p.isGuarda() || p == com.irmaosmiau.posicional.Posicao.ASHI_GARAMI;
+            return solo.lutador(baixoNaFrente ? cima.outro() : cima);
+        });
     }
 
     // =====================================================

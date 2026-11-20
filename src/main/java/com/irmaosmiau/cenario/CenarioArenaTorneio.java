@@ -81,20 +81,37 @@ public final class CenarioArenaTorneio implements Cenario {
     @Override
     public void desenharFundo(Graphics2D g2, int largura, int altura) {
         if (fundoCache == null || fundoCache.getWidth() != largura || fundoCache.getHeight() != altura) {
+            ceuCache = renderizar(largura, altura, this::pintarCeu);
             fundoCache = renderizar(largura, altura, this::pintarFundo);
         }
+        g2.drawImage(ceuCache, 0, 0, null);
+        nuvens.desenhar(g2, tickAmbiente, largura);            // 5Q.5: nuvens lentas
         g2.drawImage(fundoCache, 0, 0, null);
     }
 
-    private void pintarFundo(Graphics2D g, int w, int h) {
+    /** 5Q.5: tick do jogo (nuvens). */
+    @Override
+    public void atualizarAmbiente(long tick) {
+        tickAmbiente = tick;
+    }
+
+    private long tickAmbiente;
+    private BufferedImage ceuCache;
+    private final NuvensAnimadas nuvens = new NuvensAnimadas(CenarioArenaTorneio::nuvem,
+            new NuvensAnimadas.Nuvem(110, 40, 1.0, 0.035),
+            new NuvensAnimadas.Nuvem(690, 30, 1.1, 0.03),
+            new NuvensAnimadas.Nuvem(560, 120, 0.6, 0.05),
+            new NuvensAnimadas.Nuvem(250, 112, 0.55, 0.055),
+            new NuvensAnimadas.Nuvem(760, 150, 0.5, 0.06),
+            new NuvensAnimadas.Nuvem(40, 160, 0.5, 0.065));
+
+    private void pintarCeu(Graphics2D g, int w, int h) {
         g.setPaint(new GradientPaint(0, 0, CEU_TOPO, 0, Y_MURO_TOPO, CEU_BASE));
         g.fillRect(0, 0, w, Y_CHAO);
-        nuvem(g, 110, 40, 1.0);
-        nuvem(g, 690, 30, 1.1);
-        nuvem(g, 560, 120, 0.6);
-        nuvem(g, 250, 112, 0.55);
-        nuvem(g, 760, 150, 0.5);
-        nuvem(g, 40, 160, 0.5);
+    }
+
+    private void pintarFundo(Graphics2D g, int w, int h) {
+        // (o ceu e as nuvens: pintarCeu + NuvensAnimadas, 5Q.5)
 
         int cx = w / 2;
         // Telhados laterais longos (palha) atras da muralha

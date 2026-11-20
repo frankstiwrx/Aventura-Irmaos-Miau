@@ -56,6 +56,7 @@ Atualmente o projeto possui:
 - Infraestrutura para animações conjuntas de combate
 - Editor próprio de poses e animações utilizado durante o desenvolvimento
 - Treino com laboratório de situações e Modo Desenvolvedor para testes (`docs/MODO_DESENVOLVEDOR.md`)
+- Finalizações com tempo real de reação (bater, defender, soltar, escapar) e parâmetros de balanceamento centralizados (`docs/FINALIZACOES.md`)
 
 ---
 

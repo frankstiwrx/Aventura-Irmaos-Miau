@@ -126,3 +126,48 @@ MiauStudio, para os dois irmãos e os três kimonos. **A faixa não mudou.**
   técnicas (CONECTAR_GUARDA, PRENDER_PERNAS): precisa de aprovação e de rebalancear os alcances.
 - Poses de quem está **por cima** nas guardas abertas (DLR, laço, aranha, SLX, ashi) continuam a mesma de
   joelhos genérica.
+
+# Atualização 5Q.5 — Refinamento da jogabilidade
+
+Legenda: **própria** = quadros-chave em `AnimacoesTecnicas` (ou animador dedicado) para quem faz e quem recebe;
+**provisória** = pose procedural genérica (`AnimadorSolo.aplicarEfeito`) ou reaproveitada; **pendente** = sem
+animação específica ainda.
+
+| Técnica / movimento | Executante | Adversário | Situação |
+|---|---|---|---|
+| Rasteira (L2 ↑ na pegada) | tira o peso, levanta o pé, varre baixo puxando as mangas | o pé sai do chão, tronco para trás, perde a base | **própria** (entrada → execução → queda pelas transições de postura; defendida: volta suave) |
+| Entrada nas pernas (RB ↓ em pé) | baixa o nível, passo de penetração, abraça e empurra | pernas presas, quadril empurrado, braços sobem | **própria** |
+| Joelho na barriga direto (RB ↓ no solo livre) | sobe o joelho, desce na barriga, mão na gola | mãos sobem para enquadrar, impacto | **própria** (depois: transição de postura até o joelho na barriga) |
+| Levantada técnica (RS ↑ deitado no solo livre) | janela: senta, apoia a mão de trás e planta o pé; transição própria `LEVANTADA_TECNICA` (30 ticks): tira o quadril, passa a perna para trás, sobe e assenta | — | **própria** (antes: transição rápida de 16 ticks, girando 88° de uma vez) |
+| Recuo em pé (RS ↓ no solo livre) | dois passos para trás alternando a base; o corpo **desliza** do lugar antigo até o novo (sem teletransporte) | — | **própria** |
+| Postura (RS ↓ por cima na guarda fechada) | apruma, mãos no quadril do outro, segura enquanto a postura dura (60 ticks) | perde a puxada | **própria** |
+| Recompor a postura (vindo da postura quebrada) | parte de curvado, passa do ponto e segura aprumado | perde a puxada | **própria** |
+| Pernas presas (depois de prender as pernas) | as mãos **ficam** nas canelas enquanto o controle mecânico (PERNAS_PRESAS, 45 ticks) durar | pernas juntas e puxadas | **própria**; termina com volta suave |
+| Entradas no controle de perna (L1+L2 na guarda fechada/aberta/DLR) | gira o quadril, as pernas descem e enroscam | a perna da frente é puxada, o tronco vem junto | **própria** |
+| Abandonar o domínio para a perna (L1+L2 por cima) | senta para trás e abraça a perna (fica exposto) | a perna sobe presa | **própria** |
+| Underhook na meia-guarda (RS ←/→ por baixo) | braço por baixo, quadril vira | o de cima fica curvado (postura quebrada) | **própria** |
+| Deslocamento acelerado de joelhos (X) | passada própria (`AnimadorJoelhosAcelerado`): joelhos alternando com passo maior, tronco inclinado, braços acompanhando, quique leve; continua de joelhos | — | **própria** (procedural) |
+| Deslocamento acelerado deitado (X) | impulsos de quadril: reaproveita o JSON `fuga_quadril` (avança pela distância andada) | — | **reaproveitada** |
+| Afastar da guarda | (5Q.3) pernas empurram | (5Q.3) empurrado | própria; agora a distância lógica também aumenta (3 px/tick até 122 px) |
+| Escapes de 100 kg / montada / joelho (enquadrar + escape) | — | — | **provisória** (o escape usa a pose da posição; enquadrar não tem quadros próprios) |
+| Reação ao bater/defender/apertar | (5Q.3) | (5Q.3) | própria nas 5 finalizações da 5Q.3; as demais seguem a pose provisória por categoria |
+
+## Ordem de desenho (resolvido)
+
+A prioridade de desenho agora vem da **posição**, não de J1/J2 (`GamePanel.frenteNoSolo`), só quando os dois
+estão ligados no solo e na mesma linha:
+
+- guardas (fechada, aberta, meia, borboleta, DLR, laço, aranha, SLX) e ashi garami: **quem está por baixo na
+  frente**, então as pernas da guarda envolvem quem está por cima e ficam visíveis;
+- domínio por cima (100 kg, joelho na barriga, montada, costas): **quem está por cima na frente**;
+- fora do vínculo (em pé, solo livre, solo disputado): a ordem antiga por linha (estável).
+
+Limitação estrutural (Rig 2.0): cada lutador é desenhado inteiro de uma vez. Uma perna que passa **por trás** do
+outro e outra **pela frente** ao mesmo tempo (triângulo, laço) exige camadas por membro, e isso fica para o Rig 2.0.
+
+## Pendente
+
+- Poses de quem está **por cima** nas guardas abertas (DLR, laço, aranha, SLX, ashi) continuam a pose de joelhos
+  genérica.
+- Enquadrar e escapar dos domínios usam a pose da posição (sem quadros próprios).
+- O ajuste de estabilizar/consolidar (100 kg, joelho, montada) não tem quadros próprios.

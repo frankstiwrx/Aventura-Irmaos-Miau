@@ -56,13 +56,23 @@ public final class MotorSolo {
     /** 5P.1: a base (RT) conta se for APERTADA na janela do outro (ou ate N ticks antes). */
     public static final int BUFFER_BASE_TICKS = 6;
     public static final int POSTURA_TICKS = 60;
-    public static final int POSTURA_QUEBRADA_TICKS = 40;
+    public static final int POSTURA_QUEBRADA_TICKS = ParametrosFinalizacao.POSTURA_QUEBRADA_TICKS;   // 5Q.5: antes 40
     public static final int MONTADA_ALTA_EXPOSTA_TICKS = 20;
     public static final double GANHO_PASSIVO_ESTABILIDADE = 0.12;          // 5P.1: antes 0,2
     public static final double ESTABILIDADE_PROGRESSO = 50;
     public static final double ESTABILIDADE_REVERSAO = 30;
     public static final double DELTA_CONSOLIDAR = 25;
     public static final double DELTA_ENQUADRAR = 25;                       // 5P.1: antes 20
+    /**
+     * 5Q.5 (escapes): enquadrar cria ESPACO por TICKS_ESPACO. Com espaco, o escape tolera
+     * BONUS_ESPACO a mais de estabilidade e o consolidar de quem esta por cima nao o
+     * cancela: so FECHA o espaco (e consolida menos). Quem usa um ajuste instantaneo como
+     * contra fica RECARGA_CONTRA_AJUSTE sem outro ajuste (antes: contra infinita e gratis).
+     */
+    public static final int TICKS_ESPACO = 60;
+    public static final double BONUS_ESPACO = 20;
+    public static final double CONSOLIDAR_FECHANDO_ESPACO = 10;
+    public static final int RECARGA_CONTRA_AJUSTE = 24;
     public static final double FRACAO_FOLEGO_CANSADO = 0.25;
     public static final double FRACAO_FOLEGO_EXAUSTO = 0.15;
     // em pe
@@ -153,6 +163,10 @@ public final class MotorSolo {
     private final Map<Lado, Exposto> exposicao = new EnumMap<>(Lado.class);
     private final Map<Lado, Integer> postura = new EnumMap<>(Lado.class);
     private final Map<Lado, Integer> recarga = new EnumMap<>(Lado.class);
+    /** 5Q.5: afastamento gradual pendente (quem e afastado -> distancia alvo). */
+    private final Map<Lado, Integer> afastarAte = new EnumMap<>(Lado.class);
+    /** 5Q.5: espaco criado pelo enquadrar (ticks): o escape seguinte nao e cancelado pelo consolidar. */
+    private final Map<Lado, Integer> espaco = new EnumMap<>(Lado.class);
     private final Map<Lado, Double> base = new EnumMap<>(Lado.class);
     private final Deque<Evento> eventos = new ArrayDeque<>();
     private Evento ultimo;
@@ -167,20 +181,17 @@ public final class MotorSolo {
     // =====================================================
     // ENTREGA 5Q: FINALIZACOES
     // =====================================================
-    /** Pressao (0-100) no inicio da disputa, depois da entrada. */
-    public static final double PRESSAO_INICIAL = 30;
-    /** Apertar (quem ataca) e defender (quem e atacado), por acao, com eficiencia 1. */
-    public static final double PRESSAO_APERTO = 14;
-    public static final double PRESSAO_DEFESA = 22;
-    /** Escapar so funciona com a pressao ate aqui. */
-    public static final double LIMIAR_ESCAPE_FINALIZACAO = 45;
-    public static final double ESCAPE_FALHO_PRESSAO = 8;
-    /** Ticks entre duas acoes do mesmo lado na disputa. */
-    public static final int RECARGA_ACAO_FINALIZACAO = 12;
-    /** Custos base (passam pelo CustosFolego.custoSolo). */
-    public static final double CUSTO_APERTO = 1.0;
-    public static final double CUSTO_DEFESA = 1.0;
-    public static final double CUSTO_ESCAPE = 2.5;
+    // 5Q.5: os valores vivem em ParametrosFinalizacao (um lugar so para o balanceamento)
+    public static final double PRESSAO_INICIAL = ParametrosFinalizacao.PRESSAO_INICIAL;
+    public static final double PRESSAO_APERTO = ParametrosFinalizacao.PRESSAO_APERTO;
+    public static final double PRESSAO_DEFESA = ParametrosFinalizacao.PRESSAO_DEFESA;
+    public static final double LIMIAR_ESCAPE_FINALIZACAO = ParametrosFinalizacao.LIMIAR_ESCAPE;
+    public static final double ESCAPE_FALHO_PRESSAO = ParametrosFinalizacao.ESCAPE_FALHO_PRESSAO;
+    public static final int RECARGA_ACAO_FINALIZACAO = ParametrosFinalizacao.RECARGA_ACAO;
+    public static final double CUSTO_APERTO = ParametrosFinalizacao.CUSTO_APERTO;
+    public static final double CUSTO_DEFESA = ParametrosFinalizacao.CUSTO_DEFESA;
+    public static final double CUSTO_ESCAPE = ParametrosFinalizacao.CUSTO_ESCAPE;
+    public static final int TICKS_NA_PONTA = ParametrosFinalizacao.TICKS_NA_PONTA;
 
     /** Fases da tentativa de finalizacao (preparacao = requisitos, verificados antes da entrada). */
     public enum FaseFinalizacao {
@@ -202,6 +213,8 @@ public final class MotorSolo {
         private int recargaDefesa;
         /** So visual: ticks desde a ultima defesa (pulso da reacao). */
         private int ticksDesdeDefesa = 99;
+        /** 5Q.5: ticks em 100% (NA PONTA) antes de consolidar. */
+        private int ticksNaPonta;
 
         Ataque(Finalizacao f, Lado atacante, int entrada) {
             this.finalizacao = f;
@@ -228,6 +241,16 @@ public final class MotorSolo {
 
         public double pressao() {
             return pressao;
+        }
+
+        /** 5Q.5: a finalizacao chegou a 100% e esta para consolidar (ainda da para bater/defender). */
+        public boolean naPonta() {
+            return fase == FaseFinalizacao.DISPUTA && pressao >= 100;
+        }
+
+        /** 5Q.5: 0-1 do tempo NA PONTA ja gasto (1 = consolida). */
+        public double progressoNaPonta() {
+            return Math.min(1.0, (double) ticksNaPonta / Math.max(1, ParametrosFinalizacao.TICKS_NA_PONTA));
         }
 
         /** Progresso da entrada (0-1). */
@@ -380,10 +403,24 @@ public final class MotorSolo {
 
     /** 5Q.3/5Q.4: tecnicas com animacao propria de quem aplica e de quem recebe (AnimacoesTecnicas). */
     static final java.util.Set<String> ANIMACAO_PROPRIA = java.util.Set.of(CatalogoTecnicasSolo.BERIMBOLO,
-            CatalogoTecnicasSolo.PRENDER_PERNAS);
+            CatalogoTecnicasSolo.PRENDER_PERNAS,
+            // 5Q.5: quedas e entradas com animacao propria (quem faz e quem recebe)
+            CatalogoTecnicasSolo.RASTEIRA, CatalogoTecnicasSolo.ENTRADA_PERNAS, CatalogoTecnicasSolo.JOELHO_DIRETO,
+            CatalogoTecnicasSolo.LEVANTAR_TECNICO,
+            // 5Q.5: entradas no controle de perna (transicao corporal ate o ashi garami)
+            CatalogoTecnicasSolo.ENTRADA_PERNA_GUARDA, CatalogoTecnicasSolo.ENTRADA_PERNA_DOMINANTE,
+            CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA, CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA + "_dlr");
+    /** 5Q.5: depois de prender as pernas, as maos FICAM nas canelas enquanto o controle durar. */
+    public static final int TICKS_PERNAS_PRESAS = 45;
+    /** 5Q.5: o recuo em pe (dois passos para tras) dura isto; o corpo desliza do lugar antigo. */
+    static final int TICKS_RECUO = 28;
+    /** 5Q.5: distancia (px) em que o afastar da guarda deixa quem estava por cima (fora do alcance de entrar). */
+    public static final int DISTANCIA_APOS_AFASTAR = ALCANCE_ENTRAR_PX + 12;
+    /** 5Q.5: velocidade do afastamento gradual (px/tick, sem teletransporte). */
+    static final int VELOCIDADE_AFASTAMENTO = 3;
     /** 5Q.4: ajustes INSTANTANEOS com animacao curta propria (termina na pose da posicao). */
     static final java.util.Set<String> ANIMACAO_INSTANTANEA = java.util.Set.of(CatalogoTecnicasSolo.QUEBRAR_POSTURA,
-            CatalogoTecnicasSolo.CONSOLIDAR_ASHI);
+            CatalogoTecnicasSolo.CONSOLIDAR_ASHI, CatalogoTecnicasSolo.UNDERHOOK_MEIA);
     static final int TICKS_ANIMACAO_INSTANTANEA = 18;
 
     /** Efeito visual de uma tecnica que comeca (empurrar, afastar, soltar, levantar). */
@@ -442,7 +479,7 @@ public final class MotorSolo {
         double custo = com.irmaosmiau.entities.CustosFolego.custoSolo(f.custo(), eu.getAtributos().getFolego());
         eu.gastarFolegoEsforco(custo, f.id());
         eu.gastarCondicionamentoEsforco(com.irmaosmiau.entities.CustosFolego.condicionamentoDaTecnica(custo, false), f.id());
-        int janela = Math.max(1, (int) Math.round(f.janelaEntrada() * FATOR_JANELA
+        int janela = Math.max(1, (int) Math.round(f.janelaEntrada() * ParametrosFinalizacao.FATOR_ENTRADA
                 * (1.0 + com.irmaosmiau.entities.CustosFolego.EXAUSTAO_JANELA * eu.fatorExaustao())));
         ataque = new Ataque(f, lado, janela);
         exposicao.put(lado, new Exposto(Exposicao.BASE, janela + 6));
@@ -477,11 +514,27 @@ public final class MotorSolo {
         liberarVisual(a.defensor(), a.finalizacao.id() + ":RECEBE", desde, a.finalizacao.categoria());
     }
 
+    /**
+     * 5Q.5: mapa de comandos durante a finalizacao, sem conflito entre eles:
+     * quem DEFENDE: R1 v = bater (sempre primeiro); R1 ^ = escapar; qualquer outra v
+     * (RS, ou com LT/LB ainda segurados) = defender. Quem ATACA: o comando da propria
+     * finalizacao ou RS ^ = apertar; qualquer outra v (RS, ou com LT/LB segurados, como
+     * no triangulo) = soltar. Antes a v so valia pelo RS puro e o soltar/defender com
+     * o gatilho ainda segurado era recusado ("EM FINALIZACAO").
+     */
+    public static boolean ehBater(ComandoSolo c) {
+        return eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO);
+    }
+
+    private static boolean ehBaixoNaoR1(ComandoSolo c) {
+        return c != null && c.direcao() == TecnicaSolo.Direcao.BAIXO && c.familia() != TecnicaSolo.Familia.R1;
+    }
+
     private Resposta comandoNaFinalizacao(Lado lado, ComandoSolo c) {
         Ataque a = ataque;
         Finalizacao f = a.finalizacao;
         if (lado == a.defensor()) {
-            if (eh(c, TecnicaSolo.Familia.R1, TecnicaSolo.Direcao.BAIXO)) {
+            if (ehBater(c)) {
                 vitoria = new Vitoria(a.atacante, f, true);   // BATER: prioridade, solta na hora
                 liberarVisual(a.atacante, f.id() + ":ATACA", progressoVisualAtaque(), f.categoria());
                 ataque = null;
@@ -489,7 +542,7 @@ public final class MotorSolo {
                 registrar("RENDICAO", f.id(), lado, f.nome());
                 return new Resposta(Resultado.CONCLUIDA, "BATEU", null);
             }
-            if (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.BAIXO)) {
+            if (ehBaixoNaoR1(c)) {
                 if (a.recargaDefesa > 0) {
                     return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
                 }
@@ -499,7 +552,8 @@ public final class MotorSolo {
                     falharFinalizacao("entrada cortada");
                     return new Resposta(Resultado.CONTRA, "CORTOU A ENTRADA", null);
                 }
-                a.pressao -= PRESSAO_DEFESA * ef;
+                a.pressao = Math.min(100, a.pressao) - PRESSAO_DEFESA * ef;
+                a.ticksNaPonta = 0;                            // 5Q.5: saiu da ponta, volta a disputa
                 a.recargaDefesa = RECARGA_ACAO_FINALIZACAO;
                 a.ticksDesdeDefesa = 0;
                 if (a.pressao <= 0) {
@@ -517,40 +571,50 @@ public final class MotorSolo {
                     escaparFinalizacao();
                     return new Resposta(Resultado.CONTRA, "ESCAPOU", null);
                 }
-                a.pressao += ESCAPE_FALHO_PRESSAO;
+                a.pressao = Math.min(100, a.pressao + ESCAPE_FALHO_PRESSAO);
                 a.recargaDefesa = RECARGA_ACAO_FINALIZACAO * 2;
                 return new Resposta(Resultado.RECUSADA, "SEM ESPAÇO PARA ESCAPAR", null);
             }
             return new Resposta(Resultado.RECUSADA, "SOB FINALIZAÇÃO", null);
-        }
-        if (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.BAIXO)) {
-            liberarFinalizacaoVisual(a);
-            ataque = null;                                     // soltar: a posicao continua
-            recarga.put(lado, RECARGA_TICKS);
-            registrar("FIN_SOLTOU", f.id(), lado, "");
-            return new Resposta(Resultado.ABANDONADA, "SOLTOU", null);
         }
         if (a.fase == FaseFinalizacao.DISPUTA && (eh(c, TecnicaSolo.Familia.RS, TecnicaSolo.Direcao.CIMA) || f.aceita(c))) {
             if (a.recargaAtaque > 0) {
                 return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", null);
             }
             lutador(lado).gastarFolegoEsforco(custoAcao(lado, CUSTO_APERTO), "apertar");
-            a.pressao += PRESSAO_APERTO * eficienciaAtaque();
+            a.pressao = Math.min(100, a.pressao + PRESSAO_APERTO * eficienciaAtaque());
             a.recargaAtaque = RECARGA_ACAO_FINALIZACAO;
-            verificarConsolidada();
-            return new Resposta(Resultado.CONCLUIDA, "APERTOU", null);
+            return new Resposta(Resultado.CONCLUIDA, a.naPonta() ? "NA PONTA" : "APERTOU", null);
         }
-        return new Resposta(Resultado.RECUSADA, "EM FINALIZAÇÃO", null);
+        if (ehBaixoNaoR1(c) && !f.aceita(c)) {
+            liberarFinalizacaoVisual(a);
+            ataque = null;                                     // soltar: a posicao continua
+            recarga.put(lado, RECARGA_TICKS);
+            registrar("FIN_SOLTOU", f.id(), lado, "");
+            return new Resposta(Resultado.ABANDONADA, "SOLTOU", null);
+        }
+        return new Resposta(Resultado.RECUSADA, a.fase == FaseFinalizacao.ENTRADA ? "ENTRANDO NA FINALIZAÇÃO"
+                : "EM FINALIZAÇÃO", null);
     }
 
+    /** 5Q.5: consolida so depois de TICKS_NA_PONTA em 100% (antes: no mesmo tick). */
     private void verificarConsolidada() {
-        if (ataque != null && ataque.pressao >= 100) {
-            Ataque a = ataque;
-            liberarVisual(a.atacante, a.finalizacao.id() + ":ATACA", 1.0, a.finalizacao.categoria());
-            vitoria = new Vitoria(a.atacante, a.finalizacao, false);
-            ataque = null;
-            registrar("FINALIZOU", a.finalizacao.id(), a.atacante, a.finalizacao.nome());
+        if (ataque == null) {
+            return;
         }
+        if (ataque.pressao < 100) {
+            ataque.ticksNaPonta = 0;
+            return;
+        }
+        ataque.pressao = 100;
+        if (++ataque.ticksNaPonta < TICKS_NA_PONTA) {
+            return;
+        }
+        Ataque a = ataque;
+        liberarVisual(a.atacante, a.finalizacao.id() + ":ATACA", 1.0, a.finalizacao.categoria());
+        vitoria = new Vitoria(a.atacante, a.finalizacao, false);
+        ataque = null;
+        registrar("FINALIZOU", a.finalizacao.id(), a.atacante, a.finalizacao.nome());
     }
 
     private void falharFinalizacao(String motivo) {
@@ -592,7 +656,7 @@ public final class MotorSolo {
             }
             return;
         }
-        a.pressao += a.finalizacao.ganhoPorTick() * eficienciaAtaque();
+        a.pressao += a.finalizacao.ganhoPorTick() * ParametrosFinalizacao.FATOR_GANHO_PASSIVO * eficienciaAtaque();
         lutador(a.atacante).gastarFolegoEsforco(0.004, "manter");
         verificarConsolidada();
     }
@@ -634,10 +698,13 @@ public final class MotorSolo {
         ataque = null;
         vitoria = null;
         efeitos.clear();
+        ultimoMovimento.clear();                               // 5Q.5
+        afastarAte.clear();
         for (Lado l : Lado.values()) {
             conexoes.put(l, java.util.EnumSet.noneOf(Conexao.class));
             postura.put(l, 0);
             recarga.put(l, 0);
+            espaco.put(l, 0);
             base.put(l, BASE_MAXIMA);
             lutador(l).setVinculadoNoSolo(false);
         }
@@ -706,6 +773,21 @@ public final class MotorSolo {
     public Optional<Exposicao> exposicaoDe(Lado l) {
         Exposto e = exposicao.get(l);
         return e == null ? Optional.empty() : Optional.of(e.tipo());
+    }
+
+    /**
+     * 5Q.5: logo depois de ter a postura quebrada, quem esta por cima ainda nao
+     * consegue refazer a postura (POSTURA_BLOQUEADA_TICKS do inicio da exposicao).
+     */
+    public boolean posturaBloqueada(Lado l) {
+        Exposto e = exposicao.get(l);
+        return e != null && e.tipo() == Exposicao.POSTURA_QUEBRADA
+                && e.ticks() > POSTURA_QUEBRADA_TICKS - ParametrosFinalizacao.POSTURA_BLOQUEADA_TICKS;
+    }
+
+    /** 5Q.5: espaco criado pelo enquadrar ainda vale. */
+    public boolean temEspaco(Lado l) {
+        return espaco.getOrDefault(l, 0) > 0;
     }
 
     public boolean emPostura(Lado l) {
@@ -872,7 +954,20 @@ public final class MotorSolo {
                     && exposicaoDe(lado).orElse(null) == Exposicao.PERNAS_PRESAS) {
                 return new Resposta(Resultado.RECUSADA, "PERNAS PRESAS", t2.get());   // 5P.2
             }
+            if (t2.isPresent() && tentativa.tecnica().contras().contains(t2.get().id())
+                    && t2.get().efeito() == TecnicaSolo.Efeito.CONSOLIDAR && temEspaco(tentativa.iniciador())) {
+                if (recarga.get(lado) > 0) {
+                    return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", t2.get());
+                }
+                eu.gastarFolegoEsforco(custo(lado, t2.get()), t2.get().id());
+                instantanea(lado, t2.get());                  // 5Q.5: o outro enquadrou: so fecha o espaco
+                recarga.put(lado, RECARGA_TICKS / 2);
+                return new Resposta(Resultado.CONCLUIDA, "FECHOU O ESPAÇO", t2.get());
+            }
             if (t2.isPresent() && tentativa.tecnica().contras().contains(t2.get().id())) {
+                if (recarga.get(lado) > 0 && t2.get().isInstantanea()) {
+                    return new Resposta(Resultado.RECUSADA, "EM RECUPERAÇÃO", t2.get());   // 5Q.5
+                }
                 if (eu.getFolegoAtual() < custo(lado, t2.get())) {
                     return new Resposta(Resultado.RECUSADA, "SEM FÔLEGO", t2.get());
                 }
@@ -997,6 +1092,9 @@ public final class MotorSolo {
         if (recarga.get(lado) > 0) {
             return "EM RECUPERAÇÃO";
         }
+        if (t.id().equals(CatalogoTecnicasSolo.POSTURA) && posturaBloqueada(lado)) {
+            return "POSTURA QUEBRADA";                         // 5Q.5: a janela da guilhotina e real
+        }
         if (eu.getFolegoAtual() < custo(lado, t)) {
             return "SEM FÔLEGO";
         }
@@ -1067,6 +1165,7 @@ public final class MotorSolo {
         for (Lado l : Lado.values()) {
             recarga.computeIfPresent(l, (k, v) -> Math.max(0, v - 1));
             postura.computeIfPresent(l, (k, v) -> Math.max(0, v - 1));
+            espaco.computeIfPresent(l, (k, v) -> Math.max(0, v - 1));   // 5Q.5
             Exposto e = exposicao.get(l);
             if (e != null) {
                 if (e.ticks() <= 1) {
@@ -1080,6 +1179,7 @@ public final class MotorSolo {
             }
         }
         efeitos.values().forEach(e -> e.restante = Math.max(0, e.restante - 1));
+        afastarGradual();                                         // 5Q.5
         atualizarFinalizacao();                                   // 5Q
         sincronizarEmPe();
         coerencia();
@@ -1282,7 +1382,8 @@ public final class MotorSolo {
             default -> {
                 boolean ok = switch (tec.criterio()) {
                     case SE_NAO_CONTRADA -> true;
-                    case ESTABILIDADE_BAIXA -> estabilidade < tec.limiarEstabilidade() || exposto(out) || exausto(out);
+                    case ESTABILIDADE_BAIXA -> estabilidade < tec.limiarEstabilidade() + (temEspaco(ini) ? BONUS_ESPACO : 0)
+                            || exposto(out) || exausto(out);
                     case SEM_POSTURA_DO_OUTRO -> !emPostura(out) || exposto(out);
                     case OUTRO_EXPOSTO -> exposto(out);
                     case CONTROLE_PROPRIO -> estabilidade >= tec.limiarEstabilidade() && (!emPostura(out) || exposto(out));
@@ -1297,6 +1398,13 @@ public final class MotorSolo {
                     }
                     entrar(tec.sucesso().aplicar(estado, ini), ini, tec.papel() == PapelPosicional.POR_BAIXO
                             || tec.papel() == PapelPosicional.CONTROLADO);
+                    if (tec.id().equals(CatalogoTecnicasSolo.LEVANTAR_TECNICO)) {
+                        lutador(ini).preferirTransicao(com.irmaosmiau.entities.TransicaoPostura.LEVANTADA_TECNICA);   // 5Q.5
+                    }
+                    if (tec.id().equals(CatalogoTecnicasSolo.AFASTAR_DA_GUARDA)
+                            && estado.getPosicao() == Posicao.EM_PE_CONTRA_SOLO) {
+                        afastarAte.put(out, DISTANCIA_APOS_AFASTAR);   // 5Q.5: a distancia logica aumenta de verdade
+                    }
                     if (tec.id().equals(CatalogoTecnicasSolo.CONECTAR_GUARDA) && desorientado.getOrDefault(ini, 0) == 0) {
                         estabilidade = ESTABILIDADE_GUARDA_VOLUNTARIA;   // deitou por vontade: guarda mais firme
                     }
@@ -1354,6 +1462,9 @@ public final class MotorSolo {
         if (c.isInstantanea() || c.sucesso() == null) {
             // contra de "segurar" (postura, retencao, consolidar...): so desfaz a tentativa
             instantanea(quem, c);
+            if (c.isInstantanea()) {
+                recarga.put(quem, RECARGA_CONTRA_AJUSTE);      // 5Q.5: segurar tambem cansa (nao e gratis)
+            }
             registrar("DEFENDIDA", t.tecnica().id(), t.iniciador(), "contra " + c.id());
             return;
         }
@@ -1576,9 +1687,10 @@ public final class MotorSolo {
             return;
         }
         Intencao id = intencoesAtuais.get(def);
-        boolean andando = id != null && (id.dx() != 0 || id.dy() != 0);
+        boolean andando = (id != null && (id.dx() != 0 || id.dy() != 0))
+                || tick - ultimoMovimento.getOrDefault(def, Long.MIN_VALUE / 2) <= RASTEIRA_TICKS_DESDE_PASSO;
         boolean vulneravel = exposto(def) || desequilibrado(def);              // 5Q.4: inclui o desequilibrio
-        boolean entra = andando || base.get(def) < 70 || vulneravel;
+        boolean entra = andando || base.get(def) < RASTEIRA_BASE_LIMITE || vulneravel;
         if (fazBase(def, inicioJanelaAtual) && !andando && !vulneravel) {
             falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "defendeu com base (RT)", Exposicao.BASE, 20);
             return;
@@ -1645,12 +1757,24 @@ public final class MotorSolo {
     }
 
     private final Map<Lado, Intencao> intencoesAtuais = new EnumMap<>(Lado.class);
+    /** 5Q.5: tick do ultimo passo de cada lado (a rasteira e de tempo: pega quem acabou de andar). */
+    private final Map<Lado, Long> ultimoMovimento = new EnumMap<>(Lado.class);
+    /** 5Q.5: a rasteira pega quem andou nestes ultimos ticks (antes: so no tick exato da resolucao). */
+    public static final int RASTEIRA_TICKS_DESDE_PASSO = 24;
+    /** 5Q.5: abaixo desta base a rasteira entra mesmo parado (antes 70: a base volta rapido a 100). */
+    public static final double RASTEIRA_BASE_LIMITE = 85;
     private long inicioJanelaAtual;
 
     /** Intencoes do LS usadas nas resolucoes deste tick (chame antes de atualizar). */
     public void informarIntencoes(Intencao ia, Intencao ib) {
         intencoesAtuais.put(Lado.A, ia == null ? Intencao.NENHUMA : ia);
         intencoesAtuais.put(Lado.B, ib == null ? Intencao.NENHUMA : ib);
+        for (Lado l : Lado.values()) {                            // 5Q.5: rasteira pega quem ANDOU ha pouco
+            Intencao i = intencoesAtuais.get(l);
+            if (i.dx() != 0 || i.dy() != 0) {
+                ultimoMovimento.put(l, tick);
+            }
+        }
         for (Lado l : Lado.values()) {
             if (intencoesAtuais.get(l).base()) {
                 ultimoBase.put(l, tick + 1);                     // vale para o tick que vai rodar
@@ -1721,21 +1845,48 @@ public final class MotorSolo {
         Lado out = lado.outro();
         switch (t.efeito()) {
             case DESEQUILIBRAR -> exposicao.put(out, new Exposto(Exposicao.BASE, 30));
-            case CONTROLAR_PERNAS -> exposicao.put(out, new Exposto(Exposicao.PERNAS_PRESAS, 45));
+            case CONTROLAR_PERNAS -> {
+                exposicao.put(out, new Exposto(Exposicao.PERNAS_PRESAS, TICKS_PERNAS_PRESAS));
+                // 5Q.5: o controle continua visivel: maos nas canelas / pernas juntas ate soltar
+                efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_PERNAS_PRESAS).tecnica = "pernas_presas";
+                efeito(out, TipoEfeitoVisual.TECNICA_RECEBE, TICKS_PERNAS_PRESAS).tecnica = "pernas_presas";
+            }
             case PEGAR_MANGA -> conexoes.get(lado).add(Conexao.MANGA);
             case LIVRAR_MANGA -> conexoes.get(out).remove(Conexao.MANGA);
             case RECUAR -> {
                 IrmaoMiau eu = lutador(lado);
                 int s = Integer.signum(eu.getX() - lutador(out).getX());
                 int alvo = Math.max(xMin, Math.min(xMax, eu.getX() + (s == 0 ? 1 : s) * 40));
+                int antes = eu.getX();
                 eu.encostarNaBorda(alvo - eu.getX());
+                // 5Q.5: o desenho sai do lugar antigo e desliza (dois passos em pe / empurrao no chao)
+                boolean emPe = t.id().equals(CatalogoTecnicasSolo.RECUAR);
+                Efeito r = efeito(lado, emPe ? TipoEfeitoVisual.TECNICA_ATAQUE : TipoEfeitoVisual.AFASTANDO,
+                        emPe ? TICKS_RECUO : 18);
+                r.tecnica = t.id();
+                r.deslocamento = eu.getX() - antes;
             }
-            case CONSOLIDAR -> estabilidade = Math.min(100, estabilidade + DELTA_CONSOLIDAR);
-            case ENQUADRAR -> estabilidade = Math.max(0, estabilidade - DELTA_ENQUADRAR);
+            case CONSOLIDAR -> {
+                if (temEspaco(out)) {                          // 5Q.5: primeiro fecha o espaco do outro
+                    espaco.put(out, 0);
+                    estabilidade = Math.min(100, estabilidade + CONSOLIDAR_FECHANDO_ESPACO);
+                } else {
+                    estabilidade = Math.min(100, estabilidade + DELTA_CONSOLIDAR);
+                }
+            }
+            case ENQUADRAR -> {
+                estabilidade = Math.max(0, estabilidade - DELTA_ENQUADRAR);
+                espaco.put(lado, TICKS_ESPACO);               // 5Q.5: o enquadrar constroi a rota de escape
+            }
             case POSTURA -> {
                 postura.put(lado, POSTURA_TICKS);
                 Efeito q = efeitos.get(lado);                  // 5Q.4: recompoe a postura (volta suave)
-                if (q != null && q.restante > 0 && "postura_quebrada".equals(q.tecnica)) {
+                boolean quebrada = q != null && q.restante > 0 && "postura_quebrada".equals(q.tecnica);
+                if (t.id().equals(CatalogoTecnicasSolo.POSTURA)) {
+                    // 5Q.5: animacao propria: de curvado (ou neutro) ate aprumado, maos no quadril do outro
+                    efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, POSTURA_TICKS).tecnica = quebrada ? "postura_recompor" : "postura";
+                    efeito(out, TipoEfeitoVisual.TECNICA_RECEBE, 22).tecnica = "postura";
+                } else if (quebrada) {
                     Efeito lib = efeito(lado, TipoEfeitoVisual.LIBERANDO, 14);
                     lib.tecnica = "postura_quebrada:RECEBE";
                     lib.desde = q.progresso();
@@ -1777,8 +1928,11 @@ public final class MotorSolo {
             }
         }
         estado = novo;
+        afastarAte.clear();                                    // 5Q.5: posicao nova cancela o afastamento
         postura.put(Lado.A, 0);
         postura.put(Lado.B, 0);
+        espaco.put(Lado.A, 0);
+        espaco.put(Lado.B, 0);
         estabilidade = reversao ? ESTABILIDADE_REVERSAO : ESTABILIDADE_PROGRESSO;
         Posicao p = novo.getPosicao();
         if (p == Posicao.EM_PE_SEPARADOS) {
@@ -1825,6 +1979,39 @@ public final class MotorSolo {
             case ASHI_GARAMI -> 40;
             default -> 50;
         };
+    }
+
+    /**
+     * 5Q.5: depois do afastar da guarda, quem estava por cima e empurrado ate
+     * DISTANCIA_APOS_AFASTAR, aos poucos (sem teletransporte). So no solo livre
+     * (EM_PE_CONTRA_SOLO); qualquer posicao nova cancela. Respeita as bordas.
+     */
+    private void afastarGradual() {
+        if (afastarAte.isEmpty()) {
+            return;
+        }
+        if (estado.getPosicao() != Posicao.EM_PE_CONTRA_SOLO || tentativa != null) {
+            afastarAte.clear();
+            return;
+        }
+        for (Lado l : Lado.values()) {
+            Integer alvo = afastarAte.get(l);
+            if (alvo == null) {
+                continue;
+            }
+            IrmaoMiau a = lutador(l);
+            IrmaoMiau o = lutador(l.outro());
+            int dist = Math.abs(a.getX() - o.getX());
+            int s = Integer.signum(a.getX() - o.getX());
+            int passo = Math.min(VELOCIDADE_AFASTAMENTO, alvo - dist);
+            int antes = a.getX();
+            if (passo > 0) {
+                a.encostarNaBorda((s == 0 ? 1 : s) * passo);
+            }
+            if (passo <= 0 || a.getX() == antes) {
+                afastarAte.remove(l);                          // chegou (ou bateu na borda)
+            }
+        }
     }
 
     /** Encaixe gradual (sem teletransporte) e sempre dentro da arena e na mesma linha. */

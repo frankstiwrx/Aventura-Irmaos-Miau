@@ -69,19 +69,35 @@ public final class CenarioCampoRemaster implements Cenario {
     @Override
     public void desenharFundo(Graphics2D g2, int largura, int altura) {
         if (fundoCache == null || fundoCache.getWidth() != largura || fundoCache.getHeight() != altura) {
+            ceuCache = renderizar(largura, altura, this::pintarCeu);
             fundoCache = renderizar(largura, altura, this::pintarFundo);
         }
+        g2.drawImage(ceuCache, 0, 0, null);
+        nuvens.desenhar(g2, tickAmbiente, largura);            // 5Q.5: nuvens lentas
         g2.drawImage(fundoCache, 0, 0, null);
     }
 
-    private void pintarFundo(Graphics2D g, int w, int h) {
+    /** 5Q.5: tick do jogo (nuvens). */
+    @Override
+    public void atualizarAmbiente(long tick) {
+        tickAmbiente = tick;
+    }
+
+    private long tickAmbiente;
+    private BufferedImage ceuCache;
+    private final NuvensAnimadas nuvens = new NuvensAnimadas(CenarioCampoRemaster::nuvem,
+            new NuvensAnimadas.Nuvem(150, 46, 1.0, 0.04),
+            new NuvensAnimadas.Nuvem(620, 40, 0.95, 0.035),
+            new NuvensAnimadas.Nuvem(330, 100, 0.55, 0.06),
+            new NuvensAnimadas.Nuvem(470, 78, 0.6, 0.05));
+
+    private void pintarCeu(Graphics2D g, int w, int h) {
         g.setPaint(new GradientPaint(0, 0, CEU_TOPO, 0, Y_HORIZONTE - 40, CEU_BASE));
         g.fillRect(0, 0, w, Y_HORIZONTE);
+    }
 
-        nuvem(g, 150, 46, 1.0);
-        nuvem(g, 620, 40, 0.95);
-        nuvem(g, 330, 100, 0.55);
-        nuvem(g, 470, 78, 0.6);
+    private void pintarFundo(Graphics2D g, int w, int h) {
+        // (o ceu e as nuvens: pintarCeu + NuvensAnimadas, 5Q.5)
 
         // Montanhas (duas camadas, facetadas)
         int base = Y_HORIZONTE - 22;

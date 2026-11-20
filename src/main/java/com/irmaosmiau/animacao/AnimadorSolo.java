@@ -25,6 +25,8 @@ public final class AnimadorSolo {
     private final TransicoesPostura posturas;
     private final Map<IrmaoMiau, int[]> aplicadas = new IdentityHashMap<>();
     private final Map<IrmaoMiau, String> descricao = new IdentityHashMap<>();
+    /** 5Q.5: pose da pegada guardada quando uma tecnica propria assume em pe (rasteira, derrubada). */
+    private final Map<IrmaoMiau, int[]> daPegada = new IdentityHashMap<>();
 
     public AnimadorSolo(TransicoesPostura posturas) {
         this.posturas = posturas;
@@ -54,7 +56,23 @@ public final class AnimadorSolo {
         Posicao p = m.getPosicao();
         boolean cima = m.getEstado().getPorCima().map(c -> c == lado).orElse(false);
         TransicoesPostura.Pose base = posturas.pose(l, l.getEstadoCorporal());
-        int[] pose = Arrays.copyOf(base.valores(), base.valores().length);
+        int[] partida = base.valores();
+        // 5Q.5: tecnica com animacao propria em pe NA PEGADA (rasteira, derrubada...): a pose e da pegada;
+        // a tecnica assume a partir dela (guardada uma vez: sem acumular) e devolve quando termina
+        java.util.Optional<MotorSolo.EfeitoVisual> ef0 = m.efeitoVisual(lado);
+        boolean propria = ef0.map(AnimacoesTecnicas::chave).orElse(null) != null;
+        int[] nossa0 = aplicadas.get(l);
+        boolean deOutro = l.isPoseCombateExternaAtiva()
+                && (nossa0 == null || !Arrays.equals(nossa0, l.copiarPoseCombateExterna()));
+        if (propria && !m.conectado(l) && (deOutro || daPegada.containsKey(l))) {
+            int[] pegada = daPegada.computeIfAbsent(l, k -> k.copiarPoseCombateExterna());
+            if (pegada != null && pegada.length == partida.length) {
+                partida = pegada;
+            }
+        } else if (!propria) {
+            daPegada.remove(l);
+        }
+        int[] pose = Arrays.copyOf(partida, partida.length);
         double dy = base.dy() + (cima ? alturaPorCima(p) : 0);
         if (cima && l.isAjoelhado()) {
             switch (p) {
@@ -96,7 +114,8 @@ public final class AnimadorSolo {
         double dx = desloc == null ? 0.0 : desloc[0];
         dy += desloc == null ? 0.0 : desloc[1];
         int[] nossa = aplicadas.get(l);
-        if (l.isPoseCombateExternaAtiva() && (nossa == null || !Arrays.equals(nossa, l.copiarPoseCombateExterna()))) {
+        if (!daPegada.containsKey(l) && l.isPoseCombateExternaAtiva()
+                && (nossa == null || !Arrays.equals(nossa, l.copiarPoseCombateExterna()))) {
             return null;                                        // outro dono da pose
         }
         l.aplicarPoseCombateExterna(pose, dx, dy);
@@ -172,6 +191,7 @@ public final class AnimadorSolo {
     }
 
     public void liberar(IrmaoMiau l) {
+        daPegada.remove(l);
         int[] nossa = aplicadas.remove(l);
         descricao.remove(l);
         if (nossa != null && l.isPoseCombateExternaAtiva() && Arrays.equals(nossa, l.copiarPoseCombateExterna())) {

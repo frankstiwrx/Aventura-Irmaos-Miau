@@ -78,6 +78,48 @@ public final class CenarioCampeonato implements Cenario {
             int pulo = (int) Math.round(Math.max(0, 4 * Math.sin(t * 1.3 + k * 0.9)));
             torcedor(g, x, y - pulo, new Color(80, 90, 160));
         }
+        torcidaExtra(g, w, t);                                 // 5Q.5
+    }
+
+    /**
+     * 5Q.5: um pouco mais de torcida viva (sem descaracterizar): uma fila do meio balanca,
+     * alguns levantam o braco e, de vez em quando, um flash de camera pisca na arquibancada.
+     * Tudo pelo tick (deterministico) e atras dos lutadores.
+     */
+    private void torcidaExtra(Graphics2D g, int w, double t) {
+        int cx = w / 2;
+        int yMeio = 90 + 3 * 24 + 14;
+        for (int k = 0; k < 9; k++) {
+            int x = 50 + k * 88 + (k % 2) * 12;
+            if (Math.abs(x - cx) < 130) {
+                continue;
+            }
+            int balanco = (int) Math.round(2 * Math.sin(t * 0.9 + k * 1.7));
+            torcedor(g, x + balanco, yMeio - Math.max(0, balanco), new Color(70, 80, 150));
+        }
+        g.setColor(new Color(214, 190, 120));
+        for (int k = 0; k < 6; k++) {
+            int x = 70 + k * 130;
+            if (Math.abs(x - cx) < 130) {
+                continue;
+            }
+            double s = Math.sin(t * 1.1 + k * 2.3);
+            if (s > 0.2) {                                     // braco erguido (comemora)
+                int y = 90 + (k % 3 + 2) * 24 + 14;
+                int a = (int) Math.round(6 * s);
+                g.fillRoundRect(x + 5, y - 20 - a, 3, 12 + a, 2, 2);
+            }
+        }
+        long ciclo = tickAmbiente % 150;
+        if (ciclo < 4) {                                       // flash de camera (rapido e discreto)
+            int k = (int) ((tickAmbiente / 150) % 7);
+            int x = 40 + k * 113;
+            if (Math.abs(x - cx) > 120) {
+                int y = 90 + (k % 4 + 1) * 24 + 6;
+                g.setColor(new Color(255, 255, 240, 200 - (int) ciclo * 40));
+                g.fill(new Ellipse2D.Double(x - 3, y - 3, 6, 6));
+            }
+        }
     }
 
     @Override

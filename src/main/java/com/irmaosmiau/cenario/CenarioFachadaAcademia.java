@@ -53,6 +53,12 @@ public final class CenarioFachadaAcademia implements Cenario {
     private static final Color BORDA = new Color(226, 70, 70);
 
     private BufferedImage fundoCache;
+    /** 5Q.5: ceu separado (as nuvens andam entre o ceu e a fachada). */
+    private BufferedImage ceuCache;
+    private final NuvensAnimadas nuvens = new NuvensAnimadas(CenarioFachadaAcademia::nuvem,
+            new NuvensAnimadas.Nuvem(330, 40, 0.8, 0.045),
+            new NuvensAnimadas.Nuvem(640, 28, 1.0, 0.035),
+            new NuvensAnimadas.Nuvem(60, 70, 0.6, 0.055));
     private BufferedImage chaoCache;
     private BufferedImage frenteCache;
     private long tickAmbiente;
@@ -86,28 +92,23 @@ public final class CenarioFachadaAcademia implements Cenario {
     @Override
     public void desenharFundo(Graphics2D g2, int largura, int altura) {
         if (fundoCache == null || fundoCache.getWidth() != largura || fundoCache.getHeight() != altura) {
+            ceuCache = renderizar(largura, altura, this::pintarCeu);
             fundoCache = renderizar(largura, altura, this::pintarFundo);
         }
+        g2.drawImage(ceuCache, 0, 0, null);
+        nuvens.desenhar(g2, tickAmbiente, largura);            // 5Q.5: nuvens lentas
         g2.drawImage(fundoCache, 0, 0, null);
         folhagem(g2);                                          // 5Q.1: camada dinamica
     }
 
-    private void pintarFundo(Graphics2D g, int w, int h) {
+    private void pintarCeu(Graphics2D g, int w, int h) {
         g.setPaint(new GradientPaint(0, 0, CEU_TOPO, 0, Y_CHAO, CEU_BASE));
         g.fillRect(0, 0, w, Y_CHAO);
-        nuvem(g, 330, 40, 0.8);
-        nuvem(g, 640, 28, 1.0);
-        nuvem(g, 760, 70, 0.6);
-        // predio ao longe (direita)
-        g.setColor(new Color(244, 190, 160));
-        g.fillRect(w - 110, 60, 80, 110);
-        g.setColor(new Color(230, 140, 110));
-        g.fillRect(w - 116, 54, 92, 8);
-        g.setColor(new Color(110, 170, 220));
-        for (int y = 76; y < 160; y += 26) {
-            g.fillRect(w - 100, y, 18, 14);
-            g.fillRect(w - 66, y, 18, 14);
-        }
+    }
+
+    private void pintarFundo(Graphics2D g, int w, int h) {
+        // (o ceu e as nuvens: pintarCeu + NuvensAnimadas, 5Q.5)
+        predioAoLonge(g, w);
         // alambrado nas laterais
         alambrado(g, 0, 120, 190);
         alambrado(g, w - 120, w, 190);
@@ -212,6 +213,34 @@ public final class CenarioFachadaAcademia implements Cenario {
         // calcada
         g.setColor(new Color(214, 210, 206));
         g.fillRect(0, Y_CHAO - 6, w, 6);
+    }
+
+    /**
+     * 5Q.5: predio ao longe (direita). Antes era um bloco de 60 a 170 px, solto no ceu (o
+     * vao de ceu entre ele e o alambrado fazia o predio "flutuar") e cortado pela aba do
+     * telhado. Agora desce ate o chao (atras do alambrado e do arbusto), com sombra lateral,
+     * platibanda e janelas alinhadas, um pouco mais para a direita para nao encostar na aba.
+     */
+    static void predioAoLonge(Graphics2D g, int w) {
+        int x0 = w - 100;
+        int largura = 78;
+        int topo = 64;
+        g.setColor(new Color(244, 190, 160));
+        g.fillRect(x0, topo, largura, Y_CHAO - topo);
+        g.setColor(new Color(222, 168, 140));
+        g.fillRect(x0 + largura - 14, topo, 14, Y_CHAO - topo);          // sombra lateral
+        g.setColor(new Color(230, 140, 110));
+        g.fillRect(x0 - 5, topo - 7, largura + 10, 8);                    // platibanda
+        g.setColor(new Color(110, 170, 220));
+        for (int y = topo + 16; y < 186; y += 24) {
+            g.fillRect(x0 + 10, y, 18, 13);
+            g.fillRect(x0 + 40, y, 18, 13);
+        }
+        g.setColor(new Color(255, 255, 255, 70));
+        for (int y = topo + 16; y < 186; y += 24) {
+            g.fillRect(x0 + 10, y, 5, 13);                                // reflexo do vidro
+            g.fillRect(x0 + 40, y, 5, 13);
+        }
     }
 
     private static void nuvem(Graphics2D g, int cx, int cy, double e) {

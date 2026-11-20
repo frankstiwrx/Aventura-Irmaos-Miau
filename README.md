@@ -56,6 +56,7 @@ The project currently includes:
 - Shared combat animation infrastructure
 - Custom pose and animation editor used during development
 - Training with a situation laboratory and a Developer Mode for testing (`docs/MODO_DESENVOLVEDOR.md`)
+- Submissions with real reaction time (tap, defend, release, escape) and central balancing parameters (`docs/FINALIZACOES.md`)
 
 ---
 

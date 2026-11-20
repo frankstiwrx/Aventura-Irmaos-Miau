@@ -198,10 +198,12 @@ class MotorSolo5P2Test {
         ia = Intencao.NENHUMA;
         assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "aproximar nao vira cem quilos");
         assertTrue(m.getEstado().getControlador().isEmpty());
-        // joelho na barriga direto sem o outro exposto: defendido
+        // 5Q.5 (pedido): o joelho direto ENTRA se o outro nao reagir (antes exigia o outro ja exposto e o RB v
+        // direto nunca funcionava). A chance continua sendo disputada: a retencao com os pes na janela defende.
         assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.BAIXO, Familia.R1).resultado());
+        assertEquals(Resultado.CONTRA, cmd(Lado.B, Direcao.BAIXO, Familia.RS).resultado(), "pes no quadril");
         resolver();
-        assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "joelho direto sem chance nao entra");
+        assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "joelho direto com resposta nao entra");
         ticks(MotorSolo.RECARGA_FALHA_TICKS + 1);
         // prender as pernas (o de baixo nao reage) e entao o joelho entra
         assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.DIREITA, Familia.RS).resultado());

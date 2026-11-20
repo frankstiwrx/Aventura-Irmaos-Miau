@@ -703,7 +703,18 @@ public final class SistemaCombate {
         IrmaoMiau receptor = receptorInteracao;
         int dx;
         int dy;
-        if (sx != 0 && sy != 0) {
+        double vNoChao = com.irmaosmiau.entities.RegrasVelocidade.conjunto(aplicador, receptor);
+        if (vNoChao < VELOCIDADE_DESLOCAMENTO_CONJUNTO) {
+            // 5Q.5: arrasto de joelhos/deitado: bem mais lento (fracao de pixel acumulada nos dois eixos);
+            // antes usava a velocidade do arrasto em pe
+            double k = sx != 0 && sy != 0 ? PASSO_DIAGONAL : 1.0;
+            restoArrastoX = sx == 0 ? 0 : restoArrastoX + sx * k * vNoChao;
+            restoArrastoY = sy == 0 ? 0 : restoArrastoY + sy * k * vNoChao;
+            dx = (int) restoArrastoX;
+            dy = (int) restoArrastoY;
+            restoArrastoX -= dx;
+            restoArrastoY -= dy;
+        } else if (sx != 0 && sy != 0) {
             restoArrastoX += sx * PASSO_DIAGONAL * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
             restoArrastoY += sy * PASSO_DIAGONAL * VELOCIDADE_DESLOCAMENTO_CONJUNTO;
             dx = (int) restoArrastoX;

@@ -116,3 +116,13 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 - **Progressão**: especialização por estilo; carreira/campanha.
 - **MiauStudio**: biblioteca interna de animações organizada por categoria; integração com o criador.
 - **Projeto**: screenshots/GIFs no README, releases jogáveis mais frequentes, issues para bugs e sugestões.
+
+## Registrados na 5Q.5
+
+- **Rig 2.0 — camadas por membro**: hoje cada lutador é desenhado inteiro. A ordem por posição (5Q.5) resolve a
+  maior parte das guardas, mas uma perna por trás do outro e outra pela frente ao mesmo tempo (triângulo, laço)
+  exige desenhar membros em camadas separadas.
+- Poses próprias de quem está **por cima** nas guardas abertas (DLR, laço, aranha, SLX, ashi).
+- Quadros próprios para enquadrar/escapar dos domínios e para consolidar/estabilizar.
+- Propostas de simplificação de controles (bater por Select segurado, combo de escape sugerido no HUD, agrupar
+  rodas quase vazias): ver `docs/CONTROLES.md` (5Q.5). Dependem de aprovação.

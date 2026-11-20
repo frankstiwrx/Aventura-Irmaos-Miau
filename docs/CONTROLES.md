@@ -1168,3 +1168,32 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
 - **Quedas x desequilíbrio**: desequilibrar pela pegada agora conta para o solo. Derrubada forçada contra quem
   está desequilibrado derruba (RT na janela ainda defende); rasteira entra contra quem anda, está exposto ou
   desequilibrado. Contra base natural firme o HUD diz "a queda não entrou (base firme de …)" em vez de "defendeu".
+
+# Entrega 5Q.5 — Refinamento
+
+- **Durante uma finalização** os comandos não conflitam e valem mesmo com LT/LB ainda segurados:
+  - quem **defende**: **RB + RS ↓ = bater** (sempre primeiro no tick; segurar RS ↓ e apertar RB também bate);
+    **RB + RS ↑ = escapar** (pressão baixa); **qualquer outro ↓** (RS, ou com LT/LB segurados) = **defender**;
+  - quem **ataca**: o comando da própria finalização ou **RS ↑ = apertar**; **qualquer outro ↓** (RS, ou com
+    LT/LB segurados, como no triângulo) = **soltar**.
+- Em 100% a finalização fica **NA PONTA** (~0,7 s) antes de consolidar: o HUD mostra "BATA OU DEFENDA" para quem
+  defende e "NA PONTA" para quem ataca.
+- **X segurado de joelhos**: deslocamento acelerado de joelhos (não levanta; gasta fôlego). **X deitado**:
+  impulsos de quadril (gasta fôlego). Em pé o X continua sendo a corrida. Sem fôlego não acelera; o Modo
+  Desenvolvedor com fôlego infinito não desconta.
+- **Meia-guarda por baixo: RS ← / →** = underhook (tira a pressão de ombro).
+- Rodas de comandos **vazias** no contexto não aparecem mais (sem "sem técnica neste contexto").
+- Avisos: técnica aceita aparece como "▶ NOME EM EXECUÇÃO"; recusada como "✕ NOME · motivo".
+
+## Análise da distribuição dos comandos (propostas, não implementadas)
+
+1. **Defender sempre no mesmo gesto**: hoje "RS ↓" é a defesa de quase tudo no chão (postura, consolidar,
+   retenção, defender finalização). Proposta: manter e mostrar no HUD um ícone fixo de "defesa" no ↓.
+2. **Bater num botão só**: hoje RB + RS ↓. Proposta: segurar **Select/View por 0,5 s** também bate (sem
+   conflito com nada no chão), mais rápido sob pressão.
+3. **Escapes dos domínios**: a rota "enquadrar (RS ↓) → escapar (RS ←/→)" poderia virar um combo sugerido no HUD
+   ("ESPAÇO!" enquanto o espaço durar).
+4. **Famílias L1/L2/L1+L2 no chão**: muitas rodas ficam quase vazias em posições de controle. Proposta: agrupar
+   as finalizações de braço e de estrangulamento numa camada só quando a posição tiver no máximo 4 opções.
+
+Nenhuma dessas propostas foi aplicada: mudam o esquema de controles e precisam de aprovação.

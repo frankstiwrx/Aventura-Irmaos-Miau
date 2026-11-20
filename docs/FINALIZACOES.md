@@ -188,3 +188,48 @@ Manual: ver `docs/REGRESSAO.md` (seção 5Q).
 `Cenario.atualizarAmbiente(tick)` (uma vez por tick do loop; sem timer próprio). Camada dinâmica desenhada
 depois do cache estático e **atrás** dos lutadores: neve caindo na Fortaleza, bandeirinhas tremulando e torcida
 pulando no Campeonato, copa da árvore balançando na Academia dos Irmãos Miau.
+
+## 12. Entrega 5Q.5 — tempo de reação, escapes e parâmetros centrais
+
+Todos os números de velocidade e pressão das finalizações estão em **`posicional/ParametrosFinalizacao`**
+(o `MotorSolo` só os repassa). O jogo roda a ~62 ticks/s.
+
+| Parâmetro | Antes | 5Q.5 | Por quê |
+|---|---|---|---|
+| Entrada (fator sobre a janela 10/14) | 1,3 (13/18 ticks ≈ 0,2-0,3 s) | **3,0** (30/42 ticks ≈ 0,5-0,7 s) | não dava tempo de cortar a entrada |
+| Pressão passiva | 0,35-0,40/tick | **× 0,6** | sem defesa, 100% em ~6-8 s (antes ~3 s) |
+| Consolidar em 100% | no mesmo tick | **NA PONTA por 45 ticks (~0,7 s)** | sempre há tempo de bater, defender ou soltar |
+| Postura quebrada (exposição) | 40 ticks | **75 ticks**; a postura não volta nos primeiros **40** | janela real da guilhotina/triângulo/raspagens |
+| Aperto, defesa, escape, recargas | 14 / 22 / ≤45 / 12 | iguais | o ritmo da disputa já era bom |
+
+Comandos: ver `docs/CONTROLES.md` (5Q.5). O "soltar" do triângulo não respondia porque, com o LT ainda
+segurado, o RS ↓ chegava como **L2 ↓** e era recusado ("EM FINALIZAÇÃO"); o mesmo acontecia com a defesa.
+O bater podia perder para outro comando do mesmo tick (`putIfAbsent`): agora sempre ganha.
+
+### Escapes (100 kg, montada, joelho na barriga, meia-guarda)
+
+Causa: quem está por cima cancelava qualquer escape com um único ajuste instantâneo (consolidar/postura),
+sem custo nem recarga, e o enquadrar não construía nada além de −25 de estabilidade.
+
+- **Enquadrar cria ESPAÇO** por 60 ticks: o escape seguinte tolera **+20** de estabilidade e o consolidar de
+  quem está por cima **não cancela**, só **fecha o espaço** (+10 em vez de +25). Reagir a tempo ainda defende.
+  Rota dos 100 kg: **enquadrar (RS ↓) → recuperar a guarda (RS ←/→)**; montada: enquadrar → escapar (←/→);
+  joelho: enquadrar → empurrar o joelho (←/→).
+- Quem usa um **ajuste como contra** fica **24 ticks** sem outro ajuste (antes: contra infinita e grátis).
+- **Meia-guarda**: novo ajuste de quem está por baixo, **underhook (RS ←/→)**, que quebra a pressão de ombro
+  (mesma exposição da postura quebrada). Rota: underhook → recuperar a guarda (RS ↓) / raspar (RS ↑).
+- Sem enquadrar, o domínio continua vantajoso: o consolidar cancela o escape como antes.
+
+### Quedas
+
+- **Rasteira**: entra contra quem andou nos **últimos 24 ticks** (antes: só no tick exato), com base abaixo de
+  **85** (antes 70; a base volta rápido a 100), exposto ou desequilibrado. Parado com base cheia, ou com RT na
+  janela, continua não entrando.
+- **Joelho na barriga direto (RB ↓)**: entra se o outro **não reagir** (retenção com os pés / puxar guarda na
+  janela). Antes exigia o outro já exposto e o RB ↓ direto sempre falhava. Com as pernas presas a retenção é
+  recusada.
+
+### Repertório
+
+O catálogo do código tem **40 finalizações executáveis** (23 técnicas-base, por posição). O spec da 5Q.5 cita
+47: nada foi adicionado nem removido; a divergência fica registrada aqui.

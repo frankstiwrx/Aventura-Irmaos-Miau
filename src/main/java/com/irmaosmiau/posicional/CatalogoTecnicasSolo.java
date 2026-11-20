@@ -152,6 +152,8 @@ public final class CatalogoTecnicasSolo {
     public static final String SOLTAR_PERNA = "soltar_perna";
     public static final String GIRAR_LIVRAR_PERNA = "girar_livrar_perna";
     public static final String ESCONDER_PE = "esconder_pe";
+    /** 5Q.5: meia-guarda por baixo: underhook quebra a pressao de ombro (rota de escape). */
+    public static final String UNDERHOOK_MEIA = "underhook_meia";
     public static final String LEVANTAR_DO_ASHI = "levantar_do_ashi";
 
     /** Custos de folego (o explosivo custa mais; ajustes custam pouco). */
@@ -376,6 +378,9 @@ public final class CatalogoTecnicasSolo {
         c.ajuste(POSTURA_MEIA, "Pressão de ombro", "PRESSÃO", meia, cima, List.of(rs(Direcao.BAIXO)), Efeito.POSTURA);
         c.transicao(RECUPERAR_GUARDA, "Recuperar a guarda", "REC. GUARDA", meia, baixo, List.of(rs(Direcao.BAIXO)),
                 3.0, 12, null, semPostura, 0, para(Posicao.GUARDA_ABERTA, OUT, INI), POSTURA_MEIA);
+        // 5Q.5: rota de escape da meia: underhook (quebra a pressao de ombro) -> recuperar a guarda / raspar
+        c.ajuste(UNDERHOOK_MEIA, "Underhook (tirar a pressão do ombro)", "UNDERHOOK", meia, baixo, lados(false),
+                Efeito.QUEBRAR_POSTURA);
         c.transicao(RASPAGEM_MEIA, "Raspagem da meia-guarda", "RASPAR", meia, baixo, List.of(rs(Direcao.CIMA)),
                 5.0, 14, null, semPostura, 0, para(Posicao.GUARDA_ABERTA, INI, OUT), POSTURA_MEIA);
 
@@ -490,8 +495,10 @@ public final class CatalogoTecnicasSolo {
                 2.5, 12, Exposicao.BASE, Efeito.CONTROLAR_PERNAS, RETENCAO_PES);
         c.exigir(PRENDER_PERNAS, RequisitoTecnica.PERTO_NO_CHAO);
         c.ajuste(RECUAR, "Recuar (dar distância)", "RECUAR", umEmPe, cima, List.of(rs(Direcao.BAIXO)), Efeito.RECUAR);
+        // 5Q.5: entra se o outro NAO responder (retencao com os pes / puxar guarda) - antes exigia o outro
+        // ja exposto e o RB v direto sempre falhava; com as pernas presas a retencao e recusada
         c.transicao(JOELHO_DIRETO, "Joelho na barriga direto", "JOELHO", umEmPe, cima, List.of(rb(Direcao.BAIXO)),
-                4.0, 14, Exposicao.BASE, Criterio.OUTRO_EXPOSTO, 0, para(Posicao.JOELHO_BARRIGA, INI, INI),
+                4.0, 14, Exposicao.BASE, sempre, 0, para(Posicao.JOELHO_BARRIGA, INI, INI),
                 RETENCAO_PES, CONECTAR_GUARDA);
         c.exigir(JOELHO_DIRETO, RequisitoTecnica.PERTO_NO_CHAO);
         c.ajuste(AFASTAR_DO_CHAO, "Afastar (criar distância)", "AFASTAR", umEmPe, baixo, List.of(rb(Direcao.BAIXO)),

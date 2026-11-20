@@ -391,7 +391,9 @@ class MotorSolo5QTest {
         resolverTentativa();
         ticks(20);
         cmd(Lado.A, Direcao.CIMA, Familia.RS);                // levantar
-        assertEquals(TipoEfeitoVisual.LEVANTANDO, m.efeitoVisual(Lado.A).orElseThrow().tipo());
+        // 5Q.5 (pedido): a levantada tecnica do solo livre ganhou animacao propria (antes a pose generica LEVANTANDO)
+        assertEquals(TipoEfeitoVisual.TECNICA_ATAQUE, m.efeitoVisual(Lado.A).orElseThrow().tipo());
+        assertEquals("levantar_tecnico", m.efeitoVisual(Lado.A).orElseThrow().tecnica());
 
         // as poses provisorias sao diferentes para cada efeito
         int[] base = new int[30];

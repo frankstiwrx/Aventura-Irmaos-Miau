@@ -1539,7 +1539,7 @@ public void alternarDeitado() {
      */
     if (isSemFolego()) {
 
-        velocidade *= 0.50;
+        velocidade *= RegrasVelocidade.FATOR_SEM_FOLEGO;
     }
 
     return velocidade;
@@ -1571,13 +1571,13 @@ public void alternarDeitado() {
         }
 
         return getVelocidadeBase()
-                * 1.70;
+                * RegrasVelocidade.FATOR_CORRIDA;
     }
 
     public double getVelocidadeAgachado() {
 
         return getVelocidadeBase()
-                * 0.25;
+                * RegrasVelocidade.FATOR_AGACHADO;
     }
 
     public double getVelocidadeRastejando() {
@@ -1590,7 +1590,7 @@ public void alternarDeitado() {
      * travar o personagem.
      */
     return calcularVelocidadeNormal()
-            * 0.07;
+            * RegrasVelocidade.FATOR_DEITADO;
 }
     
     // =============================
@@ -2461,7 +2461,42 @@ public void alternarDeitado() {
 
     /** Entrega 5J: de joelhos anda bem mais devagar que em pe. */
     public double getVelocidadeAjoelhado() {
-        return calcularVelocidadeNormal() * 0.18;
+        return calcularVelocidadeNormal() * RegrasVelocidade.FATOR_AJOELHADO;
+    }
+
+    // =============================
+    // 5Q.5: DESLOCAMENTO ACELERADO NO CHAO (X de joelhos / deitado)
+    // =============================
+    private boolean deslocamentoAcelerado;
+
+    /**
+     * O GamePanel informa a cada tick se o X esta segurado enquanto ele anda de
+     * joelhos ou deitado. Sem folego (ou parado, ou em pe) nao acelera.
+     */
+    public void setDeslocamentoAcelerado(boolean x) {
+        deslocamentoAcelerado = x && RegrasVelocidade.aceleraNoChao(estadoCorporal) && !isSemFolego()
+                && !respirando && !rolando && transicaoAtiva == null;
+    }
+
+    /** O X foi aceito neste tick (antes de saber se ele anda). */
+    public boolean isDeslocamentoAceleradoPedido() {
+        return deslocamentoAcelerado;
+    }
+
+    /** Andando acelerado agora (desenho: joelhos rapidos / impulsos de quadril). */
+    public boolean isDeslocamentoAcelerado() {
+        return deslocamentoAcelerado && andando;
+    }
+
+    /** Velocidade individual no chao com o X (de joelhos ou deitado). */
+    public double getVelocidadeChaoAcelerada() {
+        return calcularVelocidadeNormal() * RegrasVelocidade.fatorPostura(estadoCorporal)
+                * RegrasVelocidade.fatorAcelerado(estadoCorporal);
+    }
+
+    /** Folego do tick acelerando (respeita os recursos infinitos do Modo Desenvolvedor). */
+    public void cobrarDeslocamentoAcelerado() {
+        gastarEnergia(RegrasVelocidade.custoAcelerado(estadoCorporal));
     }
 
     public boolean isDeitado() {
@@ -2933,6 +2968,17 @@ public void alternarDeitado() {
      * mais proxima e usada para nao "teletransportar" o corpo. Interrompe pulo,
      * rolamento, sprawl, acrobacia e guarda.
      */
+    /**
+     * 5Q.5: troca a transicao que ACABOU de comecar por outra equivalente (mesma origem e
+     * destino), ex.: a levantada tecnica do solo livre no lugar da levantada rapida.
+     */
+    public void preferirTransicao(TransicaoPostura t) {
+        if (t != null && transicaoAtiva != null && ticksTransicao == 0 && transicaoAtiva != t
+                && transicaoAtiva.getOrigem() == t.getOrigem() && transicaoAtiva.getDestino() == t.getDestino()) {
+            transicaoAtiva = t;
+        }
+    }
+
     public void aplicarPosturaDoSolo(EstadoCorporal destino) {
         EstadoCorporal atual = estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
         rolando = false;

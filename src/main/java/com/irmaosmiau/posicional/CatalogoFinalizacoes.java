@@ -76,9 +76,10 @@ public final class CatalogoFinalizacoes {
 
     private void f(Familia fam, Direcao d, String base, String nome, String rotulo, CategoriaFinalizacao cat,
             Graduacao g, Requisito req, double limiar, Desfecho falha) {
-        double custo = cat == CategoriaFinalizacao.PERNA ? 4.0 : 3.0;
-        int janela = g.ordinal() >= Graduacao.ROXA.ordinal() ? 14 : 10;
-        double ganho = cat == CategoriaFinalizacao.ESTRANGULAMENTO ? 0.40 : 0.35;
+        // 5Q.5: valores centralizados em ParametrosFinalizacao
+        double custo = cat == CategoriaFinalizacao.PERNA ? ParametrosFinalizacao.CUSTO_PERNA : ParametrosFinalizacao.CUSTO_OUTRAS;
+        int janela = ParametrosFinalizacao.janelaCatalogo(g);
+        double ganho = ParametrosFinalizacao.ganhoCatalogo(cat);
         String id = base + "@" + pos.name().toLowerCase(java.util.Locale.ROOT);
         Finalizacao fz = new Finalizacao(id, base, nome, rotulo, cat, g, pos, papel, fam, d, req, limiar, custo, janela,
                 ganho, escapePadrao, falha);

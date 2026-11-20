@@ -189,6 +189,134 @@ public final class AnimacoesTecnicas {
                 q(0.00),
                 q(0.45, 9, -10, 11, -6, 26, 6, 27, -4, 28, 12, 29, -8, 20, -8, 21, 6, 18, -4, 19, 3),   // a perna e puxada
                 q(1.00));
+
+        // =====================================================================
+        // ENTREGA 5Q.5
+        // =====================================================================
+        // ---------------- 10. RASTEIRA (em pe, com a pegada): carrega, varre o tornozelo, acompanha
+        def("rasteira:ATACA",
+                q(0.00),
+                q(0.35, 9, -8, 26, 10, 27, -12, 28, 14, 29, -14, 20, -10, 21, -6, 18, -5, 19, -3,
+                        16, -8, 17, -4, 14, -4, 15, -2),                                             // tira o peso, levanta o pe
+                q(0.70, 9, -14, 26, 22, 27, -4, 28, 48, 29, -6, 20, -14, 21, 10, 18, -7, 19, 5,
+                        16, -12, 17, 8, 14, -6, 15, 4, 30, 4),                                       // varre baixo, puxa as mangas
+                q(1.00, 9, -10, 26, 18, 28, 40, 29, -2, 20, -12, 21, 12, 18, -6, 19, 6, 16, -10, 17, 10,
+                        14, -5, 15, 5, 30, 4));
+        def("rasteira:RECEBE",
+                q(0.00),
+                q(0.50, 9, 4),
+                q(0.75, 9, -16, 26, 10, 27, -8, 28, 18, 29, -16, 20, 16, 21, -20, 18, 8, 19, -10,
+                        16, -14, 17, -22, 14, -7, 15, -11),                                          // o pe sai do chao
+                q(1.00, 9, -22, 11, -8, 26, 14, 27, -12, 28, 26, 29, -24, 20, 20, 21, -26, 18, 10, 19, -13,
+                        16, -18, 17, -26, 14, -9, 15, -13, 31, -4));                                // perde a base
+
+        // ---------------- 11. ENTRADA NAS PERNAS (baixa o nivel, penetra, abraca e empurra)
+        def("entrada_pernas:ATACA",
+                q(0.00),
+                q(0.30, 9, 22, 11, 6, 22, -6, 23, -12, 26, 14, 27, -16, 20, 22, 21, 10, 18, 11, 19, 5,
+                        16, 18, 17, 12, 14, 9, 15, 6, 31, 14),                                       // baixa o nivel
+                q(0.65, 9, 40, 11, 12, 26, 28, 27, -6, 28, 30, 22, -16, 23, -4, 24, -26, 25, 4,
+                        20, 34, 21, 26, 18, 17, 19, 13, 16, 30, 17, 30, 14, 15, 15, 15, 30, 20, 31, 28),   // passo de penetracao
+                q(1.00, 9, 44, 11, 12, 26, 30, 27, -4, 28, 34, 22, -18, 24, -30, 25, 4,
+                        20, 36, 21, 30, 18, 18, 19, 15, 16, 32, 17, 32, 14, 16, 15, 16, 30, 30, 31, 30));  // abraca e empurra
+        def("entrada_pernas:RECEBE",
+                q(0.00),
+                q(0.60, 9, 6, 26, 6, 28, 4),
+                q(1.00, 9, -14, 11, -6, 20, 14, 21, -16, 18, 7, 19, -8, 16, 10, 17, -18, 14, 5, 15, -9,
+                        26, -6, 28, -10, 29, -4, 30, -6));                                          // pernas presas, quadril empurrado
+
+        // ---------------- 12. JOELHO NA BARRIGA DIRETO (em pe sobre quem esta no chao)
+        def("joelho_direto:ATACA",
+                q(0.00),
+                q(0.40, 9, 10, 26, 16, 27, -26, 28, 20, 29, -30, 20, 14, 21, 10, 18, 7, 19, 5),      // sobe o joelho
+                q(0.75, 9, 18, 26, 30, 27, 10, 28, 6, 29, 10, 20, 26, 21, 30, 18, 13, 19, 15,
+                        16, 20, 17, 26, 14, 10, 15, 13, 30, 10, 31, 12),                             // o joelho desce na barriga
+                q(1.00, 9, 16, 26, 28, 27, 14, 28, 2, 29, 12, 20, 24, 21, 32, 18, 12, 19, 16,
+                        16, 18, 17, 28, 14, 9, 15, 14, 30, 12, 31, 14));
+        // quem esta deitado (+x = para cima, +y = para o outro): mãos sobem para enquadrar o joelho
+        def("joelho_direto:RECEBE",
+                q(0.00),
+                q(0.70, 20, 16, 21, 10, 18, 8, 19, 5, 16, 12, 17, 8, 14, 6, 15, 4, 26, 10, 27, -8),
+                q(1.00, 9, -6, 6, -6, 20, 10, 21, 14, 18, 5, 19, 7, 16, 8, 17, 12, 14, 4, 15, 6));      // impacto
+
+        // ---------------- 13. LEVANTADA TECNICA (janela do comando; a transicao continua a subida)
+        // deitado: senta um pouco, apoia a mao de tras e planta o pe da frente (o mesmo apoio com que a
+        // transicao LEVANTADA_TECNICA comeca: sem estalo)
+        def("levantar_tecnico:ATACA",
+                q(0.00),
+                q(0.55, 10, 16, 16, -16, 17, -22, 14, -8, 26, 18, 27, -12, 28, 12, 20, 10, 21, 8),
+                q(1.00, 10, 16, 16, -16, 17, -22, 14, -8, 26, 18, 27, -12, 28, 12));
+
+        // ---------------- 14. RECUO EM PE: dois passos para tras alternando a base (o corpo desliza)
+        def("recuar:ATACA",
+                q(0.00),
+                q(0.22, 9, -4, 22, -6, 23, -6, 24, -16, 25, -12, 20, -4, 16, -4),                   // pe de tras sobe e recua
+                q(0.45, 9, -6, 22, -8, 24, -20, 26, 4, 20, -6, 16, -6),                              // planta atras
+                q(0.70, 9, -4, 26, -10, 27, -8, 28, -18, 29, -12, 22, -4, 24, -10, 20, -4, 16, -4),  // o da frente passa
+                q(1.00));
+
+        // ---------------- 15. POSTURA (guarda fechada): apruma, maos no quadril do outro, segura
+        def("postura:ATACA",
+                q(0.00),
+                q(0.30, 9, -22, 11, -8, 20, 14, 21, 18, 18, 7, 19, 9, 16, 10, 17, 16, 14, 5, 15, 8, 30, -4),
+                q(0.85, 9, -18, 11, -6, 20, 12, 21, 16, 18, 6, 19, 8, 16, 8, 17, 14, 14, 4, 15, 7, 30, -3),
+                q(1.00));
+        // vindo da postura quebrada: parte de curvado (o mesmo de "postura_quebrada"), passa do ponto e segura
+        def("postura_recompor:ATACA",
+                q(0.00, 9, 26, 11, 14, 13, 5, 20, 20, 21, 24, 18, 10, 19, 12, 16, 16, 17, 24, 14, 8, 15, 12, 30, 5),
+                q(0.30, 9, -24, 11, -8, 20, 14, 21, 18, 18, 7, 19, 9, 16, 10, 17, 16, 14, 5, 15, 8, 30, -4),
+                q(0.85, 9, -18, 11, -6, 20, 12, 21, 16, 18, 6, 19, 8, 16, 8, 17, 14, 14, 4, 15, 7, 30, -3),
+                q(1.00));
+        def("postura:RECEBE",
+                q(0.00),
+                q(0.35, 20, -8, 21, -6, 18, -4, 19, -3, 16, -6, 17, -4, 14, -3, 15, -2, 26, 4, 27, 4),  // perde a puxada
+                q(1.00));
+
+        // ---------------- 16. PERNAS PRESAS (depois de prender): as maos FICAM nas canelas
+        def("pernas_presas:ATACA",
+                q(0.00, 9, 22, 11, 6, 6, 2, 26, 6, 20, 16, 21, 30, 18, 8, 19, 15, 16, 12, 17, 32, 14, 6, 15, 16,
+                        30, -6, 31, 4),
+                q(0.85, 9, 22, 11, 6, 6, 2, 26, 6, 20, 16, 21, 30, 18, 8, 19, 15, 16, 12, 17, 32, 14, 6, 15, 16,
+                        30, -6, 31, 4),
+                q(1.00));
+        def("pernas_presas:RECEBE",
+                q(0.00, 22, -6, 23, 6, 24, -10, 25, 12, 26, 4, 27, 6, 28, -4, 29, 12, 20, 6, 21, 10, 18, 3, 19, 5),
+                q(0.85, 22, -6, 23, 6, 24, -10, 25, 12, 26, 4, 27, 6, 28, -4, 29, 12, 20, 6, 21, 10, 18, 3, 19, 5),
+                q(1.00));
+
+        // ---------------- 18. ENTRADAS NO CONTROLE DE PERNA (ate o ashi garami)
+        // por baixo (deitado: +x = para cima, +y = para o outro): gira o quadril, as pernas descem e enroscam
+        def("entrada_perna_guarda:ATACA",
+                q(0.00),
+                q(0.40, 6, 16, 10, -8, 26, 24, 27, -10, 28, 18, 29, -16, 22, 10, 23, -6, 20, 12, 21, 10, 18, 6, 19, 5),
+                q(1.00, 6, 22, 10, -12, 26, -6, 27, 8, 28, -12, 29, 14, 22, -10, 23, 12, 24, 8, 25, 18,
+                        20, 16, 21, 14, 18, 8, 19, 7, 16, 10, 17, 10, 14, 5, 15, 5));
+        alias("entrada_perna_aberta:ATACA", "entrada_perna_guarda:ATACA");
+        alias("entrada_perna_aberta_dlr:ATACA", "entrada_perna_guarda:ATACA");
+        // quem recebe (por cima, de joelhos/em pe): a perna da frente e puxada, o tronco vem junto
+        def("entrada_perna_guarda:RECEBE",
+                q(0.00),
+                q(0.60, 9, 8, 26, 8, 27, 4, 28, 12, 29, 4),
+                q(1.00, 9, 14, 11, 6, 26, 14, 27, 6, 28, 22, 29, 8, 20, -8, 21, 10, 18, -4, 19, 5));
+        alias("entrada_perna_aberta:RECEBE", "entrada_perna_guarda:RECEBE");
+        alias("entrada_perna_aberta_dlr:RECEBE", "entrada_perna_guarda:RECEBE");
+        // por cima (de joelhos): abandona o controle, senta para tras e abraca a perna (fica exposto)
+        def("entrada_perna_dominante:ATACA",
+                q(0.00),
+                q(0.40, 9, -18, 11, -6, 20, 16, 21, 22, 18, 8, 19, 11, 16, 12, 17, 22, 14, 6, 15, 11, 31, 8),
+                q(1.00, 9, -34, 11, -10, 26, 20, 27, -10, 28, 30, 29, -8, 22, 10, 24, 14,
+                        20, 12, 21, 16, 18, 6, 19, 8, 16, 10, 17, 18, 14, 5, 15, 9, 30, -10, 31, 22));
+        // quem estava por baixo (deitado): a perna sobe presa
+        def("entrada_perna_dominante:RECEBE",
+                q(0.00),
+                q(0.60, 26, 8, 27, -4, 28, 12, 29, -4),
+                q(1.00, 26, 14, 27, -8, 28, 22, 29, -10, 20, 8, 21, 6, 18, 4, 19, 3));
+
+        // ---------------- 17. UNDERHOOK NA MEIA-GUARDA (ajuste de quem esta por baixo): braco por baixo
+        def("underhook_meia:ATACA",
+                q(0.00),
+                q(0.45, 6, 10, 20, 18, 21, 16, 18, 9, 19, 8, 16, 6, 17, 6, 14, 3, 15, 3, 26, 6, 27, -6),
+                q(1.00));
     }
 
     private AnimacoesTecnicas() {
@@ -301,10 +429,12 @@ public final class AnimacoesTecnicas {
         }
         double dx = d[30];
         double dy = d[31];
-        if (e.tipo() == TipoEfeitoVisual.EMPURRADO && e.deslocamento() != 0) {
+        if ((e.tipo() == TipoEfeitoVisual.EMPURRADO || e.tipo() == TipoEfeitoVisual.TECNICA_ATAQUE
+                || e.tipo() == TipoEfeitoVisual.AFASTANDO) && e.deslocamento() != 0) {
             // o motor ja levou o corpo para tras: o desenho parte do lugar antigo (a frente) e desliza
             // ate o novo, sem teletransporte
-            double p = Math.min(1.0, e.progresso() / 0.4);
+            // 5Q.5: o recuo em pe / afastar no chao deslizam durante o efeito todo (o empurrao em 40%)
+            double p = Math.min(1.0, e.progresso() / (e.tipo() == TipoEfeitoVisual.EMPURRADO ? 0.4 : 0.9));
             dx += Math.abs(e.deslocamento()) * (1 - p * p * (3 - 2 * p));
         }
         return new double[] {dx, dy};

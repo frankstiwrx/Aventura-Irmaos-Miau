@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1095, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1123, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -520,3 +520,36 @@ Gamepad (Xbox):
 - [ ] Preservados: projeção de quadril, tiro de guarda, raspagens/passagens, joelho na barriga, montada/montada alta,
   pegada das costas, mata-leão, trocas de guarda, levantada técnica, rolamento técnico, estrelas/mortais, faixa
 
+
+# Entrega 5Q.5 — Refinamento da jogabilidade e do combate
+
+Automático: `ParametrosFinalizacao`, `Finalizacoes5Q5Test` (7), `Escapes5Q5Test` (4), `Quedas5Q5Test` (7),
+`Movimento5Q5GamePanelTest` (6), `Cenarios5Q5Test` (4).
+
+Manual (Xbox no J1, teclado virtual no J2; repetir com os papéis trocados):
+
+1. **Finalizações**: entrar num armlock da guarda e cortar a entrada com RS ↓ (dá tempo?). Deixar chegar a 100%:
+   aparece "BATA OU DEFENDA" e ainda dá para bater (RB + RS ↓) ou defender (RS ↓).
+2. **Triângulo**: entrar com LT + RS → e, **ainda segurando o LT**, soltar com RS ↓ (deve soltar).
+3. **Bater**: segurar RS ↓ (defendendo) e então apertar RB (deve bater na hora).
+4. **Guilhotina**: quebrar a postura (RS ↓ por baixo) e entrar na guilhotina (LT + RS ↓); quem está por cima não
+   consegue refazer a postura logo em seguida ("POSTURA QUEBRADA").
+5. **100 kg**: RS ↓ (enquadrar) e logo RS ←/→ (recuperar a guarda). Quem está por cima apertando RS ↓ só "fecha
+   o espaço". Montada e joelho na barriga: o mesmo.
+6. **Meia-guarda**: RS ←/→ (underhook) e depois RS ↓ (recuperar a guarda).
+7. **Rasteira**: com a pegada, o J2 dá um passo e o J1 faz a rasteira (L2 ↑): cai, com animação dos dois. Parado
+   com base cheia: não cai.
+8. **Entrada nas pernas** (RB ↓ em pé) e **joelho na barriga direto** (RB ↓ em pé contra quem está deitado):
+   animações dos dois; o joelho entra com J1 e com J2 por cima.
+9. **Recuo em pé** (RS ↓ no solo livre): dois passos para trás, sem salto.
+10. **Levantada técnica** (RS ↑ deitado, depois de uma queda): senta, apoia a mão, passa a perna e levanta.
+11. **De joelhos**: arrastar com a pegada (bem lento); andar de joelhos com **X** (mais rápido, sem levantar,
+    gasta fôlego). **Deitado com X**: impulsos de quadril.
+12. **Prender as pernas**: as mãos ficam nas canelas enquanto o controle dura.
+13. **Postura**: RS ↓ por cima na guarda fechada (apruma e segura); depois de quebrada, recompõe.
+14. **Afastar da guarda** (RB ↓ por baixo): quem estava por cima recua até ficar fora do alcance.
+15. **Ordem de desenho**: na guarda as pernas de quem está por baixo aparecem na frente; na montada/100 kg quem
+    está por cima fica na frente, com J1 ou J2 em cada papel.
+16. **Rodas**: nenhuma roda vazia aparece; avisos "▶ … EM EXECUÇÃO" e "✕ … motivo".
+17. **Cenários**: nuvens andando devagar na Academia (externa), Campo Verde e Grande Torneio; prédio da Academia
+    apoiado no chão; Campeonato com mais torcida viva e flashes discretos; neve da Fortaleza preservada.
