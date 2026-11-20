@@ -63,6 +63,19 @@ class Dev5Q6GamePanelTest extends Base5OGamePanel {
     }
 
     @Test
+    void rodasDoAshiTemONomeDaArticulacao() throws Exception {
+        naEdt(() -> {
+            novo(InicioLuta.EM_PE);
+            painel.getMotorSolo().forcarPosicao(Posicao.ASHI_GARAMI, Lado.B, Lado.A);
+            ticks(40);
+            assertTrue(painel.quadroSolo(com.irmaosmiau.controles.SlotJogador.JOGADOR_1,
+                    com.irmaosmiau.posicional.TecnicaSolo.Familia.L2).nomeCamada().contains("PÉ/TORNOZELO"));
+            assertTrue(painel.quadroSolo(com.irmaosmiau.controles.SlotJogador.JOGADOR_1,
+                    com.irmaosmiau.posicional.TecnicaSolo.Familia.L1).nomeCamada().contains("JOELHO/QUADRIL"));
+        });
+    }
+
+    @Test
     void menuPrincipalSemAOpcaoExclusiva() {
         assertFalse(MenuPrincipalPanel.OPCOES.stream().anyMatch(o -> o.contains("DESENVOLVEDOR")));
         assertEquals("F8", GamePanel.TECLA_MODO_DESENVOLVEDOR);

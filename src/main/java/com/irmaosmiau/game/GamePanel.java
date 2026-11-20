@@ -1782,7 +1782,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         boolean ataques = m.values().stream().anyMatch(c -> (c.idTransicao() != null && c.idTransicao().contains("@"))
                 || "→ PERNA".equals(c.rotulo()));
         String o;
-        if (ataques) {
+        if (ataques && e.getPosicao() == com.irmaosmiau.posicional.Posicao.ASHI_GARAMI) {
+            // 5Q.6: no ashi as tres rodas sao de perna (LT tornozelo/pe, LB joelho/quadril)
+            o = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? "JOELHO/QUADRIL"
+                    : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? "PÉ/TORNOZELO" : "PERNAS";
+        } else if (ataques) {
             o = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? "CHAVES"
                     : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? "ESTRANG." : "PERNAS";
         } else if (soReservadas) {
