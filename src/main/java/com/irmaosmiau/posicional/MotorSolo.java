@@ -426,6 +426,10 @@ public final class MotorSolo {
             CatalogoTecnicasSolo.DESEQ_DLR, CatalogoTecnicasSolo.DESEQ_ARANHA,
             CatalogoTecnicasSolo.TIRO_GUARDA, CatalogoTecnicasSolo.PUXAR_GUARDA,
             CatalogoTecnicasSolo.PRENDER_PERNAS, CatalogoTecnicasSolo.SEGURAR_PERNAS,   // 5Q.7: alcanca as canelas
+            // 5Q.7: tentativas de escape/recuperacao (o esforco aparece; a troca de posicao e do motor)
+            CatalogoTecnicasSolo.ESCAPE_QUADRIL, CatalogoTecnicasSolo.RECUPERAR_MEIA, CatalogoTecnicasSolo.VIRAR_JOELHOS,
+            CatalogoTecnicasSolo.FUGIR_DO_JOELHO, CatalogoTecnicasSolo.ESCAPE_MONTADA,
+            CatalogoTecnicasSolo.GIRAR_NAS_COSTAS, CatalogoTecnicasSolo.ESCAPAR_NEUTRO,
             // 5Q.5: quedas e entradas com animacao propria (quem faz e quem recebe)
             CatalogoTecnicasSolo.RASTEIRA, CatalogoTecnicasSolo.ENTRADA_PERNAS, CatalogoTecnicasSolo.JOELHO_DIRETO,
             CatalogoTecnicasSolo.LEVANTAR_TECNICO,
@@ -458,7 +462,10 @@ public final class MotorSolo {
             CatalogoTecnicasSolo.RETER_BORBOLETA, CatalogoTecnicasSolo.RETER_DLR, CatalogoTecnicasSolo.RETER_ARANHA,
             CatalogoTecnicasSolo.RETER_SLX, CatalogoTecnicasSolo.TRAVAR_LACO,
             CatalogoTecnicasSolo.POSTURA_BORBOLETA, CatalogoTecnicasSolo.POSTURA_DLR, CatalogoTecnicasSolo.POSTURA_LACO,
-            CatalogoTecnicasSolo.POSTURA_ARANHA, CatalogoTecnicasSolo.POSTURA_SLX);
+            CatalogoTecnicasSolo.POSTURA_ARANHA, CatalogoTecnicasSolo.POSTURA_SLX,
+            // 5Q.7: defesas de quem esta por baixo (enquadrar, defender as maos, esconder o pe, tirar ganchos)
+            CatalogoTecnicasSolo.ENQUADRAR, CatalogoTecnicasSolo.ENQUADRAR_JOELHO, CatalogoTecnicasSolo.ENQUADRAR_MONTADA,
+            CatalogoTecnicasSolo.DEFENDER_MAOS, CatalogoTecnicasSolo.ESCONDER_PE, CatalogoTecnicasSolo.TIRAR_GANCHOS);
     static final int TICKS_ANIMACAO_INSTANTANEA = 18;
 
     /**

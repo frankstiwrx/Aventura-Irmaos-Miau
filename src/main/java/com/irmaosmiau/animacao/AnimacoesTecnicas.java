@@ -216,6 +216,63 @@ public final class AnimacoesTecnicas {
                 20, -10, 21, 6, 18, -5, 19, 3, 16, -12, 17, 4, 14, -6, 15, 2, 9, -4};            // bracos ficam para tras
         def("segurando_pernas:RECEBE", q(0.00, segurado), q(1.00, segurado));
 
+        // =====================================================================
+        // ENTREGA 5Q.7: microanimacoes DEFENSIVAS e de recuperacao (quem esta por baixo). Curtas e
+        // sutis: mostram o ESFORCO; a troca de posicao continua sendo do motor (se a tentativa falha,
+        // o corpo volta suave a pose da posicao). Bracos preservados (IntegridadeMembros).
+        // Deitado (rotacao global -88): +x local sobe na tela, +y local vai para o adversario.
+        // =====================================================================
+        // ENQUADRAR (100 kg / joelho na barriga / montada): antebracos entre os dois, empurra e cria espaco
+        int[] enquadra = {9, 4, 6, 4, 20, 6, 21, 18, 18, 3, 19, 9, 16, 8, 17, 16, 14, 4, 15, 8, 11, 4};
+        def("enquadrar:ATACA", q(0.00), q(0.40, enquadra), q(0.70, enquadra), q(1.00));
+        def("enquadrar:RECEBE", q(0.00), q(0.45, 9, -5, 11, -3, 30, -3), q(1.00));                  // o de cima e afastado
+        alias("enquadrar_joelho:ATACA", "enquadrar:ATACA");
+        alias("enquadrar_joelho:RECEBE", "enquadrar:RECEBE");
+        def("enquadrar_montada:ATACA", q(0.00),
+                q(0.40, 9, 6, 20, 4, 21, 20, 18, 2, 19, 10, 16, 6, 17, 20, 14, 3, 15, 10, 5, 4, 6, 3),   // maos no quadril
+                q(0.70, 9, 6, 20, 4, 21, 22, 18, 2, 19, 11, 16, 6, 17, 22, 14, 3, 15, 11, 5, 4, 6, 3),
+                q(1.00));
+        alias("enquadrar_montada:RECEBE", "enquadrar:RECEBE");
+        // DEFENDER COM AS MAOS (costas): maos na gola, queixo baixo, cotovelos fechados
+        def("defender_maos:ATACA", q(0.00),
+                q(0.40, 11, 8, 13, 3, 20, -8, 21, -16, 18, -4, 19, -8, 16, 8, 17, -16, 14, 4, 15, -8, 9, 4),
+                q(0.70, 11, 8, 13, 3, 20, -8, 21, -18, 18, -4, 19, -9, 16, 8, 17, -18, 14, 4, 15, -9, 9, 4),
+                q(1.00));
+        def("defender_maos:RECEBE", q(0.00), q(0.45, 9, -4, 20, -4, 16, -4), q(1.00));
+        // ESCONDER O PE (ashi) e TIRAR OS GANCHOS (borboleta): o quadril gira e a perna recolhe
+        def("esconder_pe:ATACA", q(0.00), q(0.45, 6, -8, 26, -10, 27, 8, 28, -14, 29, 10, 20, 4, 21, 6), q(1.00));
+        def("tirar_ganchos:ATACA", q(0.00), q(0.45, 9, 6, 20, 8, 21, 14, 18, 4, 19, 7, 16, 8, 17, 14, 14, 4, 15, 7),
+                q(1.00));
+        def("tirar_ganchos:RECEBE", q(0.00), q(0.45, 26, -6, 27, -4, 22, -6, 23, -4), q(1.00));
+
+        // RECUPERAR A GUARDA (escape de quadril, dos 100 kg): fuga de quadril, joelhos entram, bracos empurram
+        int[] fugaQuadril = {5, -8, 6, 10, 9, 4, 26, 10, 27, 12, 28, 6, 29, 14, 22, 6, 23, 8, 24, 4, 25, 10,
+                20, 6, 21, 16, 18, 3, 19, 8, 16, 6, 17, 12, 14, 3, 15, 6};
+        def("escape_quadril:ATACA", q(0.00), q(0.45, fugaQuadril), q(1.00, fugaQuadril));
+        def("escape_quadril:RECEBE", q(0.00), q(0.60, 9, -6, 30, -4), q(1.00, 9, -4, 30, -3));
+        alias("fugir_do_joelho:ATACA", "escape_quadril:ATACA");
+        alias("fugir_do_joelho:RECEBE", "escape_quadril:RECEBE");
+        // RECUPERAR A MEIA (joelho no meio): o joelho de cima entra entre os dois
+        def("recuperar_meia:ATACA", q(0.00), q(0.50, 6, 8, 26, 16, 27, 14, 28, 10, 29, 12, 20, 6, 21, 12, 18, 3, 19, 6),
+                q(1.00, 6, 8, 26, 18, 27, 16, 28, 12, 29, 14, 20, 6, 21, 12, 18, 3, 19, 6));
+        // VIRAR PARA OS JOELHOS: o tronco e o quadril giram para o lado (rotacao), bracos cruzam por baixo
+        int[] virar = {10, -10, 9, -12, 6, -10, 11, -6, 16, 10, 17, 12, 14, 5, 15, 6, 20, -6, 21, 8, 18, -3, 19, 4,
+                22, 8, 23, -6, 26, 10, 27, -4};
+        def("virar_joelhos:ATACA", q(0.00), q(0.50, virar), q(1.00, virar));
+        def("virar_joelhos:RECEBE", q(0.00), q(0.60, 9, 6, 20, 4), q(1.00, 9, 6, 20, 4));
+        // ESCAPAR DA MONTADA: pequena ponte (o quadril sobe) e o quadril escapa para o lado, joelho entra
+        def("escape_montada:ATACA", q(0.00),
+                q(0.35, 4, 8, 5, 4, 6, 6, 26, 8, 27, 10, 22, 6, 23, 8, 20, 6, 21, 14, 18, 3, 19, 7),     // ponte curta
+                q(1.00, 4, 2, 5, -8, 6, 10, 26, 14, 27, 14, 28, 8, 29, 12, 22, 4, 23, 6, 20, 6, 21, 14, 18, 3, 19, 7));
+        def("escape_montada:RECEBE", q(0.00), q(0.35, 9, -6, 31, -3), q(1.00, 9, -3));
+        // GIRAR NAS COSTAS: ombros e quadril giram para escapar dos ganchos
+        int[] girar = {9, -14, 11, -8, 6, 10, 10, -6, 16, -8, 17, -10, 14, -4, 15, -5, 20, 10, 21, -8, 18, 5, 19, -4,
+                26, 8, 27, 6};
+        def("girar_nas_costas:ATACA", q(0.00), q(0.50, girar), q(1.00, girar));
+        def("girar_nas_costas:RECEBE", q(0.00), q(0.60, 9, 6, 16, 6), q(1.00, 9, 6, 16, 6));
+        alias("escapar_neutro:ATACA", "girar_nas_costas:ATACA");
+        alias("escapar_neutro:RECEBE", "girar_nas_costas:RECEBE");
+
         // ---------------- 9. AJUSTAR O CONTROLE DA PERNA (ashi garami; ajuste instantaneo) - 5Q.4
         def("consolidar_ashi:ATACA",
                 q(0.00),
@@ -606,6 +663,17 @@ public final class AnimacoesTecnicas {
 
     private static void alias(String nova, String existente) {
         ANIMACOES.put(nova, ANIMACOES.get(existente));
+    }
+
+    /** 5Q.7: microanimacoes defensivas (os bracos giram/dobram sem mudar de tamanho). */
+    private static final java.util.Set<String> PRESERVA_BRACOS = java.util.Set.of("enquadrar", "enquadrar_joelho",
+            "enquadrar_montada", "defender_maos", "esconder_pe", "tirar_ganchos", "escape_quadril", "fugir_do_joelho",
+            "recuperar_meia", "virar_joelhos", "escape_montada", "girar_nas_costas", "escapar_neutro",
+            "segurando_pernas", "segurar_pernas");
+
+    /** 5Q.7: o efeito e uma microanimacao defensiva (preservar o tamanho dos bracos)? */
+    public static boolean preservaBracos(MotorSolo.EfeitoVisual e) {
+        return e != null && e.tecnica() != null && PRESERVA_BRACOS.contains(e.tecnica());
     }
 
     /** Ha animacao propria para esta chave ("tecnica:ATACA" / "tecnica:RECEBE")? */
