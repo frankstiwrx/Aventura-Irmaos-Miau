@@ -155,6 +155,8 @@ public final class MotorSolo {
     private EstadoPosicional estado = EstadoPosicional.separados();
     private Tentativa tentativa;
     private Lado aterrissagemCima;
+    /** 5Q.6: destino da aterrissagem sem reacao (null = cem quilos, como antes). */
+    private Posicao alvoAterrissagem;
     private int aterrissagemTicks;
     private TecnicaSolo.Direcao reacaoAterrissagem;
     private double estabilidade;
@@ -424,7 +426,14 @@ public final class MotorSolo {
             CatalogoTecnicasSolo.LEVANTAR_TECNICO,
             // 5Q.5: entradas no controle de perna (transicao corporal ate o ashi garami)
             CatalogoTecnicasSolo.ENTRADA_PERNA_GUARDA, CatalogoTecnicasSolo.ENTRADA_PERNA_DOMINANTE,
-            CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA, CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA + "_dlr");
+            CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA, CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA + "_dlr",
+            // 5Q.6: quedas explosivas, body lock, projecoes e entradas de guarda do LB + LT
+            CatalogoTecnicasSolo.SINGLE_LEG, CatalogoTecnicasSolo.HIGH_CROTCH, CatalogoTecnicasSolo.ANKLE_PICK,
+            CatalogoTecnicasSolo.CARREGADA_OMBRO, CatalogoTecnicasSolo.BODY_LOCK,
+            CatalogoTecnicasSolo.SINGLE_LEG_JOELHOS, CatalogoTecnicasSolo.DOUBLE_LEG_JOELHOS,
+            CatalogoTecnicasSolo.ARM_DRAG, CatalogoTecnicasSolo.SNAP_DOWN,
+            CatalogoTecnicasSolo.UCHI_MATA, CatalogoTecnicasSolo.OSOTO_GARI,
+            CatalogoTecnicasSolo.PUXAR_ARANHA, CatalogoTecnicasSolo.PUXAR_LACO);
     /** 5Q.5: depois de prender as pernas, as maos FICAM nas canelas enquanto o controle durar. */
     public static final int TICKS_PERNAS_PRESAS = 45;
     /** 5Q.5: o recuo em pe (dois passos para tras) dura isto; o corpo desliza do lugar antigo. */
@@ -714,6 +723,7 @@ public final class MotorSolo {
         estado = EstadoPosicional.separados();
         tentativa = null;
         aterrissagemCima = null;
+        alvoAterrissagem = null;
         aterrissagemTicks = 0;
         reacaoAterrissagem = null;
         estabilidade = 0;
@@ -886,6 +896,19 @@ public final class MotorSolo {
     // COMANDOS
     // =====================================================
     /** Um comando de um lado (mesmo tick dos dois: use {@link #comandos}). */
+    /**
+     * 5Q.6: a tecnica que o comando aciona AGORA para o lado. Em pe sem vinculo, o mesmo comando
+     * vale outra tecnica de joelhos (as quedas explosivas do LT): o confronto e de joelhos se
+     * qualquer um dos dois estiver ajoelhado (o mesmo criterio do PERMITIDAS_DE_JOELHOS).
+     */
+    public Optional<TecnicaSolo> tecnicaPara(Lado lado, ComandoSolo c) {
+        Boolean deJoelhos = null;
+        if (!estado.getPosicao().isNoChao()) {
+            deJoelhos = lutador(lado).isAjoelhado() || lutador(lado.outro()).isAjoelhado();
+        }
+        return catalogo.para(estado, lado, c, deJoelhos);
+    }
+
     public Resposta comando(Lado lado, ComandoSolo c) {
         Map<Lado, ComandoSolo> m = new EnumMap<>(Lado.class);
         m.put(lado, c);
@@ -922,8 +945,8 @@ public final class MotorSolo {
         }
         sincronizarEmPe();
         if (pedidos.size() == 2 && tentativa == null && aterrissagemCima == null) {
-            Optional<TecnicaSolo> ta = catalogo.para(estado, Lado.A, pedidos.get(Lado.A));
-            Optional<TecnicaSolo> tb = catalogo.para(estado, Lado.B, pedidos.get(Lado.B));
+            Optional<TecnicaSolo> ta = tecnicaPara(Lado.A, pedidos.get(Lado.A));
+            Optional<TecnicaSolo> tb = tecnicaPara(Lado.B, pedidos.get(Lado.B));
             if (ta.isPresent() && tb.isPresent() && !ta.get().isInstantanea() && !tb.get().isInstantanea()) {
                 Lado primeiro = primeiroNoChoque(ta.get(), tb.get());
                 if (primeiro == null) {
@@ -979,7 +1002,7 @@ public final class MotorSolo {
                 abandonar();
                 return new Resposta(Resultado.ABANDONADA, "ABANDONOU", null);
             }
-            Optional<TecnicaSolo> t2 = catalogo.para(estado, lado, c);
+            Optional<TecnicaSolo> t2 = tecnicaPara(lado, c);
             if (t2.isPresent() && t2.get().id().equals(CatalogoTecnicasSolo.RETENCAO_PES)
                     && exposicaoDe(lado).orElse(null) == Exposicao.PERNAS_PRESAS) {
                 return new Resposta(Resultado.RECUSADA, "PERNAS PRESAS", t2.get());   // 5P.2
@@ -1007,7 +1030,7 @@ public final class MotorSolo {
             }
             return new Resposta(Resultado.RECUSADA, "TÉCNICA DO OUTRO EM ANDAMENTO", t2.orElse(null));
         }
-        Optional<TecnicaSolo> ot = catalogo.para(estado, lado, c);
+        Optional<TecnicaSolo> ot = tecnicaPara(lado, c);
         if (ot.isEmpty()) {
             Optional<Finalizacao> fz = catalogoFinalizacoes.para(estado, lado, c);
             if (fz.isPresent()) {
@@ -1149,6 +1172,10 @@ public final class MotorSolo {
             if ((eu.isAjoelhado() || outro.isAjoelhado()) && !PERMITIDAS_DE_JOELHOS.contains(t.id())) {
                 return "SÓ EM PÉ (DE JOELHOS NÃO)";
             }
+            if (!eu.isAjoelhado() && !outro.isAjoelhado() && catalogo.posturaExigida(t.id())
+                    .orElse(null) == CatalogoTecnicasSolo.PosturaExigida.DE_JOELHOS) {
+                return "SÓ DE JOELHOS";                        // 5Q.6
+            }
             if (sistema != null && sistema.estaEmInteracao() && !sistema.isInteracaoEstabelecida()) {
                 return "PEGADA ENTRANDO";
             }
@@ -1163,7 +1190,8 @@ public final class MotorSolo {
                 case CatalogoTecnicasSolo.ENTRADA_PERNAS -> dist <= ALCANCE_PERNAS_PX ? null : "LONGE";
                 case CatalogoTecnicasSolo.PUXAR_GUARDA ->
                         p == Posicao.EM_PE_PEGADA || dist <= ALCANCE_PUXAR_PX ? null : "LONGE";
-                default -> null;
+                default -> QuedasExplosivas.perfil(t.id())                 // 5Q.6
+                        .map(pf -> dist <= pf.alcancePx() ? null : "LONGE").orElse(null);
             };
         }
         if (t.id().equals(CatalogoTecnicasSolo.ENTRAR_GUARDA) || t.id().equals(CatalogoTecnicasSolo.PASSAGEM_EM_PE)) {
@@ -1210,6 +1238,7 @@ public final class MotorSolo {
         }
         efeitos.values().forEach(e -> e.restante = Math.max(0, e.restante - 1));
         afastarGradual();                                         // 5Q.5
+        avancoDaQueda();                                          // 5Q.6
         atualizarFinalizacao();                                   // 5Q
         sincronizarEmPe();
         coerencia();
@@ -1218,7 +1247,8 @@ public final class MotorSolo {
         }
         if (tentativa != null) {
             Tentativa t = tentativa;
-            if (t.tecnica().id().equals(CatalogoTecnicasSolo.ENTRADA_PERNAS)
+            if ((t.tecnica().id().equals(CatalogoTecnicasSolo.ENTRADA_PERNAS)
+                    || QuedasExplosivas.defendePorSprawl(t.tecnica().id()))         // 5Q.6
                     && lutador(t.iniciador().outro()).isFazendoSprawl()) {
                 contraSprawl(t);
             } else if (t.ticksRestantes() <= 1) {
@@ -1360,7 +1390,10 @@ public final class MotorSolo {
      */
     static final java.util.Set<String> PERMITIDAS_DE_JOELHOS = java.util.Set.of(CatalogoTecnicasSolo.EMPURRAO,
             CatalogoTecnicasSolo.PUXAR_GUARDA, CatalogoTecnicasSolo.PUXAR_BORBOLETA,
-            CatalogoTecnicasSolo.DERRUBADA_FORCADA, CatalogoTecnicasSolo.QUEDA_PEGADA);
+            CatalogoTecnicasSolo.DERRUBADA_FORCADA, CatalogoTecnicasSolo.QUEDA_PEGADA,
+            // 5Q.6: derrubadas explosivas de joelhos (LT sem pegada)
+            CatalogoTecnicasSolo.SINGLE_LEG_JOELHOS, CatalogoTecnicasSolo.DOUBLE_LEG_JOELHOS,
+            CatalogoTecnicasSolo.ARM_DRAG, CatalogoTecnicasSolo.SNAP_DOWN);
 
     /**
      * Nada contraditorio: um em pe contra o solo sem ninguem DEITADO vira separados (5Q.4: antes
@@ -1399,6 +1432,14 @@ public final class MotorSolo {
         Lado ini = t.iniciador();
         Lado out = ini.outro();
         inicioJanelaAtual = t.inicio();
+        if (QuedasExplosivas.perfil(tec.id()).isPresent()) {
+            resolverQuedaExplosiva(ini, QuedasExplosivas.perfil(tec.id()).get(), intencaoIniciador);   // 5Q.6
+            return;
+        }
+        if (tec.id().equals(CatalogoTecnicasSolo.PUXAR_ARANHA) || tec.id().equals(CatalogoTecnicasSolo.PUXAR_LACO)) {
+            resolverPuxarParaGuarda(ini, tec);                 // 5Q.6
+            return;
+        }
         switch (tec.id()) {
             case CatalogoTecnicasSolo.EMPURRAO -> resolverEmpurrao(ini);
             case CatalogoTecnicasSolo.QUEDA_PEGADA -> resolverQuedaPegada(ini, intencaoIniciador);
@@ -1514,6 +1555,7 @@ public final class MotorSolo {
         exposicao.put(ini, new Exposto(Exposicao.BASE, 30));
         recarga.put(ini, RECARGA_FALHA_TICKS);
         registrar("SPRAWL", t.tecnica().id(), def, "entrada nas pernas parada");
+        reacaoDefendida(ini, t.tecnica().id());                // 5Q.6: recolhe a entrada (sem estalo)
     }
 
     // ---------------- em pe
@@ -1629,6 +1671,84 @@ public final class MotorSolo {
         }
         entrar(EstadoPosicional.noChao(Posicao.GUARDA, out, ini), ini, false);
         registrar("SUCESSO", CatalogoTecnicasSolo.PUXAR_GUARDA, ini, "guarda fechada");
+    }
+
+    /**
+     * 5Q.6: quedas explosivas (LT sem pegada, em pe e de joelhos; RB -> sem pegada) e as projecoes
+     * do LB + LT com a pegada. Recuar para longe ou ficar fora do alcance faz falhar; a defesa do
+     * perfil (sprawl ja tratado na janela / base com RT) segura; senao derruba e a aterrissagem
+     * leva ao destino do perfil (o defensor ainda pode reagir com guarda/meia-guarda).
+     */
+    private void resolverQuedaExplosiva(Lado ini, QuedasExplosivas.Perfil pf, Intencao intencao) {
+        Lado def = ini.outro();
+        IrmaoMiau a = lutador(ini);
+        IrmaoMiau d = lutador(def);
+        if (pf.pegada()) {
+            if (semPegada(ini, pf.id())) {
+                return;
+            }
+            if (fazBase(def, inicioJanelaAtual) && !exposto(def) && !desequilibrado(def)) {
+                falhouEmPe(ini, pf.id(), "base firme", Exposicao.BASE, 30);
+                return;
+            }
+            if (sistema.getFirmeza() < FIRMEZA_MINIMA_QUEDA && base.get(def) >= BASE_DERRUBAVEL && !exposto(def)) {
+                falhouEmPe(ini, pf.id(), "pegada fraca", Exposicao.BASE, 20);
+                return;
+            }
+            sistema.encerrarInteracao();
+            alvoAterrissagem = pf.alvo();
+            derrubar(def, ini, true);
+            registrar("SUCESSO", pf.id(), ini, "projetou");
+            return;
+        }
+        int longe = Integer.signum(d.getX() - a.getX());
+        boolean recuou = intencoesAtuais.get(def) != null && intencoesAtuais.get(def).dx() == longe && longe != 0;
+        boolean alcance = Math.abs(a.getX() - d.getX()) <= pf.contatoPx() + 24
+                && Math.abs(a.getLinhaAtual() - d.getLinhaAtual()) <= 1;
+        if (!alcance || recuou) {
+            base.put(ini, Math.max(0, base.get(ini) - 30));
+            falhouEmPe(ini, pf.id(), recuou ? "o outro recuou" : "longe", Exposicao.BASE, 30);
+            return;
+        }
+        if (sistema != null && sistema.estaEmInteracao()) {
+            sistema.encerrarInteracao();
+        }
+        boolean vulneravel = exposto(def) || desequilibrado(def);
+        if (fazBase(def, inicioJanelaAtual) && !vulneravel) {
+            if (pf.defesa() == QuedasExplosivas.Defesa.SPRAWL) {
+                // base sem sprawl: os dois vao ao chao, ninguem consolida (o mesmo da entrada nas pernas)
+                entrar(EstadoPosicional.noChao(Posicao.SOLO_DISPUTADO, null, null), ini, true);
+                registrar("SUCESSO", pf.id(), ini, "queda sem controle (o outro fez base)");
+                return;
+            }
+            falhouEmPe(ini, pf.id(), "base firme (RT)", Exposicao.BASE, 30);
+            return;
+        }
+        if (!pf.acompanha()) {
+            derrubar(def, ini, false);                         // o outro senta; quem pegou fica em pe
+            registrar("SUCESSO", pf.id(), ini, "ficou em pé");
+            return;
+        }
+        alvoAterrissagem = pf.alvo();
+        derrubar(def, ini, true);
+        registrar("SUCESSO", pf.id(), ini, "");
+    }
+
+    /** 5Q.6: puxar para a aranha / laco com a pegada: recusa se o outro recuar (como o puxar guarda). */
+    private void resolverPuxarParaGuarda(Lado ini, TecnicaSolo tec) {
+        Lado out = ini.outro();
+        if (semPegada(ini, tec.id())) {
+            return;
+        }
+        int longe = Integer.signum(lutador(out).getX() - lutador(ini).getX());
+        boolean recuou = intencoesAtuais.get(out) != null && intencoesAtuais.get(out).dx() == longe && longe != 0;
+        if (recuou || (fazBase(out, inicioJanelaAtual) && !exposto(out))) {
+            falhouEmPe(ini, tec.id(), recuou ? "o outro recuou" : "base firme", Exposicao.BASE, 20);
+            return;
+        }
+        conexoes.get(ini).add(Conexao.MANGA);                  // segura as mangas na descida (laco/aranha)
+        entrar(EstadoPosicional.noChao(tec.sucesso().destino(), out, ini), ini, false);
+        registrar("SUCESSO", tec.id(), ini, tec.sucesso().destino().name());
     }
 
     // ---------------- 5P.2: pegada ativa e quedas especificas
@@ -1912,10 +2032,14 @@ public final class MotorSolo {
         } else if (r == TecnicaSolo.Direcao.ESQUERDA || r == TecnicaSolo.Direcao.DIREITA) {
             p = Posicao.MEIA_GUARDA;                           // pegou uma perna
             ctrl = cima.outro();
+        } else if (alvoAterrissagem != null) {
+            p = alvoAterrissagem;                              // 5Q.6: destino da queda explosiva
+            ctrl = p == Posicao.MEIA_GUARDA ? cima.outro() : cima;
         } else {
             p = Posicao.CONTROLE_LATERAL;                      // nao reagiu: cem quilos
             ctrl = cima;
         }
+        alvoAterrissagem = null;
         entrar(EstadoPosicional.noChao(p, cima, ctrl), cima, false);
         registrar("ATERRISSOU", p.name(), cima, r == null ? "sem reação" : "reação " + r);
     }
@@ -2071,6 +2195,34 @@ public final class MotorSolo {
      * DISTANCIA_APOS_AFASTAR, aos poucos (sem teletransporte). So no solo livre
      * (EM_PE_CONTRA_SOLO); qualquer posicao nova cancela. Respeita as bordas.
      */
+    /**
+     * 5Q.6: na janela de uma queda explosiva quem entra AVANCA de verdade ate o contato (antes as
+     * entradas so desenhavam o avanco): a distancia restante e dividida pelos ticks que faltam,
+     * no maximo VELOCIDADE_AVANCO_QUEDA px/tick (nada de teletransporte).
+     */
+    private void avancoDaQueda() {
+        if (tentativa == null || estado.getPosicao().isNoChao()) {
+            return;
+        }
+        QuedasExplosivas.Perfil pf = QuedasExplosivas.perfil(tentativa.tecnica().id()).orElse(null);
+        if (pf == null || pf.pegada()) {
+            return;
+        }
+        IrmaoMiau a = lutador(tentativa.iniciador());
+        IrmaoMiau o = lutador(tentativa.iniciador().outro());
+        int dist = Math.abs(a.getX() - o.getX());
+        int falta = dist - pf.contatoPx();
+        if (falta <= 0) {
+            return;
+        }
+        int ticks = Math.max(1, tentativa.ticksRestantes() - 2);
+        int passo = Math.min(VELOCIDADE_AVANCO_QUEDA, (falta + ticks - 1) / ticks);
+        a.encostarNaBorda(Integer.signum(o.getX() - a.getX()) * passo);
+    }
+
+    /** 5Q.6: velocidade maxima do avanco de uma queda explosiva (px/tick). */
+    public static final int VELOCIDADE_AVANCO_QUEDA = 9;
+
     private void afastarGradual() {
         if (afastarAte.isEmpty()) {
             return;

@@ -284,7 +284,9 @@ class ContextualGamePanelTest {
             ticks(1);
             q = painel.montarQuadroDpad(J1);
             assertEquals("LT + LB · ESPECIAIS · PEGADA", q.nomeCamada());   // 5P.2 (pedido)
-            assertEquals("·", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA), "avancada: vazia");
+            // 5Q.6 (pedido): LT + LB com a pegada ganhou a terceira roda (duas projecoes e duas
+            // entradas de guarda); antes era vazia
+            assertEquals("UCHI-MATA", PainelDpadContextual.texto(q, DirecaoTecnica.CIMA), "avancada: projecoes");
             BufferedImage img = new BufferedImage(800, 450, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g = img.createGraphics();
             painel.setSize(800, 450);

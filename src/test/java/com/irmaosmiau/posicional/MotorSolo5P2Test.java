@@ -106,7 +106,16 @@ class MotorSolo5P2Test {
                             for (Direcao d : Direcao.values()) {
                                 ComandoSolo cs = c(d, f);
                                 long n = cat.repertorio(e, lado).stream().filter(t -> t.aceita(cs)).count();
-                                assertTrue(n <= 1, p + " " + lado + " " + cs + ": " + n);
+                                // 5Q.6 (pedido): em pe sem pegada o LT tem uma roda EM PE e outra DE JOELHOS
+                                // (o motor escolhe pela postura): conta por postura
+                                for (boolean joelhos : new boolean[] {false, true}) {
+                                    long np = cat.repertorio(e, lado).stream().filter(t -> t.aceita(cs))
+                                            .filter(t -> cat.posturaExigida(t.id()).map(x -> (x
+                                                    == CatalogoTecnicasSolo.PosturaExigida.DE_JOELHOS) == joelhos)
+                                                    .orElse(true)).count();
+                                    assertTrue(np <= 1, p + " " + lado + " " + cs + " joelhos=" + joelhos + ": " + np);
+                                }
+                                n = Math.min(n, 1);
                                 // 5Q (pedido): o espaco aponta para UMA tecnica: a do catalogo de solo (entrada na
                                 // perna) ou a finalizacao; nunca as duas
                                 java.util.Optional<RegistroFinalizacoes.Espaco> es = fin.para(e, lado, cs);

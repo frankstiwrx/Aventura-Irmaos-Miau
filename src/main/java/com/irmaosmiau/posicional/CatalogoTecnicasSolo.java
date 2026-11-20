@@ -156,6 +156,37 @@ public final class CatalogoTecnicasSolo {
     public static final String UNDERHOOK_MEIA = "underhook_meia";
     public static final String LEVANTAR_DO_ASHI = "levantar_do_ashi";
 
+    // ---------- 5Q.6: quedas explosivas sem pegada (LT em pe / de joelhos) e RB -> sem pegada
+    public static final String SINGLE_LEG = "single_leg";
+    public static final String HIGH_CROTCH = "high_crotch";
+    public static final String ANKLE_PICK = "ankle_pick";
+    public static final String CARREGADA_OMBRO = "carregada_ombro";
+    public static final String BODY_LOCK = "body_lock";
+    public static final String SINGLE_LEG_JOELHOS = "single_leg_joelhos";
+    public static final String DOUBLE_LEG_JOELHOS = "double_leg_joelhos";
+    public static final String ARM_DRAG = "arm_drag";
+    public static final String SNAP_DOWN = "snap_down";
+    // ---------- 5Q.6: LB + LT com a pegada: projecoes e entradas de guarda
+    public static final String UCHI_MATA = "uchi_mata";
+    public static final String OSOTO_GARI = "osoto_gari";
+    public static final String PUXAR_ARANHA = "puxar_aranha";
+    public static final String PUXAR_LACO = "puxar_laco";
+    // ---------- 5Q.6: variacoes do berimbolo (L1+L2 <- e -> na De La Riva)
+    public static final String BERIMBOLO_KISS = "berimbolo_kiss";
+    public static final String BERIMBOLO_INVERTIDO = "berimbolo_invertido";
+
+    /** 5Q.6: postura exigida (o mesmo comando vale outra tecnica em pe e de joelhos). */
+    public enum PosturaExigida {
+        EM_PE, DE_JOELHOS
+    }
+
+    private final Map<String, PosturaExigida> posturas = new LinkedHashMap<>();
+
+    /** 5Q.6: postura exigida pela tecnica (vazio = vale nas duas, como antes). */
+    public Optional<PosturaExigida> posturaExigida(String id) {
+        return Optional.ofNullable(posturas.get(id));
+    }
+
     /** Custos de folego (o explosivo custa mais; ajustes custam pouco). */
     public static final double CUSTO_AJUSTE = 1.5;
 
@@ -204,11 +235,25 @@ public final class CatalogoTecnicasSolo {
 
     /** A tecnica que o comando aciona nesta posicao para este papel (no maximo uma). */
     public Optional<TecnicaSolo> para(EstadoPosicional estado, Lado lado, ComandoSolo comando) {
+        return para(estado, lado, comando, null);
+    }
+
+    /**
+     * 5Q.6: idem, sabendo se o confronto (em pe, sem vinculo) e DE JOELHOS: as tecnicas que exigem
+     * uma postura so valem nela (null = sem filtro de postura, como antes).
+     */
+    public Optional<TecnicaSolo> para(EstadoPosicional estado, Lado lado, ComandoSolo comando, Boolean deJoelhos) {
         return porId.values().stream()
                 .filter(t -> t.origens().contains(estado.getPosicao()))
                 .filter(t -> estado.temPapel(lado, t.papel()))
                 .filter(t -> t.aceita(comando))
+                .filter(t -> deJoelhos == null || posturaCombina(t.id(), deJoelhos))
                 .findFirst();
+    }
+
+    private boolean posturaCombina(String id, boolean deJoelhos) {
+        PosturaExigida p = posturas.get(id);
+        return p == null || (p == PosturaExigida.DE_JOELHOS) == deJoelhos;
     }
 
     /** O repertorio de um lado na posicao (HUD e documentacao). */
@@ -639,6 +684,58 @@ public final class CatalogoTecnicasSolo {
                 CONTROLAR_PERNAS, POSTURA_SLX);
         c.transicao(ENTRADA_PERNA_ABERTA + "_dlr", "Da De La Riva para a perna", "ASHI", dlr, baixo,
                 List.of(l12(Direcao.BAIXO)), 3.0, 10, Exposicao.BASE, semPostura, 0, ashi, POSTURA_DLR);
+
+        // =====================================================================
+        // ENTREGA 5Q.6
+        // =====================================================================
+        // ---------- LT sem pegada, EM PE: quedas explosivas (avanco, captura, derrubada); o sprawl vale
+        Set<Posicao> livres = EnumSet.of(Posicao.EM_PE_SEPARADOS);
+        c.transicao(SINGLE_LEG, "Single leg (uma perna)", "SINGLE LEG", livres, qq, List.of(l2(Direcao.CIMA)),
+                6.0, 14, Exposicao.PERNAS, sempre, 0, para(Posicao.MEIA_GUARDA, INI, OUT));
+        c.transicao(HIGH_CROTCH, "High crotch (por fora, no quadril)", "HIGH CROTCH", livres, qq,
+                List.of(l2(Direcao.DIREITA)), 6.5, 14, Exposicao.PERNAS, sempre, 0,
+                para(Posicao.CONTROLE_LATERAL, INI, INI));
+        c.transicao(ANKLE_PICK, "Ankle pick (puxa a cabeça, pega o tornozelo)", "TORNOZELO", livres, qq,
+                List.of(l2(Direcao.ESQUERDA)), 4.5, 10, Exposicao.BASE, sempre, 0,
+                para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA));
+        c.transicao(CARREGADA_OMBRO, "Carregada no ombro", "OMBRO", livres, qq, List.of(l2(Direcao.BAIXO)),
+                7.5, 18, Exposicao.PERNAS, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI));
+        // RB -> sem pegada (com pegada continua a queda com a pegada): mais uma queda explosiva no RB
+        c.transicao(BODY_LOCK, "Agarrar a cintura (body lock)", "CINTURA", livres, qq, List.of(rb(Direcao.DIREITA)),
+                6.0, 14, Exposicao.BASE, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI));
+        for (String id : new String[] {SINGLE_LEG, HIGH_CROTCH, ANKLE_PICK, CARREGADA_OMBRO, BODY_LOCK}) {
+            c.posturas.put(id, PosturaExigida.EM_PE);
+        }
+        // ---------- LT sem pegada, DE JOELHOS: entradas curtas, pouco deslocamento e amplitude
+        c.transicao(SINGLE_LEG_JOELHOS, "Single leg de joelhos", "SINGLE LEG", livres, qq, List.of(l2(Direcao.CIMA)),
+                4.5, 12, Exposicao.BASE, sempre, 0, para(Posicao.MEIA_GUARDA, INI, OUT));
+        c.transicao(DOUBLE_LEG_JOELHOS, "Double leg de joelhos (tombar de lado)", "DOUBLE LEG", livres, qq,
+                List.of(l2(Direcao.DIREITA)), 5.0, 12, Exposicao.BASE, sempre, 0,
+                para(Posicao.CONTROLE_LATERAL, INI, INI));
+        c.transicao(ARM_DRAG, "Arrastar o braço (arm drag)", "ARM DRAG", livres, qq, List.of(l2(Direcao.ESQUERDA)),
+                4.0, 10, Exposicao.BASE, sempre, 0, para(Posicao.COSTAS, INI, INI));
+        c.transicao(SNAP_DOWN, "Puxar a cabeça (snap down)", "SNAP DOWN", livres, qq, List.of(l2(Direcao.BAIXO)),
+                4.0, 10, Exposicao.BASE, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI));
+        for (String id : new String[] {SINGLE_LEG_JOELHOS, DOUBLE_LEG_JOELHOS, ARM_DRAG, SNAP_DOWN}) {
+            c.posturas.put(id, PosturaExigida.DE_JOELHOS);
+        }
+        // ---------- LB + LT com a pegada (em pe): duas projecoes e duas entradas de guarda
+        c.transicao(UCHI_MATA, "Uchi-mata (ceifa por dentro da coxa)", "UCHI-MATA", pegada, ctrl,
+                List.of(l12(Direcao.CIMA)), 6.5, 20, Exposicao.BASE, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI));
+        c.exigir(UCHI_MATA, RequisitoTecnica.PEGADA_APLICADOR);
+        c.transicao(OSOTO_GARI, "Osoto-gari (grande ceifada por fora)", "OSOTO", pegada, ctrl,
+                List.of(l12(Direcao.DIREITA)), 5.5, 16, Exposicao.BASE, sempre, 0,
+                para(Posicao.CONTROLE_LATERAL, INI, INI));
+        c.exigir(OSOTO_GARI, RequisitoTecnica.PEGADA_APLICADOR);
+        c.transicao(PUXAR_ARANHA, "Puxar para a guarda aranha", "ARANHA", pegada, ctrl, List.of(l12(Direcao.ESQUERDA)),
+                3.0, 12, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_ARANHA, OUT, INI));
+        c.exigir(PUXAR_ARANHA, RequisitoTecnica.PEGADA_APLICADOR, RequisitoTecnica.PEGADA_MANGAS);
+        c.transicao(PUXAR_LACO, "Puxar para a guarda laço", "LAÇO", pegada, ctrl, List.of(l12(Direcao.BAIXO)),
+                3.0, 12, Exposicao.BASE, sempre, 0, para(Posicao.GUARDA_LACO, OUT, INI));
+        c.exigir(PUXAR_LACO, RequisitoTecnica.PEGADA_APLICADOR);
+        for (String id : new String[] {UCHI_MATA, OSOTO_GARI, PUXAR_ARANHA, PUXAR_LACO}) {
+            c.posturas.put(id, PosturaExigida.EM_PE);
+        }
 
         // ---------- ASHI GARAMI: quem controla consolida/solta; o outro gira, esconde o pe ou levanta
         Set<Posicao> perna = EnumSet.of(Posicao.ASHI_GARAMI);

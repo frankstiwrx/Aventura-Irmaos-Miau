@@ -154,7 +154,14 @@ class Familias5P2GamePanelTest extends Base5OGamePanel {
             q = painel.montarQuadroDpad(SlotJogador.JOGADOR_2);
             assertTrue(q.nomeCamada().contains("ESPECIAIS"), q.nomeCamada());
             toqueCtl("UP");
-            assertTrue(m().getTentativa().isEmpty(), "L1+L2 em pe nao dispara tiro (L1) nem rasteira (L2)");
+            // 5Q.6 (pedido): L1+L2 com a pegada agora tem a roda propria (uchi-mata no cima); continua
+            // sem disparar o tiro (L1) nem a rasteira (L2). Antes a roda era vazia.
+            assertEquals(CatalogoTecnicasSolo.UCHI_MATA, m().getTentativa().orElseThrow().tecnica().id(),
+                    "L1+L2 em pe nao dispara tiro (L1) nem rasteira (L2)");
+            m().comando(Lado.B, new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
+                    com.irmaosmiau.posicional.TecnicaSolo.Direcao.CIMA,
+                    com.irmaosmiau.posicional.TecnicaSolo.Familia.L1_L2));      // abandona a uchi-mata
+            ticks(com.irmaosmiau.posicional.MotorSolo.RECARGA_TICKS + 1);
             assertTrue(s().isInteracaoEstabelecida());
             ctl("E", false);
             ticks(1);

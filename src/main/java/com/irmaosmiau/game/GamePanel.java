@@ -2168,7 +2168,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             com.irmaosmiau.posicional.TecnicaSolo.Familia fam) {
         com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo cmd = new com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo(
                 com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), fam);
-        java.util.Optional<com.irmaosmiau.posicional.TecnicaSolo> t = solo.getCatalogo().para(solo.getEstado(), l, cmd);
+        java.util.Optional<com.irmaosmiau.posicional.TecnicaSolo> t = solo.tecnicaPara(l, cmd);              // 5Q.6: em pe x de joelhos
         if (t.isPresent()) {
             return java.util.Optional.of(new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
                     CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null, solo.motivoSem(l, t.get()) == null));
