@@ -194,8 +194,17 @@ private static final double VELOCIDADE_ROLAMENTO = 7.0;
  * e em pe = 1,0 (a velocidade de sempre).
  */
 public static final double MULTIPLICADOR_ROLAMENTO_DEITADO = 0.6;
-/** 5Q.6: rolamento a partir de JOELHOS um pouco mais lento (22 -> 28 ticks, mesma distancia). */
-public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8;
+/**
+ * 5Q.7: fracao da velocidade do rolamento de JOELHOS da 5Q.6 que fica (0,6 = 40% mais lento). Primeira
+ * referencia de balanceamento: recalibrar aqui depois dos testes fisicos.
+ */
+public static final double FATOR_ROLAMENTO_JOELHOS_5Q7 = 0.6;
+/**
+ * 5Q.6: rolamento a partir de JOELHOS um pouco mais lento (22 -> 28 ticks, mesma distancia, 0,8).
+ * 5Q.7: mais 40% mais lento (0,8 x 0,6 = 0,48 -> 46 ticks; a duracao ~1,65x a da 5Q.6). A animacao
+ * anda pelo progresso (quadros / duracao) e a velocidade cai na mesma proporcao: sem deslizar.
+ */
+public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8 * FATOR_ROLAMENTO_JOELHOS_5Q7;
 
 /* Duracao e velocidade do rolamento EM ANDAMENTO (decididas no inicio). */
 private int duracaoRolamentoAtual = DURACAO_ROLAMENTO;
@@ -1626,8 +1635,21 @@ public void alternarDeitado() {
     public static int duracaoSprawl() {
         return DURACAO_SPRAWL;
     }
-    /** Recarga depois de uma acrobacia: ~0,4 s. */
+    /** Recarga depois de uma acrobacia: ~0,4 s (5Q.7: e a BASE da recarga dinamica). */
     public static final int RECARGA_ACROBACIA_TICKS = 24;
+    /** 5Q.7: limites da recarga dinamica das acrobacias (ticks). */
+    public static final int RECARGA_ACROBACIA_MINIMA_TICKS = 3;
+    public static final int RECARGA_ACROBACIA_MAXIMA_TICKS = 60;
+    /** 5Q.7: valor de atributo que vale "mobilidade maxima" (agilidade/velocidade ja com a faixa). */
+    public static final double REFERENCIA_MOBILIDADE = 100.0;
+    public static final double PESO_AGILIDADE_ACROBACIA = 0.6;
+    public static final double PESO_VELOCIDADE_ACROBACIA = 0.4;
+    /** 5Q.7: quanto a mobilidade maxima corta da base (0,8 = sobra 20%). */
+    public static final double REDUCAO_MAXIMA_POR_MOBILIDADE = 0.8;
+    /** 5Q.7: sem folego/condicionamento nenhum, a recarga dobra (1,0 = +100%). */
+    public static final double PENALIDADE_CANSACO_ACROBACIA = 1.0;
+    public static final double PESO_FOLEGO_ACROBACIA = 0.5;
+    public static final double PESO_CONDICIONAMENTO_ACROBACIA = 0.5;
 
     private final DefesaCorporal defesa = new DefesaCorporal();
     private int recargaSprawl;
@@ -1757,8 +1779,30 @@ public void alternarDeitado() {
         if (++framesAcrobacia >= acrobacia.getDuracaoTicks()) {
             acrobacia = null;
             framesAcrobacia = 0;
-            recargaAcrobacia = RECARGA_ACROBACIA_TICKS;
+            recargaAcrobacia = recargaAcrobaciaDinamica();        // 5Q.7: pelos atributos e pela condicao
         }
+    }
+
+    /**
+     * 5Q.7: intervalo de RECUPERACAO depois de uma acrobacia (nao mexe na duracao da animacao).
+     * base x fator de mobilidade x fator de cansaco, dentro dos limites:
+     * - mobilidade = (0,6 agilidade + 0,4 velocidade) / 100 (ate 1). Os atributos ja tem a evolucao da
+     *   faixa (EvolucaoGraduacao): a graduacao nao e contada de novo;
+     * - fator de mobilidade = 1 - 0,8 x mobilidade (mais agil e rapido: recarga menor);
+     * - condicao = 0,5 x folego atual/maximo + 0,5 x condicionamento atual/maximo; fator de cansaco =
+     *   1 + 1,0 x (1 - condicao) (cansado: ate o dobro). Recursos infinitos ficam no maximo: condicao 1.
+     */
+    public int recargaAcrobaciaDinamica() {
+        double mobilidade = (PESO_AGILIDADE_ACROBACIA * atributos.getAgilidade()
+                + PESO_VELOCIDADE_ACROBACIA * atributos.getVelocidade()) / REFERENCIA_MOBILIDADE;
+        mobilidade = Math.max(0, Math.min(1, mobilidade));
+        double fMob = 1.0 - REDUCAO_MAXIMA_POR_MOBILIDADE * mobilidade;
+        double fol = atributos.getFolego() <= 0 ? 1 : folegoAtual / atributos.getFolego();
+        double con = atributos.getCondicionamento() <= 0 ? 1 : condicionamentoAtual / atributos.getCondicionamento();
+        double condicao = Math.max(0, Math.min(1, PESO_FOLEGO_ACROBACIA * fol + PESO_CONDICIONAMENTO_ACROBACIA * con));
+        double fCansaco = 1.0 + PENALIDADE_CANSACO_ACROBACIA * (1 - condicao);
+        int r = (int) Math.round(RECARGA_ACROBACIA_TICKS * fMob * fCansaco);
+        return Math.max(RECARGA_ACROBACIA_MINIMA_TICKS, Math.min(RECARGA_ACROBACIA_MAXIMA_TICKS, r));
     }
 
     public TipoAcrobacia getAcrobacia() {

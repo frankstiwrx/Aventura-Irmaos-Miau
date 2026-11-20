@@ -152,7 +152,8 @@ class Movimento5Q6GamePanelTest extends Base5OGamePanel {
 
     @Test
     void rolamentoDeJoelhosESprawlMenosAcelerados() {
-        assertEquals(28, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO));
+        // 5Q.7 (pedido): o rolamento de joelhos ficou mais 40% mais lento (28 -> 46 ticks)
+        assertEquals(46, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO));
         assertEquals(22, IrmaoMiau.duracaoRolamento(EstadoCorporal.EM_PE), "em pe nao mudou");
         assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.DEITADO), "o deitado aprovado nao mudou");
         assertEquals(32, IrmaoMiau.duracaoSprawl());

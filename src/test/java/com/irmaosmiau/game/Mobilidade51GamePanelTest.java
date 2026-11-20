@@ -67,9 +67,10 @@ class Mobilidade51GamePanelTest extends Base5OGamePanel {
             assertTrue(j1().isRolando());
             assertNull(j1().getAcrobacia());
             // 5Q.6 (pedido): de joelhos o rolamento ficou um pouco menos acelerado (22 -> 28, mesma distancia)
-            assertEquals(28, j1().getDuracaoRolamentoAtual(), "rolamento de joelhos com peso (28 ticks)");
+            // 5Q.7 (pedido): mais 40% mais lento (28 -> 46 ticks, mesma distancia)
+            assertEquals(46, j1().getDuracaoRolamentoAtual(), "rolamento de joelhos com peso (46 ticks)");
             assertEquals(f - IrmaoMiau.custoRolamento(), j1().getFolegoAtual(), 0.1);
-            ticks(30);
+            ticks(50);                                           // 5Q.7 (pedido): o rolamento dura 46 ticks (era 30)
             assertFalse(j1().isRolando());
             assertTrue(j1().isAjoelhado(), "a postura nao muda");
             assertEquals(154, x - j1().getX(), 3, "mesma distancia do rolamento de sempre (22 x 7)");
