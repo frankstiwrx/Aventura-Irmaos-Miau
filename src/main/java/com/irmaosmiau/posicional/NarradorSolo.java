@@ -66,6 +66,30 @@ public final class NarradorSolo {
 
     private static final CatalogoFinalizacoes FINALIZACOES = CatalogoFinalizacoes.referencia();
 
+    /**
+     * 5Q.7: natureza REAL da acao do evento (a mesma classificacao das rodas: ClassificacaoAcoes), para
+     * a cor do aviso no topo. Vem do tipo do evento e da tecnica, nunca das palavras da frase. null =
+     * mensagem neutra.
+     */
+    public static com.irmaosmiau.controles.NaturezaAcao natureza(MotorSolo.Evento e) {
+        if (e == null) {
+            return null;
+        }
+        return switch (e.tipo()) {
+            case "SUCESSO", "CONTRA" -> CatalogoTecnicasSolo.referencia().buscar(e.tecnica())
+                    .map(ClassificacaoAcoes::de).orElse(null);
+            case "REVERSAO", "SOLO_LIVRE" -> com.irmaosmiau.controles.NaturezaAcao.QUEDA;
+            case "SPRAWL", "DEFENDIDA", "FIN_DEFENDIDA", "FIN_ESCAPE", "ROMPEU_PERNAS" ->
+                    com.irmaosmiau.controles.NaturezaAcao.DEFESA;
+            case "ATERRISSOU" -> e.tecnica().equals("GUARDA") || e.tecnica().equals("MEIA_GUARDA")
+                    ? com.irmaosmiau.controles.NaturezaAcao.DEFESA : com.irmaosmiau.controles.NaturezaAcao.TRANSICAO;
+            case "FIN_CONTROLE", "FINALIZOU" -> ClassificacaoAcoes.de((Finalizacao) null);
+            case "RENDICAO" -> com.irmaosmiau.controles.NaturezaAcao.DESISTENCIA;
+            case "SOLTOU_PERNAS" -> com.irmaosmiau.controles.NaturezaAcao.CONTROLE;
+            default -> null;
+        };
+    }
+
     /** Nome curto da finalizacao do evento (ex.: "armlock"). */
     static String nomeFin(MotorSolo.Evento e) {
         return FINALIZACOES.buscar(e.tecnica()).map(Finalizacao::nome).orElse(e.tecnica())

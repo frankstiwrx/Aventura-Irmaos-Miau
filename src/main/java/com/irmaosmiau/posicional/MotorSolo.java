@@ -2520,11 +2520,20 @@ public final class MotorSolo {
         }
     }
 
-    private final Deque<String> mensagens = new ArrayDeque<>();
+    private final Deque<Mensagem> mensagens = new ArrayDeque<>();
+
+    /** 5Q.7: frase de um resultado confirmado e a natureza da acao (cor do aviso; null = neutra). */
+    public record Mensagem(String texto, com.irmaosmiau.controles.NaturezaAcao natureza) {
+    }
 
     /** 5P.1: frases dos resultados CONFIRMADOS desde a ultima consulta (aviso no topo). */
     public List<String> consumirMensagens() {
-        List<String> l = List.copyOf(mensagens);
+        return consumirMensagensComNatureza().stream().map(Mensagem::texto).toList();
+    }
+
+    /** 5Q.7: as mesmas frases, com a natureza da acao (as rodas e os avisos usam a mesma cor). */
+    public List<Mensagem> consumirMensagensComNatureza() {
+        List<Mensagem> l = List.copyOf(mensagens);
         mensagens.clear();
         return l;
     }
@@ -2533,7 +2542,7 @@ public final class MotorSolo {
         ultimo = new Evento(tick, tipo, tecnica, lado, detalhe);
         String frase = NarradorSolo.mensagem(ultimo);
         if (frase != null) {
-            mensagens.addLast(frase);
+            mensagens.addLast(new Mensagem(frase, NarradorSolo.natureza(ultimo)));
             while (mensagens.size() > 4) {
                 mensagens.removeFirst();
             }

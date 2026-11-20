@@ -5,6 +5,8 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import com.irmaosmiau.controles.NaturezaAcao;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 
@@ -28,20 +30,37 @@ public final class AvisosCombate {
 
     private static final Font FONTE = new Font("Arial", Font.BOLD, 13);
 
-    private final Deque<String> fila = new ArrayDeque<>();
+    /** 5Q.7: cor das mensagens sem natureza (avisos do sistema: a mesma de antes). */
+    public static final Color COR_NEUTRA = new Color(255, 236, 160);
+
+    private record Aviso(String texto, NaturezaAcao natureza) {
+    }
+
+    private final Deque<Aviso> fila = new ArrayDeque<>();
     private String atual;
+    private NaturezaAcao naturezaAtual;
     private int restantes;
 
+    /** Aviso neutro (sistema: modo desenvolvedor, laboratorio, recursos...). */
     public void adicionar(String mensagem) {
+        adicionar(mensagem, null);
+    }
+
+    /**
+     * 5Q.7: aviso de uma acao com a natureza REAL dela (a mesma das rodas): a cor sai de
+     * PainelDpadContextual.corDaNatureza, a unica tabela de cores das naturezas.
+     */
+    public void adicionar(String mensagem, NaturezaAcao natureza) {
         if (mensagem == null || mensagem.isBlank() || mensagem.equals(atual) && restantes > DURACAO_TICKS / 2) {
             return;
         }
         if (atual == null) {
             atual = mensagem;
+            naturezaAtual = natureza;
             restantes = DURACAO_TICKS;
             return;
         }
-        fila.addLast(mensagem);
+        fila.addLast(new Aviso(mensagem, natureza));
         while (fila.size() > FILA_MAXIMA) {
             fila.removeFirst();
         }
@@ -54,7 +73,9 @@ public final class AvisosCombate {
             return;
         }
         if (--restantes <= 0) {
-            atual = fila.pollFirst();
+            Aviso a = fila.pollFirst();
+            atual = a == null ? null : a.texto();
+            naturezaAtual = a == null ? null : a.natureza();
             restantes = atual == null ? 0 : fila.isEmpty() ? DURACAO_TICKS : DURACAO_COM_FILA_TICKS;
         }
     }
@@ -62,12 +83,27 @@ public final class AvisosCombate {
     public void limpar() {
         fila.clear();
         atual = null;
+        naturezaAtual = null;
         restantes = 0;
     }
 
     /** Aviso na tela agora (null = nenhum). */
     public String getAtual() {
         return atual;
+    }
+
+    /** 5Q.7: natureza do aviso na tela (null = neutro). */
+    public NaturezaAcao getNaturezaAtual() {
+        return atual == null ? null : naturezaAtual;
+    }
+
+    /** 5Q.7: cor do texto do aviso na tela (a cor da natureza nas rodas; neutro = a de sempre). */
+    public Color corAtual() {
+        return corDe(getNaturezaAtual());
+    }
+
+    public static Color corDe(NaturezaAcao n) {
+        return n == null ? COR_NEUTRA : PainelDpadContextual.corDaNatureza(n);
     }
 
     public int pendentes() {
@@ -91,7 +127,13 @@ public final class AvisosCombate {
         int alfa = restantes < 20 ? Math.max(40, restantes * 10) : 200;   // some suave no fim
         g.setColor(new Color(20, 20, 30, Math.min(170, alfa)));
         g.fillRoundRect(x, Y, w, ALTURA, 10, 10);
-        g.setColor(new Color(255, 236, 160, Math.min(255, alfa + 55)));
+        if (naturezaAtual == NaturezaAcao.DESISTENCIA) {           // 5Q.7: o mesmo destaque do BATER na roda
+            Color m = PainelDpadContextual.MOLDURA_DESISTENCIA;
+            g.setColor(new Color(m.getRed(), m.getGreen(), m.getBlue(), Math.min(255, alfa + 55)));
+            g.drawRoundRect(x, Y, w - 1, ALTURA - 1, 10, 10);
+        }
+        Color c = corAtual();
+        g.setColor(new Color(c.getRed(), c.getGreen(), c.getBlue(), Math.min(255, alfa + 55)));
         g.drawString(texto, larguraTela / 2 - fm.stringWidth(texto) / 2, Y + 16);
         g.dispose();
     }

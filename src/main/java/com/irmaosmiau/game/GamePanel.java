@@ -1624,6 +1624,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     String avisoAtual() {
         return avisos.getAtual();
     }
+
+    /** 5Q.7: natureza do aviso no topo (testes; null = neutro). */
+    com.irmaosmiau.controles.NaturezaAcao naturezaDoAviso() {
+        return avisos.getNaturezaAtual();
+    }
     private final java.util.Map<com.irmaosmiau.posicional.Lado, com.irmaosmiau.posicional.TecnicaSolo.ComandoSolo>
             pedidosSolo = new java.util.EnumMap<>(com.irmaosmiau.posicional.Lado.class);
 
@@ -1721,7 +1726,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         pedidosSolo.clear();
         r.forEach((l, resp) -> {
             if (resp.resultado() == com.irmaosmiau.posicional.MotorSolo.Resultado.CONTRA) {
-                avisos.adicionar(solo.consumirMensagens().stream().reduce((a, b) -> b).orElse(null));
+                solo.consumirMensagensComNatureza().stream().reduce((a, b) -> b)
+                        .ifPresent(msg -> avisos.adicionar(msg.texto(), msg.natureza()));   // 5Q.7: cor da natureza
             }
             String sigla = l == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2";
             String nome = resp.tecnica() == null ? "" : resp.tecnica().nome().toUpperCase(java.util.Locale.ROOT) + " · ";
@@ -1763,8 +1769,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         com.irmaosmiau.posicional.MotorSolo.Evento antes = solo.getUltimoEvento();
         solo.informarIntencoes(ia, ib);
         solo.atualizar(ia, ib);
-        for (String m : solo.consumirMensagens()) {
-            avisos.adicionar(m);                             // 5P.1: so resultados confirmados
+        for (com.irmaosmiau.posicional.MotorSolo.Mensagem m : solo.consumirMensagensComNatureza()) {
+            avisos.adicionar(m.texto(), m.natureza());       // 5P.1: so resultados confirmados (5Q.7: com a cor)
         }
         for (IrmaoMiau l : List.of(jogadorBranco, jogadorPreto)) {
             solo.orientacao(l).ifPresent(l::setViradoParaDireita);
@@ -3313,7 +3319,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             String txt = (v.vencedor() == com.irmaosmiau.posicional.Lado.A ? "J1" : "J2") + " VENCEU POR FINALIZAÇÃO · "
                     + v.finalizacao().nome().toUpperCase(java.util.Locale.ROOT) + (v.rendicao() ? " (BATEU)" : "");
             if (modoTreino) {
-                avisos.adicionar(txt);
+                avisos.adicionar(txt, v.rendicao() ? com.irmaosmiau.controles.NaturezaAcao.DESISTENCIA
+                        : com.irmaosmiau.controles.NaturezaAcao.FINALIZACAO);   // 5Q.7
                 solo.limparVitoria();
             } else {
                 fimDeJogo = true;
