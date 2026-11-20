@@ -420,6 +420,7 @@ public final class MotorSolo {
 
     /** 5Q.3/5Q.4: tecnicas com animacao propria de quem aplica e de quem recebe (AnimacoesTecnicas). */
     static final java.util.Set<String> ANIMACAO_PROPRIA = java.util.Set.of(CatalogoTecnicasSolo.BERIMBOLO,
+            CatalogoTecnicasSolo.BERIMBOLO_KISS, CatalogoTecnicasSolo.BERIMBOLO_INVERTIDO,      // 5Q.6
             CatalogoTecnicasSolo.PRENDER_PERNAS,
             // 5Q.5: quedas e entradas com animacao propria (quem faz e quem recebe)
             CatalogoTecnicasSolo.RASTEIRA, CatalogoTecnicasSolo.ENTRADA_PERNAS, CatalogoTecnicasSolo.JOELHO_DIRETO,
@@ -594,7 +595,7 @@ public final class MotorSolo {
                     falharFinalizacao("defendida");
                     return new Resposta(Resultado.CONTRA, "DEFENDEU", null);
                 }
-                return new Resposta(Resultado.CONCLUIDA, f.categoria().getDefesa(), null);
+                return new Resposta(Resultado.CONCLUIDA, f.defesa(), null);
             }
             if (ehEscapar(c) && a.fase == FaseFinalizacao.ENTRADA) {
                 return new Resposta(Resultado.RECUSADA, "DEFENDA A ENTRADA (↓)", null);

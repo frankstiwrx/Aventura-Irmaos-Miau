@@ -66,7 +66,8 @@ class Finalizacoes5QGamePanelTest extends Base5OGamePanel {
             ateDisputa();
             PainelDpadContextual.Quadro q1 = painel.montarQuadroDpad(SlotJogador.JOGADOR_1);
             assertTrue(q1.nomeCamada().startsWith("DEFENDA: AMERICANA"), q1.nomeCamada());
-            assertEquals("PROTEGER BRAÇO", PainelDpadContextual.texto(q1, DirecaoTecnica.BAIXO));
+            // 5Q.6 (pedido): a defesa e pela articulacao atacada (a americana torce o OMBRO)
+            assertEquals("PROTEGER O OMBRO", PainelDpadContextual.texto(q1, DirecaoTecnica.BAIXO));
             assertTrue(painel.montarQuadroDpad(SlotJogador.JOGADOR_2).nomeCamada().startsWith("ATACANDO AMERICANA"));
             for (int i = 0; i < 600 && !painel.isFimDeJogo(); i++) {
                 ticks(1);

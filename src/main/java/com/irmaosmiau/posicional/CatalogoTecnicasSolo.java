@@ -615,6 +615,13 @@ public final class CatalogoTecnicasSolo {
         c.transicao(BERIMBOLO, "Berimbolo", "BERIMBOLO", dlr, ctrl, List.of(l12(Direcao.CIMA)),
                 6.0, 20, Exposicao.BASE, Criterio.CONTROLE_PROPRIO, 50, para(Posicao.COSTAS, INI, INI),
                 POSTURA_DLR, LIVRAR_GANCHO);
+        // 5Q.6: variacoes do berimbolo (o atual continua no ^; o ashi da DLR continua no v)
+        c.transicao(BERIMBOLO_KISS, "Kiss of the dragon (inversão por baixo)", "KISS DRAGON", dlr, ctrl,
+                List.of(l12(Direcao.ESQUERDA)), 7.0, 24, Exposicao.BASE, Criterio.CONTROLE_PROPRIO, 60,
+                para(Posicao.COSTAS, INI, INI), POSTURA_DLR, LIVRAR_GANCHO);
+        c.transicao(BERIMBOLO_INVERTIDO, "Baby bolo (berimbolo para cima)", "BABY BOLO", dlr, ctrl,
+                List.of(l12(Direcao.DIREITA)), 5.0, 16, Exposicao.BASE, semPostura, 0,
+                para(Posicao.CONTROLE_LATERAL, INI, INI), POSTURA_DLR);
         c.transicao(PASSAR_DLR, "Quebrar o gancho e passar", "PASSAR", dlr, cima, List.of(rs(Direcao.CIMA)),
                 4.5, 18, Exposicao.BASE, estab, 55, para(Posicao.CONTROLE_LATERAL, INI, INI), RASPAGEM_DLR, BERIMBOLO);
         c.ajuste(POSTURA_DLR, "Base (quadril para trás)", "BASE", dlr, cima, List.of(rs(Direcao.BAIXO)), Efeito.POSTURA);

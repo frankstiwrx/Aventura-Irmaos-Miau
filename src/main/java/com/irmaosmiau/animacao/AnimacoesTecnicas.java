@@ -143,6 +143,31 @@ public final class AnimacoesTecnicas {
                 q(0.60, 9, 24, 11, 10, 16, 14, 20, 14, 29, -16),                                     // perde a base: pe da frente sobe
                 q(0.90, 9, 30, 22, 10, 23, 10, 31, 8));                                              // o joelho desce
 
+        // 5Q.6: KISS OF THE DRAGON: a inversao vai mais fundo (passa por baixo das pernas do outro) e sai
+        // direto nas costas; o giro e maior e mais lento que o berimbolo
+        def("berimbolo_kiss:ATACA",
+                q(0.00),
+                q(0.20, 6, 24, 10, -14, 26, 22, 28, 22, 31, 4),                                      // encaixa o quadril embaixo
+                q(0.50, 10, -96, 5, -8, 22, 24, 24, 28, 26, 34, 27, -24, 28, 40, 29, -34, 30, 10, 31, 6),   // invertido, passando por baixo
+                q(0.78, 10, -40, 9, 14, 26, 18, 28, 20, 30, 40),                                     // sai por tras
+                q(1.00, 10, 24, 9, 18, 30, 56));
+        def("berimbolo_kiss:RECEBE",
+                q(0.00),
+                q(0.40, 9, 8, 28, 8),
+                q(0.70, 9, 18, 11, 8, 22, 6, 26, 8, 29, -10),                                        // as pernas ficam por cima de quem gira
+                q(1.00, 9, 28, 11, 10, 22, 10, 23, 10, 31, 8));
+        // 5Q.6: BABY BOLO: meia inversao, puxa a perna e sobe POR CIMA (raspagem), sem ir para as costas
+        def("berimbolo_invertido:ATACA",
+                q(0.00),
+                q(0.30, 6, 16, 10, -8, 26, 18, 28, 18),                                              // vira o quadril
+                q(0.60, 10, -40, 5, -4, 26, 26, 27, -14, 28, 30, 20, 16, 21, 10, 30, 10),            // meia inversao, puxa a perna
+                q(1.00, 10, 10, 9, 22, 20, 18, 21, 16, 16, 14, 17, 18, 30, 30, 31, -6));             // sobe por cima
+        def("berimbolo_invertido:RECEBE",
+                q(0.00),
+                q(0.35, 9, 8, 28, 10),
+                q(0.70, 9, 20, 11, 8, 26, 16, 27, -12, 28, 22, 29, -18),                             // a perna presa sobe
+                q(1.00, 9, -24, 11, -10, 10, -20, 31, 10));                                          // cai de costas
+
         // ---------------- 7. QUEBRAR A POSTURA (guarda fechada; ajuste instantaneo, 18 ticks) - 5Q.4
         // quem esta por baixo (deitado: +x = para cima, +y = para o outro) puxa com os joelhos e os bracos
         def("quebrar_postura:ATACA",
@@ -520,6 +545,11 @@ public final class AnimacoesTecnicas {
             return p;                                          // finalizacoes ja chegam no tempo q
         }
         return p < m ? 0.5 * p / m : 0.5 + 0.5 * (p - m) / (1 - m);
+    }
+
+    /** 5Q.6: amostra publica (testes de diferenca entre variacoes). */
+    public static double[] amostraParaTeste(String chave, double t) {
+        return amostrar(chave, t);
     }
 
     /** Deltas (32 valores: 30 do rig + dx/dy) da animacao no tempo q. */

@@ -68,6 +68,16 @@ public record Finalizacao(
         return c != null && c.familia() == familia && c.direcao() == direcao;
     }
 
+    /** 5Q.6: o que a finalizacao ataca (braco, ombro, punho, pescoco, tornozelo, pe, joelho...). */
+    public AlvoFinalizacao alvo() {
+        return AlvoFinalizacao.de(this);
+    }
+
+    /** 5Q.6: rotulo da defesa tecnica pelo alvo (antes so pela categoria). */
+    public String defesa() {
+        return alvo().getDefesa();
+    }
+
     /** Identificador futuro da animacao (contrato). */
     public String animacaoFutura() {
         return "finalizacao/" + id;

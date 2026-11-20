@@ -22,7 +22,8 @@ public enum ModoRegras {
     LIVRE("Livre"),
     CAMPEONATO_PROVISORIO("Campeonato (provisório)");
 
-    private static final Set<String> PERNAS_LIBERADAS_CAMPEONATO = Set.of("chave_pe_reta");
+    // 5Q.6: a chave de pe reta da 50/50 e a mesma chave reta (variacao de posicao)
+    private static final Set<String> PERNAS_LIBERADAS_CAMPEONATO = Set.of("chave_pe_reta", "pe_reta_5050");
 
     private final String nome;
 

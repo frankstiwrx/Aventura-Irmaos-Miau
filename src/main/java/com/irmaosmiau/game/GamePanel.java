@@ -2216,7 +2216,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             por.accept(com.irmaosmiau.controles.DirecaoTecnica.BAIXO, "SOLTAR");
             titulo = (disputa ? "ATACANDO " : "ENTRANDO ") + nome;
         } else {
-            por.accept(com.irmaosmiau.controles.DirecaoTecnica.BAIXO, a.finalizacao().categoria().getDefesa());
+            por.accept(com.irmaosmiau.controles.DirecaoTecnica.BAIXO, a.finalizacao().defesa());   // 5Q.6: pelo alvo
             if (disputa) {                                        // 5Q.6: ^ escapa (com ou sem RB)
                 por.accept(com.irmaosmiau.controles.DirecaoTecnica.CIMA, a.janelaDeFuga() ? "ESCAPAR (ESPAÇO)" : "ESCAPAR");
             }

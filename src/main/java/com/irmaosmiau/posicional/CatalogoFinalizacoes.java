@@ -93,7 +93,7 @@ public final class CatalogoFinalizacoes {
         CategoriaFinalizacao br = CategoriaFinalizacao.BRACO;
         CategoriaFinalizacao es = CategoriaFinalizacao.ESTRANGULAMENTO;
         CategoriaFinalizacao pe = CategoriaFinalizacao.PERNA;
-        Familia l1 = Familia.L1;
+        Familia l1 = Familia.L1;            // ashi garami (5Q.6): L1 = joelho/quadril
         Familia l2 = Familia.L2;
         Familia l12 = Familia.L1_L2;
         Direcao cima = Direcao.CIMA;
@@ -163,8 +163,21 @@ public final class CatalogoFinalizacoes {
         c.em(Posicao.ASHI_GARAMI, PapelPosicional.CONTROLADOR, para(Posicao.SOLO_DISPUTADO, NADA, NADA));
         c.f(l12, cima, "chave_pe_reta", "Chave de pé reta", "PÉ RETA", pe, RX, ctl, 40, FICA);
         c.f(l12, dir, "chave_joelho", "Chave de joelho", "JOELHO", pe, MR, ctl, 50, FICA);
-        c.f(l12, baixo, "mao_de_vaca", "Mão de vaca (toe hold)", "MÃO VACA", pe, MR, ctl, 50, FICA);
+        // 5Q.6: o L1+L2 v era chamado de "Mao de vaca (toe hold)"; no jiu-jitsu mao de vaca e uma chave de
+        // PUNHO. A tecnica (e o comando) continua a mesma, com o nome certo: toe hold / mata-leao no pe
+        c.f(l12, baixo, "toe_hold", "Toe hold (mata-leão no pé)", "TOE HOLD", pe, MR, ctl, 50, FICA);
         c.f(l12, esq, "panturrilha", "Compressão de panturrilha", "PANTURR.", pe, MR, ctl, 50, FICA);
+        // 5Q.6: LT (L2) e LB (L1) no ashi: tornozelo/pe no LT, joelho/quadril no LB. Sem heel hook (regra do
+        // jogo: ModoRegras). Cada uma muda requisito, limiar, alvo da defesa ou o que acontece se falhar.
+        Desfecho cinquenta = para(Posicao.SOLO_DISPUTADO, NADA, NADA);    // 50/50: defendida, ninguem controla
+        Desfecho rolouErrado = para(Posicao.CONTROLE_LATERAL, OUT, OUT);  // o giro falhou: o outro passa por cima
+        c.f(l2, cima, "aoki_lock", "Aoki lock (chave de tornozelo girando)", "AOKI", pe, RX, ctl, 45, FICA);
+        c.f(l2, dir, "estima_lock", "Estima lock (chave de pé)", "ESTIMA", pe, MR, ctl, 50, FICA);
+        c.f(l2, baixo, "pe_reta_5050", "Chave de pé reta da 50/50 (variação)", "PÉ 50/50", pe, RX, ctl, 30, cinquenta);
+        c.f(l1, cima, "joelho_invertido", "Chave de joelho invertida", "JOELHO INV.", pe, MR, ctl, 55, FICA);
+        c.f(l1, dir, "banana_split", "Banana split (abrir as pernas)", "BANANA", pe, MR, ctl, 50, FICA);
+        c.f(l1, baixo, "kneebar_giro", "Chave de joelho com giro (variação)", "JOELHO GIRO", pe, MR, ctl, 35,
+                rolouErrado);
 
         // ================= GUARDA ARANHA e LACO (por baixo, com a manga)
         Desfecho aberta = para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM);

@@ -79,8 +79,10 @@ class Finalizacoes5Q5Test {
         assertEquals(ParametrosFinalizacao.POSTURA_QUEBRADA_TICKS, MotorSolo.POSTURA_QUEBRADA_TICKS);
         // o catalogo do codigo tem 40 finalizacoes executaveis (23 tecnicas-base por posicao); o spec da 5Q.5
         // fala em 47: divergencia registrada no relatorio, nada foi adicionado nem removido
-        assertEquals(40, CatalogoFinalizacoes.referencia().todas().size(), "nenhuma finalizacao a mais ou a menos");
-        assertEquals(23, CatalogoFinalizacoes.referencia().todas().stream().map(Finalizacao::tecnicaBase).distinct().count());
+        // 5Q.6 (pedido): +6 finalizacoes de perna no LB/LT do ashi (40 -> 46; 23 -> 29 tecnicas-base);
+        // o "mao_de_vaca" virou "toe_hold" (mesmo comando, nome certo), sem mudar a contagem
+        assertEquals(46, CatalogoFinalizacoes.referencia().todas().size(), "nenhuma finalizacao a mais ou a menos");
+        assertEquals(29, CatalogoFinalizacoes.referencia().todas().stream().map(Finalizacao::tecnicaBase).distinct().count());
         assertTrue(CatalogoFinalizacoes.referencia().todas().stream()
                 .allMatch(f -> f.janelaEntrada() == ParametrosFinalizacao.janelaCatalogo(f.graduacao())));
     }
