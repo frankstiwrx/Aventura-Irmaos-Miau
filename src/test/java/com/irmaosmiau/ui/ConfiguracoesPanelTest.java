@@ -160,6 +160,33 @@ class ConfiguracoesPanelTest {
         assertEquals("praia", repo().carregar().getCenarioPreferido(), "nada apagado sem o jogador salvar");
     }
 
+    // 5Q.4: a linha "Cenario preferido" saiu da tela; o valor salvo e preservado ao salvar
+    @Test
+    void cenarioPreferidoForaDaTelaEPreservadoAoSalvar() throws Exception {
+        repo().salvar(ConfiguracoesJogo.padrao().comCenarioPreferido("torneio"));
+        abrir();
+        naEdt(() -> {
+            assertTrue(tela.controleCenario().getParent() == null, "nao aparece nas configuracoes");
+            assertFalse(java.util.Arrays.stream(textos(tela)).anyMatch(t -> t.contains("Cenário")));
+            tela.controleVolumeMusica().setValue(30);
+            assertTrue(tela.salvar());
+        });
+        assertEquals("torneio", repo().carregar().getCenarioPreferido(), "compativel com o que ja estava salvo");
+    }
+
+    private static String[] textos(java.awt.Container c) {
+        java.util.List<String> r = new java.util.ArrayList<>();
+        for (java.awt.Component k : c.getComponents()) {
+            if (k instanceof javax.swing.JLabel l && l.getText() != null) {
+                r.add(l.getText());
+            }
+            if (k instanceof java.awt.Container cc) {
+                r.addAll(java.util.List.of(textos(cc)));
+            }
+        }
+        return r.toArray(new String[0]);
+    }
+
     @Test
     void arquivoCorrompidoAbreComPadroesEAviso() throws Exception {
         Files.writeString(repo().getArquivo(), "{{{");

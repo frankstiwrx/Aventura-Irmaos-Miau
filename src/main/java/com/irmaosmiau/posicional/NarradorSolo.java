@@ -28,7 +28,11 @@ public final class NarradorSolo {
                 case "MEIA_GUARDA" -> o + " recuperou a meia-guarda!";
                 default -> q + " chegou aos 100 quilos!";
             };
-            case "DEFENDIDA" -> switch (e.tecnica()) {
+            case "DEFENDIDA" -> e.detalhe().startsWith("base natural")
+                    ? q + ": a queda não entrou (base firme de " + o + ")"      // 5Q.4: sem defesa ativa
+                    : e.detalhe().startsWith("controle firme")
+                    ? q + ": " + o + " segurou (" + e.detalhe() + ") — enquadre antes"   // 5Q.4: o motivo do escape
+                    : switch (e.tecnica()) {
                 case CatalogoTecnicasSolo.QUEDA_PEGADA, CatalogoTecnicasSolo.EMPURRAO, CatalogoTecnicasSolo.RASTEIRA,
                         CatalogoTecnicasSolo.QUEDA_MANGA, CatalogoTecnicasSolo.DERRUBADA_FORCADA -> o + " defendeu a queda!";
                 case CatalogoTecnicasSolo.TIRO_GUARDA -> o + " defendeu o tiro de guarda!";

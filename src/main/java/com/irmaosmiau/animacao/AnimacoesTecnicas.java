@@ -75,6 +75,17 @@ public final class AnimacoesTecnicas {
                 q(0.75, 9, -18, 11, -8, 18, -8, 19, -18, 20, -10, 21, -20, 16, -10, 17, -20, 30, -8),   // empurrado para tras
                 q(1.00, 9, -20, 11, -8, 20, -12, 21, -24, 16, -12, 17, -24, 30, -10));
 
+        // 5Q.4: reter com os pes (quem esta no chao contra quem esta em pe) usa as mesmas pernas empurrando
+        alias("retencao_pes:ATACA", "afastar_da_guarda:ATACA");
+        alias("retencao_pes:RECEBE", "afastar_da_guarda:RECEBE");
+        // 5Q.4: afastar do chao (ajuste instantaneo, 14 ticks): recolhe, estende e volta a pose
+        def("afastar_do_chao:ATACA",
+                q(0.00),
+                q(0.35, 6, 8, 9, 6, 22, 30, 23, -26, 24, 26, 25, -40, 26, 32, 27, -26, 28, 28, 29, -40,
+                        16, 8, 17, -6, 20, 8, 21, -6),
+                q(0.70, 6, -4, 22, 8, 23, 18, 24, 4, 25, 40, 26, 8, 27, 18, 28, 4, 29, 42, 16, 14, 20, 14),
+                q(1.00));
+
         // ---------------- 3. ARMLOCK DA GUARDA FECHADA
         def("armlock@guarda:ATACA",
                 q(0.00),
@@ -131,6 +142,53 @@ public final class AnimacoesTecnicas {
                 q(0.30, 9, 10, 28, 10),
                 q(0.60, 9, 24, 11, 10, 16, 14, 20, 14, 29, -16),                                     // perde a base: pe da frente sobe
                 q(0.90, 9, 30, 22, 10, 23, 10, 31, 8));                                              // o joelho desce
+
+        // ---------------- 7. QUEBRAR A POSTURA (guarda fechada; ajuste instantaneo, 18 ticks) - 5Q.4
+        // quem esta por baixo (deitado: +x = para cima, +y = para o outro) puxa com os joelhos e os bracos
+        def("quebrar_postura:ATACA",
+                q(0.00),
+                q(0.35, 22, 12, 23, -12, 24, 6, 25, -8, 26, 14, 27, -12, 28, 6, 29, -8,
+                        16, 4, 17, -12, 14, 2, 15, -6, 20, 6, 21, -14, 18, 3, 19, -7),                 // puxa para o peito
+                q(1.00));
+        // o de cima (receptor) usa "postura_quebrada": fica curvado os 40 ticks da exposicao e se recompoe
+        def("postura_quebrada:RECEBE",
+                q(0.00),
+                q(0.18, 9, 30, 11, 16, 13, 6, 20, 22, 21, 26, 18, 11, 19, 13, 16, 18, 17, 26, 14, 9, 15, 13, 30, 6),
+                q(0.80, 9, 26, 11, 14, 13, 5, 20, 20, 21, 24, 18, 10, 19, 12, 16, 16, 17, 24, 14, 8, 15, 12, 30, 5),
+                q(1.00));
+        // defendida pela postura (raspagem contra quem esta em postura): o de cima se apruma, as maos no
+        // quadril do outro; o de baixo perde a puxada. Termina na pose da posicao.
+        def("postura_firme:RECEBE",
+                q(0.00),
+                q(0.35, 9, -12, 11, -6, 20, 10, 21, 8, 18, 5, 19, 4, 16, 8, 17, 8, 14, 4, 15, 4, 30, -4),
+                q(1.00));
+        def("postura_firme:ATACA",
+                q(0.00),
+                q(0.35, 22, 2, 23, 4, 26, 2, 27, 4, 16, 6, 17, 14, 14, 3, 15, 7, 20, 8, 21, 16, 18, 4, 19, 8),
+                q(1.00));
+
+        // ---------------- 8. PRENDER AS PERNAS (em pe sobre quem esta no chao) - 5Q.4
+        def("prender_pernas:ATACA",
+                q(0.00),
+                q(0.45, 9, 30, 11, 10, 6, 6, 22, -4, 26, 8, 27, 4, 20, 26, 21, 34, 18, 13, 19, 17,
+                        16, 22, 17, 38, 14, 11, 15, 19, 31, 6),                                      // abaixa e alcanca as canelas
+                q(1.00, 9, 22, 11, 6, 6, 2, 26, 6, 20, 16, 21, 30, 18, 8, 19, 15, 16, 12, 17, 32, 14, 6, 15, 16,
+                        30, -6, 31, 4));                                                             // junta as pernas e puxa
+        def("prender_pernas:RECEBE",
+                q(0.00),
+                q(0.45, 24, 2, 25, 6, 28, -2, 29, 6),
+                q(1.00, 22, -6, 23, 6, 24, -10, 25, 12, 26, 4, 27, 6, 28, -4, 29, 12, 20, 6, 21, 10, 18, 3, 19, 5)); // pernas juntas, puxadas
+
+        // ---------------- 9. AJUSTAR O CONTROLE DA PERNA (ashi garami; ajuste instantaneo) - 5Q.4
+        def("consolidar_ashi:ATACA",
+                q(0.00),
+                q(0.45, 6, 14, 22, 10, 23, -8, 24, 12, 25, -6, 26, -8, 27, -6, 28, -12, 29, -4,
+                        20, 12, 21, 12, 18, 6, 19, 6, 16, 10, 17, 10, 14, 5, 15, 5),                 // aperta os joelhos, gira o quadril
+                q(1.00));
+        def("consolidar_ashi:RECEBE",
+                q(0.00),
+                q(0.45, 9, -10, 11, -6, 26, 6, 27, -4, 28, 12, 29, -8, 20, -8, 21, 6, 18, -4, 19, 3),   // a perna e puxada
+                q(1.00));
     }
 
     private AnimacoesTecnicas() {

@@ -94,3 +94,25 @@ e a compatibilidade com as animações existentes.
   vão precisar de política por técnica (campo no catálogo).
 - Os requisitos de início da PEGADA_1 não verificam se o oponente está rolando, pulando ou deitado
   (mantidos como estavam por decisão desta entrega).
+
+## Itens herdados do antigo ROADMAP.md (5Q.4)
+
+O `ROADMAP.md` da raiz foi removido na entrega 5Q.4: estava desatualizado (marcava como planejado o
+que já existe: guardas, finalizações com disputa, faixas, fôlego/condicionamento infinitos no Modo
+Desenvolvedor, laboratório). O histórico completo continua no git. Ficam aqui só os itens que **ainda
+não existem** no jogo, como ideias (nenhum é compromisso de entrega):
+
+- **Combate em pé**: socos, chutes, interrupções, combinações e golpes característicos por lutador.
+- **Grappling em pé**: clinch (entrada, saída e disputa) como estado próprio.
+- **Chão**: posição de tartaruga.
+- **Resolução**: pequena aleatoriedade controlada com RNG reproduzível por seed (e opção de configurar
+  o RNG no laboratório); sistema genérico de efeitos de combate.
+- **Atributos**: estilos de lutador e afinidades técnicas.
+- **IA**: IA parada/defensiva/contextual/por estilo; controlador genérico (jogador 1, jogador 2, IA,
+  boneco de treino).
+- **Dados**: lutador completamente genérico carregado por dados; técnicas e catálogo externos (JSON).
+- **Criador de personagens**: nome, peso, escala, cores, proporções, atributos, estilo, animações,
+  técnicas, golpe característico; exportar/carregar a definição em JSON.
+- **Progressão**: especialização por estilo; carreira/campanha.
+- **MiauStudio**: biblioteca interna de animações organizada por categoria; integração com o criador.
+- **Projeto**: screenshots/GIFs no README, releases jogáveis mais frequentes, issues para bugs e sugestões.

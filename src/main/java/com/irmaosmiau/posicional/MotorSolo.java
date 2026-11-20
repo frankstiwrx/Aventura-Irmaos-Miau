@@ -378,6 +378,14 @@ public final class MotorSolo {
         }
     }
 
+    /** 5Q.3/5Q.4: tecnicas com animacao propria de quem aplica e de quem recebe (AnimacoesTecnicas). */
+    static final java.util.Set<String> ANIMACAO_PROPRIA = java.util.Set.of(CatalogoTecnicasSolo.BERIMBOLO,
+            CatalogoTecnicasSolo.PRENDER_PERNAS);
+    /** 5Q.4: ajustes INSTANTANEOS com animacao curta propria (termina na pose da posicao). */
+    static final java.util.Set<String> ANIMACAO_INSTANTANEA = java.util.Set.of(CatalogoTecnicasSolo.QUEBRAR_POSTURA,
+            CatalogoTecnicasSolo.CONSOLIDAR_ASHI);
+    static final int TICKS_ANIMACAO_INSTANTANEA = 18;
+
     /** Efeito visual de uma tecnica que comeca (empurrar, afastar, soltar, levantar). */
     private static TipoEfeitoVisual efeitoDaTecnica(String id) {
         return switch (id) {
@@ -902,6 +910,10 @@ public final class MotorSolo {
             if (evi != null) {
                 efeito(lado, evi, 14).tecnica = t.id();
             }
+            if (ANIMACAO_INSTANTANEA.contains(t.id())) {          // 5Q.4: os dois animam o ajuste
+                efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_ANIMACAO_INSTANTANEA).tecnica = t.id();
+                efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_ANIMACAO_INSTANTANEA).tecnica = t.id();
+            }
             instantanea(lado, t);
             recarga.put(lado, RECARGA_TICKS / 2);
             return new Resposta(Resultado.CONCLUIDA, t.nome(), t);
@@ -929,11 +941,12 @@ public final class MotorSolo {
             Efeito e = efeito(lado, ev, janela + 12);
             e.tecnica = t.id();
             e.marco = (double) janela / (janela + 12);
-        } else if (t.id().equals(CatalogoTecnicasSolo.AFASTAR_DA_GUARDA)) {
+        } else if (t.id().equals(CatalogoTecnicasSolo.AFASTAR_DA_GUARDA)
+                || t.id().equals(CatalogoTecnicasSolo.RETENCAO_PES)) {      // 5Q.4: retencao com os pes tambem
             efeito(lado, TipoEfeitoVisual.AFASTANDO, janela).tecnica = t.id();     // 5Q.3: pernas empurram
             efeito(lado.outro(), TipoEfeitoVisual.AFASTADO, janela).tecnica = t.id();
-        } else if (t.id().equals(CatalogoTecnicasSolo.BERIMBOLO)) {
-            efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, janela).tecnica = t.id();  // 5Q.3: inversao
+        } else if (ANIMACAO_PROPRIA.contains(t.id())) {
+            efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, janela).tecnica = t.id();  // 5Q.3/5Q.4: animacao propria
             efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, janela).tecnica = t.id();
         } else if (ev != null) {
             efeito(lado, ev, janela);                          // 5Q: a pose acompanha a janela
@@ -1001,8 +1014,12 @@ public final class MotorSolo {
             return falta;
         }
         if (!p.isNoChao()) {
-            if (eu.isDeitado() || eu.isAjoelhado() || outro.isDeitado() || outro.isAjoelhado()) {
+            if (eu.isDeitado() || outro.isDeitado()) {
                 return "SÓ EM PÉ";
+            }
+            // 5Q.4: de joelhos (venha de onde vier) so as tecnicas compativeis; o resto continua so em pe
+            if ((eu.isAjoelhado() || outro.isAjoelhado()) && !PERMITIDAS_DE_JOELHOS.contains(t.id())) {
+                return "SÓ EM PÉ (DE JOELHOS NÃO)";
             }
             if (sistema != null && sistema.estaEmInteracao() && !sistema.isInteracaoEstabelecida()) {
                 return "PEGADA ENTRANDO";
@@ -1058,7 +1075,7 @@ public final class MotorSolo {
                     exposicao.put(l, new Exposto(e.tipo(), e.ticks() - 1));
                 }
             }
-            if (!exposicao.containsKey(l)) {
+            if (!exposicao.containsKey(l) && !desequilibrado(l)) {   // 5Q.4: desequilibrado nao recupera a base
                 base.put(l, Math.min(BASE_MAXIMA, base.get(l) + RECUPERACAO_BASE));
             }
         }
@@ -1207,12 +1224,24 @@ public final class MotorSolo {
         }
     }
 
-    /** Nada contraditorio: um em pe contra o solo sem ninguem no chao vira separados. */
+    /**
+     * 5Q.4: tecnicas em pe que tambem valem com alguem de joelhos (e ninguem deitado). Tiro de guarda,
+     * entrada nas pernas, rasteira, quadril, queda pela manga e De La Riva continuam so em pe.
+     */
+    static final java.util.Set<String> PERMITIDAS_DE_JOELHOS = java.util.Set.of(CatalogoTecnicasSolo.EMPURRAO,
+            CatalogoTecnicasSolo.PUXAR_GUARDA, CatalogoTecnicasSolo.PUXAR_BORBOLETA,
+            CatalogoTecnicasSolo.DERRUBADA_FORCADA, CatalogoTecnicasSolo.QUEDA_PEGADA);
+
+    /**
+     * Nada contraditorio: um em pe contra o solo sem ninguem DEITADO vira separados (5Q.4: antes
+     * "de joelhos" segurava o solo livre, e a mesma postura dava contextos diferentes pelo caminho).
+     * Com controlador (o sprawl da entrada nas pernas) o estado fica, como na 5P.
+     */
     private void coerencia() {
         if (estado.getPosicao() == Posicao.EM_PE_CONTRA_SOLO && tentativa == null && aterrissagemCima == null) {
             boolean alguemNoChao = false;
             for (IrmaoMiau l : lutadores) {
-                alguemNoChao |= l.isDeitado() || l.isAjoelhado();
+                alguemNoChao |= l.isDeitado() || (l.isAjoelhado() && estado.getControlador().isPresent());
             }
             boolean osDoisDeitados = lutadores[0].isDeitado() && lutadores[1].isDeitado();
             if (!alguemNoChao || osDoisDeitados) {
@@ -1278,6 +1307,12 @@ public final class MotorSolo {
                     Optional<Desfecho> perde = catalogo.falha(tec.id());
                     if (perde.isPresent()) {
                         entrar(perde.get().aplicar(estado, ini), out, true);   // 5Q: a entrada falhou e custou a posicao
+                    }
+                    if (tec.criterio() == TecnicaSolo.Criterio.SEM_POSTURA_DO_OUTRO) {
+                        // 5Q.4: defendida pela POSTURA (diferente de ter a postura quebrada):
+                        // o de cima se apruma, o de baixo perde a puxada
+                        efeito(ini, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_ANIMACAO_INSTANTANEA).tecnica = "postura_firme";
+                        efeito(out, TipoEfeitoVisual.TECNICA_RECEBE, TICKS_ANIMACAO_INSTANTANEA).tecnica = "postura_firme";
                     }
                     registrar("DEFENDIDA", tec.id(), ini, motivoDefesa(tec, out));
                 }
@@ -1514,12 +1549,16 @@ public final class MotorSolo {
         }
         if (fazBase(def, inicioJanelaAtual) && !exposto(def)) {
             base.put(ini, Math.max(0, base.get(ini) - 25));
-            falhouEmPe(ini, CatalogoTecnicasSolo.DERRUBADA_FORCADA, "base firme", Exposicao.AVANCO, 30);
+            falhouEmPe(ini, CatalogoTecnicasSolo.DERRUBADA_FORCADA, "defendeu com base (RT)", Exposicao.AVANCO, 30);
             return;
         }
-        double dano = exposto(def) ? BASE_MAXIMA : 40 + sistema.getFirmeza() * 0.3;
+        // 5Q.4: quem ja esta DESEQUILIBRADO (comando de desequilibrar da pegada, ou a derrubada anterior)
+        // nao tem base para segurar: sem defesa ativa (RT), vai ao chao
+        double dano = exposto(def) || desequilibrado(def) ? BASE_MAXIMA : 40 + sistema.getFirmeza() * 0.3;
         base.put(def, base.get(def) - dano);
         if (base.get(def) > 0) {
+            lutador(def).getEfeitos().aplicar(com.irmaosmiau.entities.EfeitosTemporarios.Tipo.DESEQUILIBRIO,
+                    com.irmaosmiau.combate.SistemaCombate.DURACAO_DESEQUILIBRIO_TICKS);   // 5Q.4: o mesmo desequilibrio
             efeito(def, TipoEfeitoVisual.EMPURRADO, 22).tecnica = CatalogoTecnicasSolo.DERRUBADA_FORCADA;
             exposicao.put(def, new Exposto(Exposicao.BASE, 12));
             exposicao.put(ini, new Exposto(Exposicao.AVANCO, 20));
@@ -1538,15 +1577,28 @@ public final class MotorSolo {
         }
         Intencao id = intencoesAtuais.get(def);
         boolean andando = id != null && (id.dx() != 0 || id.dy() != 0);
-        boolean entra = andando || base.get(def) < 70 || exposto(def);
-        if (!entra || (fazBase(def, inicioJanelaAtual) && !andando && !exposto(def))) {
-            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "pé firme", Exposicao.BASE, 20);
+        boolean vulneravel = exposto(def) || desequilibrado(def);              // 5Q.4: inclui o desequilibrio
+        boolean entra = andando || base.get(def) < 70 || vulneravel;
+        if (fazBase(def, inicioJanelaAtual) && !andando && !vulneravel) {
+            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "defendeu com base (RT)", Exposicao.BASE, 20);
+            return;
+        }
+        if (!entra) {
+            // 5Q.4: o outro nao defendeu: a base NATURAL dele (parado, base cheia) segurou
+            falhouEmPe(ini, CatalogoTecnicasSolo.RASTEIRA, "base natural firme (desequilibre ou espere ele andar)",
+                    Exposicao.BASE, 20);
             return;
         }
         derrubarPelaPegada(def, ini, intencao, CatalogoTecnicasSolo.RASTEIRA);
     }
 
+    /** 5Q.4: efeito DESEQUILIBRIO ativo (o mesmo do SistemaCombate). */
+    private boolean desequilibrado(Lado l) {
+        return lutador(l).getEfeitos().isAtivo(com.irmaosmiau.entities.EfeitosTemporarios.Tipo.DESEQUILIBRIO);
+    }
+
     /** Projecao de quadril: preparacao longa (gira de costas); base firme = REVERSAO (quem projetava cai). */
+
     private void resolverProjecaoQuadril(Lado ini) {
         Lado def = ini.outro();
         if (semPegada(ini, CatalogoTecnicasSolo.PROJECAO_QUADRIL)) {
@@ -1680,10 +1732,20 @@ public final class MotorSolo {
             }
             case CONSOLIDAR -> estabilidade = Math.min(100, estabilidade + DELTA_CONSOLIDAR);
             case ENQUADRAR -> estabilidade = Math.max(0, estabilidade - DELTA_ENQUADRAR);
-            case POSTURA -> postura.put(lado, POSTURA_TICKS);
+            case POSTURA -> {
+                postura.put(lado, POSTURA_TICKS);
+                Efeito q = efeitos.get(lado);                  // 5Q.4: recompoe a postura (volta suave)
+                if (q != null && q.restante > 0 && "postura_quebrada".equals(q.tecnica)) {
+                    Efeito lib = efeito(lado, TipoEfeitoVisual.LIBERANDO, 14);
+                    lib.tecnica = "postura_quebrada:RECEBE";
+                    lib.desde = q.progresso();
+                }
+            }
             case QUEBRAR_POSTURA -> {
                 postura.put(out, 0);
                 exposicao.put(out, new Exposto(Exposicao.POSTURA_QUEBRADA, POSTURA_QUEBRADA_TICKS));
+                // 5Q.4: quem teve a postura quebrada FICA curvado enquanto durar (e volta suave)
+                efeito(out, TipoEfeitoVisual.TECNICA_RECEBE, POSTURA_QUEBRADA_TICKS).tecnica = "postura_quebrada";
             }
             case MONTADA_ALTA -> {
                 estabilidade = Math.min(100, estabilidade + 35);

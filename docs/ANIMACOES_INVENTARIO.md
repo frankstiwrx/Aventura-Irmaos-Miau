@@ -77,3 +77,52 @@ escapes (quadril, upa), ashi garami e chaves de perna, triângulo/omoplata espec
   na verdade são posições das mãos (x/y). As poses genéricas da 5Q funcionam assim mesmo (o comentário foi
   corrigido; o comportamento não foi alterado).
 
+# Atualização 5Q.4 — Consolidação visual
+
+## Novas animações próprias (AnimacoesTecnicas)
+
+| Técnica | Aplicador | Receptor | Fim |
+|---|---|---|---|
+| Quebrar a postura (guarda fechada, ajuste instantâneo) | puxa com os joelhos e os braços para o peito | **postura quebrada**: tronco cai para a frente, mãos no chão; fica curvado os 40 ticks da exposição | recompõe devagar; RS ↓ (postura) recompõe na hora, com volta suave |
+| Defendida pela postura (raspagem contra quem está em postura) | perde a puxada, joelhos abrem | **se apruma**: tronco para trás, mãos no quadril do outro | termina na pose da posição |
+| Prender as pernas (em pé sobre quem está no chão) | abaixa, alcança as canelas, junta e puxa | pernas juntas e puxadas | volta suave (LIBERANDO) |
+| Ajustar o controle da perna (ashi) | aperta os joelhos, abraça o pé, gira o quadril | a perna é puxada, tronco para trás | termina na pose da posição |
+| Reter com os pés | as pernas recolhem e empurram (mesmos quadros do afastar) | empurrado para trás | volta suave |
+| Afastar do chão (ajuste instantâneo) | recolhe e estende as pernas | — | termina na pose da posição |
+
+"Quebrada" e "defendida" são visualmente opostas (curvar x aprumar). A raspagem contra postura ativa é a
+tentativa realmente defendida no motor (critério SEM_POSTURA_DO_OUTRO); quebrar postura é um ajuste
+instantâneo que sempre entra.
+
+## Pernas por guarda (`animacao/PernasGuarda`)
+
+Quem está por baixo, deitado, ganha pernas próprias em cada guarda: fechada (canelas cruzadas atrás da cintura),
+aberta (pés no quadril), meia (uma presa, a outra no escudo de joelho), borboleta (joelhos altos, ganchos),
+De La Riva (gancho por fora da perna), laço (canela alta no braço), aranha (os dois pés nos bíceps), single-leg X
+(uma baixa, a outra alta no quadril) e ashi garami (as duas enroscadas numa perna). As pernas são montadas por
+**ângulo a partir do quadril com o comprimento real** da coxa e da canela de cada irmão: nenhuma estica.
+
+## Membros sem esticar nas poses provisórias
+
+`AnimadorSolo.aplicarEfeito` movia só a **mão** (até ~140 px no estrangulamento) e o cotovelo ficava parado: o
+antebraço virava uma linha. Agora a mão respeita um alcance (`LIMITE_MAO` = 34 px) na mesma direção e o
+cotovelo acompanha metade. As animações próprias da 5Q.3 não passam por aí e não mudaram.
+
+## Contornos
+
+Membros (braço, manga, mão, perna, pé), tronco e pelve têm uma borda fina num tom próximo da própria cor
+(mais escuro nas cores claras, mais claro nas escuras), desenhada logo antes de cada membro: branco de kimono
+branco e preto de kimono preto separam mão, manga, tronco e perna. Vale em pé e em todas as poses do
+MiauStudio, para os dois irmãos e os três kimonos. **A faixa não mudou.**
+
+## Pendente / estrutural (não alterado)
+
+- **Ordem de desenho no solo**: quem está por cima é desenhado depois, então as pernas de quem está por baixo
+  na guarda ficam parcialmente atrás do tronco do outro. Corrigir exige desenhar as pernas de baixo numa camada
+  própria depois do de cima (mudança no `GamePanel`/renderer), não feita aqui.
+- **Afastar no chão não aumenta a distância lógica** (registrado na 5Q.3). Proposta, sem aplicar: no sucesso de
+  `AFASTAR_DA_GUARDA`/`AFASTAR_DO_CHAO`/`RETENCAO_PES`, o motor reposicionaria quem está em pé para
+  `afastamento(EM_PE_CONTRA_SOLO) + 40 px` (o mesmo cálculo do RECUAR, limitado pela arena). Muda alcance de
+  técnicas (CONECTAR_GUARDA, PRENDER_PERNAS): precisa de aprovação e de rebalancear os alcances.
+- Poses de quem está **por cima** nas guardas abertas (DLR, laço, aranha, SLX, ashi) continuam a mesma de
+  joelhos genérica.

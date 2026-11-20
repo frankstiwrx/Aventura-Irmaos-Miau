@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1068, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1095, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -492,4 +492,31 @@ Gamepad (Xbox):
 - [ ] Armlock da guarda: perna sobe por cima, braço preso; defesa (↓) mostra a reação; escape volta suave
 - [ ] Americana da montada e mata-leão das costas: entrada, disputa (intensidade cresce com a pressão), defesa, saída
 - [ ] Berimbolo: inversão de cabeça para baixo e subida pelas costas; com J1 e com J2, Branco e Preto
+
+### Consolidação e Modo Desenvolvedor (Entrega 5Q.4) — `entities` alterado com autorização (contornos e recursos do modo)
+- [ ] Seleção da partida: escolher o personagem leva o J1 para FAIXA; A segue FAIXA → KIMONO → LUTAR; o J2 não muda junto
+- [ ] Seleção do treino: A segue também pela FAIXA/KIMONO DO PARCEIRO; mouse muda faixa/kimono de cada lado e clica em LUTAR
+- [ ] Faixa e kimono escolhidos aparecem na luta e continuam depois do F5 / REINICIAR LUTA
+- [ ] Desequilibrar pela pegada e logo forçar a queda (v / LB ↑): cai; com RT do outro na janela: "defendeu com base (RT)"
+- [ ] Rasteira contra quem está parado e com base cheia: "a queda não entrou (base firme de …)"; andando ou desequilibrado: entra
+- [ ] De joelhos (início de joelhos **e** depois de uma queda/troca de postura): pegada, empurrão, desequilibrar, puxar guarda
+  funcionam; tiro de guarda e entrada nas pernas mostram "SÓ EM PÉ (DE JOELHOS NÃO)"
+- [ ] 100 kg / meia: as recusas de escape mostram o motivo com o valor do controle
+- [ ] Menu principal → MODO DESENVOLVEDOR: J1 (Xbox) e J2 (teclado virtual) lutam; selo vermelho no canto; fôlego e
+  condicionamento parados no máximo normal (ex.: 47/47)
+- [ ] Pausa do Modo Desenvolvedor: FÔLEGO INFINITO / CONDICIONAMENTO INFINITO alternam (o selo muda); RESTAURAR RECURSOS
+- [ ] F4 troca o cenário; F5 recomeça a luta no cenário escolhido com faixas/kimonos mantidos
+- [ ] JOGAR e TREINO continuam gastando fôlego normalmente; o laboratório continua no treino
+- [ ] Contornos discretos: Branco de kimono branco, Preto de kimono preto e kimono azul — mão, manga, tronco e perna
+  separados; faixa igual à aprovada
+- [ ] Finalizações provisórias (estrangulamentos, braço): braços sem esticar
+- [ ] Guardas no laboratório: fechada, aberta, meia, borboleta, DLR, laço, aranha, SLX e ashi com pernas diferentes de
+  quem está por baixo
+- [ ] Quebrar postura (RS ↓ por baixo na fechada): o de cima curva e se recompõe; RS ↓ por cima (postura) recompõe na hora;
+  raspagem contra postura: o de cima se apruma (diferente da quebra)
+- [ ] Prender as pernas (em pé sobre quem está no chão), ajustar o ashi, reter com os pés: animados nos dois lados
+- [ ] Configurações: sem "Cenário preferido"; SALVAR não apaga o cenário já salvo
+- [ ] Menus: mouse num botão e controle em outro — só um destaque aceso
+- [ ] Preservados: projeção de quadril, tiro de guarda, raspagens/passagens, joelho na barriga, montada/montada alta,
+  pegada das costas, mata-leão, trocas de guarda, levantada técnica, rolamento técnico, estrelas/mortais, faixa
 

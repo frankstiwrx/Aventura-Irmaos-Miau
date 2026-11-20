@@ -648,6 +648,7 @@ public void iniciarSprawl() {
 
         // Entrega 5A: duracao dos efeitos avanca no loop logico.
         efeitos.atualizar();
+        manterRecursosInfinitos();                       // 5Q.4: Modo Desenvolvedor
         // 5O: recargas do sprawl e das acrobacias; guarda (entrada/saida).
         if (recargaSprawl > 0) {
             recargaSprawl--;
@@ -2236,6 +2237,43 @@ public void alternarDeitado() {
      * Esforco do motor de combate (ex.: arrastar): gasta o que der, sem
      * deixar negativo, e suspende a recuperacao passiva neste tick.
      */
+    // ---------------- 5Q.4: MODO DESENVOLVEDOR (politica de recursos desta instancia; padrao: desligada)
+    private boolean folegoInfinito;
+    private boolean condicionamentoInfinito;
+
+    /**
+     * Recursos "infinitos" do Modo Desenvolvedor: nada e gasto e o valor fica no MAXIMO NORMAL do
+     * lutador (atributos e faixa reais; nenhum numero gigante). So o Modo Desenvolvedor liga.
+     */
+    public void setRecursosInfinitos(boolean folego, boolean condicionamento) {
+        folegoInfinito = folego;
+        condicionamentoInfinito = condicionamento;
+        manterRecursosInfinitos();
+    }
+
+    public boolean isFolegoInfinito() {
+        return folegoInfinito;
+    }
+
+    public boolean isCondicionamentoInfinito() {
+        return condicionamentoInfinito;
+    }
+
+    /** Folego e condicionamento de volta ao maximo normal (restaurar). */
+    public void restaurarRecursos() {
+        folegoAtual = atributos.getFolego();
+        condicionamentoAtual = atributos.getCondicionamento();
+    }
+
+    private void manterRecursosInfinitos() {
+        if (folegoInfinito) {
+            folegoAtual = atributos.getFolego();
+        }
+        if (condicionamentoInfinito) {
+            condicionamentoAtual = atributos.getCondicionamento();
+        }
+    }
+
     // ---------------- 5Q: graduacao logica e tecnicas aprendidas (independentes da faixa desenhada)
     // 5Q.1: a graduacao e a FONTE UNICA de atributos, cor da faixa e elegibilidade das tecnicas.
     // Padrao: faixa branca = os atributos originais (na 5Q o padrao era preta; mudou a pedido).
@@ -2696,6 +2734,62 @@ public void alternarDeitado() {
                 5,
                 5
         );
+        contornarForma(g2, new java.awt.geom.RoundRectangle2D.Double(pataX, pataY, largura, altura, 5, 5), corPelo);
+    }
+
+    // =============================
+    // 5Q.4: CONTORNOS DISCRETOS
+    // =============================
+    /*
+     * Branco de kimono branco (ou preto de kimono preto) perdia a separacao entre mao,
+     * manga, tronco e perna. Cada membro ganha uma borda fina num tom proximo da propria
+     * cor (mais escuro nas cores claras, mais claro nas escuras), desenhada logo antes
+     * do membro: o membro da frente separa-se do de tras e do tronco. A faixa nao muda.
+     */
+    /** Largura extra (px, os dois lados juntos) do contorno de um membro. */
+    protected double larguraContorno() {
+        return 2.6 * escala;
+    }
+
+    /** Tom do contorno: perto da cor, sem virar linha preta de desenho. */
+    public static Color corContorno(Color c) {
+        double lum = (0.299 * c.getRed() + 0.587 * c.getGreen() + 0.114 * c.getBlue()) / 255.0;
+        if (lum > 0.45) {
+            return new Color((int) (c.getRed() * 0.66), (int) (c.getGreen() * 0.66), (int) (c.getBlue() * 0.66));
+        }
+        return new Color(Math.min(255, c.getRed() + 62), Math.min(255, c.getGreen() + 62),
+                Math.min(255, c.getBlue() + 62));
+    }
+
+    /**
+     * Membro em dois segmentos (ombro-cotovelo-mao, quadril-joelho-pe) com a cor e a
+     * largura ATUAIS do Graphics: primeiro a borda, depois o membro. Cor e traco
+     * ficam como estavam.
+     */
+    protected void membro(Graphics2D g, int ax, int ay, int bx, int by, int cx, int cy) {
+        java.awt.Stroke traco = g.getStroke();
+        Color cor = g.getColor();
+        float w = traco instanceof BasicStroke b ? b.getLineWidth() : (float) (18 * escala);
+        int[] xs = {ax, bx, cx};
+        int[] ys = {ay, by, cy};
+        g.setColor(corContorno(cor));
+        g.setStroke(new BasicStroke((float) (w + larguraContorno()), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.drawPolyline(xs, ys, 3);
+        g.setColor(cor);
+        g.setStroke(new BasicStroke(w, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.drawPolyline(xs, ys, 3);
+        g.setStroke(traco);
+    }
+
+    /** Borda fina de uma forma ja pintada (tronco, pelve, patas). */
+    protected void contornarForma(Graphics2D g, java.awt.Shape forma, Color cor) {
+        java.awt.Stroke traco = g.getStroke();
+        Color atual = g.getColor();
+        g.setColor(corContorno(cor));
+        g.setStroke(new BasicStroke((float) (1.3 * escala), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.draw(forma);
+        g.setStroke(traco);
+        g.setColor(atual);
     }
 
     // =============================
@@ -3088,6 +3182,9 @@ protected boolean isRolamentoParaTras() {
             );
         }
 
+        if (folegoInfinito) {
+            return true;                                 // 5Q.4: Modo Desenvolvedor (nada e gasto)
+        }
         if (folegoAtual < quantidade) {
             return false;
         }
@@ -3106,6 +3203,10 @@ protected boolean isRolamentoParaTras() {
             return;
         }
 
+        if (folegoInfinito) {
+            return;                                      // 5Q.4: Modo Desenvolvedor
+        }
+
         folegoAtual -= quantidade;
 
         if (folegoAtual < 0) {
@@ -3120,6 +3221,10 @@ protected boolean isRolamentoParaTras() {
 
         if (quantidade <= 0) {
             return;
+        }
+
+        if (condicionamentoInfinito) {
+            return;                                      // 5Q.4: Modo Desenvolvedor
         }
 
         condicionamentoAtual -= quantidade;

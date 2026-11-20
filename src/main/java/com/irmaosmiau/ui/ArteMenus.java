@@ -217,6 +217,15 @@ public final class ArteMenus {
     // =====================================================
     // BOTOES
     // =====================================================
+    /**
+     * 5Q.4: UM destaque por tela. O foco manda (o mouse move o foco pelo NavegadorMenus); o
+     * "mouse por cima" so acende quando nenhum outro botao tem o foco. Antes, mouse num botao e
+     * controle/teclado em outro deixavam os dois amarelos.
+     */
+    static boolean destacado(boolean foco, boolean mousePorCima, java.awt.Component donoDoFoco) {
+        return foco || (mousePorCima && !(donoDoFoco instanceof javax.swing.AbstractButton));
+    }
+
     /** Botao de menu: caixa azul-escura, texto branco; em foco/mouse, amarelo. */
     public static JButton botaoMenu(String texto) {
         JButton b = new JButton(texto) {
@@ -225,7 +234,8 @@ public final class ArteMenus {
             @Override
             protected void paintComponent(Graphics g0) {
                 Graphics2D g = suave(g0);
-                boolean ativo = isFocusOwner() || getModel().isRollover();
+                boolean ativo = destacado(isFocusOwner(), getModel().isRollover(),
+                        java.awt.KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner());
                 g.setColor(ativo ? new Color(30, 70, 150, 235) : AZUL_PAINEL);
                 g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 12, 12);
                 g.setColor(ativo ? AMARELO : new Color(120, 170, 235));

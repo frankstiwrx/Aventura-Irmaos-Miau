@@ -1149,3 +1149,22 @@ enquanto a marca está ligada. Não depende de tecla, esquema nem índice de jog
 
 - Pausa do **treino** → **LABORATÓRIO**: escolher a situação, quem controla e se o J2 é controlado; INICIAR.
 - **F5** no laboratório repete a situação; **F8** mostra/esconde o catálogo da posição. Detalhes em `docs/LABORATORIO.md`.
+
+# Entrega 5Q.4 — Consolidação
+
+- **Seleção (partida e treino)**: depois de escolher o personagem, o J1 vai para **FAIXA** (antes ia direto para
+  LUTAR). CONFIRMAR (A / Enter) segue FAIXA → KIMONO → (treino: FAIXA e KIMONO DO PARCEIRO) → LUTAR; ↑/↓ e ←/→
+  continuam funcionando. **Mouse**: clique na faixa/kimono de cada lado (metade esquerda diminui, direita
+  aumenta), no mapa/tempo/parceiro/início e em LUTAR.
+- **Menus**: um destaque só. Passar o mouse sobre um botão leva o foco para ele; mover pelo controle/teclado
+  apaga o destaque do mouse (`NavegadorMenus` + `ArteMenus.destacado`).
+- **Configurações**: a linha "Cenário preferido" saiu (o mapa é escolhido em cada seleção); o valor já salvo é
+  preservado.
+- **Modo Desenvolvedor** (menu principal): F5 recomeça a luta, F4 troca o cenário da sessão, pausa com fôlego /
+  condicionamento infinitos e restaurar recursos. Detalhes em `docs/MODO_DESENVOLVEDOR.md`.
+- **De joelhos** (venha de onde vier: início de joelhos, queda, troca de postura): pegadas, empurrão,
+  desequilibrar, puxar guarda/borboleta, derrubada forçada e queda pela pegada valem; tiro de guarda e entrada
+  nas pernas mostram "SÓ EM PÉ (DE JOELHOS NÃO)".
+- **Quedas x desequilíbrio**: desequilibrar pela pegada agora conta para o solo. Derrubada forçada contra quem
+  está desequilibrado derruba (RT na janela ainda defende); rasteira entra contra quem anda, está exposto ou
+  desequilibrado. Contra base natural firme o HUD diz "a queda não entrou (base firme de …)" em vez de "defendeu".

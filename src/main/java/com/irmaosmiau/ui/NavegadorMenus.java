@@ -71,6 +71,15 @@ public final class NavegadorMenus {
     private boolean aceitavaAntes;
 
     private final transient KeyEventDispatcher teclado = this::tecla;
+    // 5Q.4: o mouse tambem move o FOCO (um destaque so, venha do mouse, do teclado ou do controle)
+    private final transient java.awt.event.AWTEventListener mouse = this::mouseEntrou;
+
+    private void mouseEntrou(java.awt.AWTEvent e) {
+        if (e.getID() == java.awt.event.MouseEvent.MOUSE_ENTERED && e.getSource() instanceof Component c
+                && deveSeguirMouse(c, janela)) {
+            c.requestFocusInWindow();
+        }
+    }
     private final transient PropertyChangeListener destaque = e -> trocarDestaque(
             (Component) e.getOldValue(), (Component) e.getNewValue());
 
@@ -91,6 +100,7 @@ public final class NavegadorMenus {
         KeyboardFocusManager kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         kfm.addKeyEventDispatcher(teclado);
         kfm.addPropertyChangeListener("permanentFocusOwner", destaque);
+        java.awt.Toolkit.getDefaultToolkit().addAWTEventListener(mouse, java.awt.AWTEvent.MOUSE_EVENT_MASK);
         timer.start();
     }
 
@@ -99,6 +109,20 @@ public final class NavegadorMenus {
         KeyboardFocusManager kfm = KeyboardFocusManager.getCurrentKeyboardFocusManager();
         kfm.removeKeyEventDispatcher(teclado);
         kfm.removePropertyChangeListener("permanentFocusOwner", destaque);
+        java.awt.Toolkit.getDefaultToolkit().removeAWTEventListener(mouse);
+    }
+
+    /**
+     * 5Q.4: o mouse sobre um botao/combo/slider navegavel desta janela (ou de um dialogo dela)
+     * leva o foco para ele: o destaque do mouse e o do teclado/controle sao o mesmo.
+     */
+    static boolean deveSeguirMouse(Component c, Window janela) {
+        if (!(c instanceof AbstractButton || c instanceof JComboBox || c instanceof JSlider)
+                || !c.isEnabled() || !c.isFocusable() || !c.isShowing() || c.isFocusOwner()) {
+            return false;
+        }
+        Window w = SwingUtilities.getWindowAncestor(c);
+        return w != null && (w == janela || w.getOwner() == janela);
     }
 
     // =====================================================
@@ -316,6 +340,11 @@ public final class NavegadorMenus {
     // DESTAQUE DO FOCO
     // =====================================================
     private void trocarDestaque(Component antes, Component depois) {
+        // 5Q.4: quem estava aceso so pelo mouse apaga quando o foco vai para outro (repinta a tela)
+        Window w = depois == null ? null : SwingUtilities.getWindowAncestor(depois);
+        if (w != null) {
+            w.repaint();
+        }
         if (antes instanceof JComponent a && a.getClientProperty(BORDA_ORIGINAL) != null) {
             Object original = a.getClientProperty(BORDA_ORIGINAL);
             a.setBorder(original instanceof Border b ? b : null);

@@ -55,6 +55,7 @@ The project currently includes:
 - Grappling interaction states
 - Shared combat animation infrastructure
 - Custom pose and animation editor used during development
+- Training with a situation laboratory and a Developer Mode for testing (`docs/MODO_DESENVOLVEDOR.md`)
 
 ---
 
@@ -126,7 +127,7 @@ The project is being developed incrementally, with frequent improvements to game
 
 ## 🎯 Planned features
 
-Future versions are planned to include:
+Future versions are planned to include (up-to-date idea list in `docs/REQUISITOS_FUTUROS.md`):
 
 - More grappling positions
 - Multiple grip states

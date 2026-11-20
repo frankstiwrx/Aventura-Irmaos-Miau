@@ -286,8 +286,10 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
             assertTrue(painel.montarQuadroDpad(SlotJogador.JOGADOR_1).nomeCamada().startsWith("QUEDAS"));
             toque("brancoPegada1");
             assertFalse(s().estaEmInteracao(), "nao pega nem derruba");
-            // 5P (pedido): RB + RS deixou de ser reservado (quedas); de joelhos o empurrao e recusado.
-            assertEquals("SÓ EM PÉ", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
+            // 5P (pedido): RB + RS deixou de ser reservado (quedas).
+            // 5Q.4 (pedido): de joelhos o EMPURRAO passou a valer (combate ajoelhado); antes era "SÓ EM PÉ".
+            // Tiro de guarda e entrada nas pernas continuam so em pe (MotorSolo.PERMITIDAS_DE_JOELHOS).
+            assertEquals("-", painel.ultimoMotivoFamilia(SlotJogador.JOGADOR_1));
             tecla("brancoModProjecao", false);
             tecla("brancoModDefesa", true);
             tecla("brancoModProjecao", true);

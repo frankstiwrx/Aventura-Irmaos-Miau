@@ -162,6 +162,7 @@ public class Main {
         JPanel menu = new com.irmaosmiau.ui.MenuPrincipalPanel(
                 () -> mostrarSelecao(janela),
                 () -> abrirTreino(janela),
+                () -> mostrarSelecaoDesenvolvedor(janela),         // 5Q.4
                 () -> mostrarPerfis(janela),
                 () -> mostrarConfiguracoes(janela),
                 () -> sair(janela)
@@ -294,6 +295,42 @@ public class Main {
                 ServicoGamepads::global,
                 () -> PreferenciasDispositivos.global().getAtual()
         ));
+    }
+
+    /**
+     * 5Q.4: MODO DESENVOLVEDOR: a mesma selecao da partida (personagem, faixa e kimono por slot,
+     * mapa); luta sem tempo, J1 e J2 controlaveis, recursos sem desgaste. A sessao vale para esta
+     * luta e os reinicios dela (F5); voltar ao menu a descarta.
+     */
+    private static void mostrarSelecaoDesenvolvedor(JFrame janela) {
+        trocarTela(janela, new com.irmaosmiau.ui.SelecaoPartidaPanel(
+                CatalogoPersonagens.padrao(),
+                OpcoesDeLutadores.padrao(),
+                RegistroCenarios.padrao(),
+                PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao()),
+                (j1, j2, cenario, segundos) -> iniciarDesenvolvedor(janela, j1, j2, cenario,
+                        new com.irmaosmiau.game.ModoDesenvolvedor()),
+                () -> mostrarMenu(janela),
+                ServicoGamepads::global,
+                () -> PreferenciasDispositivos.global().getAtual()
+        ));
+    }
+
+    private static void iniciarDesenvolvedor(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
+            com.irmaosmiau.game.ModoDesenvolvedor dev) {
+        GamePanel jogo = new GamePanel(
+                TipoPersonagem.AMBOS,
+                j1,
+                j2,
+                com.irmaosmiau.entities.InicioLuta.EM_PE,
+                () -> mostrarMenu(janela),
+                () -> mostrarSelecaoDesenvolvedor(janela),
+                () -> iniciarDesenvolvedor(janela, j1, j2, cenario, dev)
+        );
+        jogo.configurarPartida(dev.cenarioOu(cenario), 0);
+        jogo.configurarModoDesenvolvedor(dev);
+        trocarTela(janela, jogo);
+        jogo.requestFocusInWindow();
     }
 
     /** Entrega 5M: luta de JOGAR: sempre EM PE, no mapa e com o tempo escolhidos. */

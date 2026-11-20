@@ -197,6 +197,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
         setPreferredSize(new Dimension(800, 450));
         setFocusable(true);
+        instalarMouse();                                         // 5Q.4
         instalarTeclas();
     }
 
@@ -313,7 +314,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 j.kimono = null;                                  // 5Q.1: kimono padrao do novo personagem
                 j.fase = j.perfis.size() > 1 ? Fase.PERFIL : Fase.PRONTO;
                 if (j.fase == Fase.PRONTO && slot == SlotJogador.JOGADOR_1) {
-                    linhaJ1 = Linha.LUTAR;
+                    linhaJ1 = Linha.FAIXA;                        // 5Q.4: personaliza antes de lutar
                     parceiroPadrao();
                 }
             }
@@ -330,7 +331,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             case CONFIRMAR -> {
                 j.fase = Fase.PRONTO;
                 if (j == jogadores.get(SlotJogador.JOGADOR_1)) {
-                    linhaJ1 = Linha.LUTAR;
+                    linhaJ1 = Linha.FAIXA;                        // 5Q.4
                     parceiroPadrao();
                 }
             }
@@ -363,7 +364,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             case DIREITA -> mudarValor(1);
             case CONFIRMAR -> {
                 if (linhaJ1 != Linha.LUTAR) {
-                    linhaJ1 = Linha.LUTAR;
+                    linhaJ1 = proximaDaPersonalizacao(linhaJ1);   // 5Q.4: FAIXA -> KIMONO -> ... -> LUTAR
                 } else if (modo == Modo.PARTIDA && jogadores.get(SlotJogador.JOGADOR_2).fase != Fase.PRONTO) {
                     avisoAguardandoAte = tempoMs + 900;
                 } else {
@@ -373,6 +374,76 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             default -> {
             }
         }
+    }
+
+    /**
+     * 5Q.4: confirmar numa linha de personalizacao segue para a proxima (faixa, kimono e, no
+     * treino, faixa e kimono do parceiro); nas outras linhas volta para LUTAR, como antes.
+     */
+    private Linha proximaDaPersonalizacao(Linha l) {
+        return switch (l) {
+            case FAIXA -> Linha.KIMONO;
+            case KIMONO -> modo == Modo.TREINO ? Linha.FAIXA_PARCEIRO : Linha.LUTAR;
+            case FAIXA_PARCEIRO -> Linha.KIMONO_PARCEIRO;
+            default -> Linha.LUTAR;
+        };
+    }
+
+    // =====================================================
+    // 5Q.4: MOUSE (o mouse age pelo J1, e pelo J2 so na propria faixa/kimono)
+    // =====================================================
+    private void instalarMouse() {
+        addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent ev) {
+                clicar(ev.getX(), ev.getY());
+            }
+        });
+    }
+
+    /** Um clique (testavel sem janela): personagem, faixa/kimono, configuracoes ou LUTAR. */
+    void clicar(int x, int y) {
+        if (iniciada) {
+            return;
+        }
+        SlotJogador j1 = SlotJogador.JOGADOR_1;
+        Jogador J1 = jogadores.get(j1);
+        for (int i = 0; i < COLUNAS * LINHAS; i++) {
+            if (celula(i).contains(x, y)) {
+                if (J1.fase == Fase.ESCOLHENDO) {
+                    J1.cursor = i;
+                    comandar(j1, Comando.CONFIRMAR);
+                }
+                repaint();
+                return;
+            }
+        }
+        int passo = (x % 230) < 120 ? -1 : 1;
+        if (y >= 84 && y < 112 && x >= 10 && x < 230 && J1.fase == Fase.PRONTO) {
+            linhaJ1 = y < 98 ? Linha.FAIXA : Linha.KIMONO;
+            mudarValor(passo);
+        } else if (y >= 84 && y < 112 && x >= 570 && x < 790) {
+            if (modo == Modo.TREINO && J1.fase == Fase.PRONTO) {
+                linhaJ1 = y < 98 ? Linha.FAIXA_PARCEIRO : Linha.KIMONO_PARCEIRO;
+                mudarValor(x < 680 ? -1 : 1);
+            } else if (modo == Modo.PARTIDA && jogadores.get(SlotJogador.JOGADOR_2).fase == Fase.PRONTO) {
+                Jogador j2 = jogadores.get(SlotJogador.JOGADOR_2);
+                j2.linhaVisual = y < 98 ? 0 : 1;
+                mudarVisual(SlotJogador.JOGADOR_2, j2, j2.linhaVisual == 0, x < 680 ? -1 : 1);
+            }
+        } else if (J1.fase == Fase.PRONTO && x >= 250 && x < 550 && y >= 266 && y < 356) {
+            Linha[] linhas = modo == Modo.TREINO ? new Linha[] {Linha.MAPA, Linha.PARCEIRO, Linha.INICIO}
+                    : new Linha[] {Linha.MAPA, Linha.TEMPO, Linha.DIFICULDADE};
+            Linha l = linhas[Math.min(2, (y - 266) / 32)];
+            if (l != Linha.DIFICULDADE) {
+                linhaJ1 = l;
+                mudarValor(x < 462 ? -1 : 1);
+            }
+        } else if (x >= 320 && x < 480 && y >= 364 && y < 398 && J1.fase == Fase.PRONTO) {
+            linhaJ1 = Linha.LUTAR;
+            comandar(j1, Comando.CONFIRMAR);
+        }
+        repaint();
     }
 
     /** DIFICULDADE e pulada: indisponivel enquanto nao houver IA. */

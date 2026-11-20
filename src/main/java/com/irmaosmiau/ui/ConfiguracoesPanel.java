@@ -131,18 +131,12 @@ public final class ConfiguracoesPanel extends JPanel {
         linhaAudio(cartao, g, 1, "Música", musica, volumeMusica, valorMusica);
         linhaAudio(cartao, g, 2, "Efeitos sonoros", efeitos, volumeEfeitos, valorEfeitos);
 
-        g.gridy = 3;
-        g.gridx = 0;
-        cartao.add(EstiloTelas.rotulo("Cenário preferido"), g);
-        g.gridx = 1;
-        g.gridwidth = 3;
-        cenario.setFont(EstiloTelas.NORMAL);
-        cenario.setPreferredSize(new Dimension(260, 28));
-        cartao.add(cenario, g);
-        g.gridwidth = 1;
+        // 5Q.4: "Cenario preferido" saiu da tela (o mapa e escolhido na selecao de cada luta). O
+        // combo continua so na memoria: o valor ja salvo e lido e regravado como esta (arquivos
+        // antigos continuam validos e a selecao segue abrindo nesse mapa).
 
         // Entrega 5C: teclas configuraveis dos dois jogadores.
-        int linha = 4;
+        int linha = 3;
         if (aoAbrirControles != null) {
             g.gridy = linha++;
             g.gridx = 0;

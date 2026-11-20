@@ -28,7 +28,9 @@ public final class MenuPrincipalPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    public static final List<String> OPCOES = List.of("JOGAR", "TREINO", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR");
+    // 5Q.4: + MODO DESENVOLVEDOR (separado do treino)
+    public static final List<String> OPCOES = List.of("JOGAR", "TREINO", "MODO DESENVOLVEDOR", "PERSONAGENS",
+            "CONFIGURAÇÕES", "SAIR");
 
     private final JButton[] botoes = new JButton[OPCOES.size()];
     private final transient IrmaoMiau branco = new IrmaoMiauBranco(470, 196, 0.85);
@@ -45,13 +47,20 @@ public final class MenuPrincipalPanel extends JPanel {
      */
     public MenuPrincipalPanel(Runnable aoJogar, Runnable aoTreino, Runnable aoPersonagens,
             Runnable aoConfiguracoes, Runnable aoSair) {
+        this(aoJogar, aoTreino, null, aoPersonagens, aoConfiguracoes, aoSair);
+    }
+
+    /** 5Q.4: com o MODO DESENVOLVEDOR. */
+    public MenuPrincipalPanel(Runnable aoJogar, Runnable aoTreino, Runnable aoDesenvolvedor, Runnable aoPersonagens,
+            Runnable aoConfiguracoes, Runnable aoSair) {
         setPreferredSize(new Dimension(800, 450));
         setLayout(null);
-        Runnable[] acoes = {aoJogar, aoTreino, aoPersonagens, aoConfiguracoes, aoSair};
+        Runnable[] acoes = {aoJogar, aoTreino, aoDesenvolvedor, aoPersonagens, aoConfiguracoes, aoSair};
         for (int i = 0; i < botoes.length; i++) {
             JButton b = ArteMenus.botaoMenu(OPCOES.get(i));
-            b.setBounds(80, 130 + i * 54, 280, 42);
+            b.setBounds(80, 118 + i * 50, 280, 42);
             Runnable acao = acoes[i];
+            b.setVisible(acao != null || i != 2);              // 5Q.4: sem acao, o MODO DESENVOLVEDOR some
             b.addActionListener(e -> {
                 if (acao != null) {
                     acao.run();

@@ -763,6 +763,7 @@ int[] poseInterpolada =
 
         raiz.setColor(corKimono);
         raiz.fillPolygon(pelve);
+        contornarForma(raiz, pelve, corKimono);   // 5Q.4
 
         raiz.setStroke(
                 new BasicStroke(
@@ -772,33 +773,9 @@ int[] poseInterpolada =
                 )
         );
 
-        raiz.drawLine(
-                quadrilEsquerdoX,
-                quadrilEsquerdoY,
-                joelhoEsquerdoX,
-                joelhoEsquerdoY
-        );
+        membro(raiz, quadrilEsquerdoX, quadrilEsquerdoY, joelhoEsquerdoX, joelhoEsquerdoY, peEsquerdoX, peEsquerdoY);   // 5Q.4: com contorno
 
-        raiz.drawLine(
-                joelhoEsquerdoX,
-                joelhoEsquerdoY,
-                peEsquerdoX,
-                peEsquerdoY
-        );
-
-        raiz.drawLine(
-                quadrilDireitoX,
-                quadrilDireitoY,
-                joelhoDireitoX,
-                joelhoDireitoY
-        );
-
-        raiz.drawLine(
-                joelhoDireitoX,
-                joelhoDireitoY,
-                peDireitoX,
-                peDireitoY
-        );
+        membro(raiz, quadrilDireitoX, quadrilDireitoY, joelhoDireitoX, joelhoDireitoY, peDireitoX, peDireitoY);   // 5Q.4: com contorno
 
         raiz.setColor(corPelo);
 
@@ -808,23 +785,9 @@ int[] poseInterpolada =
         int alturaPe =
                 (int) (17 * escala);
 
-        raiz.fillRoundRect(
-                peEsquerdoX - larguraPe / 2,
-                peEsquerdoY - alturaPe / 2,
-                larguraPe,
-                alturaPe,
-                5,
-                5
-        );
+        desenharPata(raiz, peEsquerdoX - larguraPe / 2, peEsquerdoY - alturaPe / 2, larguraPe, alturaPe);   // 5Q.4: com contorno
 
-        raiz.fillRoundRect(
-                peDireitoX - larguraPe / 2,
-                peDireitoY - alturaPe / 2,
-                larguraPe,
-                alturaPe,
-                5,
-                5
-        );
+        desenharPata(raiz, peDireitoX - larguraPe / 2, peDireitoY - alturaPe / 2, larguraPe, alturaPe);   // 5Q.4: com contorno
 
         // Faixa cobre a emenda entre pelve e tronco.
         desenharFaixa(raiz, faixaX, faixaY, faixaLargura, faixaAltura);   // 5Q.1: cor pela graduacao
@@ -873,6 +836,7 @@ int[] poseInterpolada =
 
         tronco.setColor(corKimono);
         tronco.fillPolygon(troncoSuperior);
+        contornarForma(tronco, troncoSuperior, corKimono);   // 5Q.4
 
         tronco.setStroke(
                 new BasicStroke(
@@ -882,33 +846,9 @@ int[] poseInterpolada =
                 )
         );
 
-        tronco.drawLine(
-                ombroEsquerdoX,
-                ombroEsquerdoY,
-                cotoveloEsquerdoX,
-                cotoveloEsquerdoY
-        );
+        membro(tronco, ombroEsquerdoX, ombroEsquerdoY, cotoveloEsquerdoX, cotoveloEsquerdoY, maoEsquerdaX, maoEsquerdaY);   // 5Q.4: com contorno
 
-        tronco.drawLine(
-                cotoveloEsquerdoX,
-                cotoveloEsquerdoY,
-                maoEsquerdaX,
-                maoEsquerdaY
-        );
-
-        tronco.drawLine(
-                ombroDireitoX,
-                ombroDireitoY,
-                cotoveloDireitoX,
-                cotoveloDireitoY
-        );
-
-        tronco.drawLine(
-                cotoveloDireitoX,
-                cotoveloDireitoY,
-                maoDireitaX,
-                maoDireitaY
-        );
+        membro(tronco, ombroDireitoX, ombroDireitoY, cotoveloDireitoX, cotoveloDireitoY, maoDireitaX, maoDireitaY);   // 5Q.4: com contorno
 
         int larguraMao =
                 (int) (20 * escala);
@@ -918,23 +858,9 @@ int[] poseInterpolada =
 
         tronco.setColor(corPelo);
 
-        tronco.fillRoundRect(
-                maoEsquerdaX - larguraMao / 2,
-                maoEsquerdaY - alturaMao / 2,
-                larguraMao,
-                alturaMao,
-                5,
-                5
-        );
+        desenharPata(tronco, maoEsquerdaX - larguraMao / 2, maoEsquerdaY - alturaMao / 2, larguraMao, alturaMao);   // 5Q.4: com contorno
 
-        tronco.fillRoundRect(
-                maoDireitaX - larguraMao / 2,
-                maoDireitaY - alturaMao / 2,
-                larguraMao,
-                alturaMao,
-                5,
-                5
-        );
+        desenharPata(tronco, maoDireitaX - larguraMao / 2, maoDireitaY - alturaMao / 2, larguraMao, alturaMao);   // 5Q.4: com contorno
 
         // Cabeça: acompanha o tronco e depois recebe sua própria rotação.
         Graphics2D cabeca =
@@ -1154,6 +1080,7 @@ private void desenharEmPe(
 
         g2.setColor(corKimono);
         g2.fillPolygon(corpo);
+        contornarForma(g2, corpo, corKimono);   // 5Q.4
 
         // =========================
         // MEMBROS
@@ -1411,64 +1338,16 @@ private void desenharEmPe(
         // =========================
         // DESENHO DOS BRAÇOS
         // =========================
-        g2.drawLine(
-                ombroEsquerdoX,
-                ombroEsquerdoY,
-                cotoveloEsquerdoX,
-                cotoveloEsquerdoY
-        );
+        membro(g2, ombroEsquerdoX, ombroEsquerdoY, cotoveloEsquerdoX, cotoveloEsquerdoY, maoEsquerdaX, maoEsquerdaY);   // 5Q.4: com contorno
 
-        g2.drawLine(
-                cotoveloEsquerdoX,
-                cotoveloEsquerdoY,
-                maoEsquerdaX,
-                maoEsquerdaY
-        );
-
-        g2.drawLine(
-                ombroDireitoX,
-                ombroDireitoY,
-                cotoveloDireitoX,
-                cotoveloDireitoY
-        );
-
-        g2.drawLine(
-                cotoveloDireitoX,
-                cotoveloDireitoY,
-                maoDireitaX,
-                maoDireitaY
-        );
+        membro(g2, ombroDireitoX, ombroDireitoY, cotoveloDireitoX, cotoveloDireitoY, maoDireitaX, maoDireitaY);   // 5Q.4: com contorno
 
         // =========================
         // DESENHO DAS PERNAS
         // =========================
-        g2.drawLine(
-                quadrilEsquerdoX,
-                quadrilEsquerdoY,
-                joelhoEsquerdoX,
-                joelhoEsquerdoY
-        );
+        membro(g2, quadrilEsquerdoX, quadrilEsquerdoY, joelhoEsquerdoX, joelhoEsquerdoY, peEsquerdoX, peEsquerdoY);   // 5Q.4: com contorno
 
-        g2.drawLine(
-                joelhoEsquerdoX,
-                joelhoEsquerdoY,
-                peEsquerdoX,
-                peEsquerdoY
-        );
-
-        g2.drawLine(
-                quadrilDireitoX,
-                quadrilDireitoY,
-                joelhoDireitoX,
-                joelhoDireitoY
-        );
-
-        g2.drawLine(
-                joelhoDireitoX,
-                joelhoDireitoY,
-                peDireitoX,
-                peDireitoY
-        );
+        membro(g2, quadrilDireitoX, quadrilDireitoY, joelhoDireitoX, joelhoDireitoY, peDireitoX, peDireitoY);   // 5Q.4: com contorno
 
         // =========================
         // MÃOS

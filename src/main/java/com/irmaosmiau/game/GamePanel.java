@@ -240,6 +240,72 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     private JButton botaoParceiroLab;
     private JButton botaoReiniciarSituacao;
 
+    // =====================================================
+    // ENTREGA 5Q.4: MODO DESENVOLVEDOR
+    // =====================================================
+    private ModoDesenvolvedor dev;
+    private final java.util.List<JButton> botoesDev = new java.util.ArrayList<>();
+    private JButton botaoDevFolego;
+    private JButton botaoDevCond;
+
+    /**
+     * Liga o Modo Desenvolvedor nesta luta (o Main chama logo apos criar a partida e a cada
+     * reinicio pelo F5): recursos sem desgaste conforme a sessao, selo na tela, opcoes na pausa.
+     */
+    public void configurarModoDesenvolvedor(ModoDesenvolvedor d) {
+        if (modoTreino || d == null) {
+            return;                                              // ferramenta separada do treino
+        }
+        dev = d;
+        dev.aplicar(jogadorBranco, jogadorPreto);
+        menuPausa.setBounds(250, 8, 300, 434);                   // cabem as 3 opcoes do desenvolvedor
+        atualizarBotoesDev();
+    }
+
+    ModoDesenvolvedor getModoDesenvolvedor() {
+        return dev;
+    }
+
+    /** Testes: FOLEGO, CONDICIONAMENTO e RESTAURAR da pausa do desenvolvedor. */
+    java.util.List<JButton> botoesDesenvolvedor() {
+        return botoesDev;
+    }
+
+    /** Testes: id do cenario em uso. */
+    String idCenarioParaTestes() {
+        return cenario.getId();
+    }
+
+    private void atualizarBotoesDev() {
+        if (botaoDevFolego == null) {
+            return;
+        }
+        boolean ligado = dev != null;
+        if (ligado) {
+            botaoDevFolego.setText("FÔLEGO INFINITO: " + (dev.isFolegoInfinito() ? "SIM" : "NÃO"));
+            botaoDevCond.setText("CONDICIONAMENTO INFINITO: " + (dev.isCondicionamentoInfinito() ? "SIM" : "NÃO"));
+        }
+        for (JButton b : botoesDev) {
+            b.setVisible(ligado);
+        }
+    }
+
+    private void desenharSeloDesenvolvedor(Graphics2D g0) {
+        if (dev == null) {
+            return;
+        }
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(new Font("Arial", Font.BOLD, 10));
+        String t = dev.selo();
+        int w = g.getFontMetrics().stringWidth(t) + 14;
+        g.setColor(new Color(170, 30, 30, 210));
+        g.fillRoundRect(10, 62, w, 16, 8, 8);                  // logo abaixo do HUD do J1 (sem cobrir os lutadores)
+        g.setColor(Color.WHITE);
+        g.drawString(t, 17, 74);
+        g.dispose();
+    }
+
     /** O J2 do treino esta parado (parceiro passivo)? No laboratorio pode ser controlado. */
     boolean parceiroPassivo(SlotJogador slot) {
         return modoTreino && slot == SlotJogador.JOGADOR_2 && !lab.isParceiroControlado();
@@ -2672,6 +2738,32 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             menuPausa.add(b, gbc);
         }
         botaoLaboratorio.setVisible(modoTreino);
+        // 5Q.4: opcoes do Modo Desenvolvedor (so aparecem com ele ligado)
+        botaoDevFolego = new JButton();
+        botaoDevFolego.addActionListener(e -> {
+            dev.setFolegoInfinito(!dev.isFolegoInfinito());
+            dev.aplicar(jogadorBranco, jogadorPreto);
+            atualizarBotoesDev();
+        });
+        botaoDevCond = new JButton();
+        botaoDevCond.addActionListener(e -> {
+            dev.setCondicionamentoInfinito(!dev.isCondicionamentoInfinito());
+            dev.aplicar(jogadorBranco, jogadorPreto);
+            atualizarBotoesDev();
+        });
+        JButton restaurar = new JButton("RESTAURAR RECURSOS");
+        restaurar.addActionListener(e -> {
+            jogadorBranco.restaurarRecursos();
+            jogadorPreto.restaurarRecursos();
+            avisos.adicionar("Recursos restaurados");
+        });
+        botoesDev.addAll(java.util.List.of(botaoDevFolego, botaoDevCond, restaurar));
+        for (JButton b : botoesDev) {
+            b.setFont(fonteBotao.deriveFont(fonteBotao.getSize2D() * 0.8f));
+            b.setVisible(false);
+            gbc.gridy = linha++;
+            menuPausa.add(b, gbc);
+        }
         for (JButton b : botoesLab) {
             b.setFont(fonteBotao.deriveFont(fonteBotao.getSize2D() * 0.85f));
             b.setVisible(false);
@@ -3284,6 +3376,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         desenharRelogio(g2);
         avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
         desenharLaboratorio(g2);                                  // 5Q.2: HUD tecnico (so no laboratorio)
+        desenharSeloDesenvolvedor(g2);                            // 5Q.4: selo permanente
 
         // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
         PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
@@ -3826,11 +3919,23 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         });
         atalho("F4", "proximoCenario", () -> {
             cenario = cenarios.proximo(cenario);
+            if (dev != null) {                                   // 5Q.4: ciclo do desenvolvedor (vale no F5)
+                dev.setCenario(cenario.getId());
+                feedback.mostrarInfo("Cenário: " + cenario.getNome(), tick);
+                repaint();
+                return;
+            }
             mostrarPreferencia("Cenário: " + cenario.getNome(),
                     preferencias.definirCenarioPreferido(cenario.getId()));
             repaint();
         });
-        atalho("F5", "reiniciarTreino", this::reiniciarTreino);
+        atalho("F5", "reiniciarTreino", () -> {
+            if (dev != null && !pausado) {
+                reiniciarLuta();                                 // 5Q.4: F5 no Modo Desenvolvedor
+            } else {
+                reiniciarTreino();
+            }
+        });
         atalho("F8", "alternarCatalogoLab", () -> {                 // 5Q.2: catalogo do laboratorio
             if (modoTreino && lab.isAtiva()) {
                 catalogoLabVisivel = !catalogoLabVisivel;

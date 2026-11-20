@@ -44,6 +44,7 @@ class Mapas53SelecaoTest {
                     (j, p, c, i) -> mapa.set(c), () -> { }, () -> null, () -> null);
             SlotJogador j1 = SlotJogador.JOGADOR_1;
             sel.comandar(j1, Comando.CONFIRMAR);
+            personalizacao(sel);                              // 5Q.4 (pedido)
             sel.comandar(j1, Comando.ANTERIOR);
             sel.comandar(j1, Comando.ANTERIOR);
             sel.comandar(j1, Comando.ANTERIOR);               // MAPA
@@ -66,5 +67,15 @@ class Mapas53SelecaoTest {
         assertEquals("academia_miau", treinarNoMapa(6));
         assertEquals("campeonato", treinarNoMapa(7));
         assertEquals("dojo", treinarNoMapa(8), "o ciclo volta ao dojo");
+    }
+
+    /**
+     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
+     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
+     */
+    private static void personalizacao(SelecaoPartidaPanel s) {
+        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
+            s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
+        }
     }
 }

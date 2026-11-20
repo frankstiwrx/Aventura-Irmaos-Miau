@@ -55,6 +55,7 @@ Atualmente o projeto possui:
 - Estados de interação e pegada
 - Infraestrutura para animações conjuntas de combate
 - Editor próprio de poses e animações utilizado durante o desenvolvimento
+- Treino com laboratório de situações e Modo Desenvolvedor para testes (`docs/MODO_DESENVOLVEDOR.md`)
 
 ---
 
@@ -126,7 +127,7 @@ O projeto está sendo desenvolvido de forma incremental, com melhorias frequente
 
 ## 🎯 Funcionalidades planejadas
 
-Entre os sistemas planejados para versões futuras estão:
+Entre os sistemas planejados para versões futuras estão (lista de ideias atualizada em `docs/REQUISITOS_FUTUROS.md`):
 
 - Mais posições de grappling
 - Diferentes tipos de pegada

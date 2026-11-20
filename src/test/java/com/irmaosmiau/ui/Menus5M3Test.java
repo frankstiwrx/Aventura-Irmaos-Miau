@@ -205,6 +205,7 @@ class Menus5M3Test {
         naEdt(() -> {
             sel = treino();
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                          // 5Q.4 (pedido)
             sel.comandar(J1, Comando.CONFIRMAR);
         });
         assertEquals(1, inicios.get());
@@ -235,6 +236,7 @@ class Menus5M3Test {
             assertEquals(SelecaoPartidaPanel.Fase.PERFIL, sel.fase(J1));
             sel.comandar(J1, Comando.DIREITA);
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                          // 5Q.4 (pedido)
             assertEquals("Branquinho", sel.escolha(J1).getNome());
             assertEquals("Irmão Miau Preto", sel.escolha(J2).getNome(), "parceiro padrao: o outro irmao oficial");
             sel.comandar(J1, Comando.ANTERIOR);               // LUTAR -> INICIO
@@ -257,6 +259,7 @@ class Menus5M3Test {
             sel = treino();
             sel.comandar(J1, Comando.DIREITA);                // Preto
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                              // 5Q.4 (pedido)
             sel.comandar(J1, Comando.ANTERIOR);
             sel.comandar(J1, Comando.ANTERIOR);
             sel.comandar(J1, Comando.ANTERIOR);               // MAPA
@@ -282,6 +285,7 @@ class Menus5M3Test {
             sel = treino(InicioLuta.EM_PE, null, null);
             assertEquals(InicioLuta.EM_PE, sel.inicioAtual(), "comeca com o inicio da sessao");
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                              // 5Q.4 (pedido)
             sel.comandar(J1, Comando.ANTERIOR);               // INICIO
             assertEquals(SelecaoPartidaPanel.Linha.INICIO, sel.linhaJ1());
             sel.comandar(J1, Comando.DIREITA);
@@ -333,6 +337,7 @@ class Menus5M3Test {
             assertEquals(0, sel.cursor(J2));
             assertEquals(0, sel.cursor(J1), "J2 tem o seu cursor na partida");
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                              // 5Q.4 (pedido)
             sel.comandar(J1, Comando.CONFIRMAR);
             assertEquals(0, lutas.get(), "na partida o J2 precisa estar pronto");
             sel.comandar(J1, Comando.ANTERIOR);
@@ -434,6 +439,16 @@ class Menus5M3Test {
         for (Font f : new Font[] {EstiloTelas.TITULO, EstiloTelas.ROTULO, EstiloTelas.NORMAL, EstiloTelas.PEQUENA,
             ArteMenus.LETREIRO, ArteMenus.MENU}) {
             assertEquals(-1, f.canDisplayUpTo(acentos), f.getName());
+        }
+    }
+
+    /**
+     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
+     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
+     */
+    private static void personalizacao(SelecaoPartidaPanel s) {
+        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
+            s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
         }
     }
 }

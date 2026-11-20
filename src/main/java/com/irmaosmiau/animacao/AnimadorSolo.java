@@ -83,6 +83,10 @@ public final class AnimadorSolo {
                 }
             }
         }
+        // 5Q.4: quem esta por baixo, deitado, ganha as pernas proprias de cada guarda
+        if (!cima && l.isDeitado() && m.conectado(l) && PernasGuarda.temPernasProprias(p)) {
+            PernasGuarda.aplicar(pose, l, p);
+        }
         java.util.Optional<MotorSolo.EfeitoVisual> ef = m.efeitoVisual(lado);
         // 5Q.3: animacao propria da tecnica (aplicador/receptor); sem ela, a pose provisoria da 5Q
         double[] desloc = ef.map(e -> AnimacoesTecnicas.aplicar(pose, e)).orElse(null);
@@ -135,19 +139,36 @@ public final class AnimadorSolo {
                     default -> mexer(pose, firme, 25, 40, 0, 0, 0);
                 }
             }
-            case BATENDO -> {
-                pose[16] += (int) Math.round(60 + 25 * Math.sin(p * 6 * Math.PI));   // bate a mao no tatame
-                pose[17] += 20;
-            }
+            case BATENDO -> moverMao(pose, 16, 14, 30 + 10 * Math.sin(p * 6 * Math.PI), 20);   // bate no tatame
         }
     }
 
-    private static void mexer(int[] pose, double w, int tronco, int ombroF, int cotoveloF, int ombroT, int cotoveloT) {
+    /**
+     * 5Q.4: alcance maximo do deslocamento da mao numa pose provisoria (px antes da escala). Antes
+     * so a MAO andava (ate ~140 px no estrangulamento) e o cotovelo ficava parado: o antebraco
+     * esticava ate virar uma linha. Agora a mao respeita esse raio e o cotovelo acompanha metade,
+     * dividindo a variacao entre braco e antebraco (os dois segmentos mudam no maximo ~LIMITE/2).
+     */
+    public static final int LIMITE_MAO = 34;
+
+    // os parametros sao: rotacao do tronco e deslocamento (x, y) da mao da frente e da mao de tras
+    private static void mexer(int[] pose, double w, int tronco, int maoFx, int maoFy, int maoTx, int maoTy) {
         pose[9] += (int) Math.round(tronco * w);
-        pose[20] += (int) Math.round(ombroF * w);
-        pose[21] += (int) Math.round(cotoveloF * w);
-        pose[16] += (int) Math.round(ombroT * w);
-        pose[17] += (int) Math.round(cotoveloT * w);
+        moverMao(pose, 20, 18, maoFx * w, maoFy * w);
+        moverMao(pose, 16, 14, maoTx * w, maoTy * w);
+    }
+
+    /** Mao (indice x; y = x + 1) com o cotovelo junto, dentro do LIMITE_MAO, preservando a direcao. */
+    private static void moverMao(int[] pose, int mao, int cotovelo, double dx, double dy) {
+        double r = Math.hypot(dx, dy);
+        if (r > LIMITE_MAO) {
+            dx = dx * LIMITE_MAO / r;
+            dy = dy * LIMITE_MAO / r;
+        }
+        pose[mao] += (int) Math.round(dx);
+        pose[mao + 1] += (int) Math.round(dy);
+        pose[cotovelo] += (int) Math.round(dx / 2);
+        pose[cotovelo + 1] += (int) Math.round(dy / 2);
     }
 
     public void liberar(IrmaoMiau l) {

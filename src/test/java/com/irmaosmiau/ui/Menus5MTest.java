@@ -84,6 +84,7 @@ class Menus5MTest {
 
     private void prontos() {
         sel.comandar(J1, Comando.CONFIRMAR);
+        personalizacao(sel);                              // 5Q.4 (pedido)
         sel.comandar(J2, Comando.CONFIRMAR);
     }
 
@@ -167,7 +168,9 @@ class Menus5MTest {
     // 6. Opcoes na ordem, sem "1 JOGADOR"
     @Test
     void menuTemAsCincoOpcoes() {
-        assertEquals(List.of("JOGAR", "TREINO", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR"), MenuPrincipalPanel.OPCOES);
+        // 5Q.4 (pedido): a especificacao pede o MODO DESENVOLVEDOR como opcao separada do menu
+        assertEquals(List.of("JOGAR", "TREINO", "MODO DESENVOLVEDOR", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR"),
+                MenuPrincipalPanel.OPCOES);
         assertFalse(MenuPrincipalPanel.OPCOES.stream().anyMatch(o -> o.contains("1 JOGADOR")));
     }
 
@@ -184,6 +187,23 @@ class Menus5MTest {
             pintar(m);
         });
         assertEquals(List.of("jogar", "treino", "personagens", "config", "sair"), chamadas);
+    }
+
+    // 5Q.4: com o construtor completo o MODO DESENVOLVEDOR aparece e chama a sua acao
+    @Test
+    void menuModoDesenvolvedorChamaSuaAcao() throws Exception {
+        List<String> chamadas = new ArrayList<>();
+        naEdt(() -> {
+            MenuPrincipalPanel m = new MenuPrincipalPanel(() -> chamadas.add("jogar"), () -> chamadas.add("treino"),
+                    () -> chamadas.add("dev"), () -> chamadas.add("personagens"), () -> chamadas.add("config"),
+                    () -> chamadas.add("sair"));
+            assertTrue(m.botao("MODO DESENVOLVEDOR").isVisible());
+            for (String o : MenuPrincipalPanel.OPCOES) {
+                m.botao(o).doClick();
+            }
+            pintar(m);
+        });
+        assertEquals(List.of("jogar", "treino", "dev", "personagens", "config", "sair"), chamadas);
     }
 
     // 12. Navegacao pelo navegador de menus (setas / D-pad) percorre as opcoes
@@ -356,6 +376,7 @@ class Menus5MTest {
             assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2));
             assertEquals("Pretinho", sel.escolha(J2).getNome());
             sel.comandar(J1, Comando.CONFIRMAR);
+            personalizacao(sel);                          // 5Q.4 (pedido)
             sel.comandar(J1, Comando.CONFIRMAR);
         });
         assertEquals("Pretinho", ((EscolhaLutador) iniciou.get()[1]).getNome());
@@ -493,5 +514,15 @@ class Menus5MTest {
             pintar(sel);
             assertFalse(sel.aceitaNavegacao());
         });
+    }
+
+    /**
+     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
+     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
+     */
+    private static void personalizacao(SelecaoPartidaPanel s) {
+        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
+            s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
+        }
     }
 }
