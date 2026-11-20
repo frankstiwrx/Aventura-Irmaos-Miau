@@ -1244,3 +1244,24 @@ Azul ■ = defesa · verde ▶ = transição · vermelho ● = finalização · 
 creme = controle/ajuste/pegada (a cor de antes) · BATER = branco com moldura dourada. Bloqueada
 (recarga, requisito, faixa) = a mesma cor apagada para o cinza, com a faixa exigida no nome
 ("·Mr"). A classificação é central (`ClassificacaoAcoes`): técnica nova recebe a cor sozinha.
+
+## Entrega 5Q.7 — novos comandos
+
+### Solo livre (um em pé, outro no chão)
+
+| Quem | Comando | Ação |
+|---|---|---|
+| Em pé (ou de joelhos) por cima | RS ↑ | ENTRAR (na guarda) — preservado |
+| Em pé por cima | RS ← | PRENDER as pernas — preservado (antes repetido no RS → também) |
+| Em pé por cima | RS → | **SEGURAR** as pernas (nova pegada persistente); segurando, o mesmo RS → vira **SOLTAR** |
+| Em pé por cima | RS ↓ | RECUAR — preservado |
+| Segurando | andar (LS) | arrasta o outro pelo tatame, bem mais devagar |
+| No chão | RS ↓ | PÉS: agora o corpo **desliza ~16 px para trás** (1 px por tick) |
+
+As duas opções PRENDER eram a **mesma técnica** (`prender_pernas`) nos dois lados do RS: nenhuma
+diferença mecânica. O ← ficou com o PRENDER; o → virou SEGURAR.
+
+**Romper o SEGURAR (quem está no chão):** debater-se (qualquer direção ou RT) por ~0,5 s, usar os
+PÉS (RS ↓), puxar guarda, levantar ou qualquer outra técnica aceita; rolar para longe (a distância
+passa do limite) também solta. O segurador solta sozinho ao mudar de ação, ao ficar sem fôlego ou
+se a posição mudar.

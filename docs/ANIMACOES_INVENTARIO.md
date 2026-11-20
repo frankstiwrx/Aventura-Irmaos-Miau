@@ -210,3 +210,45 @@ Novas finalizações de perna (pose provisória da categoria PERNA), armlock das
 parte das finalizações de perna antigas, escapes/enquadrar e consolidar (agora com gesto curto,
 mas sem pose final própria), quem está por cima nas guardas abertas. Rig 2.0 continua necessário
 para membros na frente/atrás do adversário (triângulo, laço, single leg com a perna entre os braços).
+
+## Entrega 5Q.7
+
+### Novas
+
+| Animação | Observação |
+|---|---|
+| derrubada_forcada_defendida:RECEBE | reação curta de quem segurou a derrubada (estilo do empurrão) |
+| segurar_pernas (= entrada do prender), segurando_pernas:ATACA/RECEBE | pegada sustentada nas pernas; passos curtos procedurais de quem arrasta (`AnimadorSolo.passosDoArrasto`, pelo x real) |
+| enquadrar, enquadrar_joelho, enquadrar_montada | antebraços entre os dois, empurra e volta (100 kg, joelho na barriga, montada) |
+| defender_maos | mãos na gola, queixo baixo (costas) |
+| escape_quadril (rec. guarda), fugir_do_joelho, recuperar_meia | fuga de quadril, joelhos entram |
+| virar_joelhos | tronco e quadril giram |
+| escape_montada | ponte curta e quadril escapa |
+| girar_nas_costas, escapar_neutro | ombros e quadril giram |
+| esconder_pe (ashi), tirar_ganchos (borboleta) | gestos curtos (auditoria do ENQUADRAR) |
+
+As de janela mostram o **esforço**; a troca de posição continua sendo do motor: falhou, o corpo
+volta suave à pose da posição. Todas preservam o tamanho dos braços (`IntegridadeMembros`).
+
+### Corrigidas
+
+- Rasteira e derrubada forçada que falham: braços sem esticar em nenhum instante (antes até ~1,6x).
+
+### Ajustadas
+
+- Rolamento de joelhos 28 → 46 ticks (mesma distância).
+
+### Preservadas
+
+Tiro de guarda, empurrão, levantada técnica, quedas explosivas em pé e de joelhos, quedas que
+entram, berimbolos, guardas aranha e laço, manga persistente, microanimações da 5Q.6, sprawl,
+rastejo, rolamento deitado e em pé.
+
+### Ainda provisórias / limitações do rig
+
+- As finalizações de perna continuam parecidas entre si (pose provisória da categoria PERNA):
+  animações individuais ficam para uma etapa posterior.
+- As microanimações defensivas são deslocamentos sobre a pose da posição: sem perna por dentro/por
+  trás do adversário nem troca de lado do corpo (Rig 2.0).
+- O segurado não estica as pernas na direção de quem segura (as pernas deitadas não giram
+  livremente no rig atual).

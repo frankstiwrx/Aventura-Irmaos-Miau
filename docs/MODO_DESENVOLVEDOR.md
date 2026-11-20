@@ -64,3 +64,10 @@ recomeça pela sessão e F4 guarda o cenário; selo desenhado. `Menus5MTest`: a 
 
 - Não há IA: o J2 é sempre um jogador (ou fica parado).
 - O F4 do Modo Desenvolvedor não grava preferência; o cenário inicial vem da seleção.
+
+## 5Q.7: acrobacias
+
+Com fôlego e condicionamento infinitos a recuperação das acrobacias usa a condição máxima do
+lutador: só os atributos (agilidade, velocidade, já com a faixa) decidem o intervalo — um faixa
+preta ágil encadeia estrelas e mortais quase sem esperar. Ligar o Modo Desenvolvedor **não** mexe
+num recurso que ficou limitado: ele continua contando.

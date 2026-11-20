@@ -135,3 +135,15 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 - Rig 2.0: camadas por membro (perna entre os braços na single leg, triângulo, laço, pernas
   em volta da cintura no tiro de guarda sem atravessar o tronco do outro).
 - Trocar as músicas provisórias pelas próprias (arquivos externos já suportados).
+
+## Depois da 5Q.7
+
+- **Desgaste corporal localizado** (ideia registrada, não implementada): tentativas repetidas de
+  finalização com pressão efetiva reduziriam aos poucos a tolerância daquela articulação ao longo
+  da luta (ex.: armlocks seguidos no mesmo braço). Não muda nada no sistema atual de finalizações,
+  pressão ou resistência.
+- Animações individuais para as finalizações de perna (hoje parecidas entre si).
+- Barra inferior de informações/controles: reformulação em uma entrega futura.
+- Pontuação das lutas, regras competitivas, novas técnicas e novos personagens.
+- Recalibrar com os testes físicos: `FATOR_ROLAMENTO_JOELHOS_5Q7`, recarga das acrobacias e o
+  balanceamento do arrasto pelas pernas.

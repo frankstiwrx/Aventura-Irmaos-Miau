@@ -447,3 +447,67 @@ De joelhos não levanta: menos deslocamento e amplitude vertical.
 Antes só entrava com o outro **exposto** (virando para os joelhos): do cem quilos parado sempre
 falhava ao fim da janela. Agora também entra com o controle consolidado (≥ 70) e, sem isso,
 recusa na hora com "CONSOLIDE ANTES (n/70)".
+
+## Entrega 5Q.7 — solo livre, falhas das quedas e acrobacias
+
+### PÉS (quem está no chão, RS ↓)
+
+Antes só aparecia a mensagem. Agora quem empurra com os pés **escorrega para trás** de verdade
+(`MotorSolo.RECUO_PES_PX` = 16 px, 1 px por tick, coordenada real), continua deitado, para na borda
+da arena e mantém a animação das pernas empurrando. Vale usado sozinho ou como resposta (contra)
+ao ENTRAR, ao JOELHO DIRETO e à passagem em pé. Afastar da guarda e o rastejo não mudaram.
+
+### SEGURAR AS PERNAS e arrastar (nova)
+
+- **Comando:** RS → de quem está por cima no solo livre, perto (o mesmo alcance do PRENDER, 110 px,
+  mesma faixa). Janela curta (10 na escala do catálogo); a resposta com os PÉS na janela defende.
+- **Pegada persistente:** enquanto durar, quem segura **anda** (LS) e leva o outro junto pelas
+  coordenadas reais; o outro continua deitado. Em pé ou de joelhos.
+- **Balanceamento** (`MotorSolo`): velocidade de quem arrasta × `FATOR_VELOCIDADE_ARRASTO` (0,35);
+  com o outro se debatendo × `FATOR_RESISTENCIA_ARRASTO` (0,5); fôlego `CUSTO_FOLEGO_POR_PX_ARRASTO`
+  (0,06 por px arrastado); a borda da arena segura os dois (ninguém atravessa); a profundidade
+  acompanha.
+- **Romper:** o segurado acumula `RESISTENCIA_POR_TICK` (1) por tick se debatendo (recupera 0,25 por
+  tick parado) e rompe em `RESISTENCIA_PARA_ROMPER` (30, ~0,5 s); PÉS, puxar guarda, levantar ou
+  qualquer técnica aceita do segurado também rompem.
+- **Termina sozinho:** posição mudou, alguém levantou/caiu, distância > `DISTANCIA_MAXIMA_ARRASTO`
+  (140 px) ou linhas diferentes, fôlego do segurador < 1, luta encerrada, outra ação do segurador.
+- **Soltar:** o mesmo RS → (a roda mostra SOLTAR enquanto segura).
+- Não conta como queda, passagem nem finalização (`EventoLuta`), natureza CONTROLE (creme).
+
+### Rasteira e derrubada forçada que falham
+
+- **Causa da deformação:** a pose da pegada já estende o braço do defensor até o kimono do outro;
+  as animações da tentativa somavam deslocamentos de mão e cotovelo pensados para o braço em
+  repouso. No meio da reação o antebraço da frente ia de ~1,1x a ~1,6x e o de trás encolhia para
+  ~0,3x (medido tick a tick). A pose final já voltava certa (5Q.6); o meio, não.
+- **Correção:** `animacao/IntegridadeMembros` — quando a técnica parte da pose da pegada, os braços
+  **giram em torno do ombro e dobram o cotovelo** com os comprimentos que tinham antes (giro
+  máximo 30°, a mão pode chegar até 55% do alcance). Vale para quem ataca e quem recebe, só no
+  desenho.
+- **Derrubada forçada segurada com RT:** nova reação curta (`derrubada_forcada_defendida:RECEBE`,
+  20 ticks) no estilo do empurrão aprovado: tronco cede, meio passo, volta à pegada.
+- **Derrubada forçada que só desequilibra:** já usava a reação do empurrão; agora sem deformar.
+- **Quedas que entram:** iguais (a mesma janela, agora sem esticar os braços).
+
+### Acrobacias: recuperação dinâmica (estrela, mortal para frente e para trás)
+
+A **execução** (duração da animação) não mudou; só o intervalo **depois** dela (`IrmaoMiau.recargaAcrobaciaDinamica`):
+
+```
+recarga = 24 × (1 − 0,8 × mobilidade) × (1 + 1,0 × (1 − condição)),   limitada a 3..60 ticks
+mobilidade = (0,6 × agilidade + 0,4 × velocidade) / 100   (até 1; atributos já com a faixa)
+condição  = 0,5 × fôlego atual/máximo + 0,5 × condicionamento atual/máximo
+```
+
+A graduação entra **só pelos atributos** (`EvolucaoGraduacao`), sem bônus extra. Exemplos
+descansados: Branco faixa branca ~19 ticks, Preto faixa branca ~15, Branco faixa preta ~15, Preto
+faixa preta ~8 (antes: 24 para todos). Cansado, até o dobro. Com fôlego/condicionamento infinitos
+(Modo Desenvolvedor/treino) a condição fica no máximo; o que ficou limitado continua contando.
+
+### Rolamento técnico de joelhos
+
+`IrmaoMiau.FATOR_ROLAMENTO_JOELHOS_5Q7` = 0,6 (40% mais lento): multiplicador 0,8 → 0,48, duração
+28 → 46 ticks (~1,65x), **mesma distância** (a velocidade cai na mesma proporção e a animação anda
+pelo progresso: sem deslizar). Rolamento deitado, em pé, sprawl, movimentação de joelhos, rastejo e
+levantada técnica não mudaram.

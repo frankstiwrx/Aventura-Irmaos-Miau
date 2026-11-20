@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1169, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1193, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -581,3 +581,29 @@ Checklist da homologação física (Xbox no J1, teclado virtual no J2):
 21. F8 numa partida normal liga o Modo Desenvolvedor (selo, fôlego ∞, sem relógio); F8 de novo desliga e o relógio continua; o menu não tem mais a opção.
 22. Música: título, menu, seleção, treino, laboratório, configurações, perfis, resultados; no combate a faixa troca ao terminar e não reinicia no F5/F4.
 23. Colocar um WAV em `audio/musicas/combate/combate_01.wav` e ouvir sem recompilar.
+
+# Entrega 5Q.7 — consolidação do combate, animações, mobilidade e interface
+
+Checklist da homologação física (Xbox no J1, teclado virtual no J2; trocar os papéis):
+
+1. Rasteira parada (não entra): olhar os braços do defensor **durante** a reação — nada esticado.
+2. Rasteira segurada com RT, 3× seguidas sem romper a pegada: sem acumular deformação.
+3. Forçar queda contra base cheia (desequilibra): reação do empurrão, braços inteiros.
+4. Forçar queda segurada com RT: tronco cede um pouco e volta.
+5. Rasteira e forçar queda que **entram**: iguais às aprovadas.
+6. No chão contra quem está em pé: PÉS (RS ↓) escorrega um pouco para trás e a distância aumenta.
+7. Em pé contra quem está no chão: RS ← PRENDER (igual) e RS → SEGURAR.
+8. Segurando: andar arrasta devagar (o outro continua deitado); o fôlego cai.
+9. A roda mostra SOLTAR no RS → enquanto segura; RS → solta.
+10. Quem é segurado: debater-se (direção) por meio segundo rompe; PÉS rompe; levantar/puxar guarda rompem.
+11. Arrastar até a borda: ninguém sai da arena.
+12. Segurar de joelhos também funciona.
+13. 100 kg por baixo: REC. GUARDA, VIRAR e ENQUADRAR mexem o corpo (sem trocar a posição se o controle estiver alto).
+14. Montada por baixo: ESCAPAR e ENQUADRAR mexem o corpo.
+15. Costas: GIRAR e DEFENDER mexem o corpo.
+16. Rolamento técnico de joelhos visivelmente mais lento (mesma distância); deitado, em pé e sprawl iguais.
+17. Faixa preta (Preto) descansado: estrelas e mortais quase seguidos; faixa branca cansado: espera maior.
+18. Modo Desenvolvedor com fôlego/condicionamento infinitos: acrobacias encadeadas; desligar volta ao normal.
+19. Mensagem no topo com a cor da natureza: queda âmbar, defesa azul, passagem verde, finalização vermelha, segurar creme, bater com moldura dourada.
+20. A mensagem secundária ("▶ … EM EXECUÇÃO") continua neutra; a barra inferior não mudou.
+21. Preservados: tiro de guarda, empurrão, levantada técnica, quedas explosivas, guardas aranha/laço, manga, berimbolos, rodas do ashi, F8, cenários e músicas.

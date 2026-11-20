@@ -174,3 +174,4 @@ Developed by **Frank William Araujo Souza**.
 Built with Java, curiosity, cats and a lot of Jiu-Jitsu. 🐱🥋
 
 - **5Q.6:** fixed tap-out from the wheel, defended sweep recovery, 9 explosive takedowns (standing and kneeling) plus body lock, LB+LT throws and guard pulls, 6 new leg locks, two berimbolo variations, jumping guard pull, confirmation micro-animations, semantic wheel colors, F8 developer mode inside a match and per-screen soundtrack with an external music folder (`docs/AUDIO.md`).
+- **5Q.7:** failed sweep/forced takedown no longer stretch the arms (limb lengths preserved), feet on the ground slide back for real, new leg hold to drag the opponent across the mat, defensive micro-animations (bottom side control, mount and back), slower kneeling roll, attribute-based acrobatics recovery and combat messages colored by action nature.
