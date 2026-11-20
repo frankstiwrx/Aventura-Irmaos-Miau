@@ -96,6 +96,10 @@ public final class CatalogoTecnicasSolo {
     public static final String QUEDA_MANGA = "queda_manga";
     // ---- 5P.2: solo livre
     public static final String PRENDER_PERNAS = "prender_pernas";
+    /** 5Q.7: pegada persistente nas pernas de quem esta no chao (arrastar pelo tatame). */
+    public static final String SEGURAR_PERNAS = "segurar_pernas";
+    /** 5Q.7: soltar as pernas seguradas (o mesmo comando do SEGURAR, so enquanto segura). */
+    public static final String SOLTAR_PERNAS = "soltar_pernas";
     public static final String RECUAR = "recuar";
     public static final String JOELHO_DIRETO = "joelho_direto";
     public static final String AFASTAR_DO_CHAO = "afastar_do_chao";
@@ -538,9 +542,17 @@ public final class CatalogoTecnicasSolo {
         c.exigir(QUEDA_MANGA, RequisitoTecnica.PEGADA_APLICADOR, RequisitoTecnica.PEGADA_MANGAS);
 
         // ---------- SOLO LIVRE: quem esta em pe (por cima) e quem esta no chao
-        c.efeitoComJanela(PRENDER_PERNAS, "Prender as pernas", "PRENDER", umEmPe, cima, lados(false),
+        // 5Q.7: o PRENDER estava repetido no RS <- e no RS -> (a mesma tecnica). O <- continua PRENDER;
+        // o -> virou SEGURAR AS PERNAS (pegada persistente para arrastar; o mesmo comando solta)
+        c.efeitoComJanela(PRENDER_PERNAS, "Prender as pernas", "PRENDER", umEmPe, cima, List.of(rs(Direcao.ESQUERDA)),
                 2.5, 12, Exposicao.BASE, Efeito.CONTROLAR_PERNAS, RETENCAO_PES);
         c.exigir(PRENDER_PERNAS, RequisitoTecnica.PERTO_NO_CHAO);
+        c.efeitoComJanela(SEGURAR_PERNAS, "Segurar as pernas (arrastar)", "SEGURAR", umEmPe, cima,
+                List.of(rs(Direcao.DIREITA)), 2.0, 10, Exposicao.BASE, Efeito.SEGURAR_PERNAS, RETENCAO_PES);
+        c.exigir(SEGURAR_PERNAS, RequisitoTecnica.PERTO_NO_CHAO);
+        // so aparece enquanto segura (MotorSolo.tecnicaPara troca o SEGURAR por ele); sem posicao propria
+        c.ajuste(SOLTAR_PERNAS, "Soltar as pernas", "SOLTAR", EnumSet.noneOf(Posicao.class), cima,
+                List.of(rs(Direcao.DIREITA)), Efeito.SOLTAR_PERNAS);
         c.ajuste(RECUAR, "Recuar (dar distância)", "RECUAR", umEmPe, cima, List.of(rs(Direcao.BAIXO)), Efeito.RECUAR);
         // 5Q.5: entra se o outro NAO responder (retencao com os pes / puxar guarda) - antes exigia o outro
         // ja exposto e o RB v direto sempre falhava; com as pernas presas a retencao e recusada

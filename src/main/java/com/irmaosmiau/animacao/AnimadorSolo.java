@@ -124,6 +124,11 @@ public final class AnimadorSolo {
         if (daPegada.containsKey(l)) {
             IntegridadeMembros.preservarBracos(antesDaTecnica, pose, l.getBracosEmRepouso());
         }
+        // 5Q.7: quem arrasta pelas pernas da passos curtos (pelo x real: parado, os pes ficam)
+        if (ef.map(e -> e.tipo() == MotorSolo.TipoEfeitoVisual.TECNICA_ATAQUE
+                && "segurando_pernas".equals(e.tecnica())).orElse(false)) {
+            passosDoArrasto(pose, l.getX());
+        }
         double dx = desloc == null ? 0.0 : desloc[0];
         dy += desloc == null ? 0.0 : desloc[1];
         int[] nossa = aplicadas.get(l);
@@ -204,6 +209,20 @@ public final class AnimadorSolo {
         pose[mao + 1] += (int) Math.round(dy);
         pose[cotovelo] += (int) Math.round(dx / 2);
         pose[cotovelo + 1] += (int) Math.round(dy / 2);
+    }
+
+    /** 5Q.7: comprimento (px de x real) de um ciclo de passos de quem arrasta. */
+    public static final int CICLO_PASSO_ARRASTO_PX = 24;
+
+    /** 5Q.7: passos curtos de quem arrasta: joelho e pe sobem alternados conforme o x anda. */
+    static void passosDoArrasto(int[] pose, int x) {
+        double f = Math.sin(2 * Math.PI * Math.floorMod(x, CICLO_PASSO_ARRASTO_PX) / CICLO_PASSO_ARRASTO_PX);
+        int tras = (int) Math.round(Math.max(0, f) * 8);
+        int frente = (int) Math.round(Math.max(0, -f) * 8);
+        pose[22] -= tras / 2;
+        pose[25] -= tras;
+        pose[26] -= frente / 2;
+        pose[29] -= frente;
     }
 
     public void liberar(IrmaoMiau l) {

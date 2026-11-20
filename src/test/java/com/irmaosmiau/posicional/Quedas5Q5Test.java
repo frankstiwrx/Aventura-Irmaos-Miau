@@ -137,7 +137,8 @@ class Quedas5Q5Test {
     @Test
     void pernasPresasMantemAsMaosNasCanelasEnquantoOControleDura() {
         soloLivre(Lado.A);
-        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.DIREITA, Familia.RS).resultado(), "prender as pernas");
+        // 5Q.7 (pedido): o PRENDER ficou so no RS <- (o RS -> virou SEGURAR AS PERNAS)
+        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.ESQUERDA, Familia.RS).resultado(), "prender as pernas");
         resolver();
         assertEquals(TecnicaSolo.Exposicao.PERNAS_PRESAS, m.exposicaoDe(Lado.B).orElseThrow());
         ticks(25);

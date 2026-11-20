@@ -425,7 +425,7 @@ public final class MotorSolo {
             CatalogoTecnicasSolo.DESEQUILIBRAR_GUARDA, CatalogoTecnicasSolo.DESEQ_BORBOLETA,
             CatalogoTecnicasSolo.DESEQ_DLR, CatalogoTecnicasSolo.DESEQ_ARANHA,
             CatalogoTecnicasSolo.TIRO_GUARDA, CatalogoTecnicasSolo.PUXAR_GUARDA,
-            CatalogoTecnicasSolo.PRENDER_PERNAS,
+            CatalogoTecnicasSolo.PRENDER_PERNAS, CatalogoTecnicasSolo.SEGURAR_PERNAS,   // 5Q.7: alcanca as canelas
             // 5Q.5: quedas e entradas com animacao propria (quem faz e quem recebe)
             CatalogoTecnicasSolo.RASTEIRA, CatalogoTecnicasSolo.ENTRADA_PERNAS, CatalogoTecnicasSolo.JOELHO_DIRETO,
             CatalogoTecnicasSolo.LEVANTAR_TECNICO,
@@ -769,6 +769,7 @@ public final class MotorSolo {
         ultimoMovimento.clear();                               // 5Q.5
         afastarAte.clear();
         recuoDoChao.clear();
+        seguradorPernas = null;                                // 5Q.7
         for (Lado l : Lado.values()) {
             conexoes.put(l, java.util.EnumSet.noneOf(Conexao.class));
             postura.put(l, 0);
@@ -935,7 +936,11 @@ public final class MotorSolo {
         if (!estado.getPosicao().isNoChao()) {
             deJoelhos = lutador(lado).isAjoelhado() || lutador(lado.outro()).isAjoelhado();
         }
-        return catalogo.para(estado, lado, c, deJoelhos);
+        Optional<TecnicaSolo> t = catalogo.para(estado, lado, c, deJoelhos);
+        if (seguradorPernas == lado && t.isPresent() && t.get().id().equals(CatalogoTecnicasSolo.SEGURAR_PERNAS)) {
+            return Optional.of(catalogo.exigir(CatalogoTecnicasSolo.SOLTAR_PERNAS));   // 5Q.7: o mesmo comando solta
+        }
+        return t;
     }
 
     public Resposta comando(Lado lado, ComandoSolo c) {
@@ -1076,6 +1081,10 @@ public final class MotorSolo {
         if (motivo != null) {
             registrar("RECUSA", t.id(), lado, motivo);
             return new Resposta(Resultado.RECUSADA, motivo, t);
+        }
+        if (seguradorPernas != null && !t.id().equals(CatalogoTecnicasSolo.SOLTAR_PERNAS)) {
+            // 5Q.7: o segurado age (pes, puxar guarda, levantar...): rompe a pegada; o segurador muda de acao: solta
+            soltarPernas(seguradorPernas, lado == seguradorPernas ? null : lado);
         }
         eu.gastarFolegoEsforco(custo(lado, t), t.id());
         // 5P.2: o mesmo esforco tambem desgasta o condicionamento (uma cobranca so, aqui)
@@ -1279,6 +1288,7 @@ public final class MotorSolo {
         }
         efeitos.values().forEach(e -> e.restante = Math.max(0, e.restante - 1));
         afastarGradual();                                         // 5Q.5
+        atualizarArrasto(ia, ib);                                 // 5Q.7
         avancoDaQueda();                                          // 5Q.6
         atualizarFinalizacao();                                   // 5Q
         sincronizarEmPe();
@@ -2094,6 +2104,9 @@ public final class MotorSolo {
 
     // ---------------- solo
     private void instantanea(Lado lado, TecnicaSolo t) {
+        if (t.id().equals(CatalogoTecnicasSolo.RETENCAO_PES) && estado.getPosicao() == Posicao.EM_PE_CONTRA_SOLO) {
+            recuoDoChao.put(lado, RECUO_PES_PX);               // 5Q.7: os pes empurram e o corpo escorrega para tras
+        }
         aplicarEfeito(lado, t);
         registrar("AJUSTE", t.id(), lado, "");
     }
@@ -2110,6 +2123,8 @@ public final class MotorSolo {
             }
             case PEGAR_MANGA -> conexoes.get(lado).add(Conexao.MANGA);
             case LIVRAR_MANGA -> conexoes.get(out).remove(Conexao.MANGA);
+            case SEGURAR_PERNAS -> segurarPernas(lado);          // 5Q.7
+            case SOLTAR_PERNAS -> soltarPernas(lado, null);
             case RECUAR -> {
                 IrmaoMiau eu = lutador(lado);
                 int s = Integer.signum(eu.getX() - lutador(out).getX());
@@ -2183,6 +2198,9 @@ public final class MotorSolo {
             for (Lado l : Lado.values()) {
                 conexoes.get(l).clear();                       // fora das guardas a manga solta
             }
+        }
+        if (seguradorPernas != null && novo.getPosicao() != Posicao.EM_PE_CONTRA_SOLO) {
+            soltarPernas(seguradorPernas, null);               // 5Q.7: posicao nova acaba com o arrasto
         }
         estado = novo;
         afastarAte.clear();                                    // 5Q.5: posicao nova cancela o afastamento
@@ -2291,6 +2309,133 @@ public final class MotorSolo {
         return t.limiarEstabilidade();
     }
 
+    // ---------------- 5Q.7: SEGURAR AS PERNAS E ARRASTAR
+    /** Recuo real de quem usa os PES no solo livre (px, 1 por tick: suave, sem teletransporte). */
+    public static final int RECUO_PES_PX = 16;
+    /** Fracao da velocidade de quem arrasta (o resto do passo se perde no peso do outro). */
+    public static final double FATOR_VELOCIDADE_ARRASTO = 0.35;
+    /** O segurado se debatendo (direcao ou RT) deixa o arrasto ainda mais lento. */
+    public static final double FATOR_RESISTENCIA_ARRASTO = 0.5;
+    /** Folego gasto por px arrastado. */
+    public static final double CUSTO_FOLEGO_POR_PX_ARRASTO = 0.06;
+    /** Resistencia acumulada por tick de quem se debate; a pegada rompe no limite (~0,5 s). */
+    public static final double RESISTENCIA_POR_TICK = 1.0;
+    public static final double RESISTENCIA_PARA_ROMPER = 30.0;
+    public static final double RESISTENCIA_RECUPERA_POR_TICK = 0.25;
+    /** Alem desta distancia (px) a pegada nas pernas se perde. */
+    public static final int DISTANCIA_MAXIMA_ARRASTO = ALCANCE_ENTRAR_PX + 30;
+    /** Folego minimo para continuar segurando. */
+    public static final double FOLEGO_MINIMO_ARRASTO = 1.0;
+    private static final int TICKS_EFEITO_ARRASTO = 1_000_000;
+
+    private Lado seguradorPernas;
+    private int xAnteriorSegurador;
+    private double restoArrasto;
+    private double resistenciaArrasto;
+
+    /** Quem esta segurando as pernas do outro agora (vazio = ninguem). */
+    public Optional<Lado> getSeguradorPernas() {
+        return Optional.ofNullable(seguradorPernas);
+    }
+
+    /** Resistencia acumulada do segurado (0 ate RESISTENCIA_PARA_ROMPER). */
+    public double getResistenciaArrasto() {
+        return resistenciaArrasto;
+    }
+
+    private void segurarPernas(Lado lado) {
+        seguradorPernas = lado;
+        xAnteriorSegurador = lutador(lado).getX();
+        restoArrasto = 0;
+        resistenciaArrasto = 0;
+        // pose sustentada: maos nas canelas / pernas juntas, enquanto durar
+        efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_EFEITO_ARRASTO).tecnica = "segurando_pernas";
+        efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_EFEITO_ARRASTO).tecnica = "segurando_pernas";
+    }
+
+    /**
+     * Encerra o arrasto. {@code rompeu} = o lado que se soltou (null = o segurador soltou ou a
+     * condicao acabou). Os dois voltam suavemente a pose da posicao.
+     */
+    private void soltarPernas(Lado segurador, Lado rompeu) {
+        if (seguradorPernas == null) {
+            return;
+        }
+        seguradorPernas = null;
+        resistenciaArrasto = 0;
+        restoArrasto = 0;
+        for (Lado l : Lado.values()) {
+            Efeito e = efeitos.get(l);
+            if (e != null && "segurando_pernas".equals(e.tecnica)) {
+                liberarVisual(l, l == segurador ? "segurando_pernas:ATACA" : "segurando_pernas:RECEBE", 1.0, null);
+            }
+        }
+        if (rompeu != null) {
+            registrar("ROMPEU_PERNAS", CatalogoTecnicasSolo.SEGURAR_PERNAS, rompeu, "");
+        } else {
+            registrar("SOLTOU_PERNAS", CatalogoTecnicasSolo.SEGURAR_PERNAS, segurador, "");
+        }
+    }
+
+    /**
+     * Um tick do arrasto: quem segura anda (o GamePanel ja o moveu) mais devagar e leva o outro
+     * junto, pelas coordenadas reais, dentro da arena; o outro pode resistir e romper. Termina
+     * sozinho quando as condicoes acabam (posicao, distancia, alguem levantou/caiu, sem folego).
+     */
+    private void atualizarArrasto(Intencao ia, Intencao ib) {
+        if (seguradorPernas == null) {
+            return;
+        }
+        Lado h = seguradorPernas;
+        Lado d = h.outro();
+        IrmaoMiau seg = lutador(h);
+        IrmaoMiau pre = lutador(d);
+        boolean posicao = estado.getPosicao() == Posicao.EM_PE_CONTRA_SOLO
+                && estado.getPorCima().map(c -> c == h).orElse(false);
+        if (!posicao || !pre.isDeitado() || seg.isDeitado() || vitoria != null) {
+            soltarPernas(h, null);
+            return;
+        }
+        if (Math.abs(seg.getX() - pre.getX()) > DISTANCIA_MAXIMA_ARRASTO
+                || Math.abs(seg.getLinhaAtual() - pre.getLinhaAtual()) > 1) {
+            soltarPernas(h, d);
+            return;
+        }
+        if (seg.getFolegoAtual() < FOLEGO_MINIMO_ARRASTO) {
+            soltarPernas(h, null);
+            return;
+        }
+        // resistencia: o segurado se debate (qualquer direcao ou RT)
+        Intencao id = d == Lado.A ? ia : ib;
+        boolean debate = id != null && (id.dx() != 0 || id.dy() != 0 || id.base());
+        resistenciaArrasto = debate ? resistenciaArrasto + RESISTENCIA_POR_TICK
+                : Math.max(0, resistenciaArrasto - RESISTENCIA_RECUPERA_POR_TICK);
+        if (resistenciaArrasto >= RESISTENCIA_PARA_ROMPER) {
+            soltarPernas(h, d);
+            return;
+        }
+        // deslocamento: o passo de quem segura vale so uma fracao; o outro vai junto
+        int andou = seg.getX() - xAnteriorSegurador;
+        if (andou != 0) {
+            double f = FATOR_VELOCIDADE_ARRASTO * (debate ? FATOR_RESISTENCIA_ARRASTO : 1.0);
+            double quer = andou * f + restoArrasto;
+            int mover = (int) quer;
+            restoArrasto = quer - mover;
+            int alvoPreso = Math.max(xMin, Math.min(xMax, pre.getX() + mover));
+            int moveu = alvoPreso - pre.getX();                 // a borda segura os dois
+            seg.encostarNaBorda(xAnteriorSegurador + moveu - seg.getX());
+            pre.encostarNaBorda(moveu);
+            if (moveu != 0) {
+                seg.gastarFolegoEsforco(Math.abs(moveu) * CUSTO_FOLEGO_POR_PX_ARRASTO, "arrastar");
+            }
+        }
+        int dl = seg.getLinhaAtual() - pre.getLinhaAtual();
+        if (dl != 0) {
+            pre.moverVertical(Integer.signum(dl) * 2.0);       // a profundidade acompanha (como no vinculo)
+        }
+        xAnteriorSegurador = seg.getX();
+    }
+
     /** 5Q.6: quem esta por baixo tambem recua um pouco no chao enquanto empurra com os pes (px). */
     public static final int RECUO_DO_CHAO_PX = 14;
     private final Map<Lado, Integer> recuoDoChao = new EnumMap<>(Lado.class);
@@ -2307,8 +2452,13 @@ public final class MotorSolo {
             }
             IrmaoMiau a = lutador(l);
             int s = Integer.signum(a.getX() - lutador(l.outro()).getX());
+            int passo = s == 0 ? -1 : s;
+            if (a.getX() + passo < xMin || a.getX() + passo > xMax) {
+                recuoDoChao.put(l, 0);                         // 5Q.7: a borda da arena para o recuo
+                continue;
+            }
             int antes = a.getX();
-            a.encostarNaBorda(s == 0 ? -1 : s);
+            a.encostarNaBorda(passo);
             recuoDoChao.put(l, a.getX() == antes ? 0 : r - 1);
         }
         if (afastarAte.isEmpty()) {

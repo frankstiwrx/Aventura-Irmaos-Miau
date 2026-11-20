@@ -57,6 +57,8 @@ public final class NarradorSolo {
             case "FINALIZOU" -> q + " finalizou com " + nomeFin(e) + "!";
             case "RENDICAO" -> q + " bateu! " + o + " venceu: " + nomeFin(e) + ".";
             case "SOLO_LIVRE" -> q + " foi ao chão.";
+            case "ROMPEU_PERNAS" -> q + " se soltou das mãos de " + o + "!";              // 5Q.7
+            case "SOLTOU_PERNAS" -> q + " soltou as pernas de " + o + ".";
             case "EXAUSTAO" -> q + " está exausto!";
             default -> null;
         };
@@ -90,6 +92,7 @@ public final class NarradorSolo {
                     CatalogoTecnicasSolo.IR_DLR -> q + " entrou na De La Riva.";
             case CatalogoTecnicasSolo.IR_LACO -> q + " montou o laço na manga.";
             case CatalogoTecnicasSolo.PRENDER_PERNAS -> q + " prendeu as pernas de " + o + ".";
+            case CatalogoTecnicasSolo.SEGURAR_PERNAS -> q + " segurou as pernas de " + o + "!";   // 5Q.7
             case CatalogoTecnicasSolo.JOELHO_DIRETO -> q + " colocou o joelho na barriga!";
             case CatalogoTecnicasSolo.BERIMBOLO -> q + " pegou as costas com berimbolo!";
             case CatalogoTecnicasSolo.PASSAR_BORBOLETA, CatalogoTecnicasSolo.PASSAR_DLR,

@@ -215,7 +215,8 @@ class MotorSolo5P2Test {
         assertEquals(Posicao.EM_PE_CONTRA_SOLO, m.getPosicao(), "joelho direto com resposta nao entra");
         ticks(MotorSolo.RECARGA_FALHA_TICKS + 1);
         // prender as pernas (o de baixo nao reage) e entao o joelho entra
-        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.DIREITA, Familia.RS).resultado());
+        // 5Q.7 (pedido): o PRENDER ficou so no RS <- (o RS -> virou SEGURAR AS PERNAS)
+        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.ESQUERDA, Familia.RS).resultado());
         resolver();
         assertEquals(TecnicaSolo.Exposicao.PERNAS_PRESAS, m.exposicaoDe(Lado.B).orElseThrow());
         ticks(MotorSolo.RECARGA_TICKS);

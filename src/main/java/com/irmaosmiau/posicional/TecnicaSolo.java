@@ -126,7 +126,11 @@ public record TecnicaSolo(
         /** 5P.2: solta a manga presa pelo outro (perde a conexao; do laco volta para a guarda aberta). */
         LIVRAR_MANGA,
         /** 5P.2: recua / cria distancia (sem vinculo). */
-        RECUAR
+        RECUAR,
+        /** 5Q.7: segura as pernas de quem esta no chao (pegada persistente: da para arrastar). */
+        SEGURAR_PERNAS,
+        /** 5Q.7: solta as pernas seguradas. */
+        SOLTAR_PERNAS
     }
 
     public boolean isInstantanea() {

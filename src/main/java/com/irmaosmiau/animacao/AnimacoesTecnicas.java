@@ -204,6 +204,18 @@ public final class AnimacoesTecnicas {
                 q(0.45, 24, 2, 25, 6, 28, -2, 29, 6),
                 q(1.00, 22, -6, 23, 6, 24, -10, 25, 12, 26, 4, 27, 6, 28, -4, 29, 12, 20, 6, 21, 10, 18, 3, 19, 5)); // pernas juntas, puxadas
 
+        // 5Q.7: SEGURAR AS PERNAS: a entrada e a do PRENDER (abaixa e alcanca as canelas); depois a pose
+        // fica SUSTENTADA (maos nas canelas / pernas juntas e esticadas) enquanto o arrasto durar. Os
+        // passos de quem arrasta sao procedurais (AnimadorSolo.passosDoArrasto), pelo x real.
+        alias("segurar_pernas:ATACA", "prender_pernas:ATACA");
+        alias("segurar_pernas:RECEBE", "prender_pernas:RECEBE");
+        int[] segurando = {9, 26, 11, 8, 6, 4, 26, 8, 22, -6, 20, 20, 21, 32, 18, 10, 19, 16, 16, 14, 17, 34,
+                14, 7, 15, 17, 30, -6, 31, 6};                                                    // inclinado, maos nos tornozelos
+        def("segurando_pernas:ATACA", q(0.00, segurando), q(1.00, segurando));
+        int[] segurado = {22, -8, 23, 8, 24, -12, 25, 16, 26, 4, 27, 8, 28, -6, 29, 16,         // pernas juntas e puxadas
+                20, -10, 21, 6, 18, -5, 19, 3, 16, -12, 17, 4, 14, -6, 15, 2, 9, -4};            // bracos ficam para tras
+        def("segurando_pernas:RECEBE", q(0.00, segurado), q(1.00, segurado));
+
         // ---------------- 9. AJUSTAR O CONTROLE DA PERNA (ashi garami; ajuste instantaneo) - 5Q.4
         def("consolidar_ashi:ATACA",
                 q(0.00),
