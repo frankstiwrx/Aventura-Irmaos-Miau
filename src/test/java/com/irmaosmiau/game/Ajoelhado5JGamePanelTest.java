@@ -123,7 +123,7 @@ class Ajoelhado5JGamePanelTest {
         // 5O.1 (pedido): de joelhos AGORA rola (R3 contextual); a postura fica.
         l.iniciarRolamento(com.irmaosmiau.entities.Direcao.DIREITA);
         assertTrue(l.isRolando());
-        for (int i = 0; i < 40 && l.isRolando(); i++) {
+        for (int i = 0; i < 60 && l.isRolando(); i++) {          // 5Q.7 (pedido): o rolamento de joelhos dura 46
             l.atualizar(false, false);
         }
         assertTrue(l.isAjoelhado(), "comandos incompativeis sao ignorados (comportamento seguro)");
