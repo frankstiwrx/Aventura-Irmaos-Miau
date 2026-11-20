@@ -106,6 +106,13 @@ public final class AnimadorSolo {
             PernasGuarda.aplicar(pose, l, p);
         }
         java.util.Optional<MotorSolo.EfeitoVisual> ef = m.efeitoVisual(lado);
+        // 5Q.6: a manga presa fica visivel: a mao da frente continua segurando enquanto a conexao durar
+        if (!cima && l.isDeitado() && m.conectado(l) && ef.isEmpty() && m.temConexao(lado, MotorSolo.Conexao.MANGA)) {
+            pose[20] += MAO_NA_MANGA[0];
+            pose[21] += MAO_NA_MANGA[1];
+            pose[18] += MAO_NA_MANGA[0] / 2;
+            pose[19] += MAO_NA_MANGA[1] / 2;
+        }
         // 5Q.3: animacao propria da tecnica (aplicador/receptor); sem ela, a pose provisoria da 5Q
         double[] desloc = ef.map(e -> AnimacoesTecnicas.aplicar(pose, e)).orElse(null);
         if (desloc == null) {
@@ -169,6 +176,9 @@ public final class AnimadorSolo {
      * dividindo a variacao entre braco e antebraco (os dois segmentos mudam no maximo ~LIMITE/2).
      */
     public static final int LIMITE_MAO = 34;
+
+    /** 5Q.6: mao da frente (deitado: +x sobe, +y vai para o outro) segurando a manga presa. */
+    public static final int[] MAO_NA_MANGA = {10, 12};
 
     // os parametros sao: rotacao do tronco e deslocamento (x, y) da mao da frente e da mao de tras
     private static void mexer(int[] pose, double w, int tronco, int maoFx, int maoFy, int maoTx, int maoTy) {

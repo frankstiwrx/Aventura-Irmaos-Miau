@@ -396,6 +396,83 @@ public final class AnimacoesTecnicas {
                 q(0.50, 9, 6),
                 q(1.00, 9, 16, 11, 4, 20, 18, 21, 6, 18, 9, 19, 3, 30, 6));
 
+        // =====================================================================
+        // ENTREGA 5Q.6: microanimacoes de confirmacao (ajustes) - suaves, proporcionais, cada uma a sua
+        // Deitado: +x local = para cima, +y local = para o outro. Por cima de joelhos: o normal.
+        // =====================================================================
+        def("consolidar:ATACA", q(0.00), q(0.40, 9, 10, 31, 4, 20, 6, 21, 6, 16, 6, 17, 6, 22, -4), q(1.00));   // peso no peito
+        def("consolidar:RECEBE", q(0.00), q(0.45, 9, -4, 6, -3, 11, -4), q(1.00));
+        def("postura_meia:ATACA", q(0.00), q(0.45, 9, 12, 11, 6, 20, 10, 21, 8, 18, 5, 19, 4, 30, 4), q(1.00));   // ombro no queixo
+        def("postura_meia:RECEBE", q(0.00), q(0.45, 11, -6, 13, -3), q(1.00));
+        def("pressao_joelho:ATACA", q(0.00), q(0.45, 9, 6, 26, 4, 27, 6, 31, 5, 20, 4, 21, 6), q(1.00));       // desce o peso no joelho
+        def("pressao_joelho:RECEBE", q(0.00), q(0.45, 9, -4, 6, -4), q(1.00));
+        def("estabilizar_montada:ATACA", q(0.00),
+                q(0.35, 22, -8, 26, 8, 16, -10, 17, 10, 14, -5, 15, 5, 20, 10, 21, 10, 18, 5, 19, 5, 31, 3),   // abre os joelhos, maos na base
+                q(1.00));
+        def("montada_alta:ATACA", q(0.00), q(0.30, 4, 8, 7, 8, 9, -6, 30, 8, 31, -6, 22, 6, 26, 6),            // o quadril sobe para o peito
+                q(0.85, 4, 8, 7, 8, 9, -6, 30, 8, 31, -6, 22, 6, 26, 6), q(1.00));
+        def("montada_alta:RECEBE", q(0.00), q(0.40, 9, -4, 11, -4), q(1.00));
+        def("ajustar_ganchos:ATACA", q(0.00), q(0.40, 24, 8, 25, -6, 28, 8, 29, -6, 22, 4, 26, 4),             // os pes entram por dentro
+                q(0.75, 24, 3, 25, 2, 28, 3, 29, 2), q(1.00));
+        def("ajustar_ganchos:RECEBE", q(0.00), q(0.45, 9, 3, 26, 3), q(1.00));
+        def("controlar_pernas:ATACA", q(0.00),                                                                  // maos nos joelhos
+                q(0.15, 9, 8, 20, 14, 21, 18, 18, 7, 19, 9, 16, 12, 17, 18, 14, 6, 15, 9),
+                q(0.85, 9, 8, 20, 14, 21, 18, 18, 7, 19, 9, 16, 12, 17, 18, 14, 6, 15, 9), q(1.00));
+        def("controlar_pernas:RECEBE", q(0.00), q(0.30, 26, -6, 22, -6, 28, -4, 24, -4), q(1.00));            // as pernas juntas
+        def("angulo_guarda:ATACA", q(0.00), q(0.40, 6, 10, 10, 6, 4, 6, 26, 4, 22, -4), q(1.00));              // gira o quadril
+        def("angulo_guarda:RECEBE", q(0.00), q(0.45, 9, 3), q(1.00));
+        def("pegar_manga:ATACA", q(0.00), q(0.40, 20, 16, 21, 22, 18, 8, 19, 11),                              // alcanca a manga
+                q(0.80, 20, 10, 21, 12, 18, 5, 19, 6), q(1.00, 20, 10, 21, 12, 18, 5, 19, 6));                 // e fica segurando
+        def("pegar_manga:RECEBE", q(0.00), q(0.60, 20, 6, 21, -6, 18, 3, 19, -3), q(1.00));                   // o braco e puxado
+        def("reter_borboleta:ATACA", q(0.00), q(0.40, 26, 6, 27, -6, 22, 6, 23, -6), q(1.00));                 // ganchos tensos
+        alias("reter_dlr:ATACA", "reter_borboleta:ATACA");
+        alias("reter_aranha:ATACA", "reter_borboleta:ATACA");
+        alias("reter_slx:ATACA", "reter_borboleta:ATACA");
+        def("travar_laco:ATACA", q(0.00), q(0.40, 26, 8, 27, -8, 20, 6, 21, 8, 18, 3, 19, 4), q(1.00));       // enrola a perna no braco
+        def("postura_borboleta:ATACA", q(0.00),                                                                 // afunda o quadril e segura
+                q(0.20, 4, -6, 9, -8, 31, 4, 22, -6, 24, -8),
+                q(0.85, 4, -6, 9, -8, 31, 4, 22, -6, 24, -8), q(1.00));
+        alias("postura_dlr:ATACA", "postura_borboleta:ATACA");
+        alias("postura_laco:ATACA", "postura_borboleta:ATACA");
+        alias("postura_aranha:ATACA", "postura_borboleta:ATACA");
+        alias("postura_slx:ATACA", "postura_borboleta:ATACA");
+        // ---------- desequilibrar com os pes (janela): recolhe, empurra; o outro tropeca e recupera
+        def("desequilibrar_pes:ATACA", q(0.00),
+                q(0.40, 26, 10, 27, -16, 28, 12, 29, -18, 22, 6, 23, -10),
+                q(0.80, 26, 6, 27, 18, 28, 4, 29, 26, 22, 4, 23, 12, 24, 2, 25, 16),
+                q(1.00));
+        def("desequilibrar_pes:RECEBE", q(0.00), q(0.60, 9, -4),
+                q(0.85, 9, -14, 11, -6, 30, -6, 20, 8, 21, -10, 16, 6, 17, -8),
+                q(1.00, 9, -6, 30, -3));
+        for (String id : new String[] {"desequilibrar_guarda", "deseq_borboleta", "deseq_dlr", "deseq_aranha"}) {
+            alias(id + ":ATACA", "desequilibrar_pes:ATACA");
+            alias(id + ":RECEBE", "desequilibrar_pes:RECEBE");
+        }
+        // ---------- TIRO DE GUARDA (explosivo: prepara, salta, encaixa as pernas, desce) x PUXAR GUARDA (controlado)
+        def("tiro_guarda:ATACA",
+                q(0.00),
+                q(0.15, 9, 10, 22, 10, 23, 8, 26, 10, 27, 8, 31, 10),                                // agacha (prepara)
+                q(0.42, 9, -6, 20, -10, 21, -8, 16, -10, 17, -8, 22, 14, 23, -20, 26, 18, 27, -24,
+                        24, 8, 25, -16, 28, 10, 29, -18, 30, 16, 31, -38),                                // salta e recolhe as pernas
+                q(0.68, 9, -14, 20, -12, 21, -6, 16, -12, 17, -6, 22, 24, 23, -8, 24, 30, 25, -4,
+                        26, 30, 27, -10, 28, 40, 29, -6, 30, 26, 31, -34),                                // pernas em volta da cintura
+                q(0.84, 9, -16, 20, -12, 21, -4, 16, -12, 17, -4, 22, 24, 23, -8, 24, 30, 25, -4,
+                        26, 30, 27, -10, 28, 40, 29, -6, 30, 26, 31, -30),                                // encaixado (um instante)
+                q(1.00, 9, -22, 22, 20, 23, -6, 24, 26, 26, 26, 27, -8, 28, 34, 30, 24, 31, -8));        // desce para a guarda
+        def("tiro_guarda:RECEBE",
+                q(0.00),
+                q(0.42, 9, -4, 20, 6, 21, -4),
+                q(0.70, 9, -12, 11, -6, 20, 10, 21, -6, 16, 8, 17, -4, 22, -4, 24, -6),               // segura o peso
+                q(1.00, 9, -18, 11, -6, 20, 10, 21, -4, 30, -4, 31, 4));
+        def("puxar_guarda:ATACA",
+                q(0.00),
+                q(0.45, 9, -10, 20, -8, 21, -4, 16, -8, 17, -4, 22, 8, 23, 6, 26, 8, 27, 6, 31, 12),  // senta devagar puxando
+                q(1.00, 9, -18, 20, -12, 21, -6, 16, -12, 17, -6, 22, 14, 23, 10, 26, 16, 27, -10, 28, 16, 31, 26));
+        def("puxar_guarda:RECEBE",
+                q(0.00),
+                q(0.50, 9, 8, 20, 6, 21, 4),
+                q(1.00, 9, 16, 11, 6, 20, 10, 21, 8, 16, 8, 17, 8, 30, 6));                           // vem junto, curvado
+
         // ---------------- 11. ENTRADA NAS PERNAS (baixa o nivel, penetra, abraca e empurra)
         def("entrada_pernas:ATACA",
                 q(0.00),

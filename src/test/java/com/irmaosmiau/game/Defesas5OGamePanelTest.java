@@ -189,7 +189,7 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
             novo(InicioLuta.EM_PE);
             tecla("brancoModDefesa", true);
             toque("brancoPegada3");
-            ticks(30);
+            ticks(IrmaoMiau.duracaoSprawl() + 2);                // 5Q.6 (pedido): o sprawl dura 32 (era 26; 30 bastava)
             assertFalse(j1().isFazendoSprawl());
             assertTrue(j1().getRecargaSprawl() > 0);
             toque("brancoPegada3");

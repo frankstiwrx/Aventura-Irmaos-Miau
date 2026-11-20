@@ -385,8 +385,9 @@ class MotorSolo5P2Test {
         novo(300, 380);
         em(Posicao.GUARDA, Lado.A, Lado.B);
         m.definirEstabilidade(90);
-        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.BAIXO, Familia.R1).resultado());
-        resolver();
+        // 5Q.6 (pedido): na guarda FECHADA firme quem esta por cima precisa de postura antes de tentar
+        // levantar (antes comecava e era segurado no fim da janela); o resultado (a guarda segura) e o mesmo
+        assertEquals("FAÇA POSTURA ANTES (RS↓)", cmd(Lado.A, Direcao.BAIXO, Familia.R1).motivo());
         assertEquals(Posicao.GUARDA, m.getPosicao(), "a guarda firme segura");
         ticks(MotorSolo.RECARGA_FALHA_TICKS + 1);
         m.definirEstabilidade(20);

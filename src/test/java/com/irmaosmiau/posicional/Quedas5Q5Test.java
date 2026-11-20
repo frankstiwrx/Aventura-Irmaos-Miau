@@ -126,7 +126,8 @@ class Quedas5Q5Test {
         int antes = Math.abs(a.getX() - b.getX());
         ticks(1);
         int depoisUmTick = Math.abs(a.getX() - b.getX());
-        assertTrue(depoisUmTick - antes <= 3, "sem teletransporte");
+        // 5Q.6 (pedido): quem empurrou com os pes tambem recua 1 px/tick no chao (era so quem estava por cima)
+        assertTrue(depoisUmTick - antes <= 4, "sem teletransporte");
         ticks(60);
         assertTrue(Math.abs(a.getX() - b.getX()) >= MotorSolo.DISTANCIA_APOS_AFASTAR - 1,
                 "fora do alcance de entrar na guarda: " + Math.abs(a.getX() - b.getX()));

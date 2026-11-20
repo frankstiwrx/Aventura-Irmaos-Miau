@@ -421,6 +421,10 @@ public final class MotorSolo {
     /** 5Q.3/5Q.4: tecnicas com animacao propria de quem aplica e de quem recebe (AnimacoesTecnicas). */
     static final java.util.Set<String> ANIMACAO_PROPRIA = java.util.Set.of(CatalogoTecnicasSolo.BERIMBOLO,
             CatalogoTecnicasSolo.BERIMBOLO_KISS, CatalogoTecnicasSolo.BERIMBOLO_INVERTIDO,      // 5Q.6
+            // 5Q.6: desequilibrar com os pes (pes empurram, o outro tropeca), tiro de guarda e puxar guarda
+            CatalogoTecnicasSolo.DESEQUILIBRAR_GUARDA, CatalogoTecnicasSolo.DESEQ_BORBOLETA,
+            CatalogoTecnicasSolo.DESEQ_DLR, CatalogoTecnicasSolo.DESEQ_ARANHA,
+            CatalogoTecnicasSolo.TIRO_GUARDA, CatalogoTecnicasSolo.PUXAR_GUARDA,
             CatalogoTecnicasSolo.PRENDER_PERNAS,
             // 5Q.5: quedas e entradas com animacao propria (quem faz e quem recebe)
             CatalogoTecnicasSolo.RASTEIRA, CatalogoTecnicasSolo.ENTRADA_PERNAS, CatalogoTecnicasSolo.JOELHO_DIRETO,
@@ -445,8 +449,31 @@ public final class MotorSolo {
     static final int VELOCIDADE_AFASTAMENTO = 3;
     /** 5Q.4: ajustes INSTANTANEOS com animacao curta propria (termina na pose da posicao). */
     static final java.util.Set<String> ANIMACAO_INSTANTANEA = java.util.Set.of(CatalogoTecnicasSolo.QUEBRAR_POSTURA,
-            CatalogoTecnicasSolo.CONSOLIDAR_ASHI, CatalogoTecnicasSolo.UNDERHOOK_MEIA);
+            CatalogoTecnicasSolo.CONSOLIDAR_ASHI, CatalogoTecnicasSolo.UNDERHOOK_MEIA,
+            // 5Q.6: microanimacoes de confirmacao (antes so a mensagem "OK"/"EM EXECUCAO")
+            CatalogoTecnicasSolo.CONSOLIDAR, CatalogoTecnicasSolo.POSTURA_MEIA, CatalogoTecnicasSolo.PRESSAO_JOELHO,
+            CatalogoTecnicasSolo.ESTABILIZAR_MONTADA, CatalogoTecnicasSolo.MONTADA_ALTA,
+            CatalogoTecnicasSolo.AJUSTAR_GANCHOS, CatalogoTecnicasSolo.CONTROLAR_PERNAS,
+            CatalogoTecnicasSolo.ANGULO_GUARDA, CatalogoTecnicasSolo.PEGAR_MANGA,
+            CatalogoTecnicasSolo.RETER_BORBOLETA, CatalogoTecnicasSolo.RETER_DLR, CatalogoTecnicasSolo.RETER_ARANHA,
+            CatalogoTecnicasSolo.RETER_SLX, CatalogoTecnicasSolo.TRAVAR_LACO,
+            CatalogoTecnicasSolo.POSTURA_BORBOLETA, CatalogoTecnicasSolo.POSTURA_DLR, CatalogoTecnicasSolo.POSTURA_LACO,
+            CatalogoTecnicasSolo.POSTURA_ARANHA, CatalogoTecnicasSolo.POSTURA_SLX);
     static final int TICKS_ANIMACAO_INSTANTANEA = 18;
+
+    /**
+     * 5Q.6: ajustes cujo EFEITO continua (controlar as pernas, base, montada alta) seguram a pose
+     * enquanto ele dura; os outros sao um gesto curto de confirmacao.
+     */
+    static int ticksAnimacaoInstantanea(String id) {
+        return switch (id) {
+            case CatalogoTecnicasSolo.CONTROLAR_PERNAS, CatalogoTecnicasSolo.POSTURA_BORBOLETA,
+                    CatalogoTecnicasSolo.POSTURA_DLR, CatalogoTecnicasSolo.POSTURA_LACO,
+                    CatalogoTecnicasSolo.POSTURA_ARANHA, CatalogoTecnicasSolo.POSTURA_SLX -> POSTURA_TICKS;
+            case CatalogoTecnicasSolo.MONTADA_ALTA -> MONTADA_ALTA_EXPOSTA_TICKS + 10;
+            default -> TICKS_ANIMACAO_INSTANTANEA;
+        };
+    }
 
     /** Efeito visual de uma tecnica que comeca (empurrar, afastar, soltar, levantar). */
     private static TipoEfeitoVisual efeitoDaTecnica(String id) {
@@ -741,6 +768,7 @@ public final class MotorSolo {
         efeitos.clear();
         ultimoMovimento.clear();                               // 5Q.5
         afastarAte.clear();
+        recuoDoChao.clear();
         for (Lado l : Lado.values()) {
             conexoes.put(l, java.util.EnumSet.noneOf(Conexao.class));
             postura.put(l, 0);
@@ -1060,14 +1088,16 @@ public final class MotorSolo {
                 efeito(lado, evi, 14).tecnica = t.id();
             }
             if (ANIMACAO_INSTANTANEA.contains(t.id())) {          // 5Q.4: os dois animam o ajuste
-                efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_ANIMACAO_INSTANTANEA).tecnica = t.id();
-                efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_ANIMACAO_INSTANTANEA).tecnica = t.id();
+                int ti = ticksAnimacaoInstantanea(t.id());     // 5Q.6
+                efeito(lado, TipoEfeitoVisual.TECNICA_ATAQUE, ti).tecnica = t.id();
+                efeito(lado.outro(), TipoEfeitoVisual.TECNICA_RECEBE, Math.min(ti, TICKS_ANIMACAO_INSTANTANEA)).tecnica = t.id();
             }
             instantanea(lado, t);
             recarga.put(lado, RECARGA_TICKS / 2);
             return new Resposta(Resultado.CONCLUIDA, t.nome(), t);
         }
-        double j = t.janela() * FATOR_JANELA;
+        double j = (t.id().equals(CatalogoTecnicasSolo.SAIR_DA_GUARDA) ? janelaSairDaGuarda(estado.getPosicao())
+                : t.janela()) * FATOR_JANELA;                       // 5Q.6: fechada demora, aberta sai rapido
         if (eu.getFolegoAtual() < eu.getAtributos().getFolego() * FRACAO_FOLEGO_CANSADO) {
             j *= 1.5;                                          // cansado: mais lento, mais tempo para o outro
         }
@@ -1151,6 +1181,16 @@ public final class MotorSolo {
         }
         if (eu.getFolegoAtual() < custo(lado, t)) {
             return "SEM FÔLEGO";
+        }
+        // 5Q.6: na guarda FECHADA quem esta por cima so tenta levantar com postura (trabalha antes)
+        if (t.id().equals(CatalogoTecnicasSolo.SAIR_DA_GUARDA) && estado.getPosicao() == Posicao.GUARDA
+                && !emPostura(lado) && !exposto(lado.outro()) && estabilidade >= LIMIAR_SAIR_FECHADA) {
+            return "FAÇA POSTURA ANTES (RS↓)";
+        }
+        // 5Q.6: tecnica que precisa do outro exposto OU de controle alto: explica antes de comecar
+        if (t.criterio() == TecnicaSolo.Criterio.OUTRO_EXPOSTO && t.limiarEstabilidade() > 0
+                && !exposto(lado.outro()) && estabilidade < t.limiarEstabilidade()) {
+            return "CONSOLIDE ANTES (" + Math.round(estabilidade) + "/" + Math.round(t.limiarEstabilidade()) + ")";
         }
         // 5P.1: no chao a animacao de troca de postura (que o proprio motor dispara) nao bloqueia:
         // antes, depois de toda troca de posicao os dois ficavam ~14 ticks recusando ate as contras.
@@ -1432,6 +1472,7 @@ public final class MotorSolo {
         TecnicaSolo tec = t.tecnica();
         Lado ini = t.iniciador();
         Lado out = ini.outro();
+        Posicao posicaoDaTentativa = estado.getPosicao();
         inicioJanelaAtual = t.inicio();
         if (QuedasExplosivas.perfil(tec.id()).isPresent()) {
             resolverQuedaExplosiva(ini, QuedasExplosivas.perfil(tec.id()).get(), intencaoIniciador);   // 5Q.6
@@ -1454,10 +1495,11 @@ public final class MotorSolo {
             default -> {
                 boolean ok = switch (tec.criterio()) {
                     case SE_NAO_CONTRADA -> true;
-                    case ESTABILIDADE_BAIXA -> estabilidade < tec.limiarEstabilidade() + (temEspaco(ini) ? BONUS_ESPACO : 0)
+                    case ESTABILIDADE_BAIXA -> estabilidade < limiarDe(tec, posicaoDaTentativa) + (temEspaco(ini) ? BONUS_ESPACO : 0)
                             || exposto(out) || exausto(out);
                     case SEM_POSTURA_DO_OUTRO -> !emPostura(out) || exposto(out);
-                    case OUTRO_EXPOSTO -> exposto(out);
+                    case OUTRO_EXPOSTO -> exposto(out)                         // 5Q.6: ou controle alto
+                            || (tec.limiarEstabilidade() > 0 && estabilidade >= tec.limiarEstabilidade());
                     case CONTROLE_PROPRIO -> estabilidade >= tec.limiarEstabilidade() && (!emPostura(out) || exposto(out));
                 };
                 if (ok && tec.sucesso() == null) {
@@ -1476,6 +1518,7 @@ public final class MotorSolo {
                     if (tec.id().equals(CatalogoTecnicasSolo.AFASTAR_DA_GUARDA)
                             && estado.getPosicao() == Posicao.EM_PE_CONTRA_SOLO) {
                         afastarAte.put(out, DISTANCIA_APOS_AFASTAR);   // 5Q.5: a distancia logica aumenta de verdade
+                        recuoDoChao.put(ini, RECUO_DO_CHAO_PX);         // 5Q.6: quem empurra tambem escorrega para tras
                     }
                     if (tec.id().equals(CatalogoTecnicasSolo.CONECTAR_GUARDA) && desorientado.getOrDefault(ini, 0) == 0) {
                         estabilidade = ESTABILIDADE_GUARDA_VOLUNTARIA;   // deitou por vontade: guarda mais firme
@@ -2139,6 +2182,7 @@ public final class MotorSolo {
         }
         estado = novo;
         afastarAte.clear();                                    // 5Q.5: posicao nova cancela o afastamento
+        recuoDoChao.clear();
         postura.put(Lado.A, 0);
         postura.put(Lado.B, 0);
         espaco.put(Lado.A, 0);
@@ -2221,10 +2265,48 @@ public final class MotorSolo {
         a.encostarNaBorda(Integer.signum(o.getX() - a.getX()) * passo);
     }
 
+    /**
+     * 5Q.6: sair da guarda por cima. Guarda ABERTA (sem controle efetivo): janela curta e o controle
+     * do outro precisa estar bem alto para segurar. Guarda FECHADA: com o controle do outro firme
+     * precisa de postura antes; janela longa e o controle do outro segura mais (antes era igual em
+     * todas as guardas).
+     */
+    static int janelaSairDaGuarda(Posicao p) {
+        return p == Posicao.GUARDA ? JANELA_SAIR_FECHADA : JANELA_SAIR_ABERTA;
+    }
+
+    public static final int JANELA_SAIR_FECHADA = 20;
+    public static final int JANELA_SAIR_ABERTA = 9;
+    public static final double LIMIAR_SAIR_FECHADA = 45;
+    public static final double LIMIAR_SAIR_ABERTA = 85;
+
+    private static double limiarDe(TecnicaSolo t, Posicao p) {
+        if (t.id().equals(CatalogoTecnicasSolo.SAIR_DA_GUARDA)) {
+            return p == Posicao.GUARDA ? LIMIAR_SAIR_FECHADA : LIMIAR_SAIR_ABERTA;
+        }
+        return t.limiarEstabilidade();
+    }
+
+    /** 5Q.6: quem esta por baixo tambem recua um pouco no chao enquanto empurra com os pes (px). */
+    public static final int RECUO_DO_CHAO_PX = 14;
+    private final Map<Lado, Integer> recuoDoChao = new EnumMap<>(Lado.class);
+
     /** 5Q.6: velocidade maxima do avanco de uma queda explosiva (px/tick). */
     public static final int VELOCIDADE_AVANCO_QUEDA = 9;
 
     private void afastarGradual() {
+        for (Lado l : Lado.values()) {                            // 5Q.6: quem empurrou com os pes recua no chao
+            Integer r = recuoDoChao.get(l);
+            if (r == null || r <= 0 || estado.getPosicao() != Posicao.EM_PE_CONTRA_SOLO || tentativa != null) {
+                recuoDoChao.remove(l);
+                continue;
+            }
+            IrmaoMiau a = lutador(l);
+            int s = Integer.signum(a.getX() - lutador(l.outro()).getX());
+            int antes = a.getX();
+            a.encostarNaBorda(s == 0 ? -1 : s);
+            recuoDoChao.put(l, a.getX() == antes ? 0 : r - 1);
+        }
         if (afastarAte.isEmpty()) {
             return;
         }

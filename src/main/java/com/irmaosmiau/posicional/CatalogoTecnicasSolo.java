@@ -448,7 +448,9 @@ public final class CatalogoTecnicasSolo {
         c.transicao(VIRAR_JOELHOS, "Virar para os joelhos", "VIRAR", lateral, ctrlado, List.of(rs(Direcao.CIMA)),
                 4.0, 14, Exposicao.BASE, estab, 65, para(Posicao.SOLO_DISPUTADO, NADA, NADA), PEGAR_COSTAS_VIRADA);
         c.transicao(PEGAR_COSTAS_VIRADA, "Pegar as costas na virada", "COSTAS", lateral, ctrl,
-                List.of(rb(Direcao.CIMA)), 4.0, 8, null, Criterio.OUTRO_EXPOSTO, 0, para(Posicao.COSTAS, INI, INI));
+                List.of(rb(Direcao.CIMA)), 4.0, 8, null, Criterio.OUTRO_EXPOSTO, 70, para(Posicao.COSTAS, INI, INI));
+        // 5Q.6: antes so entrava com o outro exposto (virando para os joelhos): do cem quilos parado o RB ^
+        // sempre falhava. Agora tambem com o controle consolidado (>= 70); e continua a contra da virada
 
         // ================= JOELHO NA BARRIGA
         Set<Posicao> joelho = EnumSet.of(Posicao.JOELHO_BARRIGA);

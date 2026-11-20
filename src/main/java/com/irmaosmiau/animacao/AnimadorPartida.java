@@ -120,6 +120,11 @@ public final class AnimadorPartida {
         EstadoVisual estado = ControladorAnimacoes.estadoVisual(l, sistema, deslocandoConjunto);
         if (estado == EstadoVisual.TRANSICAO_POSTURA) {
             liberar(l);                                   // solta o JSON da postura anterior
+            // 5Q.6: solta tambem a pose do SOLO/joelhos acelerado: antes ela continuava como "dona" da pose,
+            // a transicao (levantar depois de uma queda) era recusada e o corpo ficava congelado deitado
+            // ate aparecer de pe no fim (o "teletransporte" da homologacao)
+            solo.liberar(l);
+            acelerado.liberar(l);
             boolean desenhou = transicoes.aplicar(l);
             origens.put(l, new OrigemVisual(desenhou ? FonteAnimacao.PROCEDURAL : FonteAnimacao.LEGADA_CODIGO,
                     l.getTransicaoAtiva().getContrato(), (int) Math.round(l.getProgressoTransicao() * 100), estado));

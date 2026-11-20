@@ -183,6 +183,8 @@ private static final double VELOCIDADE_ROLAMENTO = 7.0;
  * e em pe = 1,0 (a velocidade de sempre).
  */
 public static final double MULTIPLICADOR_ROLAMENTO_DEITADO = 0.6;
+/** 5Q.6: rolamento a partir de JOELHOS um pouco mais lento (22 -> 28 ticks, mesma distancia). */
+public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8;
 
 /* Duracao e velocidade do rolamento EM ANDAMENTO (decididas no inicio). */
 private int duracaoRolamentoAtual = DURACAO_ROLAMENTO;
@@ -222,7 +224,7 @@ private int framesSprawl = 0;
  * O jogo roda aproximadamente a 60 FPS.
  * 26 frames ≈ 0,42 segundo.
  */
-private static final int DURACAO_SPRAWL = 26;
+private static final int DURACAO_SPRAWL = 32;   // 5Q.6: era 26 (menos acelerado, com peso)
 
 private static final double CUSTO_SPRAWL = 4.0;
     
@@ -351,7 +353,8 @@ direcaoRolamento = direcao;
 framesRolamento = 0;
 
 posturaDoRolamento = estadoCorporal == EstadoCorporal.AGACHADO ? EstadoCorporal.EM_PE : estadoCorporal;
-double mult = posturaDoRolamento == EstadoCorporal.DEITADO ? MULTIPLICADOR_ROLAMENTO_DEITADO : 1.0;
+double mult = posturaDoRolamento == EstadoCorporal.DEITADO ? MULTIPLICADOR_ROLAMENTO_DEITADO
+        : posturaDoRolamento == EstadoCorporal.AJOELHADO ? MULTIPLICADOR_ROLAMENTO_JOELHOS : 1.0;   // 5Q.6
 duracaoRolamentoAtual = (int) Math.round(DURACAO_ROLAMENTO / mult);
 // mesma distancia de sempre (22 x 7 px), so mais devagar deitado
 velocidadeRolamentoAtual = VELOCIDADE_ROLAMENTO * DURACAO_ROLAMENTO / (double) duracaoRolamentoAtual;
@@ -373,7 +376,9 @@ public int getDuracaoRolamentoAtual() {
 /** 5O.1: duracao do rolamento a partir de uma postura (ticks). */
 public static int duracaoRolamento(EstadoCorporal postura) {
     return postura == EstadoCorporal.DEITADO
-            ? (int) Math.round(DURACAO_ROLAMENTO / MULTIPLICADOR_ROLAMENTO_DEITADO) : DURACAO_ROLAMENTO;
+            ? (int) Math.round(DURACAO_ROLAMENTO / MULTIPLICADOR_ROLAMENTO_DEITADO)
+            : postura == EstadoCorporal.AJOELHADO ? (int) Math.round(DURACAO_ROLAMENTO / MULTIPLICADOR_ROLAMENTO_JOELHOS)
+            : DURACAO_ROLAMENTO;
 }
 
 /** 5O.1: postura em que o rolamento em andamento comecou (e termina). */
@@ -1606,6 +1611,10 @@ public void alternarDeitado() {
     // =============================
     /** Recarga depois de um sprawl (sem repeticao infinita): ~0,5 s. */
     public static final int RECARGA_SPRAWL_TICKS = 30;
+    /** 5Q.6: duracao do sprawl (ticks; testes e documentacao). */
+    public static int duracaoSprawl() {
+        return DURACAO_SPRAWL;
+    }
     /** Recarga depois de uma acrobacia: ~0,4 s. */
     public static final int RECARGA_ACROBACIA_TICKS = 24;
 

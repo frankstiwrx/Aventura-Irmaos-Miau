@@ -66,7 +66,8 @@ class Mobilidade51GamePanelTest extends Base5OGamePanel {
             int x = r3J1("brancoEsquerda");
             assertTrue(j1().isRolando());
             assertNull(j1().getAcrobacia());
-            assertEquals(22, j1().getDuracaoRolamentoAtual(), "velocidade de sempre (22 ticks)");
+            // 5Q.6 (pedido): de joelhos o rolamento ficou um pouco menos acelerado (22 -> 28, mesma distancia)
+            assertEquals(28, j1().getDuracaoRolamentoAtual(), "rolamento de joelhos com peso (28 ticks)");
             assertEquals(f - IrmaoMiau.custoRolamento(), j1().getFolegoAtual(), 0.1);
             ticks(30);
             assertFalse(j1().isRolando());
