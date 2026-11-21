@@ -84,6 +84,13 @@ public final class ServicoPerfis {
         return atualizado;
     }
 
+    /** Aparencia personalizada (so visual) do perfil. */
+    public PerfilLutador atualizarAparencia(String idPerfil, com.irmaosmiau.entities.AparenciaLutador aparencia) {
+        PerfilLutador atualizado = exigir(idPerfil).comAparencia(aparencia);
+        repositorio.atualizar(atualizado);
+        return atualizado;
+    }
+
     /** Nome e atributos numa unica gravacao (usado pelo editor da 4C). */
     public PerfilLutador atualizar(String idPerfil, String novoNome, AtributosLutador novos) {
         PerfilLutador atualizado = exigir(idPerfil).comNome(novoNome).comAtributos(novos);

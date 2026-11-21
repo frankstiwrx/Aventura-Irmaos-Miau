@@ -22,11 +22,20 @@ public final class PerfilLutador {
     private final String nome;
     private final String idPersonagemBase;
     private final AtributosLutador atributos;
+    /** Aparencia personalizada (so visual); ORIGINAL = as cores do personagem-base. */
+    private final com.irmaosmiau.entities.AparenciaLutador aparencia;
 
     /**
      * @throws IllegalArgumentException id, nome, base ou atributos invalidos
      */
     public PerfilLutador(String id, String nome, String idPersonagemBase, AtributosLutador atributos) {
+        this(id, nome, idPersonagemBase, atributos, com.irmaosmiau.entities.AparenciaLutador.ORIGINAL);
+    }
+
+    /** Com a aparencia personalizada (cores do kimono, da calca, da faixa visual e da pelagem). */
+    public PerfilLutador(String id, String nome, String idPersonagemBase, AtributosLutador atributos,
+            com.irmaosmiau.entities.AparenciaLutador aparencia) {
+        this.aparencia = aparencia == null ? com.irmaosmiau.entities.AparenciaLutador.ORIGINAL : aparencia;
         this.id = normalizarId(id);
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("O perfil precisa de um nome.");
@@ -67,11 +76,19 @@ public final class PerfilLutador {
     }
 
     public PerfilLutador comNome(String novoNome) {
-        return new PerfilLutador(id, novoNome, idPersonagemBase, atributos);
+        return new PerfilLutador(id, novoNome, idPersonagemBase, atributos, aparencia);
     }
 
     public PerfilLutador comAtributos(AtributosLutador novos) {
-        return new PerfilLutador(id, nome, idPersonagemBase, novos);
+        return new PerfilLutador(id, nome, idPersonagemBase, novos, aparencia);
+    }
+
+    public PerfilLutador comAparencia(com.irmaosmiau.entities.AparenciaLutador nova) {
+        return new PerfilLutador(id, nome, idPersonagemBase, atributos, nova);
+    }
+
+    public com.irmaosmiau.entities.AparenciaLutador getAparencia() {
+        return aparencia;
     }
 
     public String getId() {
@@ -108,6 +125,7 @@ public final class PerfilLutador {
         }
         PerfilLutador p = (PerfilLutador) o;
         return id.equals(p.id) && nome.equals(p.nome) && idPersonagemBase.equals(p.idPersonagemBase)
+                && aparencia.equals(p.aparencia)
                 && mesmosValores(atributos, p.atributos);
     }
 

@@ -78,6 +78,10 @@ public final class EscolhaLutador {
         // 5Q.1: a faixa deriva os atributos da base do proprio lutador (nunca acumula)
         l.setGraduacao(graduacao);
         l.setCorKimono(kimono);
+        if (perfil != null) {
+            // aparencia do editor (so visual); o kimono escolhido na selecao vale no casaco e na calca
+            l.aplicarAparencia(kimono == null ? perfil.getAparencia() : perfil.getAparencia().semKimono());
+        }
         return l;
     }
 

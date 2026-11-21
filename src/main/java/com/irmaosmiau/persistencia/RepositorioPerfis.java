@@ -47,7 +47,7 @@ public final class RepositorioPerfis {
 
     private static final Set<String> CAMPOS = Set.of(
             ArmazenamentoJson.CAMPO_TIPO, ArmazenamentoJson.CAMPO_VERSAO,
-            "id", "nome", "personagemBase", "atributos");
+            "id", "nome", "personagemBase", "atributos", "aparencia");
 
     private final Path pasta;
     private final ArmazenamentoJson armazenamento;
@@ -173,6 +173,15 @@ public final class RepositorioPerfis {
         dados.put("nome", p.getNome());
         dados.put("personagemBase", p.getIdPersonagemBase());
         dados.put("atributos", atributos);
+        if (!p.getAparencia().isOriginal()) {
+            // so as partes personalizadas, como "#RRGGBB" (sem o campo = as cores do personagem-base)
+            Map<String, Object> aparencia = new LinkedHashMap<>();
+            for (com.irmaosmiau.entities.AparenciaLutador.Parte parte : com.irmaosmiau.entities.AparenciaLutador.Parte.values()) {
+                p.getAparencia().cor(parte).ifPresent(c -> aparencia.put(parte.chave(),
+                        com.irmaosmiau.entities.AparenciaLutador.hex(c)));
+            }
+            dados.put("aparencia", aparencia);
+        }
         armazenamento.gravar(arquivoDe(p.getId()), TIPO, VERSAO_ESQUEMA, dados);
     }
 
@@ -196,8 +205,22 @@ public final class RepositorioPerfis {
                     a.decimal("recuperacao"),
                     a.decimal("peso"));
 
+            com.irmaosmiau.entities.AparenciaLutador aparencia = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
+            if (doc.contem("aparencia")) {
+                ObjetoJson ap = doc.objeto("aparencia");
+                Set<String> partes = new HashSet<>();
+                for (com.irmaosmiau.entities.AparenciaLutador.Parte parte : com.irmaosmiau.entities.AparenciaLutador.Parte.values()) {
+                    partes.add(parte.chave());
+                }
+                RepositorioConfiguracoes.rejeitarDesconhecidos(ap, partes);
+                for (com.irmaosmiau.entities.AparenciaLutador.Parte parte : com.irmaosmiau.entities.AparenciaLutador.Parte.values()) {
+                    if (ap.contem(parte.chave())) {
+                        aparencia = aparencia.com(parte, com.irmaosmiau.entities.AparenciaLutador.deHex(ap.texto(parte.chave())));
+                    }
+                }
+            }
             return new PerfilLutador(doc.texto("id"), doc.texto("nome"),
-                    doc.texto("personagemBase"), atributos);
+                    doc.texto("personagemBase"), atributos, aparencia);
         } catch (IllegalArgumentException ex) {
             throw new PersistenciaException(PersistenciaException.Motivo.DADOS_INVALIDOS, arquivo,
                     ex.getMessage(), ex);
