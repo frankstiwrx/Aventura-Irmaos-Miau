@@ -10,10 +10,16 @@ package com.irmaosmiau.entities;
  * fica abaixo do rolamento; o mortal (o maior deslocamento e no ar) acima.
  */
 public enum TipoAcrobacia {
-    ESTRELA_ESQUERDA("ESTRELA (ESQUERDA)", 30, 0, -40, 5.0, true),
-    ESTRELA_DIREITA("ESTRELA (DIREITA)", 30, 0, 40, 5.0, true),
-    MORTAL_FRENTE("MORTAL PARA A FRENTE", 32, 60, 0, 7.0, false),
-    MORTAL_TRAS("MORTAL PARA TRÁS", 34, -55, 0, 7.0, false);
+    // 5Q.7 corretiva: execucao-BASE mais curta (estrela 30 -> 26, mortal para a frente 32 -> 28, para tras
+    // 34 -> 30 ticks; a mesma distancia). O lutador ainda encurta pela agilidade/velocidade
+    // (IrmaoMiau.duracaoAcrobacia), sem passar de DURACAO_MINIMA_TICKS.
+    ESTRELA_ESQUERDA("ESTRELA (ESQUERDA)", 26, 0, -40, 5.0, true),
+    ESTRELA_DIREITA("ESTRELA (DIREITA)", 26, 0, 40, 5.0, true),
+    MORTAL_FRENTE("MORTAL PARA A FRENTE", 28, 60, 0, 7.0, false),
+    MORTAL_TRAS("MORTAL PARA TRÁS", 30, -55, 0, 7.0, false);
+
+    /** 5Q.7 corretiva: nenhuma acrobacia fica mais curta que isto (inicio, ar e aterrissagem legiveis). */
+    public static final int DURACAO_MINIMA_TICKS = 18;
 
     private final String rotulo;
     private final int duracaoTicks;

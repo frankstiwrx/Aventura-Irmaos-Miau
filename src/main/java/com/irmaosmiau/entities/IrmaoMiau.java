@@ -1643,8 +1643,13 @@ public void alternarDeitado() {
     public static int duracaoSprawl() {
         return DURACAO_SPRAWL;
     }
-    /** Recarga depois de uma acrobacia: ~0,4 s (5Q.7: e a BASE da recarga dinamica). */
+    /** Recarga depois de uma acrobacia: ~0,4 s (a fixa ate a 5Q.6). */
     public static final int RECARGA_ACROBACIA_TICKS = 24;
+    /** 5Q.7 corretiva: BASE da recarga dinamica (antes 24 = RECARGA_ACROBACIA_TICKS). */
+    public static final int RECARGA_ACROBACIA_BASE_TICKS = 16;
+    /** 5Q.7 corretiva: quanto a mobilidade maxima encurta a EXECUCAO (0,2 = ate 20% mais curta). */
+    public static final double REDUCAO_EXECUCAO_POR_MOBILIDADE = 0.2;
+    private int duracaoAcrobaciaAtual;
     /** 5Q.7: limites da recarga dinamica das acrobacias (ticks). */
     public static final int RECARGA_ACROBACIA_MINIMA_TICKS = 3;
     public static final int RECARGA_ACROBACIA_MAXIMA_TICKS = 60;
@@ -1751,10 +1756,11 @@ public void alternarDeitado() {
         gastarFolegoEsforco(tipo.getCusto(), "acrobacia");
         acrobacia = tipo;
         framesAcrobacia = 0;
+        duracaoAcrobaciaAtual = duracaoAcrobacia(tipo);        // 5Q.7 corretiva: pela agilidade/velocidade
         viradoNoInicioAcrobacia = viradoParaDireita;
         double frente = viradoParaDireita ? 1 : -1;
-        vxAcrobacia = tipo.getDeslocamentoFrentePx() * frente / tipo.getDuracaoTicks();
-        vyAcrobacia = tipo.getDeslocamentoProfundidadePx(viradoParaDireita) / (double) tipo.getDuracaoTicks();
+        vxAcrobacia = tipo.getDeslocamentoFrentePx() * frente / duracaoAcrobaciaAtual;
+        vyAcrobacia = tipo.getDeslocamentoProfundidadePx(viradoParaDireita) / (double) duracaoAcrobaciaAtual;
         ultimaAtividade = System.currentTimeMillis();
         return true;
     }
@@ -1784,7 +1790,7 @@ public void alternarDeitado() {
         if (vyAcrobacia != 0) {
             moverVertical(vyAcrobacia);
         }
-        if (++framesAcrobacia >= acrobacia.getDuracaoTicks()) {
+        if (++framesAcrobacia >= duracaoAcrobaciaAtual) {
             acrobacia = null;
             framesAcrobacia = 0;
             recargaAcrobacia = recargaAcrobaciaDinamica();        // 5Q.7: pelos atributos e pela condicao
@@ -1793,7 +1799,7 @@ public void alternarDeitado() {
 
     /**
      * 5Q.7: intervalo de RECUPERACAO depois de uma acrobacia (nao mexe na duracao da animacao).
-     * base x fator de mobilidade x fator de cansaco, dentro dos limites:
+     * base (16; era 24 na 5Q.7) x fator de mobilidade x fator de cansaco, dentro dos limites:
      * - mobilidade = (0,6 agilidade + 0,4 velocidade) / 100 (ate 1). Os atributos ja tem a evolucao da
      *   faixa (EvolucaoGraduacao): a graduacao nao e contada de novo;
      * - fator de mobilidade = 1 - 0,8 x mobilidade (mais agil e rapido: recarga menor);
@@ -1801,16 +1807,36 @@ public void alternarDeitado() {
      *   1 + 1,0 x (1 - condicao) (cansado: ate o dobro). Recursos infinitos ficam no maximo: condicao 1.
      */
     public int recargaAcrobaciaDinamica() {
-        double mobilidade = (PESO_AGILIDADE_ACROBACIA * atributos.getAgilidade()
-                + PESO_VELOCIDADE_ACROBACIA * atributos.getVelocidade()) / REFERENCIA_MOBILIDADE;
-        mobilidade = Math.max(0, Math.min(1, mobilidade));
+        double mobilidade = mobilidadeAcrobatica();
         double fMob = 1.0 - REDUCAO_MAXIMA_POR_MOBILIDADE * mobilidade;
         double fol = atributos.getFolego() <= 0 ? 1 : folegoAtual / atributos.getFolego();
         double con = atributos.getCondicionamento() <= 0 ? 1 : condicionamentoAtual / atributos.getCondicionamento();
         double condicao = Math.max(0, Math.min(1, PESO_FOLEGO_ACROBACIA * fol + PESO_CONDICIONAMENTO_ACROBACIA * con));
         double fCansaco = 1.0 + PENALIDADE_CANSACO_ACROBACIA * (1 - condicao);
-        int r = (int) Math.round(RECARGA_ACROBACIA_TICKS * fMob * fCansaco);
+        int r = (int) Math.round(RECARGA_ACROBACIA_BASE_TICKS * fMob * fCansaco);
         return Math.max(RECARGA_ACROBACIA_MINIMA_TICKS, Math.min(RECARGA_ACROBACIA_MAXIMA_TICKS, r));
+    }
+
+    /** 5Q.7: 0..1 = (0,6 agilidade + 0,4 velocidade) / 100 (atributos ja com a faixa). */
+    public double mobilidadeAcrobatica() {
+        double m = (PESO_AGILIDADE_ACROBACIA * atributos.getAgilidade()
+                + PESO_VELOCIDADE_ACROBACIA * atributos.getVelocidade()) / REFERENCIA_MOBILIDADE;
+        return Math.max(0, Math.min(1, m));
+    }
+
+    /**
+     * 5Q.7 corretiva: duracao da EXECUCAO desta acrobacia para este lutador: a base do tipo x
+     * (1 - 0,2 x mobilidade), nunca abaixo de TipoAcrobacia.DURACAO_MINIMA_TICKS. A distancia e a
+     * mesma (a velocidade sobe na proporcao) e a animacao anda pelo progresso.
+     */
+    public int duracaoAcrobacia(TipoAcrobacia tipo) {
+        int d = (int) Math.round(tipo.getDuracaoTicks() * (1 - REDUCAO_EXECUCAO_POR_MOBILIDADE * mobilidadeAcrobatica()));
+        return Math.max(TipoAcrobacia.DURACAO_MINIMA_TICKS, Math.min(tipo.getDuracaoTicks(), d));
+    }
+
+    /** 5Q.7 corretiva: duracao da acrobacia em andamento (ticks). */
+    public int getDuracaoAcrobaciaAtual() {
+        return duracaoAcrobaciaAtual;
     }
 
     public TipoAcrobacia getAcrobacia() {
@@ -1822,7 +1848,7 @@ public void alternarDeitado() {
     }
 
     public double progressoAcrobacia() {
-        return acrobacia == null ? 0.0 : Math.min(1.0, framesAcrobacia / (double) acrobacia.getDuracaoTicks());
+        return acrobacia == null ? 0.0 : Math.min(1.0, framesAcrobacia / (double) duracaoAcrobaciaAtual);
     }
 
     public boolean isViradoParaDireitaNoInicioAcrobacia() {

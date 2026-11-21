@@ -102,7 +102,8 @@ class Acrobacias5Q7GamePanelTest extends Base5OGamePanel {
                     ticks(1);
                     duracao++;
                 }
-                assertEquals(t.getDuracaoTicks(), duracao, "a animacao inteira (execucao) continua igual");
+                // 5Q.7 corretiva (pedido): a execucao agora e a do lutador (encurta pela agilidade/velocidade)
+                assertEquals(j2().duracaoAcrobacia(t), duracao, "a animacao inteira (execucao), sem cortar");
                 assertEquals(j2().recargaAcrobaciaDinamica(), j2().getRecargaAcrobacia());
             }
         });

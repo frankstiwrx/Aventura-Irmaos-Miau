@@ -1171,6 +1171,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // ROLAMENTO
 // =========================
+        if (!preso) {
+            tentarAcrobaciaPendente(SlotJogador.JOGADOR_1, jogadorBranco);   // 5Q.7 corretiva
+        }
         if (!preso && input.isRolar() && !rolamentoBrancoAnterior) {
 
             Direcao direcao
@@ -1319,6 +1322,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
 // ROLAMENTO
 // =========================
+        if (!preso) {
+            tentarAcrobaciaPendente(SlotJogador.JOGADOR_2, jogadorPreto);    // 5Q.7 corretiva
+        }
         if (!preso && input.isPretoRolar() && !rolamentoPretoAnterior) {
 
             Direcao direcao
@@ -2061,10 +2067,46 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         if (motivo == null && l.iniciarAcrobacia(t)) {
             ultimoMotivoFamilia.put(slot, "-");
+            acrobaciaPendente.remove(slot);
+        } else if ("EM RECUPERACAO".equals(motivo) || ("EM MOVIMENTO".equals(motivo) && l.isEmAcrobacia())) {
+            // 5Q.7 corretiva: apertou um pouco antes de a anterior acabar: guarda o comando por alguns ticks
+            // (antes era descartado e era preciso soltar e apertar de novo: a sequencia parecia lenta)
+            acrobaciaPendente.put(slot, new AcrobaciaPendente(d, tick + JANELA_ACROBACIA_PENDENTE_TICKS));
+            ultimoMotivoFamilia.put(slot, motivo);
         } else {
             ultimoMotivoFamilia.put(slot, motivo);
             feedback.mostrarInfo(slot.getSigla() + ": " + t.getRotulo() + " · " + motivo, tick);
         }
+    }
+
+    /** 5Q.7 corretiva: quanto tempo (ticks) um R3 apertado cedo demais espera a acrobacia anterior. */
+    public static final int JANELA_ACROBACIA_PENDENTE_TICKS = 14;
+
+    private record AcrobaciaPendente(Direcao direcao, long expira) {
+    }
+
+    private final java.util.Map<SlotJogador, AcrobaciaPendente> acrobaciaPendente =
+            new java.util.EnumMap<>(SlotJogador.class);
+
+    /** 5Q.7 corretiva: executa a acrobacia guardada assim que ela fica possivel (dentro da janela). */
+    private void tentarAcrobaciaPendente(SlotJogador slot, IrmaoMiau l) {
+        AcrobaciaPendente pend = acrobaciaPendente.get(slot);
+        if (pend == null) {
+            return;
+        }
+        if (tick > pend.expira() || l.isDeitado() || l.isAjoelhado()) {
+            acrobaciaPendente.remove(slot);
+            return;
+        }
+        if (!l.isEmAcrobacia() && l.getRecargaAcrobacia() == 0) {
+            acrobaciaPendente.remove(slot);
+            mobilidadeContextual(slot, l, pend.direcao());
+        }
+    }
+
+    /** 5Q.7 corretiva (testes): ha uma acrobacia guardada para o jogador? */
+    boolean temAcrobaciaPendente(SlotJogador slot) {
+        return acrobaciaPendente.containsKey(slot);
     }
 
     /**
