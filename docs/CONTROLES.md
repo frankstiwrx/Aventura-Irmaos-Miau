@@ -1391,3 +1391,10 @@ Cancelar (Q, BACKSPACE, B) ou ESC volta aos lutadores com tudo preservado (e os 
 
 O modo escolhido chega ao motor (`GamePanel.configurarModoLuta` → `MotorSolo.setModoRegras`) e vale
 também nos reinícios (F5) da mesma partida. Um modo EM BREVE nunca entra na partida.
+
+## Tempos e regras (sistema de regras do jiu-jítsu)
+
+TEMPO nas configurações da luta: 1 MIN, 1 MIN 30 S, 2, 3, 4, 5, 6, 7, 8, 9, 10 MIN e SEM LIMITE (o padrão).
+O tempo é livre: a faixa dos lutadores não muda nem limita o tempo. REGRAS: FINALIZAÇÃO, PONTOS + FINALIZAÇÃO
+(agora disponível; placar no topo: J1 pontos · V vantagens · P punições | relógio | J2) e ARCADE (em breve).
+Detalhes em `docs/REGRAS.md`. O F2 também esconde o placar.

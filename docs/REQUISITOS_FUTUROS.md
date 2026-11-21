@@ -166,3 +166,12 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
   costas e triângulo pelas costas.
 - Animação própria para o caminho costas → perna (hoje a mesma da entrada do RB ←).
 - Crucifixo (posição) e 50/50 como posição continuam fora.
+
+## Depois do sistema de regras
+
+- Punições automáticas quando o motor reconhecer infrações com segurança (falta de combatividade, área).
+- Detalhes de posição no motor: braços presos na montada, ganchos x triângulo de corpo nas costas,
+  tartaruga, joelho oposto no joelho na barriga (hoje fora da pontuação; ver `docs/REGRAS.md`).
+- Decisão do árbitro em empate total (hoje "EMPATE" declarado).
+- Modo CAMPEONATO: tempos oficiais por faixa, chaves, categorias e restrições por categoria.
+- ARCADE (rounds) e, bem depois, MMA (regras próprias).

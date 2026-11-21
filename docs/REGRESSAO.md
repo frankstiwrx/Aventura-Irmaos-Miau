@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1241, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1278, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -669,3 +669,22 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 15. Rolamento de joelhos tão rápido quanto o deitado (37 ticks), mesma distância e postura.
 16. Sprawl um pouco mais lento (40 ticks), sem congelar; continua defendendo as quedas.
 17. gamepad.json antigo: aviso de "respirar agora é no Y"; salvar em CONTROLES grava a escolha.
+
+# Sistema de regras (PONTOS + FINALIZAÇÃO) e tempos livres
+
+1. JOGAR → configurações: o TEMPO vai de 1 MIN a 10 MIN e SEM LIMITE; 1 MIN 30 S aparece como 1:30 na luta.
+2. Mudar a faixa (cancelar até a faixa e confirmar de novo) não muda o tempo escolhido.
+3. REGRAS: PONTOS + FINALIZAÇÃO inicia a luta; ARCADE continua EM BREVE.
+4. Placar no topo (J1 · relógio · J2), entre os painéis, sem cobrir os personagens; F2 esconde.
+5. Montada (cem quilos → RS ↑): depois de ~3 s aparece "J1 · MONTADA +4"; ficar montado não soma de novo.
+6. Passagem (guarda aberta por cima → passar): +3; passar e montar logo em seguida: +7 no fim.
+7. Raspagem (guarda por baixo → raspar): +2; joelho na barriga: +2; montada → costas: +4 +4.
+8. Queda (entrada nas pernas, por exemplo): +2 só depois de estabilizar; deitar/puxar a guarda não dá pontos ao outro.
+9. O outro escapa antes dos 3 s: nenhum ponto e "VANTAGEM · QUASE PONTUOU".
+10. Finalização com perigo real defendida: vantagem para quem atacou; finalização cortada na entrada: nada.
+11. Pausa (ESC) congela relógio e contagem; ao voltar, continua.
+12. Fim do tempo: "J1/J2 VENCEU POR PONTOS / POR VANTAGENS" com o placar; empate em tudo: "EMPATE (decisão do árbitro ainda não existe no jogo)".
+13. Finalização: encerra na hora, com o placar na mensagem.
+14. SEM LIMITE: nada acaba pelo relógio; os pontos aparecem no placar.
+15. FINALIZAÇÃO (modo): sem placar de pontos, relógio como antes.
+16. TREINO: igual a antes (sem placar nem tempo).
