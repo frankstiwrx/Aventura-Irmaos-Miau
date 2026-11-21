@@ -426,13 +426,21 @@ class Menus5MTest {
             sel.comandar(J1, Comando.CONFIRMAR);             // reorganizacao (pedido): AVANCAR
             sel.comandar(J1, Comando.PROXIMO);
             assertEquals(ConfiguracaoLuta.Area.TEMPO, sel.configuracao().foco());
+            // sistema de regras (pedido): de 1 a 10 minutos e sem limite (o padrao continua SEM LIMITE)
             List<Integer> vistos = new ArrayList<>();
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 12; i++) {
                 vistos.add(sel.tempoAtual());
                 sel.comandar(J1, Comando.DIREITA);
             }
-            assertEquals(List.of(0, 60, 90, 180), vistos);
+            assertEquals(List.of(0, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600), vistos);
             assertEquals(0, sel.tempoAtual(), "da a volta");
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
+            sel.comandar(J1, Comando.ESQUERDA);
             sel.comandar(J1, Comando.ESQUERDA);
             assertEquals(180, sel.tempoAtual());
             sel.comandar(J1, Comando.PROXIMO);               // REGRAS

@@ -101,8 +101,14 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     static final int GRADE_X = 244;
     static final int GRADE_Y = 64;
 
-    /** Tempos de luta oferecidos (0 = sem limite). */
-    public static final int[] TEMPOS = {0, 60, 90, 180};
+    /**
+     * Tempos de luta oferecidos (segundos; 0 = sem limite), livres para qualquer faixa e modo: a faixa nunca
+     * escolhe o tempo de uma luta casual (os tempos oficiais por faixa ficam para um futuro modo campeonato).
+     */
+    public static final int[] TEMPOS = {60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600, 0};
+
+    /** Tempo com que a tela abre: sem limite (como antes). */
+    public static final int TEMPO_PADRAO = 0;
 
     /** Fase de um jogador. */
     public enum Fase { ESCOLHENDO, PERFIL,
@@ -1095,8 +1101,12 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         return t.length() > 16 ? t.substring(0, 15) + "…" : t;
     }
 
+    /** "SEM LIMITE", "1 MIN", "1 MIN 30 S", "10 MIN". */
     static String textoTempo(int s) {
-        return s == 0 ? "SEM LIMITE" : s + " s";
+        if (s <= 0) {
+            return "SEM LIMITE";
+        }
+        return s / 60 + " MIN" + (s % 60 == 0 ? "" : " " + s % 60 + " S");
     }
 
     private void linha(Graphics2D g, Linha l, String rotulo, String valor, int y, boolean setas, boolean j1Pronto) {

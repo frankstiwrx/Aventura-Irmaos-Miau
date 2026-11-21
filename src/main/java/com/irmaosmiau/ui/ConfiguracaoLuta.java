@@ -59,6 +59,11 @@ final class ConfiguracaoLuta {
         }
         arena = Math.max(0, arenas.indexOf(idArenaInicial));
         regra = ModoLuta.PADRAO.ordinal();
+        for (int i = 0; i < SelecaoPartidaPanel.TEMPOS.length; i++) {
+            if (SelecaoPartidaPanel.TEMPOS[i] == SelecaoPartidaPanel.TEMPO_PADRAO) {
+                tempo = i;
+            }
+        }
     }
 
     /** Volta o foco para a ARENA ao (re)abrir a tela; as escolhas ficam. */
