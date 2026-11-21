@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1285, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1289, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -699,3 +699,11 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 6. PAUSA → LABORATÓRIO → J2: CONTROLADO: o teclado-controle do J2 (ou um segundo gamepad) move o Preto junto com o J1.
 7. Com o J2 controlado e o F11 ligado, o segundo controle não mexe no Preto (fica em espera).
 8. JOGAR: o F11 não faz nada; menus, arbitragem e tempos iguais.
+
+# Polimento dos menus
+
+1. Menu principal: a barra de baixo mostra a descrição da opção em foco (teclado, controle e mouse).
+2. CONFIGURAÇÕES: cartão compacto sobre o fundo escuro com a faixa vermelha; ÁUDIO e CONTROLES.
+3. No controle: cima/baixo anda de linha em linha; lados ajustam os volumes; A liga/desliga; B volta.
+4. Editor de personagens: frase "JOGAR ou TREINO" e linha de instruções; o resto igual.
+5. Luta: a barra de dicas separa os grupos; no treino aparece "F11 alternar Miau"; F2 continua escondendo tudo.
