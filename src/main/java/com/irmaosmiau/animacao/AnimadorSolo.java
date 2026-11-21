@@ -157,30 +157,46 @@ public final class AnimadorSolo {
         if (desloc == null) {
             ef.ifPresent(e -> aplicarEfeito(pose, e));
         }
-        // 5Q.7: a tecnica partiu da pose da PEGADA (bracos ja estendidos ate o kimono): os bracos giram
-        // e dobram sem mudar de tamanho (antes o antebraco esticava ate ~1,6x na rasteira/derrubada)
-        if (daPegada.containsKey(l) || ef.map(AnimacoesTecnicas::preservaBracos).orElse(false)) {
-            IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l, daPegada.containsKey(l));   // 5Q.8
-        }
         // 5Q.7: quem arrasta pelas pernas da passos curtos (pelo x real: parado, os pes ficam)
         // 5Q.7 corretiva: e mostra o ESFORCO de puxar enquanto anda (inclina para tras, bracos puxam);
         // de joelhos, os passos sao curtos e so dos joelhos; quem e arrastado ajusta o quadril de leve
+        // 5Q.8: aplicado ANTES da integridade (os passos nao mudam o tamanho das pernas)
         boolean segurando = ef.map(e -> "segurando_pernas".equals(e.tecnica())).orElse(false);
         int andou = segurando ? l.getX() - ultimoXArrasto.getOrDefault(l, l.getX()) : 0;
         if (segurando) {
             ultimoXArrasto.put(l, l.getX());
             double esforco = esforcoArrasto.getOrDefault(l, 0.0);
-            esforco = andou != 0 ? Math.min(1.0, esforco + 0.15) : Math.max(0.0, esforco - 0.1);
+            // 5Q.8: o arrasto anda 1 px a cada poucos ticks: "andando" = andou nos ultimos ticks (o esforco
+            // nao pisca nem fica baixo); parado de verdade, ele volta suave
+            int semAndar = andou != 0 ? 0 : ticksSemAndarArrasto.getOrDefault(l, 99) + 1;
+            ticksSemAndarArrasto.put(l, semAndar);
+            boolean andando = semAndar <= TICKS_ANDANDO_ARRASTO;
+            esforco = andando ? Math.min(1.0, esforco + 0.2) : Math.max(0.0, esforco - 0.08);
             esforcoArrasto.put(l, esforco);
+            // 5Q.8: a fase dos passos anda pelo TEMPO enquanto ha deslocamento (de joelhos o arrasto e tao lento
+            // que, pelo x, o ciclo quase nao andava e parecia uma pose parada deslizando)
+            double fase = faseArrasto.getOrDefault(l, 0.0);
+            if (andando) {
+                fase += l.isAjoelhado() ? 1.0 / TICKS_PASSO_ARRASTO_JOELHOS : 1.0 / TICKS_PASSO_ARRASTO;
+            }
+            faseArrasto.put(l, fase % 1.0);
+            int xFase = (int) Math.round(fase % 1.0 * CICLO_PASSO_ARRASTO_PX);
             if (ef.get().tipo() == MotorSolo.TipoEfeitoVisual.TECNICA_ATAQUE) {
-                passosDoArrasto(pose, l.getX(), l.isAjoelhado());
+                passosDoArrasto(pose, xFase, l.isAjoelhado());
                 esforcoDoArrasto(pose, esforco);
             } else {
-                quadrilArrastado(pose, l.getX(), esforco);
+                quadrilArrastado(pose, xFase, esforco);
             }
         } else {
             ultimoXArrasto.remove(l);
             esforcoArrasto.remove(l);
+            faseArrasto.remove(l);
+            ticksSemAndarArrasto.remove(l);
+        }
+        // 5Q.7: a tecnica partiu da pose da PEGADA (bracos ja estendidos ate o kimono): os bracos giram
+        // e dobram sem mudar de tamanho (antes o antebraco esticava ate ~1,6x na rasteira/derrubada)
+        if (daPegada.containsKey(l) || ef.map(AnimacoesTecnicas::preservaBracos).orElse(false)) {
+            IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l, daPegada.containsKey(l));   // 5Q.8
         }
         double dx = desloc == null ? 0.0 : desloc[0];
         dy += desloc == null ? 0.0 : desloc[1];
@@ -287,6 +303,13 @@ public final class AnimadorSolo {
     }
 
     private final Map<IrmaoMiau, Integer> ultimoXArrasto = new IdentityHashMap<>();
+    private final Map<IrmaoMiau, Double> faseArrasto = new IdentityHashMap<>();
+    private final Map<IrmaoMiau, Integer> ticksSemAndarArrasto = new IdentityHashMap<>();
+    /** 5Q.8: andou nos ultimos ticks = ainda esta arrastando (o arrasto avanca de 1 em 1 px). */
+    public static final int TICKS_ANDANDO_ARRASTO = 8;
+    /** 5Q.8: duracao (ticks) de um ciclo de passos arrastando em pe e de joelhos. */
+    public static final int TICKS_PASSO_ARRASTO = 22;
+    public static final int TICKS_PASSO_ARRASTO_JOELHOS = 26;
     /** 5Q.7 corretiva: 0..1, sobe enquanto anda arrastando e volta parado (sem estalo). */
     private final Map<IrmaoMiau, Double> esforcoArrasto = new IdentityHashMap<>();
     /** 5Q.7 corretiva: inclinacao para tras (graus) e puxada das maos (px) no esforco maximo. */
@@ -311,6 +334,13 @@ public final class AnimadorSolo {
         pose[6] += a;
         pose[25] += a;
         pose[29] -= a;
+        // 5Q.8: sendo puxado pelos pes, os bracos ficam para tras (para o lado da cabeca, -y local) e roçam o chao
+        int b = (int) Math.round(10 * esforco);
+        pose[17] -= b;
+        pose[21] -= b;
+        pose[15] -= b / 2;
+        pose[19] -= b / 2;
+        pose[11] -= (int) Math.round(3 * esforco);              // a cabeca acompanha
     }
 
     /** 5Q.7: passos curtos de quem arrasta: joelho e pe sobem alternados conforme o x anda. */
@@ -318,20 +348,40 @@ public final class AnimadorSolo {
         passosDoArrasto(pose, x, false);
     }
 
-    /** 5Q.7 corretiva: de joelhos, so os joelhos andam (curtos), sem levantar os pes. */
+    /**
+     * 5Q.7 corretiva / 5Q.8: passos de quem arrasta, pelo x real (parado, nada anda). Em pe: o pe do passo
+     * sobe e vai para tras (quem arrasta recua), o joelho acompanha e o quadril sobe e desce de leve. De
+     * joelhos: os joelhos "andam" alternados (sobe um pouco e recua), o quadril balanca para o lado do
+     * passo. A integridade depois mantem o tamanho de coxa e canela.
+     */
     static void passosDoArrasto(int[] pose, int x, boolean deJoelhos) {
         double f = Math.sin(2 * Math.PI * Math.floorMod(x, CICLO_PASSO_ARRASTO_PX) / CICLO_PASSO_ARRASTO_PX);
+        double tras = Math.max(0, f);
+        double frente = Math.max(0, -f);
         if (deJoelhos) {
-            pose[22] += (int) Math.round(3 * f);
-            pose[26] -= (int) Math.round(3 * f);
+            // joelho e canela juntos (a integridade recalcula o joelho pelo pe): sobe um pouco e recua
+            int sobeT = (int) Math.round(4 * tras);
+            int recuaT = (int) Math.round(6 * tras);
+            int sobeF = (int) Math.round(4 * frente);
+            int recuaF = (int) Math.round(6 * frente);
+            pose[23] -= sobeT;
+            pose[25] -= sobeT;
+            pose[22] -= recuaT;
+            pose[24] -= recuaT;
+            pose[27] -= sobeF;
+            pose[29] -= sobeF;
+            pose[26] -= recuaF;
+            pose[28] -= recuaF;
+            pose[6] += (int) Math.round(3 * f);                 // o quadril balanca com o passo
             return;
         }
-        int tras = (int) Math.round(Math.max(0, f) * 8);
-        int frente = (int) Math.round(Math.max(0, -f) * 8);
-        pose[22] -= tras / 2;
-        pose[25] -= tras;
-        pose[26] -= frente / 2;
-        pose[29] -= frente;
+        pose[25] -= (int) Math.round(9 * tras);                  // pe sobe
+        pose[24] -= (int) Math.round(6 * tras);                  // e vai para tras
+        pose[22] -= (int) Math.round(3 * tras);
+        pose[29] -= (int) Math.round(9 * frente);
+        pose[28] -= (int) Math.round(6 * frente);
+        pose[26] -= (int) Math.round(3 * frente);
+        pose[5] -= (int) Math.round(2 * Math.abs(f));            // o quadril sobe no meio do passo
     }
 
     public void liberar(IrmaoMiau l) {
