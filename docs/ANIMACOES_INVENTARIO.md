@@ -252,3 +252,35 @@ rastejo, rolamento deitado e em pé.
   trás do adversário nem troca de lado do corpo (Rig 2.0).
 - O segurado não estica as pernas na direção de quem segura (as pernas deitadas não giram
   livremente no rig atual).
+
+## Entrega 5Q.7 corretiva
+
+### Corrigidas
+
+- **Composição da pose na pegada:** a camada da pegada não soma mais reações por cima de uma
+  técnica do solo e a pegada guardada é a base limpa (era a causa da cintura quebrada e do acúmulo).
+- **Corpo inteiro preservado** (`IntegridadeMembros.preservarCorpo`): braços, pernas, tronco e
+  cintura, nas técnicas a partir da pegada e nas microanimações.
+- **Rasteira:** a janela de quem recebe é antecipação (sem o pé solto no ar); falha/RT usa a reação
+  genérica de queda que falhou.
+- **FORÇAR QUEDA segurado com RT:** a mesma reação genérica.
+- **Arrastado pelas pernas:** deitado reto (sem a troca para a pose procedural dobrada).
+
+### Novas
+
+| Animação | Observação |
+|---|---|
+| reação genérica de queda que falhou (`rasteira_defendida`, `derrubada_forcada_defendida`) | uma só curva, pontos de partida diferentes |
+| esforço de quem arrasta | inclinação, mãos puxando, passos (em pé) / joelhos (de joelhos) |
+| retencao:ATACA/RECEBE | MANTER A GUARDA na guarda aberta |
+
+### Preservadas
+
+Quedas que entram, empurrão, tiro de guarda, levantada técnica, quedas explosivas, microanimações
+defensivas da 5Q.7, PÉS, PRENDER, cores, rolamento de joelhos, sprawl.
+
+### Limitações
+
+- O personagem deitado no solo livre usa o desenho legado; enquanto é segurado usa a pose (reta).
+  A troca no início e no fim da pegada é um pequeno salto de desenho (sem dobrar a cintura).
+- As finalizações de perna continuam parecidas entre si; Rig 2.0 continua fora.

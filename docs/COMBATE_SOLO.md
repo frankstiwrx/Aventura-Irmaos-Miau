@@ -511,3 +511,77 @@ faixa preta ~8 (antes: 24 para todos). Cansado, até o dobro. Com fôlego/condic
 28 → 46 ticks (~1,65x), **mesma distância** (a velocidade cai na mesma proporção e a animação anda
 pelo progresso: sem deslizar). Rolamento deitado, em pé, sprawl, movimentação de joelhos, rastejo e
 levantada técnica não mudaram.
+
+## Entrega 5Q.7 corretiva — integridade corporal, arrasto e acrobacias
+
+### Por que a rasteira e o FORÇAR QUEDA ainda deformavam
+
+A pose de quem está na pegada em pé é escrita por **duas camadas no mesmo tick**: a animação da
+técnica do solo (`AnimadorSolo`) e, logo depois, a camada da pegada (`CamadaPoseCombate`). A
+camada adotava o quadro da técnica como se fosse a sua pose-base e somava por cima as reações
+dela (inclinação de peito e cintura do desequilíbrio, passo do joelho do arrasto, força e reação
+do receptor). Resultado:
+
+1. **reações somadas** durante a técnica: o tronco e a cintura giravam duas vezes (a cintura
+   "quebrava", sobretudo no FORÇAR QUEDA, que também aplica o desequilíbrio);
+2. a **"pose da pegada" guardada** no início da técnica (para voltar a ela no fim) era a pose
+   ATUAL — já com a reação passageira dentro; devolvida no fim, a reação virava parte da pegada e
+   se acumulava nas tentativas seguintes;
+3. joelhos e pés recebiam deslocamentos soltos (pensados para o corpo em repouso): a **coxa e a
+   canela mudavam de tamanho** (até ~12 px, ~30%) — a correção da 5Q.7 só tratava os braços.
+
+### Correção (composição, não só limite numérico)
+
+- Enquanto a técnica do solo é dona da pose a partir da pegada, a **camada da pegada não roda**
+  para aquele lutador (`AnimadorPartida` + `AnimadorSolo.assumiuPegada`).
+- A pose da pegada guardada é a **base limpa** da camada (`CamadaPoseCombate.poseBase`), sem as
+  reações passageiras (`AnimadorSolo.usarPoseDaPegada`).
+- `IntegridadeMembros.preservarCorpo`: braços **e pernas** giram na raiz e dobram a junta do meio
+  com os comprimentos de antes; o tronco não sai de cima do quadril (7/8 da animação ignorados);
+  limites: inclinação do tronco 26°, giro da cintura 14°, torção tronco-cintura 22°, deslocamento
+  da cintura 8 px.
+- A janela da rasteira para quem recebe virou **antecipação** (o peso vai para trás, o pé da
+  frente desliza); quem cai de verdade é desenhado pela transição de queda (aprovada).
+- **Uma reação genérica de queda que falhou** (`reacaoQuedaFalhou`), no princípio do empurrão:
+  o tronco cede, meio passo de trás, os braços acompanham, volta suave à pegada. Usada na rasteira
+  que falha ou é segurada e no FORÇAR QUEDA segurado com RT (muda só o ponto de partida). O FORÇAR
+  QUEDA que só desequilibra continua com a reação do próprio empurrão.
+
+Medido tick a tick (J1 e J2 atacando, 3 tentativas seguidas): maior variação de segmento do
+defensor 10–12 px → ≤ 2 px; torção da rasteira 22° → 12°; tronco sempre no quadril; nada sobra
+no fim.
+
+### Arrasto pelas pernas
+
+- **Cintura do arrastado:** no solo livre quem está deitado é desenhado pelo desenho legado (corpo
+  reto); ao ser segurado ele passava para a pose procedural de deitado (tronco 15° fora das pernas,
+  perna da frente dobrada): a troca parecia a cintura dobrando. Agora o segurado usa o **deitado
+  reto** (só a rotação global, braços ao longo do corpo) e só as pernas esticam um pouco para quem
+  segura.
+- **Quem arrasta:** pose de pegada nas pernas, inclinação, mãos nos tornozelos; andando, inclina
+  para trás e as mãos puxam (`AnimadorSolo.INCLINACAO_ESFORCO_ARRASTO` 8°, `PUXADA_MAOS_ARRASTO`
+  5 px, o esforço sobe e desce suave); passos curtos pelo x real; **de joelhos**, só os joelhos
+  andam. Soltar volta suave.
+- Mecânica inalterada (RS → SEGURAR/SOLTAR, RS ← PRENDER, velocidade, fôlego, arena, rompimento).
+
+### Acrobacias (estrela, mortal para a frente, mortal para trás)
+
+| Parâmetro | 5Q.7 | Agora | Onde |
+|---|---|---|---|
+| Execução-base (ticks) | estrela 30, mortal frente 32, trás 34 | 26, 28, 30 | `TipoAcrobacia` |
+| Execução pelo lutador | igual para todos | base × (1 − 0,2 × mobilidade), mínimo 18 | `IrmaoMiau.duracaoAcrobacia`, `REDUCAO_EXECUCAO_POR_MOBILIDADE`, `TipoAcrobacia.DURACAO_MINIMA_TICKS` |
+| Recarga-base | 24 | 16 (mesma fórmula da 5Q.7) | `RECARGA_ACROBACIA_BASE_TICKS` |
+| R3 apertado antes de poder | descartado (soltar e apertar de novo) | guardado por 14 ticks e executado assim que possível | `GamePanel.JANELA_ACROBACIA_PENDENTE_TICKS` |
+
+Mesma distância (a velocidade sobe na proporção; a animação anda pelo progresso). Exemplos
+descansados: Preto faixa preta ~22 ticks de estrela + ~5 de recarga; Branco faixa branca ~25 + ~13.
+A causa da lentidão sentida era a soma das três coisas: execução longa, recarga e o comando
+perdido ao apertar um pouco cedo. Rolamento de joelhos (46), sprawl (32) e rolamentos
+convencionais não mudaram.
+
+### MANTER A GUARDA
+
+O MANTER da guarda aberta (`retencao`, RS ← / →) ganhou microanimação (`retencao:ATACA`): o quadril
+contrai e encaixa, os joelhos voltam para dentro, as mãos ajustam; volta à pose da guarda. Também
+aparece quando é usado como resposta a uma passagem. A regra não mudou (sem efeito, sem troca de
+posição). Os MANTER das guardas borboleta, De La Riva, aranha e SLX já tinham animação (5Q.6).

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1193, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1207, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -607,3 +607,27 @@ Checklist da homologação física (Xbox no J1, teclado virtual no J2; trocar os
 19. Mensagem no topo com a cor da natureza: queda âmbar, defesa azul, passagem verde, finalização vermelha, segurar creme, bater com moldura dourada.
 20. A mensagem secundária ("▶ … EM EXECUÇÃO") continua neutra; a barra inferior não mudou.
 21. Preservados: tiro de guarda, empurrão, levantada técnica, quedas explosivas, guardas aranha/laço, manga, berimbolos, rodas do ashi, F8, cenários e músicas.
+
+# Entrega 5Q.7 corretiva — integridade corporal
+
+Checklist da homologação física (Xbox no J1, teclado virtual no J2). Comparar com as capturas
+enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
+
+1. Rasteira que falha, J1 atacando: braços, tronco, cintura e pernas do defensor inteiros.
+2. Rasteira que falha, J2 atacando.
+3. FORÇAR QUEDA que não derruba, J1 e J2 atacando: a cintura não "quebra".
+4. Rasteira segurada com RT e FORÇAR QUEDA segurado com RT: tronco cede, meio passo, volta. *(confirmar o RT)*
+5. Três ou mais tentativas seguidas sem soltar a pegada: nada se acumula.
+6. Alternar rasteira, empurrão e FORÇAR QUEDA rapidamente.
+7. Quedas que entram: iguais às aprovadas.
+8. Personagens bem próximos e com orientações trocadas.
+9. Arrastar em pé para trás e para frente: o arrastado deitado reto; quem arrasta inclina e dá passos.
+10. Arrastar de joelhos. *(confirmar)*
+11. Arrastado resistindo (rompe) e soltura voluntária (RS →): volta suave. *(confirmar o rompimento)*
+12. Arrastar até a borda da arena.
+13. Guarda aberta por baixo: MANTER (RS ← / →) mexe pernas e quadril e volta; não troca de guarda.
+14. MANTER como resposta à passagem.
+15. Estrela e mortais mais rápidos; faixa preta ágil quase sem espera; apertar R3 um pouco antes do fim encadeia.
+16. Modo Desenvolvedor / treino com recursos infinitos: acrobacias encadeadas fluidas.
+17. Rolamento de joelhos (46 ticks), sprawl e rolamentos convencionais iguais.
+18. Preservados: PÉS, microanimações defensivas, cores das mensagens, barra inferior, PRENDER no RS ←, músicas externas, itens da 5Q.6.

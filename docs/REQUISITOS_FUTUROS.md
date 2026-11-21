@@ -147,3 +147,8 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 - Pontuação das lutas, regras competitivas, novas técnicas e novos personagens.
 - Recalibrar com os testes físicos: `FATOR_ROLAMENTO_JOELHOS_5Q7`, recarga das acrobacias e o
   balanceamento do arrasto pelas pernas.
+
+## Depois da 5Q.7 corretiva
+
+- Desenho único para o deitado no solo livre (hoje: desenho legado parado, pose reta quando segurado).
+- Recalibrar com os testes físicos: execução/recarga das acrobacias, janela do R3 guardado, esforço do arrasto.
