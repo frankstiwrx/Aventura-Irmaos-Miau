@@ -53,7 +53,13 @@ public final class RepositorioGamepad {
 
     private static final Set<String> CAMPOS_RAIZ = Set.of(
             ArmazenamentoJson.CAMPO_TIPO, ArmazenamentoJson.CAMPO_VERSAO, "jogadores");
-    private static final Set<String> CAMPOS_SLOT = Set.of("esquema", "botoes", "esquemaEscolhido");
+    private static final Set<String> CAMPOS_SLOT = Set.of("esquema", "botoes", "esquemaEscolhido", "respirarNoY");
+    /**
+     * Complemento 5Q.8: gravado como true ao SALVAR (o arquivo ja conhece o respirar no Y). Arquivos sem a
+     * marca sao de antes: o RT sozinho respirava; se o slot nao tem botao de respirar e o Y esta livre, o Y
+     * passa a respirar (com aviso). Depois de salvo, o que o jogador escolher fica como esta.
+     */
+    public static final String CAMPO_RESPIRAR_Y = "respirarNoY";
     /**
      * 5O.2: gravado como true ao SALVAR em CONTROLES (o jogador escolheu o esquema).
      * Arquivos antigos nao tem: um slot no Classico com os botoes padrao e sem esta
@@ -105,13 +111,34 @@ public final class RepositorioGamepad {
                         + " Para voltar: CONTROLES → esquema Clássico → SALVAR.");
                 continue;
             }
+            boolean conheceRespirarNoY = doc.get().objeto("jogadores").objeto(s.getIdArquivo())
+                    .booleanoOpcional(CAMPO_RESPIRAR_Y, false);
             boolean ehAtual = lido.config(s).equals(MapaGamepad.padraoDo(s, e));
             boolean padraoAntigo = !ehAtual && (lido.config(s).equals(MapaGamepad.padraoAnterior(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5G(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5H(s, e))
                     || lido.config(s).equals(MapaGamepad.padrao5N(s, e))
-                    || lido.config(s).equals(MapaGamepad.padrao5O(s, e)));
-            if (padraoAntigo) {
+                    || lido.config(s).equals(MapaGamepad.padrao5O(s, e))
+                    || (!conheceRespirarNoY && lido.config(s).equals(MapaGamepad.padrao51(s, e))));
+            if (!padraoAntigo && !ehAtual && !conheceRespirarNoY
+                    && lido.botao(s, ItemGamepad.de(AcaoJogador.RESPIRAR)).isEmpty()) {
+                // complemento 5Q.8: o RT sozinho nao respira mais. Botoes personalizados ficam; se o Y
+                // estiver livre (ou so com o reforco do Classico, que divide), ele passa a respirar.
+                MapaGamepad comY = lido.comBotao(s, ItemGamepad.de(AcaoJogador.RESPIRAR), MapaGamepad.BOTAO_RESPIRAR);
+                if (comY.isValido()) {
+                    lido = comY;
+                    avisos.add(s.getSigla() + ": respirar agora é no Y/Triângulo (o RT abre as finalizações por cima)."
+                            + " Salve em CONTROLES para gravar.");
+                } else {
+                    avisos.add(s.getSigla() + ": respirar saiu do RT e o Y/Triângulo está ocupado nos seus botões:"
+                            + " atribua RESPIRAR em CONTROLES.");
+                }
+            }
+            if (padraoAntigo && lido.config(s).equals(MapaGamepad.padrao51(s, e))) {
+                lido = lido.comEsquema(s, e);
+                avisos.add(s.getSigla() + ": respirar agora é no Y/Triângulo (o RT abre as finalizações por cima"
+                        + " na montada, nos 100 kg e nas costas). Salve em CONTROLES para gravar.");
+            } else if (padraoAntigo) {
                 lido = lido.comEsquema(s, e);
                 avisos.add(s.getSigla() + ": botões padrão do gamepad atualizados (R3 rola, L3 deita, A pula,"
                         + " RB + A pulo alto" + (e == EsquemaGamepad.CONTEXTUAL
@@ -132,7 +159,8 @@ public final class RepositorioGamepad {
     private static boolean ehPadraoDeAlgumaVersao(MapaGamepad.ConfigSlot c, SlotJogador s, EsquemaGamepad e) {
         return c.equals(MapaGamepad.padraoDo(s, e)) || c.equals(MapaGamepad.padraoAnterior(s, e))
                 || c.equals(MapaGamepad.padrao5G(s, e)) || c.equals(MapaGamepad.padrao5H(s, e))
-                || c.equals(MapaGamepad.padrao5N(s, e)) || c.equals(MapaGamepad.padrao5O(s, e));
+                || c.equals(MapaGamepad.padrao5N(s, e)) || c.equals(MapaGamepad.padrao5O(s, e))
+                || c.equals(MapaGamepad.padrao51(s, e));
     }
 
     public void salvar(MapaGamepad mapa) {
@@ -150,6 +178,7 @@ public final class RepositorioGamepad {
             Map<String, Object> slot = new LinkedHashMap<>();
             slot.put("esquema", mapa.esquema(s).name());
             slot.put(CAMPO_ESCOLHIDO, Boolean.TRUE);
+            slot.put(CAMPO_RESPIRAR_Y, Boolean.TRUE);
             slot.put("botoes", botoes);
             jogadores.put(s.getIdArquivo(), slot);
         }

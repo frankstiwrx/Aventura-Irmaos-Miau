@@ -227,6 +227,8 @@ class Guarda51GamePanelTest extends Base5OGamePanel {
     }
 
     // RT sozinho = respirar (teclado do J1 e teclado-controle do J2)
+    // Complemento 5Q.8 (pedido): o RT sozinho nao respira mais; respirar e o botao proprio (Y; J1 nas teclas:
+    // a tecla de respirar; J2 no teclado-controle: I). A prioridade da defesa continua a mesma.
     @Test
     void rtSozinhoRespira() throws Exception {
         naEdt(() -> {
@@ -234,18 +236,26 @@ class Guarda51GamePanelTest extends Base5OGamePanel {
             tecla("brancoModDefesa", true);
             tecla("pretoControleP", true);
             ticks(3);
-            assertTrue(j1().isRespirando(), "J1: RT/3 sozinho respira");
-            assertTrue(j2().isRespirando(), "J2: P sozinho respira");
+            assertFalse(j1().isRespirando() || j2().isRespirando(), "RT/3 e P sozinhos nao respiram mais");
+            tecla("brancoModDefesa", false);
+            tecla("pretoControleP", false);
+            tecla("brancoRespirar", true);
+            tecla("pretoControleI", true);
+            ticks(3);
+            assertTrue(j1().isRespirando(), "J1: a tecla de respirar respira");
+            assertTrue(j2().isRespirando(), "J2: I (Y) respira");
             assertFalse(j1().getDefesa().isAtiva());
+            tecla("brancoModDefesa", true);
             tecla("brancoPegada1", true);                        // RT + direcao: defesa tem prioridade
             ticks(2);
             assertFalse(j1().isRespirando());
             assertTrue(j1().getDefesa().isSegurada());
             tecla("brancoPegada1", false);
+            tecla("brancoModDefesa", false);
             ticks(DefesaCorporal.TICKS_SAIDA + 2);
             assertTrue(j1().isRespirando(), "voltou ao neutro: respira de novo");
-            tecla("brancoModDefesa", false);
-            tecla("pretoControleP", false);
+            tecla("brancoRespirar", false);
+            tecla("pretoControleI", false);
             ticks(1);
             assertFalse(j1().isRespirando() || j2().isRespirando());
         });

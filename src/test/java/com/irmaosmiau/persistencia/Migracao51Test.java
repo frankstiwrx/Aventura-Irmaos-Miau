@@ -82,7 +82,9 @@ class Migracao51Test {
         MapaGamepad m = new RepositorioGamepad(new DiretorioDados(tmp)).carregar();
         // 5O.2 (pedido): Classico padrao nunca escolhido vira o novo padrao (Contextual).
         assertEquals(MapaGamepad.padrao(), m);
-        assertTrue(m.botao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.RESPIRAR)).isEmpty(), "Select livre");
+        // complemento 5Q.8 (pedido): respirar saiu do RT sozinho e foi para o Y (o Select continua livre)
+        assertTrue(m.quemUsa(SlotJogador.JOGADOR_1, BotaoGamepad.VOLTAR).isEmpty(), "Select livre");
+        assertEquals(BotaoGamepad.NORTE, m.botao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.RESPIRAR)).orElseThrow());
         assertTrue(m.selectValeComoRb(SlotJogador.JOGADOR_1));
         assertEquals(BotaoGamepad.NORTE, MapaGamepad.classico().botao(SlotJogador.JOGADOR_1,
                 ItemGamepad.de(AcaoJogador.REFORCAR_PEGADA)).orElseThrow(), "o reforco no Y (Classico) continua");

@@ -1022,7 +1022,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_1, jogadorPrincipal);
+                = respirandoPeloBotao(SlotJogador.JOGADOR_1, jogadorPrincipal);
 
         jogadorPrincipal.setRespirando(
                 respirando
@@ -1152,7 +1152,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_1, jogadorBranco);
+                = respirandoPeloBotao(SlotJogador.JOGADOR_1, jogadorBranco);
 
         jogadorBranco.setRespirando(
                 respirando
@@ -1303,7 +1303,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // RESPIRAÇÃO
         // =========================
         boolean respirando
-                = input.isPretoRespirar() || respirandoPeloModificador(SlotJogador.JOGADOR_2, jogadorPreto);
+                = respirandoPeloBotao(SlotJogador.JOGADOR_2, jogadorPreto);
 
         jogadorPreto.setRespirando(
                 respirando
@@ -1597,25 +1597,22 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     /**
-     * 5O.1: RT (modificador de defesas; teclado 3 / P) SEM direcao de tecnica =
-     * respirar (a mesma mecanica de sempre, sustentada). Com uma direcao, a defesa
-     * tem prioridade: guarda ativa (ou saindo) e sprawl nunca respiram, entao nao
-     * ha recuperacao gratuita durante a defesa.
+     * Complemento da 5Q.8: RESPIRAR e o botao proprio (Y/Triangulo no controle; I no teclado-controle do
+     * J2; X / L nas teclas livres). O RT sozinho deixou de respirar (de 5O.1 a 5Q.8 respirava): ele abre as
+     * finalizacoes por cima na montada, nos cem quilos e nas costas e continua sendo defesa/base em pe.
+     * A mecanica da respiracao nao mudou. No Classico o Y divide com o REFORCO: quem aplica uma pegada
+     * reforca (nao respira); fora disso respira.
      */
-    boolean respirandoPeloModificador(SlotJogador slot, IrmaoMiau l) {
-        if (solo != null && solo.sofrendoEntrada(lado(slot))) {
-            return false;                                    // 5P.1: na entrada do outro o RT e base, nao respiracao
+    boolean respirandoPeloBotao(SlotJogador slot, IrmaoMiau l) {
+        if (!input.isAtiva(slot, AcaoJogador.RESPIRAR) || l.getDefesa().isAtiva() || l.isFazendoSprawl()) {
+            return false;                                  // 5O.1: guarda ativa e sprawl nunca respiram
         }
-        if (!input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA) || l.getDefesa().isAtiva()
-                || l.isFazendoSprawl() || dispositivos.direcaoFamiliaGamepad(slot) != null) {
-            return false;
-        }
-        for (AcaoJogador a : ACOES_PEGADA) {
-            if (input.isAtiva(slot, a)) {
-                return false;
-            }
-        }
-        return true;
+        return !(input.isAtiva(slot, AcaoJogador.REFORCAR_PEGADA) && aplicaPegada(l));
+    }
+
+    /** O lutador aplica uma pegada agora (o Y do Classico reforca em vez de respirar). */
+    private boolean aplicaPegada(IrmaoMiau l) {
+        return sistemaCombate != null && sistemaCombate.estaEmInteracao() && sistemaCombate.getAplicadorInteracao() == l;
     }
 
     // =====================================================
@@ -1761,7 +1758,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         boolean rt = input.isAtiva(s, AcaoJogador.MODIFICADOR_DEFESA);
         boolean apertou = rt && !Boolean.TRUE.equals(rtAnterior.get(s));
         rtAnterior.put(s, rt);
-        // 5P.1: a base e o RT APERTADO (reacao); segurado de antes e so respirar
+        // 5P.1: a base e o RT APERTADO (reacao); segurado de antes nao e base (complemento 5Q.8: nem respira)
         return new com.irmaosmiau.posicional.MotorSolo.Intencao(dx, dy, apertou);
     }
 
@@ -1881,7 +1878,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.RS || fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.R1) {
             nome = (explosivo ? (e.getPosicao().isNoChao() ? "RB · " : "QUEDAS (RB) · ") : "")
                     + nomeCurto(e.getPosicao()) + " · " + papelCurto(l)
-                    + (e.getPosicao().isNoChao() && !explosivo ? " · RT AR" : "");
+                    + (e.getPosicao().isNoChao() && !explosivo
+                            ? " · " + nomeModificador(slot, AcaoJogador.RESPIRAR) + " AR" : "");   // compl. 5Q.8: Y respira
         } else {
             nome = nomeFamiliaL(slot, fam, e, m) + " · " + nomeCurto(e.getPosicao());
         }
@@ -2146,6 +2144,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** 5I: desequilibrio e rompimento no mesmo toque do slot: fica so a do papel real. */
     private void resolverBotaoCompartilhado(SlotJogador slot, java.util.Set<AcaoJogador> doSlot) {
+        IrmaoMiau quem = slot == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        if (doSlot.contains(AcaoJogador.REFORCAR_PEGADA) && input.isAtiva(slot, AcaoJogador.RESPIRAR)
+                && !aplicaPegada(quem)) {
+            doSlot.remove(AcaoJogador.REFORCAR_PEGADA);   // complemento 5Q.8: Y livre de pegada = respirar
+        }
         if (!doSlot.contains(AcaoJogador.TENTAR_DESEQUILIBRIO) || !doSlot.contains(AcaoJogador.ROMPIMENTO_TECNICO)) {
             return;
         }

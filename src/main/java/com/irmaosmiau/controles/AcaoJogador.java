@@ -81,7 +81,9 @@ public enum AcaoJogador {
      * INSERT/HOME (J2) - ALT foi evitado de proposito (no Windows abre o menu da
      * janela e o AltGr do ABNT2 e Ctrl+Alt).
      */
-    MODIFICADOR_DEFESA("ModDefesa", "Defesas (segure + direção) · sozinho: respirar", "defesas",
+    // Complemento 5Q.8: o RT sozinho nao respira mais (respirar = Y/Triangulo; I no teclado-controle do J2).
+    // No chao, por cima na montada, nos 100 kg e nas costas, RT + direcao = a roda de finalizacoes.
+    MODIFICADOR_DEFESA("ModDefesa", "Defesas (segure + direção) · por cima no chão: finalizações", "defesas",
             GrupoAcao.DEFESA, TipoAcionamento.MODIFICADOR, "3", "INSERT"),
     MODIFICADOR_PROJECAO("ModProjecao", "Quedas e transições (segure; em preparação)", "quedas",
             GrupoAcao.COMBATE, TipoAcionamento.MODIFICADOR, "4", "HOME"),

@@ -289,8 +289,14 @@ class TecladoControle51Test extends Base5OGamePanel {
             sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.GATILHO_DIR));  // RT sozinho
             ctl("P", true);
             ticks(3);
-            assertTrue(j1().isRespirando() && j2().isRespirando(), "RT do Xbox e P do teclado respiram");
+            // complemento 5Q.8 (pedido): o RT sozinho nao respira mais; respirar = Y (I no teclado-controle)
+            assertFalse(j1().isRespirando() || j2().isRespirando(), "RT do Xbox e P do teclado nao respiram mais");
             ctl("P", false);
+            sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.NORTE));        // Y
+            ctl("I", true);
+            ticks(3);
+            assertTrue(j1().isRespirando() && j2().isRespirando(), "Y do Xbox e I do teclado respiram");
+            ctl("I", false);
             sim.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.INICIAR));      // Start continua pausando
             ticks(1);
             assertTrue(painel.isPausado());
@@ -301,14 +307,14 @@ class TecladoControle51Test extends Base5OGamePanel {
     void j1RolandoEnquantoJ2RespiraEPegadaContraDefesa() throws Exception {
         naEdt(() -> {
             novo(InicioLuta.DE_JOELHOS);
-            ctl("P", true);
+            ctl("I", true);                                      // complemento 5Q.8 (pedido): Y respira
             tecla("brancoEsquerda", true);
             toque("brancoRolar");
             tecla("brancoEsquerda", false);
             assertTrue(j1().isRolando(), "J1 rola de joelhos");
             ticks(2);
             assertTrue(j2().isRespirando(), "J2 respira ao mesmo tempo");
-            ctl("P", false);
+            ctl("I", false);
             ticks(40);
 
             novo(InicioLuta.EM_PE);

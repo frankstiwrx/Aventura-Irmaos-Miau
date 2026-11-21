@@ -110,7 +110,28 @@ public final class MapaGamepad {
      */
     public static ConfigSlot padraoDo(SlotJogador slot, EsquemaGamepad esquema) {
         // 5I: os dois slots usam todas as acoes de combate (papel vem da luta).
+        return transformar5Q8(transformar51(padrao5O(slot, esquema)));
+    }
+
+    /** Padroes da 5O.1 a 5Q.8 (respirar no RT sozinho), para reconhecer um gamepad.json nunca personalizado. */
+    public static ConfigSlot padrao51(SlotJogador slot, EsquemaGamepad esquema) {
         return transformar51(padrao5O(slot, esquema));
+    }
+
+    /** Botao de respirar desde o complemento da 5Q.8 (Y no Xbox, Triangulo no PlayStation). */
+    public static final BotaoGamepad BOTAO_RESPIRAR = BotaoGamepad.NORTE;
+
+    /**
+     * Complemento da 5Q.8: RESPIRAR sai do RT sozinho e vai para o Y/Triangulo (o RT passa a abrir as
+     * finalizacoes por cima na montada, nos cem quilos e nas costas). No Contextual o Y estava livre
+     * desde a 5O.1; no Classico o Y e o reforco da pegada e os dois DIVIDEM o botao: quem aplica uma
+     * pegada reforca, quem nao aplica respira (ver {@link #podemDividir}).
+     */
+    private static ConfigSlot transformar5Q8(ConfigSlot c51) {
+        Map<AcaoJogador, BotaoGamepad> a = new EnumMap<>(AcaoJogador.class);
+        a.putAll(c51.acoes());
+        a.put(AcaoJogador.RESPIRAR, BOTAO_RESPIRAR);
+        return new ConfigSlot(c51.esquema(), a, c51.comandos());
     }
 
     /** Padroes da 5O (antes da 5O.1), para reconhecer um gamepad.json nunca personalizado. */
@@ -120,7 +141,7 @@ public final class MapaGamepad {
     }
 
     /**
-     * 5O.1: Select/View deixa de respirar (respirar = RT sozinho) e fica LIVRE:
+     * 5O.1: Select/View deixa de respirar (respirar = RT sozinho ate a 5Q.8; depois, Y) e fica LIVRE:
      * livre, ele vale como RB logico (ver {@link #ALTERNATIVA_RB}). O Y deixa de
      * fazer acrobacia (acrobacia = R3 + direcao em pe); no Classico o Y continua
      * reforcando a pegada.
@@ -336,7 +357,9 @@ public final class MapaGamepad {
                 // 5O: RB = pulo alto (com o A), corrida (Classico) e quedas (com o RS); Y = reforco/acrobacia.
                 || par(x, y, AcaoJogador.MODIFICADOR_PROJECAO, ComandoGamepad.MODIFICADOR_PULO_ALTO)
                 || parDeAcoes(x, y, AcaoJogador.CORRER, AcaoJogador.MODIFICADOR_PROJECAO)
-                || parDeAcoes(x, y, AcaoJogador.REFORCAR_PEGADA, AcaoJogador.ACROBACIA);
+                || parDeAcoes(x, y, AcaoJogador.REFORCAR_PEGADA, AcaoJogador.ACROBACIA)
+                // complemento 5Q.8: Y = reforcar (aplicando a pegada) / respirar (fora disso) no Classico
+                || parDeAcoes(x, y, AcaoJogador.REFORCAR_PEGADA, AcaoJogador.RESPIRAR);
     }
 
     /**

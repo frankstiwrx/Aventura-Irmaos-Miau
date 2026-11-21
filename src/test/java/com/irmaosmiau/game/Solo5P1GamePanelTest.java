@@ -66,7 +66,8 @@ class Solo5P1GamePanelTest extends Base5OGamePanel {
             ticks(30);
             assertEquals(Lado.A, m().getEstado().getPorCima().orElseThrow());
             assertTrue(titulo(SlotJogador.JOGADOR_1).startsWith("SOLO LIVRE · EM PÉ"));
-            assertTrue(titulo(SlotJogador.JOGADOR_2).contains("RT AR"), "dica de respirar no solo");
+            // complemento 5Q.8 (pedido): a dica de respirar mostra o botao novo (Y = I no teclado-controle)
+            assertTrue(titulo(SlotJogador.JOGADOR_2).contains("I AR"), "dica de respirar no solo: " + titulo(SlotJogador.JOGADOR_2));
         });
     }
 
@@ -107,10 +108,15 @@ class Solo5P1GamePanelTest extends Base5OGamePanel {
     void rtSeguradoRespiraESofrendoEntradaViraBase() throws Exception {
         naEdt(() -> {
             novo(InicioLuta.EM_PE);
-            tecla("pretoControleP", true);                      // RT do J2 segurado: respirar
+            // complemento 5Q.8 (pedido): o RT segurado nao respira mais (respirar = Y, I no teclado-controle)
+            tecla("pretoControleP", true);
             ticks(5);
-            assertTrue(painel.respirandoPeloModificador(SlotJogador.JOGADOR_2, j2()), "segurado e livre: respira");
+            assertFalse(j2().isRespirando(), "RT segurado e livre: nao respira mais");
             tecla("pretoControleP", false);
+            tecla("pretoControleI", true);
+            ticks(5);
+            assertTrue(painel.respirandoPeloBotao(SlotJogador.JOGADOR_2, j2()), "o Y respira");
+            tecla("pretoControleI", false);
             ticks(1);
             // J1 entra nas pernas; durante a janela o RT do J2 e base, nao respiracao
             tecla("brancoDireita", true);
@@ -123,7 +129,7 @@ class Solo5P1GamePanelTest extends Base5OGamePanel {
             assertTrue(m().sofrendoEntrada(Lado.B));
             tecla("pretoControleP", true);
             ticks(1);
-            assertFalse(painel.respirandoPeloModificador(SlotJogador.JOGADOR_2, j2()), "na entrada o RT e base");
+            assertFalse(j2().isRespirando(), "na entrada o RT e base");
             tecla("pretoControleP", false);
             ticks(80);
             assertEquals(Posicao.SOLO_DISPUTADO, m().getPosicao(), "o RT apertado na janela fez base");

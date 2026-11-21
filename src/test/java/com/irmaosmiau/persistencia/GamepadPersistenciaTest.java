@@ -42,6 +42,8 @@ class GamepadPersistenciaTest {
                 // 5O.1 (pedido): o Y voltou a ficar livre (acrobacia = R3 + direcao em pe).
                 .comBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(ComandoGamepad.TECNICA_CIMA), BotaoGamepad.NORTE)
                 .semBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.ROLAR))
+                // complemento 5Q.8 (pedido): respirar agora e no Y; aqui o Y e a tecnica, respirar vai no R3
+                .comBotao(SlotJogador.JOGADOR_1, ItemGamepad.de(AcaoJogador.RESPIRAR), BotaoGamepad.R3)
                 .semBotao(SlotJogador.JOGADOR_2, ItemGamepad.de(AcaoJogador.CORRER));
     }
 
@@ -78,8 +80,10 @@ class GamepadPersistenciaTest {
         // 5O.2 (pedido): o jogador ausente fica no esquema PADRAO, que agora e o Contextual (antes Classico).
         assertEquals(MapaGamepad.ESQUEMA_PADRAO, m.esquema(SlotJogador.JOGADOR_1));
         assertEquals(EsquemaGamepad.CONTEXTUAL, m.esquema(SlotJogador.JOGADOR_2));
-        assertEquals(1, m.itens(SlotJogador.JOGADOR_2).stream()
-                .filter(i -> m.botao(SlotJogador.JOGADOR_2, i).isPresent()).count(), "so o que estava no arquivo");
+        // complemento 5Q.8 (pedido): arquivo de antes (o RT sozinho respirava): o Y livre passa a respirar
+        assertEquals(2, m.itens(SlotJogador.JOGADOR_2).stream()
+                .filter(i -> m.botao(SlotJogador.JOGADOR_2, i).isPresent()).count(), "o do arquivo + respirar no Y");
+        assertEquals(BotaoGamepad.NORTE, m.botao(SlotJogador.JOGADOR_2, ItemGamepad.de(AcaoJogador.RESPIRAR)).orElseThrow());
     }
 
     @Test

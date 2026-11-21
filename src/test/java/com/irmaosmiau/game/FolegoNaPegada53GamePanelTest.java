@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
  * Entrega 5O.3: com uma pegada ativa (aplicando ou sofrendo) ninguem recupera
  * folego nem condicionamento, nem respirando (RT) nem parado; o consumo normal
  * continua; ao acabar a pegada a recuperacao volta.
+ *
+ * Complemento 5Q.8 (pedido): respirar de proposito agora e o botao de respirar (J1: a tecla de respirar;
+ * J2 no teclado-controle: I = Y), nao mais o RT sozinho. Os numeros nao mudaram.
  */
 class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
 
@@ -76,11 +79,11 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             assertTrue(j1().isVinculadoEmPegada() && j2().isVinculadoEmPegada());
             cansar(j1(), j2());
             semRecuperar(60, "parados (recuperacao passiva)");
-            tecla("brancoModDefesa", true);                      // RT do aplicador
-            ctl("P", true);                                      // RT do receptor
+            tecla("brancoRespirar", true);                       // respirar do aplicador
+            ctl("I", true);                                      // respirar (Y) do receptor
             recuperaPoucoComRt(60, "RT dos dois");               // 5P.1 (pedido): antes nao recuperava
-            tecla("brancoModDefesa", false);
-            ctl("P", false);
+            tecla("brancoRespirar", false);
+            ctl("I", false);
         });
     }
 
@@ -91,11 +94,11 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             j2Pega();
             cansar(j1(), j2());
             semRecuperar(60, "J2 aplicando, parados");
-            ctl("P", true);
-            tecla("brancoModDefesa", true);
+            ctl("I", true);
+            tecla("brancoRespirar", true);
             recuperaPoucoComRt(60, "J2 aplicando, RT dos dois");  // 5P.1 (pedido)
-            ctl("P", false);
-            tecla("brancoModDefesa", false);
+            ctl("I", false);
+            tecla("brancoRespirar", false);
         });
     }
 
@@ -108,11 +111,11 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             double sem = j2().getFolegoAtual();
             ticks(30);
             double gastoSemRt = sem - j2().getFolegoAtual();
-            ctl("P", true);
+            ctl("I", true);
             double com = j2().getFolegoAtual();
             ticks(30);
             double gastoComRt = com - j2().getFolegoAtual();
-            ctl("P", false);
+            ctl("I", false);
             // 5P.1 (pedido): o RT agarrado recupera, mas bem menos que respirando livre
             double ganhoNaPegada = gastoSemRt - gastoComRt;
             assertTrue(ganhoNaPegada > 0, "segurar o RT agarrado recupera um pouco");
@@ -120,9 +123,9 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             s().encerrarInteracao();
             ticks(5);
             double livre = j2().getFolegoAtual();
-            ctl("P", true);
+            ctl("I", true);
             ticks(30);
-            ctl("P", false);
+            ctl("I", false);
             double ganhoLivre = j2().getFolegoAtual() - livre;
             assertTrue(ganhoNaPegada < ganhoLivre * 0.4, "na pegada " + ganhoNaPegada + " x livre " + ganhoLivre);
         });
@@ -161,11 +164,11 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
             double f2 = j2().getFolegoAtual();
             ticks(60);
             assertTrue(j1().getFolegoAtual() > f1 && j2().getFolegoAtual() > f2, "recupera parado de novo");
-            tecla("brancoModDefesa", true);
+            tecla("brancoRespirar", true);
             double r = j1().getFolegoAtual();
             ticks(20);
             assertTrue(j1().getFolegoAtual() > r, "e respirando com o RT");
-            tecla("brancoModDefesa", false);
+            tecla("brancoRespirar", false);
         });
     }
 
@@ -186,9 +189,9 @@ class FolegoNaPegada53GamePanelTest extends Base5OGamePanel {
                     cansar(j1());
                     ticks(2);
                     double f = j1().getFolegoAtual();
-                    tecla("brancoModDefesa", true);
+                    tecla("brancoRespirar", true);
                     ticks(20);
-                    tecla("brancoModDefesa", false);
+                    tecla("brancoRespirar", false);
                     assertTrue(j1().getFolegoAtual() > f, inicio + (deitar ? " deitado" : "") + ": respira livre");
                 }
             }

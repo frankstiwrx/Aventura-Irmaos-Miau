@@ -69,8 +69,10 @@ class PuloAltoEPadroes5GTest {
     void modificadorConfiguravelSemConflitoComAsCamadas() {
         MapaGamepad ctx = MapaGamepad.classico().comEsquema(J1, EsquemaGamepad.CONTEXTUAL)
                 // 5O.1 (pedido): o Y voltou a ficar livre no Contextual (acrobacia = R3 + direcao em pe).
+                // complemento 5Q.8 (pedido): o Y e o respirar padrao; este teste tira o respirar para usar o Y
+                .semBotao(J1, ItemGamepad.de(AcaoJogador.RESPIRAR))
                 .comBotao(J1, ItemGamepad.de(ComandoGamepad.MODIFICADOR_PULO_ALTO), BotaoGamepad.NORTE);
-        assertTrue(ctx.isValido(), "Y esta livre no contextual");
+        assertTrue(ctx.isValido(), "Y livre no contextual (sem o respirar)");
         FonteGamepad f = new FonteGamepad(J1, ctx);
         f.atualizar(r().com(BotaoGamepad.NORTE).com(BotaoGamepad.SUL));
         assertTrue(f.isAtiva(AcaoJogador.PULAR), "Y + A = pulo alto");
