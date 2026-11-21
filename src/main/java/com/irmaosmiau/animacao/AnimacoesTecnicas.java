@@ -44,6 +44,27 @@ public final class AnimacoesTecnicas {
         ANIMACOES.put(chave, quadros);
     }
 
+    /**
+     * 5Q.8: amplitude das microanimacoes DEFENSIVAS de quem esta por baixo (100 kg, montada, costas): a
+     * homologacao pediu mais leitura. As mesmas poses, 40% maiores (a integridade do corpo continua
+     * limitando bracos, pernas, tronco e cintura).
+     */
+    public static final double AMPLITUDE_MICRO_DEFENSIVA = 1.4;
+
+    private static void defMicro(String chave, Quadro... quadros) {
+        Quadro[] r = new Quadro[quadros.length];
+        for (int i = 0; i < quadros.length; i++) {
+            int[] p = quadros[i].pares().clone();
+            for (int k = 1; k < p.length; k += 2) {
+                if (p[k - 1] != 10) {                          // a rotacao global (virar) fica como esta
+                    p[k] = (int) Math.round(p[k] * AMPLITUDE_MICRO_DEFENSIVA);
+                }
+            }
+            r[i] = new Quadro(quadros[i].t(), p);
+        }
+        def(chave, r);
+    }
+
     static {
         // ---------------- 1. EMPURRAR (em pe) e SER EMPURRADO
         def("empurrao:ATACA",
@@ -228,17 +249,17 @@ public final class AnimacoesTecnicas {
         // =====================================================================
         // ENQUADRAR (100 kg / joelho na barriga / montada): antebracos entre os dois, empurra e cria espaco
         int[] enquadra = {9, 4, 6, 4, 20, 6, 21, 18, 18, 3, 19, 9, 16, 8, 17, 16, 14, 4, 15, 8, 11, 4};
-        def("enquadrar:ATACA", q(0.00), q(0.40, enquadra), q(0.70, enquadra), q(1.00));
+        defMicro("enquadrar:ATACA", q(0.00), q(0.40, enquadra), q(0.70, enquadra), q(1.00));
         def("enquadrar:RECEBE", q(0.00), q(0.45, 9, -5, 11, -3, 30, -3), q(1.00));                  // o de cima e afastado
         alias("enquadrar_joelho:ATACA", "enquadrar:ATACA");
         alias("enquadrar_joelho:RECEBE", "enquadrar:RECEBE");
-        def("enquadrar_montada:ATACA", q(0.00),
+        defMicro("enquadrar_montada:ATACA", q(0.00),
                 q(0.40, 9, 6, 20, 4, 21, 20, 18, 2, 19, 10, 16, 6, 17, 20, 14, 3, 15, 10, 5, 4, 6, 3),   // maos no quadril
                 q(0.70, 9, 6, 20, 4, 21, 22, 18, 2, 19, 11, 16, 6, 17, 22, 14, 3, 15, 11, 5, 4, 6, 3),
                 q(1.00));
         alias("enquadrar_montada:RECEBE", "enquadrar:RECEBE");
         // DEFENDER COM AS MAOS (costas): maos na gola, queixo baixo, cotovelos fechados
-        def("defender_maos:ATACA", q(0.00),
+        defMicro("defender_maos:ATACA", q(0.00),
                 q(0.40, 11, 8, 13, 3, 20, -8, 21, -16, 18, -4, 19, -8, 16, 8, 17, -16, 14, 4, 15, -8, 9, 4),
                 q(0.70, 11, 8, 13, 3, 20, -8, 21, -18, 18, -4, 19, -9, 16, 8, 17, -18, 14, 4, 15, -9, 9, 4),
                 q(1.00));
@@ -260,27 +281,27 @@ public final class AnimacoesTecnicas {
         // RECUPERAR A GUARDA (escape de quadril, dos 100 kg): fuga de quadril, joelhos entram, bracos empurram
         int[] fugaQuadril = {5, -8, 6, 10, 9, 4, 26, 10, 27, 12, 28, 6, 29, 14, 22, 6, 23, 8, 24, 4, 25, 10,
                 20, 6, 21, 16, 18, 3, 19, 8, 16, 6, 17, 12, 14, 3, 15, 6};
-        def("escape_quadril:ATACA", q(0.00), q(0.45, fugaQuadril), q(1.00, fugaQuadril));
+        defMicro("escape_quadril:ATACA", q(0.00), q(0.45, fugaQuadril), q(1.00, fugaQuadril));
         def("escape_quadril:RECEBE", q(0.00), q(0.60, 9, -6, 30, -4), q(1.00, 9, -4, 30, -3));
         alias("fugir_do_joelho:ATACA", "escape_quadril:ATACA");
         alias("fugir_do_joelho:RECEBE", "escape_quadril:RECEBE");
         // RECUPERAR A MEIA (joelho no meio): o joelho de cima entra entre os dois
-        def("recuperar_meia:ATACA", q(0.00), q(0.50, 6, 8, 26, 16, 27, 14, 28, 10, 29, 12, 20, 6, 21, 12, 18, 3, 19, 6),
+        defMicro("recuperar_meia:ATACA", q(0.00), q(0.50, 6, 8, 26, 16, 27, 14, 28, 10, 29, 12, 20, 6, 21, 12, 18, 3, 19, 6),
                 q(1.00, 6, 8, 26, 18, 27, 16, 28, 12, 29, 14, 20, 6, 21, 12, 18, 3, 19, 6));
         // VIRAR PARA OS JOELHOS: o tronco e o quadril giram para o lado (rotacao), bracos cruzam por baixo
         int[] virar = {10, -10, 9, -12, 6, -10, 11, -6, 16, 10, 17, 12, 14, 5, 15, 6, 20, -6, 21, 8, 18, -3, 19, 4,
                 22, 8, 23, -6, 26, 10, 27, -4};
-        def("virar_joelhos:ATACA", q(0.00), q(0.50, virar), q(1.00, virar));
+        defMicro("virar_joelhos:ATACA", q(0.00), q(0.50, virar), q(1.00, virar));
         def("virar_joelhos:RECEBE", q(0.00), q(0.60, 9, 6, 20, 4), q(1.00, 9, 6, 20, 4));
         // ESCAPAR DA MONTADA: pequena ponte (o quadril sobe) e o quadril escapa para o lado, joelho entra
-        def("escape_montada:ATACA", q(0.00),
+        defMicro("escape_montada:ATACA", q(0.00),
                 q(0.35, 4, 8, 5, 4, 6, 6, 26, 8, 27, 10, 22, 6, 23, 8, 20, 6, 21, 14, 18, 3, 19, 7),     // ponte curta
                 q(1.00, 4, 2, 5, -8, 6, 10, 26, 14, 27, 14, 28, 8, 29, 12, 22, 4, 23, 6, 20, 6, 21, 14, 18, 3, 19, 7));
         def("escape_montada:RECEBE", q(0.00), q(0.35, 9, -6, 31, -3), q(1.00, 9, -3));
         // GIRAR NAS COSTAS: ombros e quadril giram para escapar dos ganchos
         int[] girar = {9, -14, 11, -8, 6, 10, 10, -6, 16, -8, 17, -10, 14, -4, 15, -5, 20, 10, 21, -8, 18, 5, 19, -4,
                 26, 8, 27, 6};
-        def("girar_nas_costas:ATACA", q(0.00), q(0.50, girar), q(1.00, girar));
+        defMicro("girar_nas_costas:ATACA", q(0.00), q(0.50, girar), q(1.00, girar));
         def("girar_nas_costas:RECEBE", q(0.00), q(0.60, 9, 6, 16, 6), q(1.00, 9, 6, 16, 6));
         alias("escapar_neutro:ATACA", "girar_nas_costas:ATACA");
         alias("escapar_neutro:RECEBE", "girar_nas_costas:RECEBE");
