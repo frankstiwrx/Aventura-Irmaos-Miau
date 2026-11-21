@@ -299,7 +299,8 @@ class PerfisPanelTest {
                 }
             }
             assertTrue(achou);
-            assertTrue(PerfisPanel.AVISO_COMBATE.contains("COMEÇAR ou TREINO"));
+            // polimento dos menus (pedido): o menu se chama JOGAR (o COMEÇAR antigo nao existe mais)
+            assertTrue(PerfisPanel.AVISO_COMBATE.contains("JOGAR ou TREINO"));
         });
     }
 

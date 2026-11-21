@@ -45,7 +45,7 @@ public final class PerfisPanel extends JPanel {
     private static final long serialVersionUID = 1L;
 
     static final String AVISO_COMBATE =
-            "Use os perfis em COMEÇAR ou TREINO, no slot do personagem-base. Branco e Preto oficiais nunca mudam.";
+            "Use os perfis em JOGAR ou TREINO, no lugar do personagem-base. Branco e Preto oficiais nunca mudam.";
 
     private final transient ServicoPerfis servico;
     private final transient Dialogos dialogos;
@@ -211,7 +211,7 @@ public final class PerfisPanel extends JPanel {
         JScrollPane rolagem = new JScrollPane(lista);
         colocar(rolagem, 34, 92, 222, 226);
 
-        colocar(EstiloTelas.rotulo("Base:"), 34, 330, 44, 22);
+        colocar(EstiloTelas.rotulo("Base"), 34, 330, 44, 22);
         base.setFont(EstiloTelas.NORMAL);
         colocar(base, 80, 328, 176, 26);
         colocar(novo, 34, 360, 222, 30);
@@ -239,7 +239,9 @@ public final class PerfisPanel extends JPanel {
         colocar(descartar, 582, 342, 120, 30);
 
         status.setVerticalAlignment(JLabel.TOP);
-        colocar(status, 276, 380, 500, 46);
+        colocar(status, 276, 380, 500, 38);
+        colocar(EstiloTelas.texto("↑↓ escolher · ←→ ajustar · ENTER / A confirmar · ESC / B voltar",
+                EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE), 276, 418, 500, 14);
     }
 
     private void colocar(java.awt.Component c, int x, int y, int l, int a) {

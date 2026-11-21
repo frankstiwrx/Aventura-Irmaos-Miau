@@ -31,6 +31,14 @@ public final class MenuPrincipalPanel extends JPanel {
     // 5Q.6: o MODO DESENVOLVEDOR saiu do menu: liga/desliga com F8 dentro de uma partida normal
     public static final List<String> OPCOES = List.of("JOGAR", "TREINO", "PERSONAGENS", "CONFIGURAÇÕES", "SAIR");
 
+    /** Descricao curta de cada opcao (mesma ordem), na barra de baixo, para a opcao em foco. */
+    public static final List<String> DESCRICOES = List.of(
+            "Entre na arena e dispute uma luta entre dois jogadores.",
+            "Pratique suas habilidades e aperfeiçoe suas técnicas.",
+            "Conheça e personalize seus personagens.",
+            "Ajuste o som do jogo e os seus controles.",
+            "Encerrar o jogo.");
+
     private final JButton[] botoes = new JButton[OPCOES.size()];
     private final transient IrmaoMiau branco = new IrmaoMiauBranco(470, 196, 0.85);
     private final transient IrmaoMiau preto = new IrmaoMiauPreto(650, 196, 0.85);
@@ -98,12 +106,26 @@ public final class MenuPrincipalPanel extends JPanel {
         ArteMenus.sombra(g, preto, 410);
         ArteMenus.desenharLutador(g, branco);
         ArteMenus.desenharLutador(g, preto);
-        g.setFont(ArteMenus.PEQUENO);
-        g.setColor(new Color(10, 30, 80, 170));
-        g.fillRoundRect(80, 418, 640, 22, 10, 10);
+        // barra de baixo: a descricao da opcao em foco (teclado, controle ou mouse) e os comandos
+        g.setColor(new Color(10, 30, 80, 175));
+        g.fillRoundRect(80, 410, 640, 34, 10, 10);
+        g.setFont(new Font("Arial", Font.BOLD, 13));
+        g.setColor(ArteMenus.AMARELO);
+        ArteMenus.centralizado(g, descricaoEmFoco(), 400, 425);
+        g.setFont(new Font("Arial", Font.PLAIN, 10));
         g.setColor(ArteMenus.BRANCO);
-        ArteMenus.centralizado(g, "↑↓ escolher · ENTER / A confirmar · JOGAR = luta entre 2 jogadores", 400, 433);
+        ArteMenus.centralizado(g, "↑↓ escolher · ENTER / A confirmar · ESC / B voltar", 400, 439);
         g.dispose();
+    }
+
+    /** A descricao da opcao com o foco (a primeira, se nenhuma). */
+    String descricaoEmFoco() {
+        for (int i = 0; i < botoes.length; i++) {
+            if (botoes[i].isFocusOwner()) {
+                return DESCRICOES.get(i);
+            }
+        }
+        return DESCRICOES.get(0);
     }
 
     IrmaoMiau[] lutadores() {

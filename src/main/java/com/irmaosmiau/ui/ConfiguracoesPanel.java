@@ -115,81 +115,133 @@ public final class ConfiguracoesPanel extends JPanel {
         controles.addActionListener(e -> abrirControles());
     }
 
+    /**
+     * Polimento dos menus: um cartao compacto (sobre o mesmo fundo escuro com a faixa vermelha), agrupado em
+     * AUDIO e CONTROLES, com UMA opcao por linha: no controle, cima/baixo anda de linha em linha (a ordem do
+     * NavegadorMenus) e os lados ajustam o volume; A/ENTER liga/desliga e confirma; B/ESC volta.
+     */
     private void montar() {
-        JPanel cartao = new JPanel(new GridBagLayout());
+        JPanel cartao = new JPanel(new GridBagLayout()) {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected void paintComponent(Graphics g0) {
+                java.awt.Graphics2D g = ArteMenus.suave(g0);
+                g.setColor(new java.awt.Color(10, 16, 24, 175));
+                g.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g.setColor(new java.awt.Color(255, 255, 255, 40));
+                g.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 16, 16);
+                g.dispose();
+            }
+        };
         cartao.setOpaque(false);
+        cartao.setBorder(javax.swing.BorderFactory.createEmptyBorder(12, 22, 10, 22));
         GridBagConstraints g = new GridBagConstraints();
         g.anchor = GridBagConstraints.WEST;
-        g.insets = new Insets(6, 8, 6, 8);
+        g.insets = new Insets(3, 6, 3, 6);
 
         g.gridx = 0;
         g.gridy = 0;
-        g.gridwidth = 4;
+        g.gridwidth = 3;
         cartao.add(EstiloTelas.titulo("CONFIGURAÇÕES"), g);
-        g.gridwidth = 1;
 
-        linhaAudio(cartao, g, 1, "Música", musica, volumeMusica, valorMusica);
-        linhaAudio(cartao, g, 2, "Efeitos sonoros", efeitos, volumeEfeitos, valorEfeitos);
+        int linha = 1;
+        linha = secao(cartao, g, linha, "ÁUDIO");
+        linha = linhaLigado(cartao, g, linha, "Música", musica);
+        linha = linhaVolume(cartao, g, linha, "Volume da música", volumeMusica, valorMusica);
+        linha = linhaLigado(cartao, g, linha, "Efeitos sonoros", efeitos);
+        linha = linhaVolume(cartao, g, linha, "Volume dos efeitos", volumeEfeitos, valorEfeitos);
 
         // 5Q.4: "Cenario preferido" saiu da tela (o mapa e escolhido na selecao de cada luta). O
         // combo continua so na memoria: o valor ja salvo e lido e regravado como esta (arquivos
         // antigos continuam validos e a selecao segue abrindo nesse mapa).
 
-        // Entrega 5C: teclas configuraveis dos dois jogadores.
-        int linha = 3;
+        // Entrega 5C: teclas configuraveis dos dois jogadores (e o gamepad, na mesma tela).
         if (aoAbrirControles != null) {
+            linha = secao(cartao, g, linha, "CONTROLES");
             g.gridy = linha++;
             g.gridx = 0;
-            cartao.add(EstiloTelas.rotulo("Teclado"), g);
-            g.gridx = 1;
-            g.gridwidth = 3;
-            cartao.add(controles, g);
             g.gridwidth = 1;
+            cartao.add(EstiloTelas.rotulo("Teclado e gamepad"), g);
+            g.gridx = 1;
+            g.gridwidth = 2;
+            cartao.add(controles, g);
         }
 
         g.gridy = linha++;
         g.gridx = 0;
-        g.gridwidth = 4;
-        cartao.add(EstiloTelas.texto("As mudanças de som valem na hora; clique em SALVAR para mantê-las.",
-                EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE), g);
-
-        g.gridy = linha++;
-        status.setPreferredSize(new Dimension(640, 34));
+        g.gridwidth = 3;
+        g.insets = new Insets(6, 6, 0, 6);
+        status.setPreferredSize(new Dimension(420, 18));
         status.setVerticalAlignment(JLabel.TOP);
         cartao.add(status, g);
 
-        JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
+        JPanel botoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         botoes.setOpaque(false);
         botoes.add(restaurar);
         botoes.add(salvar);
         botoes.add(voltar);
-        g.gridy = linha;
+        g.gridy = linha++;
         g.anchor = GridBagConstraints.CENTER;
+        g.insets = new Insets(4, 6, 4, 6);
         cartao.add(botoes, g);
+
+        g.gridy = linha;
+        cartao.add(EstiloTelas.texto("↑↓ escolher · ←→ ajustar · ENTER / A confirmar · ESC / B voltar"
+                + " · o som muda na hora; SALVAR mantém", EstiloTelas.PEQUENA, EstiloTelas.TEXTO_SUAVE), g);
 
         add(cartao);
     }
 
-    private static void linhaAudio(JPanel cartao, GridBagConstraints g, int linha, String nome,
-            JCheckBox ligado, JSlider volume, JLabel valor) {
+    /** Cabecalho de grupo (amarelo, como nos controles). */
+    private static int secao(JPanel cartao, GridBagConstraints g, int linha, String nome) {
+        g.gridy = linha;
+        g.gridx = 0;
+        g.gridwidth = 3;
+        g.insets = new Insets(8, 6, 1, 6);
+        cartao.add(EstiloTelas.texto(nome, EstiloTelas.ROTULO, EstiloTelas.SUBTITULO), g);
+        g.insets = new Insets(3, 6, 3, 6);
+        g.gridwidth = 1;
+        return linha + 1;
+    }
+
+    /** "Musica  [x] Ligada": a caixa mostra a borda de foco do navegador. */
+    private static int linhaLigado(JPanel cartao, GridBagConstraints g, int linha, String nome, JCheckBox ligado) {
         g.gridy = linha;
         g.gridx = 0;
         cartao.add(EstiloTelas.rotulo(nome), g);
-
         g.gridx = 1;
+        g.gridwidth = 2;
         ligado.setFont(EstiloTelas.NORMAL);
         ligado.setForeground(EstiloTelas.TEXTO);
         ligado.setOpaque(false);
+        ligado.setBorderPainted(true);                 // o destaque do foco aparece tambem na caixa
+        ligado.setBorder(javax.swing.BorderFactory.createEmptyBorder(2, 4, 2, 8));
         cartao.add(ligado, g);
+        g.gridwidth = 1;
+        return linha + 1;
+    }
 
-        g.gridx = 2;
+    /** "Volume da musica  [-----o----]  60%". */
+    private static int linhaVolume(JPanel cartao, GridBagConstraints g, int linha, String nome, JSlider volume,
+            JLabel valor) {
+        g.gridy = linha;
+        g.gridx = 0;
+        cartao.add(EstiloTelas.rotulo(nome), g);
+        g.gridx = 1;
         volume.setOpaque(false);
-        volume.setPreferredSize(new Dimension(300, 30));
+        volume.setPreferredSize(new Dimension(230, 26));
         cartao.add(volume, g);
-
-        g.gridx = 3;
-        valor.setPreferredSize(new Dimension(50, 20));
+        g.gridx = 2;
+        valor.setPreferredSize(new Dimension(44, 20));
         cartao.add(valor, g);
+        return linha + 1;
+    }
+
+    @Override
+    public void addNotify() {
+        super.addNotify();
+        javax.swing.SwingUtilities.invokeLater(musica::requestFocusInWindow);   // foco inicial: a primeira opcao
     }
 
     @Override
