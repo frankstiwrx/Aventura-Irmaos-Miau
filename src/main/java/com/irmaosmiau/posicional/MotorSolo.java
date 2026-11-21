@@ -1309,7 +1309,7 @@ public final class MotorSolo {
             Tentativa t = tentativa;
             if ((t.tecnica().id().equals(CatalogoTecnicasSolo.ENTRADA_PERNAS)
                     || QuedasExplosivas.defendePorSprawl(t.tecnica().id()))         // 5Q.6
-                    && lutador(t.iniciador().outro()).isFazendoSprawl()) {
+                    && lutador(t.iniciador().outro()).isSprawlProtegendo()) {   // adendo 5Q.8: mesma janela
                 contraSprawl(t);
             } else if (t.ticksRestantes() <= 1) {
                 tentativa = null;

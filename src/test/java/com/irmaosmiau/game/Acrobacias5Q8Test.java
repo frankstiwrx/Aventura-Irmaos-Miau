@@ -17,10 +17,12 @@ class Acrobacias5Q8Test {
     @Test
     void rolamentoDeJoelhosMaisQuarentaPorCentoLento() {
         assertEquals(0.6, IrmaoMiau.FATOR_ROLAMENTO_JOELHOS_5Q8, 1e-9);
-        assertEquals(76, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO), "46 / 0,6 ~ 76");
+        // adendo 5Q.8 (pedido): o rolamento de joelhos usa a velocidade do deitado (76 -> 37) e o sprawl
+        // ficou 20% mais lento (32 -> 40)
+        assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO), "a velocidade do deitado");
         assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.DEITADO));
         assertEquals(22, IrmaoMiau.duracaoRolamento(EstadoCorporal.EM_PE));
-        assertEquals(32, IrmaoMiau.duracaoSprawl());
+        assertEquals(40, IrmaoMiau.duracaoSprawl());
     }
 
     @Test

@@ -154,9 +154,11 @@ class Movimento5Q6GamePanelTest extends Base5OGamePanel {
     void rolamentoDeJoelhosESprawlMenosAcelerados() {
         // 5Q.7 (pedido): o rolamento de joelhos ficou mais 40% mais lento (28 -> 46 ticks)
         // 5Q.8 (pedido): e mais 40% (46 -> 76 ticks)
-        assertEquals(76, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO));
+        // adendo 5Q.8 (pedido): o rolamento de joelhos usa a velocidade do deitado (76 -> 37) e o sprawl
+        // ficou 20% mais lento (32 -> 40)
+        assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO));
         assertEquals(22, IrmaoMiau.duracaoRolamento(EstadoCorporal.EM_PE), "em pe nao mudou");
         assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.DEITADO), "o deitado aprovado nao mudou");
-        assertEquals(32, IrmaoMiau.duracaoSprawl());
+        assertEquals(40, IrmaoMiau.duracaoSprawl());
     }
 }

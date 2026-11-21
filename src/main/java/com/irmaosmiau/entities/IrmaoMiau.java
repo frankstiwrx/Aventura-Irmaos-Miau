@@ -212,10 +212,14 @@ public static final double FATOR_ROLAMENTO_JOELHOS_5Q7 = 0.6;
  * 5Q.7: mais 40% mais lento (0,8 x 0,6 = 0,48 -> 46 ticks; a duracao ~1,65x a da 5Q.6). A animacao
  * anda pelo progresso (quadros / duracao) e a velocidade cai na mesma proporcao: sem deslizar.
  */
-/** 5Q.8: mais 40% mais lento (homologacao: ainda rapido demais). Recalibrar aqui. */
+/** 5Q.8: mais 40% mais lento (homologacao: ainda rapido demais). Historico: nao entra mais na conta. */
 public static final double FATOR_ROLAMENTO_JOELHOS_5Q8 = 0.6;
-/** 5Q.8: 0,8 x 0,6 x 0,6 = 0,288 -> 76 ticks (a mesma distancia; antes 46). */
-public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8 * FATOR_ROLAMENTO_JOELHOS_5Q7 * FATOR_ROLAMENTO_JOELHOS_5Q8;
+/**
+ * Adendo da 5Q.8 (homologacao: os 76 ticks ficaram lentos demais): o rolamento de JOELHOS usa a MESMA
+ * velocidade do rolamento DEITADO (o mesmo multiplicador, 0,6 -> 37 ticks), com a animacao e a
+ * distancia proprias do movimento ajoelhado. Recalibrar os dois juntos aqui.
+ */
+public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = MULTIPLICADOR_ROLAMENTO_DEITADO;
 
 /* Duracao e velocidade do rolamento EM ANDAMENTO (decididas no inicio). */
 private int duracaoRolamentoAtual = DURACAO_ROLAMENTO;
@@ -255,7 +259,16 @@ private int framesSprawl = 0;
  * O jogo roda aproximadamente a 60 FPS.
  * 26 frames ≈ 0,42 segundo.
  */
-private static final int DURACAO_SPRAWL = 32;   // 5Q.6: era 26 (menos acelerado, com peso)
+/** 5Q.6: era 26 (menos acelerado, com peso). Referencia do adendo da 5Q.8. */
+public static final int DURACAO_SPRAWL_5Q8 = 32;
+/** Adendo da 5Q.8: 80% da velocidade da 5Q.8 (duracao / 0,8 = 40 ticks). */
+public static final double FATOR_VELOCIDADE_SPRAWL = 0.8;
+private static final int DURACAO_SPRAWL = (int) Math.round(DURACAO_SPRAWL_5Q8 / FATOR_VELOCIDADE_SPRAWL);
+/**
+ * Adendo da 5Q.8: a PROTECAO contra quedas continua valendo os mesmos 32 ticks do inicio do sprawl
+ * (o balanceamento das quedas nao muda); os ticks a mais sao so a animacao mais legivel.
+ */
+public static final int TICKS_PROTECAO_SPRAWL = DURACAO_SPRAWL_5Q8;
 
 private static final double CUSTO_SPRAWL = 4.0;
     
@@ -3224,6 +3237,15 @@ public void alternarDeitado() {
 
     return fazendoSprawl;
 }
+
+    /**
+     * Adendo da 5Q.8: o sprawl ainda PROTEGE contra as quedas (os primeiros {@link #TICKS_PROTECAO_SPRAWL}
+     * ticks, como antes de a animacao ficar 20% mais lenta). Os sistemas de queda leem isto; "ocupado"
+     * (nao rolar, nao pular...) continua sendo {@link #isFazendoSprawl()}.
+     */
+    public boolean isSprawlProtegendo() {
+        return fazendoSprawl && framesSprawl < TICKS_PROTECAO_SPRAWL;
+    }
 
 protected double getProgressoSprawl() {
 

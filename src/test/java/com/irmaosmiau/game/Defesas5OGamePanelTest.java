@@ -316,7 +316,8 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
             ticks(3);
             assertTrue(j1().isFazendoSprawl());
             assertNull(desenho(j1()), "ORIGINAL: o desenho Java de sempre");
-            ticks(30 + IrmaoMiau.RECARGA_SPRAWL_TICKS);
+            // adendo 5Q.8 (pedido): o sprawl dura 40 (era 32); espera a duracao real + a recarga
+            ticks(IrmaoMiau.duracaoSprawl() + IrmaoMiau.RECARGA_SPRAWL_TICKS);
             painel.getActionMap().get("alternarMovimentos").actionPerformed(null);
             assertEquals(VersaoMovimentos.EXPERIMENTAL_5O, VersaoMovimentos.atual());
             toque("brancoPegada3");
