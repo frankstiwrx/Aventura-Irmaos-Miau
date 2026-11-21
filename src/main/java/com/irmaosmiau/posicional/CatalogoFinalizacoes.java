@@ -121,6 +121,12 @@ public final class CatalogoFinalizacoes {
         c.f(l2, dir, "triangulo", "Triângulo", "TRIÂNGULO", es, BR, sem, 0, abriu);
         c.f(l2, baixo, "guilhotina", "Guilhotina", "GUILHOT.", es, BR, exp, 0, FICA);
         c.f(l2, esq, "loop_choke", "Estrangulamento em laço (loop choke)", "LOOP", es, RX, ctl, 40, FICA);
+        // 5Q.8: LT + LB da guarda fechada (antes so o espaco reservado "? PERNA"): ataques de canela/perna
+        // por cima do ombro e do braco, e o ezequiel por baixo. Os "-platas" que falham abrem a guarda.
+        c.f(l12, cima, "gogoplata", "Gogoplata (canela no pescoço)", "GOGOPLATA", es, MR, sem, 0, abriu);
+        c.f(l12, dir, "baratoplata", "Baratoplata (ombro pela perna)", "BARATOPL.", br, RX, sem, 0, abriu);
+        c.f(l12, baixo, "tarikoplata", "Tarikoplata (ombro com a perna)", "TARIKOPL.", br, MR, sem, 0, abriu);
+        c.f(l12, esq, "ezequiel_guarda", "Ezequiel da guarda", "EZEQUIEL", es, AZ, ctl, 40, FICA);
 
         // ================= CEM QUILOS (quem controla, por cima)
         Desfecho recuperouGuarda = para(Posicao.GUARDA_ABERTA, INI, OUT);
@@ -133,6 +139,12 @@ public final class CatalogoFinalizacoes {
         c.f(l2, dir, "katagatame", "Katagatame", "KATA-GAT.", es, AZ, ctl, 50, FICA);
         c.f(l2, baixo, "ezequiel", "Ezequiel", "EZEQUIEL", es, RX, ctl, 60, FICA);
         c.f(l2, esq, "baseball_bat", "Estrangulamento baseball bat", "BASEBALL", es, RX, ctl, 60, FICA);
+        // 5Q.8: LT + LB dos cem quilos (antes "? PERNA"): estrangulamentos de braco e cabeca e o norte-sul.
+        // D'arce e anaconda que falham deixam o outro recuperar a guarda.
+        c.f(l12, cima, "norte_sul", "Estrangulamento norte-sul", "NORTE-SUL", es, RX, ctl, 50, FICA);
+        c.f(l12, dir, "darce", "D'arce", "D'ARCE", es, RX, ctl, 55, recuperouGuarda);
+        c.f(l12, baixo, "anaconda", "Anaconda", "ANACONDA", es, MR, ctl, 55, recuperouGuarda);
+        c.f(l12, esq, "gravata_peruana", "Gravata peruana (peruvian necktie)", "PERUANA", es, MR, ctl, 60, FICA);
 
         // ================= MONTADA (quem controla)
         Desfecho meia = para(Posicao.MEIA_GUARDA, INI, OUT);
@@ -146,6 +158,13 @@ public final class CatalogoFinalizacoes {
         c.f(l2, dir, "ezequiel", "Ezequiel", "EZEQUIEL", es, AZ, ctl, 50, FICA);
         c.f(l2, baixo, "katagatame", "Katagatame", "KATA-GAT.", es, AZ, ctl, 50, FICA);
         c.f(l2, esq, "triangulo", "Triângulo da montada", "TRIÂNGULO", es, RX, ctl, 60, perdeuMontada);
+        // 5Q.8: LT + LB da montada (antes "? PERNA"). Adaptacoes: o arm triangle ja existe (katagatame) e a
+        // chave de punho tambem: no lugar, a gola unica e a mao de vaca (punho com as duas maos, outra entrada).
+        c.f(l12, cima, "monoplata", "Monoplata", "MONOPLATA", br, MR, ctl, 55, perdeuMontada);
+        c.f(l12, dir, "armlock_s", "Armlock da montada em S (barriga para baixo)", "ARMLOCK S", br, AZ, ctl, 55,
+                perdeuMontada);
+        c.f(l12, baixo, "gola_unica", "Estrangulamento de gola única", "GOLA ÚNICA", es, AZ, ctl, 45, FICA);
+        c.f(l12, esq, "mao_de_vaca", "Mão de vaca (chave de punho)", "MÃO DE VACA", br, RX, ctl, 45, FICA);
 
         // ================= COSTAS (quem controla)
         Desfecho girou = para(Posicao.GUARDA, OUT, INI);

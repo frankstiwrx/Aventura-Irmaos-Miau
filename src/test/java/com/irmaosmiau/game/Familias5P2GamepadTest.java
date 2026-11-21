@@ -193,7 +193,8 @@ class Familias5P2GamepadTest {
             assertTrue(q.celulas().get(DirecaoTecnica.CIMA).isExecutavel());
             gp(r().com(BotaoGamepad.GATILHO_ESQ).com(BotaoGamepad.LB));
             ticks(1);
-            assertEquals("→ PERNA", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));
+            // 5Q.8 (pedido): o LT + LB da montada tem finalizacoes (a entrada na perna foi para o RB <-)
+            assertTrue(PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA).startsWith("MONOPLATA"));
             gp(r().com(BotaoGamepad.GATILHO_ESQ));
             ticks(1);
             assertEquals("CRUZADO", PainelDpadContextual.texto(painel.montarQuadroDpad(J1), DirecaoTecnica.CIMA));

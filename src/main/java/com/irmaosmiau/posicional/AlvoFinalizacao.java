@@ -40,7 +40,10 @@ public enum AlvoFinalizacao {
             Map.entry("pe_reta_5050", TORNOZELO), Map.entry("toe_hold", PE), Map.entry("estima_lock", PE),
             Map.entry("chave_joelho", JOELHO), Map.entry("joelho_invertido", JOELHO),
             Map.entry("kneebar_giro", JOELHO), Map.entry("panturrilha", PANTURRILHA),
-            Map.entry("banana_split", QUADRIL));
+            Map.entry("banana_split", QUADRIL),
+            // 5Q.8
+            Map.entry("baratoplata", OMBRO), Map.entry("tarikoplata", OMBRO), Map.entry("monoplata", OMBRO),
+            Map.entry("mao_de_vaca", PUNHO));
 
     /** O alvo da finalizacao (pelo id-base; senao o padrao da categoria). */
     public static AlvoFinalizacao de(Finalizacao f) {

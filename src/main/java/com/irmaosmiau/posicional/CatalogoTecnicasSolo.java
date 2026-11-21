@@ -100,6 +100,13 @@ public final class CatalogoTecnicasSolo {
     public static final String SEGURAR_PERNAS = "segurar_pernas";
     /** 5Q.7: soltar as pernas seguradas (o mesmo comando do SEGURAR, so enquanto segura). */
     public static final String SOLTAR_PERNAS = "soltar_pernas";
+    // ---- 5Q.8: mais rotas nas costas (por cima) e no ashi (quem controla, por baixo)
+    public static final String COSTAS_PARA_MONTADA = "costas_para_montada";
+    public static final String COSTAS_PARA_CEM = "costas_para_cem";
+    public static final String TRIANGULO_CORPO = "triangulo_corpo";
+    public static final String ASHI_PARA_SLX = "ashi_para_slx";
+    public static final String ASHI_PARA_GUARDA = "ashi_para_guarda";
+    public static final String RASPAGEM_ASHI = "raspagem_ashi";
     public static final String RECUAR = "recuar";
     public static final String JOELHO_DIRETO = "joelho_direto";
     public static final String AFASTAR_DO_CHAO = "afastar_do_chao";
@@ -397,7 +404,8 @@ public final class CatalogoTecnicasSolo {
                 para(Posicao.GUARDA_ABERTA, INI, OUT), POSTURA, CONTROLAR_PERNAS);
         c.ajuste(QUEBRAR_POSTURA, "Quebrar a postura", "QUEBRAR", fechada, baixo, List.of(rs(Direcao.BAIXO)),
                 Efeito.QUEBRAR_POSTURA);
-        c.mudanca(SOLTAR_GUARDA, "Soltar a própria guarda", "SOLTAR", fechada, baixo, lados(false),
+        // 5Q.8: o SOLTAR estava repetido no RS <- e no RS ->; o -> virou a entrada na perna (ver abaixo)
+        c.mudanca(SOLTAR_GUARDA, "Soltar a própria guarda", "SOLTAR", fechada, baixo, List.of(rs(Direcao.ESQUERDA)),
                 para(Posicao.GUARDA_ABERTA, MANTEM, MANTEM));
 
         // ================= GUARDA ABERTA (quem esta por baixo controla a distancia)
@@ -496,6 +504,15 @@ public final class CatalogoTecnicasSolo {
                 4.0, 16, null, estab, 55, para(Posicao.GUARDA, INI, OUT), AJUSTAR_GANCHOS);
         c.transicao(ESCAPAR_NEUTRO, "Escapar para o neutro", "ESCAPAR", costas, ctrlado, List.of(rb(Direcao.CIMA)),
                 5.0, 12, null, estab, 45, para(Posicao.SOLO_DISPUTADO, NADA, NADA), AJUSTAR_GANCHOS);
+        // 5Q.8: o RS de quem esta nas costas tinha so GANCHOS. Agora: virar para a montada, ir para os cem
+        // quilos (o outro pode girar e escapar na janela) e travar o quadril com o triangulo de corpo
+        c.transicao(COSTAS_PARA_MONTADA, "Virar para a montada", "MONTADA", costas, ctrl, List.of(rs(Direcao.CIMA)),
+                3.0, 14, Exposicao.CONTROLE_REDUZIDO, sempre, 0, para(Posicao.MONTADA, INI, INI), GIRAR_NAS_COSTAS);
+        c.transicao(COSTAS_PARA_CEM, "Ir para os cem quilos", "100 KG", costas, ctrl, List.of(rs(Direcao.DIREITA)),
+                2.5, 12, Exposicao.CONTROLE_REDUZIDO, sempre, 0, para(Posicao.CONTROLE_LATERAL, INI, INI),
+                GIRAR_NAS_COSTAS);
+        c.ajuste(TRIANGULO_CORPO, "Triângulo de corpo (travar o quadril)", "TRIÂNGULO", costas, ctrl,
+                List.of(rs(Direcao.ESQUERDA)), Efeito.CONSOLIDAR);
         // =====================================================================
         // ENTREGA 5P.2
         // =====================================================================
@@ -693,11 +710,16 @@ public final class CatalogoTecnicasSolo {
         List<ComandoSolo> quatroL12 = List.of(l12(Direcao.CIMA), l12(Direcao.DIREITA), l12(Direcao.BAIXO),
                 l12(Direcao.ESQUERDA));
         Desfecho ashi = para(Posicao.ASHI_GARAMI, OUT, INI);
-        c.transicao(ENTRADA_PERNA_GUARDA, "Abrir a guarda e entrar na perna", "→ PERNA", fechada, baixo, quatroL12,
+        // 5Q.8 (pedido): a entrada na perna ocupava as QUATRO direcoes do LT + LB (a mesma tecnica); foi para o
+        // RS -> na guarda fechada (o SOLTAR estava repetido nos dois lados; o RB dali esta todo ocupado) e
+        // RB <- nas dominantes (livre). O LT + LB da guarda, da montada e dos cem quilos ganhou 4 finalizacoes
+        List<ComandoSolo> entradaPerna = List.of(rb(Direcao.ESQUERDA));
+        c.transicao(ENTRADA_PERNA_GUARDA, "Abrir a guarda e entrar na perna", "→ PERNA", fechada, baixo,
+                List.of(rs(Direcao.DIREITA)),
                 3.5, 14, Exposicao.BASE, Criterio.CONTROLE_PROPRIO, 30, ashi, POSTURA);
         c.falhas.put(ENTRADA_PERNA_GUARDA, para(Posicao.GUARDA_ABERTA, OUT, INI));      // a guarda ja abriu
         c.transicao(ENTRADA_PERNA_DOMINANTE, "Abandonar o controle e disputar a perna", "→ PERNA", dominantes, ctrl,
-                quatroL12, 3.5, 16, Exposicao.CONTROLE_REDUZIDO, Criterio.CONTROLE_PROPRIO, 50, ashi,
+                entradaPerna, 3.5, 16, Exposicao.CONTROLE_REDUZIDO, Criterio.CONTROLE_PROPRIO, 50, ashi,
                 ESCAPE_QUADRIL, RECUPERAR_MEIA, ESCAPE_MONTADA, GIRAR_NAS_COSTAS, FUGIR_DO_JOELHO);
         c.falhas.put(ENTRADA_PERNA_DOMINANTE, para(Posicao.GUARDA_ABERTA, INI, OUT));   // o outro recupera a guarda
         c.transicao(ENTRADA_PERNA_ABERTA, "Controlar a perna (ashi garami)", "ASHI", EnumSet.of(Posicao.GUARDA_ABERTA,
@@ -762,6 +784,16 @@ public final class CatalogoTecnicasSolo {
         Set<Posicao> perna = EnumSet.of(Posicao.ASHI_GARAMI);
         c.ajuste(CONSOLIDAR_ASHI, "Ajustar o controle da perna", "AJUSTAR", perna, ctrl, List.of(rs(Direcao.BAIXO)),
                 Efeito.CONSOLIDAR);
+        // 5Q.8: o RS de quem controla o ashi tinha so AJUSTAR. Rotas: subir para o single-leg X, recompor a
+        // guarda aberta e raspar levantando (precisa de controle). A 50/50 nao e uma posicao do motor (so a
+        // variacao da chave de pe): ficou de fora. O outro responde girando/escondendo o pe na janela.
+        c.transicao(ASHI_PARA_SLX, "Subir para o single-leg X", "SLX", perna, ctrl, List.of(rs(Direcao.DIREITA)),
+                2.5, 12, null, sempre, 0, para(Posicao.SINGLE_LEG_X, OUT, INI), GIRAR_LIVRAR_PERNA);
+        c.transicao(ASHI_PARA_GUARDA, "Recompor a guarda aberta", "G. ABERTA", perna, ctrl, List.of(rs(Direcao.CIMA)),
+                2.0, 10, null, sempre, 0, para(Posicao.GUARDA_ABERTA, OUT, INI));
+        c.transicao(RASPAGEM_ASHI, "Raspar levantando (do ashi)", "RASPAR", perna, ctrl, List.of(rs(Direcao.ESQUERDA)),
+                4.0, 14, Exposicao.BASE, Criterio.CONTROLE_PROPRIO, 45, para(Posicao.EM_PE_CONTRA_SOLO, INI, NADA),
+                ESCONDER_PE);
         c.transicao(SOLTAR_PERNA, "Soltar a perna", "SOLTAR", perna, ctrl, List.of(rb(Direcao.BAIXO)),
                 1.5, 6, null, sempre, 0, para(Posicao.SOLO_DISPUTADO, NADA, NADA));
         c.ajuste(ESCONDER_PE, "Esconder o pé", "ESCONDER", perna, ctrlado, List.of(rs(Direcao.BAIXO)), Efeito.ENQUADRAR);

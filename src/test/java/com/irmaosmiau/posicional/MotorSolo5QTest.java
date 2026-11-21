@@ -287,7 +287,8 @@ class MotorSolo5QTest {
         novo();
         em(Posicao.MONTADA, Lado.A, Lado.A);
         m.definirEstabilidade(20);
-        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.CIMA, Familia.L1_L2).resultado());
+        // 5Q.8 (pedido): a entrada na perna saiu do LT + LB (agora finalizacoes) para o RB <-
+        assertEquals(Resultado.INICIADA, cmd(Lado.A, Direcao.ESQUERDA, Familia.R1).resultado());
         assertTrue(m.getAtaque().isEmpty(), "nao e uma chave instantanea: e uma transicao");
         resolverTentativa();
         assertEquals(Posicao.GUARDA_ABERTA, m.getPosicao(), "falhou: perdeu a montada");
@@ -296,7 +297,7 @@ class MotorSolo5QTest {
         novo();
         em(Posicao.MONTADA, Lado.A, Lado.A);
         m.definirEstabilidade(80);
-        cmd(Lado.A, Direcao.CIMA, Familia.L1_L2);
+        cmd(Lado.A, Direcao.ESQUERDA, Familia.R1);              // 5Q.8 (pedido): RB <-
         resolverTentativa();
         assertEquals(Posicao.ASHI_GARAMI, m.getPosicao());
     }

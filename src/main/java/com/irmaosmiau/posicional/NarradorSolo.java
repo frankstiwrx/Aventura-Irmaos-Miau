@@ -117,6 +117,11 @@ public final class NarradorSolo {
             case CatalogoTecnicasSolo.IR_LACO -> q + " montou o laço na manga.";
             case CatalogoTecnicasSolo.PRENDER_PERNAS -> q + " prendeu as pernas de " + o + ".";
             case CatalogoTecnicasSolo.SEGURAR_PERNAS -> q + " segurou as pernas de " + o + "!";   // 5Q.7
+            case CatalogoTecnicasSolo.COSTAS_PARA_MONTADA -> q + " virou para a montada!";          // 5Q.8
+            case CatalogoTecnicasSolo.COSTAS_PARA_CEM -> q + " foi para os 100 quilos!";
+            case CatalogoTecnicasSolo.ASHI_PARA_SLX -> q + " subiu para o single-leg X!";
+            case CatalogoTecnicasSolo.ASHI_PARA_GUARDA -> q + " recompôs a guarda!";
+            case CatalogoTecnicasSolo.RASPAGEM_ASHI -> q + " raspou do ashi e levantou!";
             case CatalogoTecnicasSolo.JOELHO_DIRETO -> q + " colocou o joelho na barriga!";
             case CatalogoTecnicasSolo.BERIMBOLO -> q + " pegou as costas com berimbolo!";
             case CatalogoTecnicasSolo.PASSAR_BORBOLETA, CatalogoTecnicasSolo.PASSAR_DLR,

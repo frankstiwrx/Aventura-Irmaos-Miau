@@ -123,10 +123,16 @@ public final class RegistroFinalizacoes {
                     String nome;
                     String curto;
                     String tecnica;
-                    if (f == Familia.L1_L2) {
+                    Finalizacao real = f == Familia.L1_L2 ? cat.naPosicao(p, f, d).orElse(null) : null;
+                    if (real != null) {
+                        // 5Q.8: a guarda, a montada e os cem quilos tem finalizacoes reais no LT + LB
+                        nome = real.nome();
+                        curto = real.rotulo();
+                        tecnica = real.id();
+                    } else if (f == Familia.L1_L2) {
                         Finalizacao alvo = cat.naPosicao(Posicao.ASHI_GARAMI, Familia.L1_L2, d).orElseThrow();
                         nome = "Entrada na perna (depois: " + alvo.nome() + ")";
-                        curto = "→ PERNA";
+                        curto = p == Posicao.GUARDA ? "RS→ PERNA" : "RB← PERNA";   // 5Q.8: a entrada foi para o RB
                         tecnica = p == Posicao.GUARDA ? CatalogoTecnicasSolo.ENTRADA_PERNA_GUARDA
                                 : CatalogoTecnicasSolo.ENTRADA_PERNA_DOMINANTE;
                     } else {

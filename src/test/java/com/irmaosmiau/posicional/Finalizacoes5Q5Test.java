@@ -81,8 +81,9 @@ class Finalizacoes5Q5Test {
         // fala em 47: divergencia registrada no relatorio, nada foi adicionado nem removido
         // 5Q.6 (pedido): +6 finalizacoes de perna no LB/LT do ashi (40 -> 46; 23 -> 29 tecnicas-base);
         // o "mao_de_vaca" virou "toe_hold" (mesmo comando, nome certo), sem mudar a contagem
-        assertEquals(46, CatalogoFinalizacoes.referencia().todas().size(), "nenhuma finalizacao a mais ou a menos");
-        assertEquals(29, CatalogoFinalizacoes.referencia().todas().stream().map(Finalizacao::tecnicaBase).distinct().count());
+        // 5Q.8 (pedido): +12 finalizacoes no LT + LB da guarda, da montada e dos cem quilos (46 -> 58; 29 -> 41)
+        assertEquals(58, CatalogoFinalizacoes.referencia().todas().size(), "nenhuma finalizacao a mais ou a menos");
+        assertEquals(41, CatalogoFinalizacoes.referencia().todas().stream().map(Finalizacao::tecnicaBase).distinct().count());
         assertTrue(CatalogoFinalizacoes.referencia().todas().stream()
                 .allMatch(f -> f.janelaEntrada() == ParametrosFinalizacao.janelaCatalogo(f.graduacao())));
     }

@@ -304,6 +304,10 @@ public final class AnimacoesTecnicas {
         defMicro("girar_nas_costas:ATACA", q(0.00), q(0.50, girar), q(1.00, girar));
         def("girar_nas_costas:RECEBE", q(0.00), q(0.60, 9, 6, 16, 6), q(1.00, 9, 6, 16, 6));
         alias("escapar_neutro:ATACA", "girar_nas_costas:ATACA");
+        // 5Q.8: triangulo de corpo nas costas: as pernas fecham e apertam (o gesto dos ganchos, mais forte)
+        def("triangulo_corpo:ATACA", q(0.00), q(0.40, 22, 10, 23, -8, 24, 14, 25, -10, 26, 10, 27, -8, 28, 14, 29, -10,
+                9, 4), q(0.70, 22, 10, 23, -8, 24, 14, 25, -10, 26, 10, 27, -8, 28, 14, 29, -10, 9, 4), q(1.00));
+        def("triangulo_corpo:RECEBE", q(0.00), q(0.45, 9, 5, 11, 3), q(1.00));
         alias("escapar_neutro:RECEBE", "girar_nas_costas:RECEBE");
 
         // ---------------- 9. AJUSTAR O CONTROLE DA PERNA (ashi garami; ajuste instantaneo) - 5Q.4

@@ -466,7 +466,8 @@ public final class MotorSolo {
             // 5Q.7: defesas de quem esta por baixo (enquadrar, defender as maos, esconder o pe, tirar ganchos)
             CatalogoTecnicasSolo.ENQUADRAR, CatalogoTecnicasSolo.ENQUADRAR_JOELHO, CatalogoTecnicasSolo.ENQUADRAR_MONTADA,
             CatalogoTecnicasSolo.DEFENDER_MAOS, CatalogoTecnicasSolo.ESCONDER_PE, CatalogoTecnicasSolo.TIRAR_GANCHOS,
-            CatalogoTecnicasSolo.RETENCAO);                    // 5Q.7 corretiva: MANTER A GUARDA (guarda aberta)
+            CatalogoTecnicasSolo.RETENCAO,                     // 5Q.7 corretiva: MANTER A GUARDA (guarda aberta)
+            CatalogoTecnicasSolo.TRIANGULO_CORPO);             // 5Q.8: aperta as pernas em volta da cintura
     static final int TICKS_ANIMACAO_INSTANTANEA = 18;
 
     /**
