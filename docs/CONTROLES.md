@@ -1349,3 +1349,10 @@ Cada uma é uma **entrada real** no controle de perna (o outro pode girar ou esc
 recupera a guarda) que, chegando ao ashi garami, **já começa a chave**: a mesma do LT + LB do ashi, no mesmo
 mapa de direções. A roda é vermelha (ataque). A entrada **simples** na perna (sem chave) continua no **RB ←**
 (cor de transição). O RB, o LT, o LB e o LT + LB das outras posições não mudaram.
+
+## F2 — esconder o HUD (modo cinematográfico)
+
+O F2 esconde e devolve todo o HUD do combate (barras, rodas, avisos, relógio, laboratório, selo e debug),
+deixando só os personagens e o cenário. É só visual: o jogo não pausa e os comandos e as rodas continuam
+funcionando. Pausa, ajuda e fim de jogo continuam aparecendo. Cada partida começa com o HUD visível. O F9
+(música) já estava ocupado; F1, F2, F11 e F12 estavam livres.

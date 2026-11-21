@@ -3556,24 +3556,26 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         // HUD DO JOGADOR E DEBUG
         // =========================
-        hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
-        desenharRelogio(g2);
-        avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
-        desenharLaboratorio(g2);                                  // 5Q.2: HUD tecnico (so no laboratorio)
-        desenharSeloDesenvolvedor(g2);                            // 5Q.4: selo permanente
+        if (!hudOculto) {                                         // F2: modo cinematografico (so visual)
+            hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
+            desenharRelogio(g2);
+            avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
+            desenharLaboratorio(g2);                                  // 5Q.2: HUD tecnico (so no laboratorio)
+            desenharSeloDesenvolvedor(g2);                            // 5Q.4: selo permanente
 
-        // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
-        PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
-        if (PainelDpadContextual.deveMostrar(dpad1)) {             // 5Q.5: roda vazia nao aparece
-            PainelDpadContextual.desenhar(g2, 10, dpad1);
-        }
-        PainelDpadContextual.Quadro dpad2 = montarQuadroDpad(SlotJogador.JOGADOR_2);
-        if (PainelDpadContextual.deveMostrar(dpad2)) {
-            PainelDpadContextual.desenhar(g2, LARGURA - 10 - PainelDpadContextual.LARGURA, dpad2);
-        }
+            // Entrega 5F: cruz do D-pad contextual de cada jogador, sob o seu painel.
+            PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
+            if (PainelDpadContextual.deveMostrar(dpad1)) {             // 5Q.5: roda vazia nao aparece
+                PainelDpadContextual.desenhar(g2, 10, dpad1);
+            }
+            PainelDpadContextual.Quadro dpad2 = montarQuadroDpad(SlotJogador.JOGADOR_2);
+            if (PainelDpadContextual.deveMostrar(dpad2)) {
+                PainelDpadContextual.desenhar(g2, LARGURA - 10 - PainelDpadContextual.LARGURA, dpad2);
+            }
 
-        if (debugVisivel) {
-            desenharCamadaDebug(g2);
+            if (debugVisivel) {
+                desenharCamadaDebug(g2);
+            }
         }
 
         // =========================
@@ -4111,7 +4113,23 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      * Teclas livres (nao usadas pelos controles dos Miaus):
      * F3 = debug tecnico | F4 = proximo cenario
      */
+    /**
+     * F2: modo cinematografico. Esconde so o DESENHO do HUD (barras, rodas, avisos, relogio, laboratorio,
+     * selo e debug); o jogo, os comandos e as rodas continuam funcionando. Pausa, ajuda e fim de jogo
+     * continuam aparecendo. Cada partida comeca com o HUD visivel (o painel e novo a cada partida).
+     */
+    private boolean hudOculto;
+
+    /** O HUD esta escondido pelo F2 (testes). */
+    boolean isHudOculto() {
+        return hudOculto;
+    }
+
     private void configurarAtalhos() {
+        atalho("F2", "alternarHud", () -> {
+            hudOculto = !hudOculto;
+            repaint();
+        });
         atalho("F3", "alternarDebug", () -> setDebugVisivel(!debugVisivel));
         // Entrega 5K: F6 = compara animacoes de pegada (AUTORAL <-> EXPERIMENTAL), vale na proxima pegada.
         atalho("F6", "alternarAnimacoesPegada", () -> {
