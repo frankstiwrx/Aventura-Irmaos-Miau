@@ -187,9 +187,34 @@ public class InputHandler {
     // =====================================================
     // LEITURA GENERICA (Entrega 5C)
     // =====================================================
-    /** A acao esta segurada agora e nao esta travada por um bloqueio de combate. */
+    /** De onde vem a entrada de cada personagem (treino: F11 alterna o dispositivo principal). */
+    private com.irmaosmiau.controles.RotaControles rota = new com.irmaosmiau.controles.RotaControles();
+
+    public void setRota(com.irmaosmiau.controles.RotaControles r) {
+        rota = r == null ? new com.irmaosmiau.controles.RotaControles() : r;
+    }
+
+    /**
+     * A acao esta segurada agora (no dispositivo que comanda este personagem) e nao esta travada por um
+     * bloqueio de combate.
+     */
     public boolean isAtiva(SlotJogador slot, AcaoJogador acao) {
-        return isAtivaNoTeclado(slot, acao) || isAtivaNaFonte(slot, acao);
+        SlotJogador o = rota.origem(slot);
+        return o != null && (isAtivaNoTeclado(o, acao) || isAtivaNaFonte(o, acao));
+    }
+
+    /**
+     * Troca de personagem no treino: tudo o que estiver segurado (teclado e fontes dos dois slots) fica
+     * travado ate ser solto, para nada ficar preso nem repetir no outro personagem.
+     */
+    public void travarTudo() {
+        for (SlotJogador s : SlotJogador.values()) {
+            trava.travarPressionados(s.getPrefixoComando());
+            FonteAcoes f = fontes.get(s);
+            if (f != null) {
+                f.travarPressionadas();
+            }
+        }
     }
 
     /** Somente o teclado (respeita o teclado desligado do slot). */
@@ -256,8 +281,16 @@ public class InputHandler {
      * solta ate ser liberada e pressionada de novo.
      */
     public void travarComandosPressionadosBranco() {
-        trava.travarPressionados(PREFIXO_BRANCO);
-        travarFonte(SlotJogador.JOGADOR_1);
+        travarDoPersonagem(SlotJogador.JOGADOR_1);
+    }
+
+    /** Trava o dispositivo que comanda este personagem agora (o principal, se ele foi alternado). */
+    private void travarDoPersonagem(SlotJogador alvo) {
+        SlotJogador o = rota.origem(alvo);
+        if (o != null) {
+            trava.travarPressionados(o.getPrefixoComando());
+            travarFonte(o);
+        }
     }
 
     private void travarFonte(SlotJogador slot) {
@@ -269,8 +302,7 @@ public class InputHandler {
 
     /** Igual a {@link #travarComandosPressionadosBranco()}, para o Preto. */
     public void travarComandosPressionadosPreto() {
-        trava.travarPressionados(PREFIXO_PRETO);
-        travarFonte(SlotJogador.JOGADOR_2);
+        travarDoPersonagem(SlotJogador.JOGADOR_2);
     }
 
     // =====================================================

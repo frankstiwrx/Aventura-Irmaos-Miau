@@ -36,7 +36,7 @@ public final class AjudaControles {
 
     /** Atalhos fixos do sistema (nao configuraveis). */
     public static final String SISTEMA =
-            "ESC pausa · F2 HUD · F3 debug · F4 cenário · F5 reiniciar treino · F9 música · F10 efeitos";
+            "ESC pausa · F2 HUD · F3 debug · F11 troca J1/J2 (treino) · F4 cenário · F5 reiniciar treino · F9 música · F10 efeitos";
 
     /** Uma linha da tela de ajuda: titulo de grupo (tecla null) ou acao + tecla. */
     public record Linha(String texto, String tecla) {

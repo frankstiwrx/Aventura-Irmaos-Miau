@@ -356,9 +356,73 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         g.dispose();
     }
 
-    /** O J2 do treino esta parado (parceiro passivo)? No laboratorio pode ser controlado. */
+    /**
+     * O J2 do treino esta parado (parceiro passivo)? Deixa de estar quando tem o proprio dispositivo
+     * (PAUSA -> LABORATORIO -> J2: CONTROLADO) ou quando o dispositivo principal foi para ele (F11).
+     */
     boolean parceiroPassivo(SlotJogador slot) {
-        return modoTreino && slot == SlotJogador.JOGADOR_2 && !lab.isParceiroControlado();
+        return modoTreino && slot == SlotJogador.JOGADOR_2 && !lab.isParceiroControlado() && !rota.isPrincipalNoJ2();
+    }
+
+    // =====================================================
+    // TREINO: QUEM O DISPOSITIVO PRINCIPAL COMANDA (F11)
+    // =====================================================
+    /** De onde vem a entrada de cada personagem (so alterna no treino). */
+    private final com.irmaosmiau.controles.RotaControles rota = new com.irmaosmiau.controles.RotaControles();
+    /** F11 segurado: o auto-repeat do sistema nao alterna de novo ate soltar. */
+    private boolean f11Segurado;
+
+    com.irmaosmiau.controles.RotaControles getRota() {
+        return rota;
+    }
+
+    /**
+     * F11 no treino: o dispositivo principal (teclado e gamepad do J1) passa a comandar o outro personagem.
+     * Nada da luta muda (posicoes, tecnicas, atributos, faixas, kimonos); o que estava segurado fica travado
+     * ate ser solto e os comandos pendentes sao esquecidos, para nada passar de um personagem para o outro.
+     */
+    /** PAUSA -> LABORATORIO -> "J2: CONTROLADO/PASSIVO": o J2 ganha (ou perde) o proprio dispositivo na hora. */
+    void alternarParceiroControlado() {
+        lab.setParceiroControlado(!lab.isParceiroControlado());
+        religarDispositivosDoTreino();
+        dispositivos.setRota(rota);
+        atualizarBotoesLab();
+    }
+
+    void alternarControleTreino() {
+        if (!modoTreino || fimDeJogo) {
+            return;
+        }
+        rota.alternar();
+        input.travarTudo();
+        dispositivos.prepararTroca();
+        avisos.adicionar(textoControlando());
+        repaint();
+    }
+
+    /** "CONTROLANDO: J2 — MIAU PRETO". */
+    String textoControlando() {
+        SlotJogador s = rota.controladoPeloPrincipal();
+        IrmaoMiau l = s == SlotJogador.JOGADOR_1 ? jogadorBranco : jogadorPreto;
+        return "CONTROLANDO: " + s.getSigla() + " — " + l.getNome().replace("Irmão ", "").toUpperCase(java.util.Locale.ROOT);
+    }
+
+    /** Marcador discreto sob o painel do J1 (so no treino; some com o HUD no F2). */
+    private void desenharControlando(Graphics2D g0) {
+        if (!modoTreino || !modoDoisMiaus) {
+            return;
+        }
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(new Font("Arial", Font.BOLD, 10));
+        String t = textoControlando() + (lab.isParceiroControlado() && !rota.isPrincipalNoJ2() ? " · J2: 2º DISPOSITIVO" : "")
+                + "  (F11 troca)";
+        int w = g.getFontMetrics().stringWidth(t) + 14;
+        g.setColor(new Color(10, 30, 80, 190));
+        g.fillRoundRect(10, 62, w, 16, 8, 8);                  // sob o painel do J1 (o selo do dev nao existe no treino)
+        g.setColor(rota.isPrincipalNoJ2() ? new Color(255, 150, 150) : new Color(150, 195, 255));
+        g.drawString(t, 17, 74);
+        g.dispose();
     }
 
     com.irmaosmiau.treino.LaboratorioTreino getLaboratorio() {
@@ -404,6 +468,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         dispositivos = new SessaoDispositivos(PreferenciasDispositivos.global().getAtual(), ServicoGamepads.global(),
                 input, slots, mapaGamepad);
+        dispositivos.setRota(rota);
     }
 
     private void atualizarBotoesLab() {
@@ -773,6 +838,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         ? List.of(SlotJogador.JOGADOR_1, SlotJogador.JOGADOR_2)
                         : List.of(SlotJogador.JOGADOR_1),
                 mapaGamepad);
+        input.setRota(rota);                                    // treino: F11 alterna o personagem do principal
+        dispositivos.setRota(rota);
 
         // =========================
         // PAUSA
@@ -862,7 +929,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             xAntesDoTick2 = jogadorPreto.getX();
             atualizarMiauBranco();
 
-            if (modoTreino && !lab.isParceiroControlado()) {
+            if (modoTreino && parceiroPassivo(SlotJogador.JOGADOR_2)) {
                 // Parceiro de treino: ignora as teclas do segundo jogador (5Q.2: salvo no laboratorio, se pedido).
                 sessaoTreino.atualizarParceiro();
                 deslocandoConjuntoJ2 = false;
@@ -2944,10 +3011,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             atualizarBotoesLab();
         });
         botaoParceiroLab = new JButton();
-        botaoParceiroLab.addActionListener(e -> {
-            lab.setParceiroControlado(!lab.isParceiroControlado());
-            atualizarBotoesLab();
-        });
+        botaoParceiroLab.addActionListener(e -> alternarParceiroControlado());
         JButton iniciarLab = new JButton("INICIAR SITUAÇÃO");
         iniciarLab.addActionListener(e -> iniciarSituacaoLaboratorio());
         JButton desligarLab = new JButton("DESLIGAR LABORATÓRIO");
@@ -3633,6 +3697,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             if (debugVisivel) {
                 desenharCamadaDebug(g2);
             }
+            desenharControlando(g2);                              // treino: quem o principal comanda
         }
 
         // =========================
@@ -4183,6 +4248,31 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     private void configurarAtalhos() {
+        // Treino: F11 alterna o personagem do dispositivo principal (uma vez por toque; segurar nao repete).
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("pressed F11"), "alternarControle");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("shift pressed F11"),
+                "alternarControle");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("released F11"), "soltouF11");
+        getInputMap(WHEN_IN_FOCUSED_WINDOW).put(javax.swing.KeyStroke.getKeyStroke("shift released F11"), "soltouF11");
+        getActionMap().put("alternarControle", new javax.swing.AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (!f11Segurado) {
+                    f11Segurado = true;
+                    alternarControleTreino();
+                }
+            }
+        });
+        getActionMap().put("soltouF11", new javax.swing.AbstractAction() {
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                f11Segurado = false;
+            }
+        });
         atalho("F2", "alternarHud", () -> {
             hudOculto = !hudOculto;
             repaint();
