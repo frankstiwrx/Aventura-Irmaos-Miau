@@ -1356,3 +1356,38 @@ O F2 esconde e devolve todo o HUD do combate (barras, rodas, avisos, relógio, l
 deixando só os personagens e o cenário. É só visual: o jogo não pausa e os comandos e as rodas continuam
 funcionando. Pausa, ajuda e fim de jogo continuam aparecendo. Cada partida começa com o HUD visível. O F9
 (música) já estava ocupado; F1, F2, F11 e F12 estavam livres.
+
+## Menus de luta (JOGAR): seleção dos lutadores e configurações da luta
+
+Fluxo: MENU PRINCIPAL → JOGAR → **SELEÇÃO DOS LUTADORES** → **CONFIGURAÇÕES DA LUTA** → COMBATE.
+O TREINO não mudou.
+
+### Seleção dos lutadores (o mesmo fluxo para J1 e J2)
+
+| Etapa | Direções | Confirmar | Cancelar |
+|---|---|---|---|
+| Personagem | move o cursor na grade | vai para o perfil (se houver) ou a faixa | volta ao menu |
+| Perfil | troca o perfil | vai para a faixa | volta ao personagem |
+| Faixa | troca a faixa | vai para o kimono | volta ao perfil/personagem |
+| Kimono | troca o kimono | **PRONTO** (sem confirmação extra) | volta à faixa |
+| PRONTO | nada (escolhas travadas) | AVANÇAR (só com os dois prontos) | volta ao kimono |
+
+Teclas: J1 WASD · ESPAÇO (ou H) confirma · Q cancela; J2 setas · ENTER (ou END) confirma · BACKSPACE
+cancela; gamepad A confirma, B cancela (cada slot com o seu gamepad). ESC volta ao menu. Com os dois
+prontos, **J1 ou J2** confirmam AVANÇAR.
+
+### Configurações da luta
+
+ARENA (prévia desenhada pelo próprio cenário, todas as arenas do registro) · TEMPO (sem limite, 60, 90,
+180 s) · DIFICULDADE (EM BREVE: não há IA) · REGRAS · **INICIAR LUTA**. Cima/baixo escolhe a área, os lados
+mudam o valor, confirmar segue para a próxima área e, no botão, inicia. Os dois jogadores movem o mesmo foco.
+Cancelar (Q, BACKSPACE, B) ou ESC volta aos lutadores com tudo preservado (e os dois ainda prontos).
+
+| Regra | Situação |
+|---|---|
+| FINALIZAÇÃO | **disponível**: vence quem finaliza, sem pontos (finalizações pela elegibilidade LIVRE) |
+| PONTOS + FINALIZAÇÃO | EM BREVE: depende de pontuação e arbitragem (não inicia a luta) |
+| ARCADE | EM BREVE: rounds e condições próprias (não inicia a luta) |
+
+O modo escolhido chega ao motor (`GamePanel.configurarModoLuta` → `MotorSolo.setModoRegras`) e vale
+também nos reinícios (F5) da mesma partida. Um modo EM BREVE nunca entra na partida.
