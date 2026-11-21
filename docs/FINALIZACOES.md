@@ -301,3 +301,66 @@ O "47" das especificações antigas não corresponde ao código: a contagem cert
 Repertório: **58 finalizações executáveis, 41 técnicas-base** (antes 46 / 29). As novas usam a
 mesma disputa (pressão, defender, escapar, bater), os parâmetros centralizados e a pose provisória
 da categoria (animações próprias ficam para depois, como as de perna).
+
+## Complemento da 5Q.8 — rodas RT (+12) e LT + LB das costas
+
+### Auditoria (o que já existia e foi trocado)
+
+| Sugestão | Situação no catálogo | Escolha |
+|---|---|---|
+| Triângulo montado | já existe (montada, LT ←) | lapela da montada |
+| Ezequiel da montada | já existe (montada, LT →) | estrangulamento com o antebraço |
+| Lapela na montada | não existia | **lapela** (técnica-base nova) |
+| Ataque de braço/ombro na montada | — | **chave de bíceps** (nova) e guilhotina de cotovelo alto (variação) |
+| Baseball bat | já existe (100 kg, LT ←) | **Von Flue** (nova) |
+| Cortador de papel | não existia ("cortando o pão" é outra) | **cortador de papel** (nova) |
+| Chave de braço do lado de lá | já existe (armlock girando, 100 kg LB ↓) | **Mir lock** (nova) |
+| Lapela nos 100 kg | — | lapela dos 100 kg (variação da lapela) |
+| Lapela por trás | não existia nas costas | lapela por trás (variação da lapela) |
+| Ezequiel pelas costas | não existia nas costas | ezequiel pelas costas (variação) |
+| Ataque de braço/ombro nas costas | as quatro chaves do LB já existem | **short choke** (nova) e triângulo pelas costas (variação) |
+
+### As 12 finalizações do RT
+
+| Posição | RT | Finalização | Faixa | Categoria / alvo | Requisito | Se falhar |
+|---|---|---|---|---|---|---|
+| Montada | ↑ | Estrangulamento de lapela da montada | azul | estrangulamento / pescoço | controle 50 | a posição fica |
+| Montada | → | Chave de bíceps (esmagamento) | marrom | braço | controle 55 | a posição fica |
+| Montada | ↓ | Estrangulamento com o antebraço | azul | estrangulamento | controle 45 | a posição fica |
+| Montada | ← | Guilhotina da montada (cotovelo alto) | roxa | estrangulamento | controle 55 | perde a montada |
+| 100 kg | ↑ | Cortador de papel (paper cutter) | azul | estrangulamento | controle 50 | a posição fica |
+| 100 kg | → | Estrangulamento de lapela dos 100 kg | roxa | estrangulamento | controle 55 | a posição fica |
+| 100 kg | ↓ | Von Flue | roxa | estrangulamento | controle 50 | a posição fica |
+| 100 kg | ← | Mir lock | roxa | braço / ombro | controle 55 | o outro recupera a guarda |
+| Costas | ↑ | Short choke | azul | estrangulamento | controle 45 | a posição fica |
+| Costas | → | Ezequiel pelas costas | roxa | estrangulamento | controle 50 | a posição fica |
+| Costas | ↓ | Triângulo pelas costas | marrom | estrangulamento | controle 55 | o outro gira para a guarda |
+| Costas | ← | Estrangulamento de lapela por trás | azul | estrangulamento | controle 45 | a posição fica |
+
+Todas usam o sistema de sempre: entrada com janela (o outro corta com ↓), pressão inicial e progressão,
+defesa, escape (↑), rendição (←), vitória por rendição ou pressão máxima, custos de fôlego, recarga,
+graduação mínima, aprendizado e modo de regras, e mensagens pela natureza (vermelho). Só para quem controla.
+
+### LT + LB das costas (rotas novas, sem técnicas-base novas)
+
+| Direção | Entrada | Chave no fim (já existente, do ashi) | Faixa |
+|---|---|---|---|
+| ↑ | `costas_perna_pe_reta` | chave de pé reta | roxa |
+| → | `costas_perna_joelho` | chave de joelho | marrom |
+| ↓ | `costas_perna_toe_hold` | toe hold | marrom |
+| ← | `costas_perna_panturrilha` | compressão de panturrilha | marrom |
+
+A entrada é uma transição real (controle 50, janela 16, o outro escapa girando ou para o neutro; falhando,
+recupera a guarda). Só começa se a faixa de quem entra alcança a da chave. Chegando ao ashi, a chave começa
+`MotorSolo.TICKS_ATE_A_CHAVE` (16) ticks depois; se algo mudar no caminho, fica o ashi. Nenhum heel hook.
+
+### Contagem honesta
+
+| | Antes | Agora |
+|---|---|---|
+| Finalizações executáveis (catálogo) | 58 | **70** (+12 do RT) |
+| Técnicas-base | 41 | **48** (+7 inéditas: lapela, bíceps, antebraço, cortador de papel, Von Flue, Mir lock, short choke) |
+| Variações (base que já existia, posição/entrada nova) | — | 5: guilhotina da montada, lapela dos 100 kg, lapela por trás, ezequiel pelas costas, triângulo pelas costas |
+| Entradas contextuais novas que reutilizam chaves existentes | — | 4 (LT + LB das costas), **não** contadas como finalizações nem como técnicas-base |
+
+Ao todo, **16 entradas funcionais novas**: 12 finalizações + 4 rotas.

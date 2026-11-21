@@ -1294,3 +1294,58 @@ punho também (LB ←): no lugar entraram a **gola única** e a **mão de vaca**
 O outro responde na janela: nas costas, GIRAR; no ashi, girar/livrar a perna e esconder o pé. O
 crucifixo e a 50/50 não são posições do motor (a 50/50 existe só como variação de chave de pé):
 ficaram de fora.
+
+## Complemento da 5Q.8 — rodas RT e respirar no Y
+
+### Respirar: do RT sozinho para o Y
+
+| Dispositivo | Antes (5O.1 a 5Q.8) | Agora |
+|---|---|---|
+| Xbox (J1) | RT sozinho | **Y** (Triângulo no PlayStation: o mesmo botão lógico, `BotaoGamepad.NORTE`) |
+| Teclado-controle do J2 | P (RT) | **I** (a tecla que faz o papel do Y no layout fixo) |
+| Teclas livres | X (J1) / L (J2), e também 3 / INSERT sozinho | X (J1) / L (J2); o 3 / INSERT sozinho não respira mais |
+
+Auditoria do Y antes da troca: no **Contextual** (o padrão) o Y estava livre desde a 5O.1 (a acrobacia foi
+para o R3 + direção). No **Clássico** o Y é o **reforço da pegada**: os dois **dividem** o botão
+(`MapaGamepad.podemDividir`), e o jogo decide pelo estado: quem **aplica uma pegada** reforça (não respira);
+fora disso, respira. Nenhuma função foi apagada.
+
+A mecânica da respiração não mudou (recuperação por postura, restrições, custos, efeito visual, recursos
+infinitos, solo). Guarda ativa e sprawl continuam sem respirar. Na tela do solo, o título mostra o botão
+certo: `Y AR` (Xbox), `I AR` (teclado-controle), `X AR` (teclas livres).
+
+**gamepad.json:** o padrão de antes (respirar no RT) vira o padrão novo, com aviso. Um arquivo personalizado
+gravado antes desta versão e sem botão de respirar ganha o Y se ele estiver livre (com aviso); se o Y estiver
+ocupado, nada muda e o aviso pede para atribuir em CONTROLES. Ao salvar, o arquivo recebe `respirarNoY: true`
+e, daí em diante, fica exatamente como o jogador escolheu.
+
+### RT por cima: a quarta roda de finalizações
+
+| Contexto | RT segurado | RT + RS |
+|---|---|---|
+| Montada **por cima** | abre a roda **RT · FINALIZ.** | executa a finalização da direção |
+| 100 kg **por cima** | idem | idem |
+| Costas (quem controla) | idem | idem |
+| Em pé (livre, na pegada, sofrendo uma entrada) | defesas (guardas, sprawl) e base | como antes |
+| Por baixo, guardas, outras posições do chão | nada (como antes) | nada |
+
+Só a **inclinação do RS com o RT segurado** escolhe; segurar e soltar o RT não executa nada (o RS já inclinado
+antes do RT também não). No teclado: J1 **3** + as teclas de direção (2/6/7/8); J2 no teclado-controle **P** +
+setas. O motor decide pelo estado posicional (`MotorSolo.temFinalizacoes(lado, R2)`).
+
+| Posição | ↑ | → | ↓ | ← |
+|---|---|---|---|---|
+| Montada | LAPELA (Az) | BÍCEPS (Mr) | ANTEBRAÇO (Az) | GUILHOT. (Rx) |
+| 100 kg | PAPEL (Az) | LAPELA (Rx) | VON FLUE (Rx) | MIR LOCK (Rx) |
+| Costas | SHORT (Az) | EZEQUIEL (Rx) | TRIÂNGULO (Mr) | LAPELA (Az) |
+
+### LT + LB nas costas (antes "RB← PERNA" / FINALIZAÇÃO FUTURA)
+
+| ↑ | → | ↓ | ← |
+|---|---|---|---|
+| → PÉ RETA (Rx) | → JOELHO (Mr) | → TOE HOLD (Mr) | → PANTURR. (Mr) |
+
+Cada uma é uma **entrada real** no controle de perna (o outro pode girar ou escapar na janela; falhando, ele
+recupera a guarda) que, chegando ao ashi garami, **já começa a chave**: a mesma do LT + LB do ashi, no mesmo
+mapa de direções. A roda é vermelha (ataque). A entrada **simples** na perna (sem chave) continua no **RB ←**
+(cor de transição). O RB, o LT, o LB e o LT + LB das outras posições não mudaram.

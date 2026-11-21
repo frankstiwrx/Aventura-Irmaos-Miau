@@ -642,3 +642,34 @@ desequilibrado/exposto (senão a rasteira ainda pode entrar). Forçar queda: o R
 não está exposto; quem forçou perde 25 de base e fica com o avanço exposto. Nos dois casos o defensor
 faz a reação curta de queda que falhou. Segurar o RT de antes (sem apertar) é respirar, não base.
 Ainda a confirmar no controle.
+
+## Complemento da 5Q.8 — RT por cima, respirar no Y e mobilidade
+
+### Conflito de entrada do RT
+
+O RT é o modificador de **defesas** (guardas, sprawl) em pé e a **base** contra as quedas (apertado na
+janela). Até a 5Q.8 ele também respirava quando segurado sozinho; por isso não havia uma roda de
+finalizações nele. Agora:
+
+- respirar foi para o **Y** (ver CONTROLES);
+- no chão, **por cima** na montada, nos 100 kg e nas costas, RT + RS = roda de finalizações (família `R2`);
+- em qualquer outro estado o RT faz o de sempre; a base contra a rasteira e o forçar queda não mudou;
+- `GamePanel.rodaRtPorCima` decide pelo estado (`soloConduz` + `MotorSolo.temFinalizacoes`).
+
+### LT + LB das costas
+
+Entrar na perna já indo para a chave (ver FINALIZACOES). A finalização nunca começa nas costas: o corpo
+passa pelo controle de perna antes.
+
+### Adendo de mobilidade
+
+| Parâmetro | 5Q.8 | Adendo |
+|---|---|---|
+| Rolamento técnico de joelhos | 76 ticks | **37 ticks** = o do rolamento deitado (`MULTIPLICADOR_ROLAMENTO_JOELHOS` = `MULTIPLICADOR_ROLAMENTO_DEITADO`, 0,6) |
+| Rolamento deitado (referência) | 37 ticks | 37 (não mudou) |
+| Sprawl (animação) | 32 ticks | **40 ticks** (`FATOR_VELOCIDADE_SPRAWL` 0,8: 80% da velocidade) |
+| Proteção do sprawl contra as quedas | os 32 ticks do sprawl | **os mesmos 32 ticks** (`TICKS_PROTECAO_SPRAWL`, `isSprawlProtegendo`) |
+
+O rolamento de joelhos mantém a animação e a distância próprias (154 px); só a duração muda. O sprawl
+anda pelo progresso (sem congelar); a recarga, o custo, a ativação e a postura final não mudaram. A janela
+defensiva continua do mesmo tamanho: os 8 ticks a mais são só a recuperação mais legível.

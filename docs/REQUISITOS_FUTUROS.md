@@ -158,3 +158,11 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 - Animações próprias para as 12 finalizações novas (hoje pose da categoria).
 - Crucifixo (posição nova nas costas) e 50/50 como posição (hoje só variação de chave de pé).
 - Pontuação e regras oficiais (não iniciadas, como pedido).
+
+## Depois do complemento da 5Q.8
+
+- Animações próprias para as 12 finalizações do RT (hoje pose da categoria): lapela (montada, 100 kg, costas),
+  bíceps, antebraço, guilhotina da montada, cortador de papel, Von Flue, Mir lock, short choke, ezequiel pelas
+  costas e triângulo pelas costas.
+- Animação própria para o caminho costas → perna (hoje a mesma da entrada do RB ←).
+- Crucifixo (posição) e 50/50 como posição continuam fora.

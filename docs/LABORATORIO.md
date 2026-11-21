@@ -72,3 +72,9 @@ Lista as finalizações **reais** da posição atual, para cada lado que tem o p
 - [ ] Em pé com pegada: J2 aplicando; RS ← tiro de guarda, RS ↓ derrubada forçada
 - [ ] Dois Miaus iguais, faixas e kimonos diferentes: a faixa acompanha a cintura em todas as situações
 - [ ] Fortaleza / Campeonato / Academia dos Irmãos Miau: os efeitos vivos não atrapalham a leitura
+
+## Complemento da 5Q.8
+
+O catálogo do laboratório lista também as finalizações do RT (montada, 100 kg e costas: 12 nas costas,
+por exemplo), com o mesmo status por graduação (LIBERADA / GRADUAÇÃO / NÃO APRENDIDA). As 4 entradas do
+LT + LB das costas não aparecem como finalizações: são rotas para as chaves de perna do ashi.

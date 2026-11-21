@@ -293,3 +293,13 @@ defensivas da 5Q.7, PÉS, PRENDER, cores, rolamento de joelhos, sprawl.
 - **Novas:** triângulo de corpo (costas).
 - **Provisórias:** as 12 finalizações novas usam a pose da categoria (braço/estrangulamento), como as
   de perna; as rotas novas das costas e do ashi usam a transição de posição de sempre.
+
+## Complemento da 5Q.8
+
+- **Provisórias (pose da categoria):** as 12 finalizações do RT (lapela, bíceps, antebraço, guilhotina da
+  montada, cortador de papel, lapela dos 100 kg, Von Flue, Mir lock, short choke, ezequiel pelas costas,
+  triângulo pelas costas, lapela por trás).
+- **Reutilizadas:** as 4 entradas do LT + LB das costas usam o corpo da entrada na perna do RB ←
+  (`alias` de `entrada_perna_dominante`); as chaves no fim usam as poses de perna de sempre.
+- **Ajustadas:** sprawl mais lento (mesmas fases, pelo progresso) e rolamento de joelhos mais rápido
+  (mesma animação ajoelhada).

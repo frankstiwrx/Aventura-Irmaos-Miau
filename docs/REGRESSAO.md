@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1219, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1241, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -649,3 +649,23 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 13. Mensagens das finalizações novas em vermelho; execução neutra.
 14. Rolamento técnico de joelhos bem mais lento (76 ticks); estrela e mortais mais fluidos com boa condição.
 15. Preservados: quedas, tiro de guarda, levantada técnica, deslocamentos, mapas, áudio, cores, F8.
+
+# Complemento da 5Q.8 — rodas RT, respirar no Y, LT + LB das costas e mobilidade
+
+1. Montada por cima, segurar RT: roda "RT · FINALIZ." com LAPELA, BÍCEPS, ANTEBRAÇO, GUILHOT. (vermelhas).
+2. 100 kg por cima, RT: PAPEL, LAPELA, VON FLUE, MIR LOCK.
+3. Costas, RT: SHORT, EZEQUIEL, TRIÂNGULO, LAPELA.
+4. RT + RS executa; segurar e soltar o RT sem inclinar o RS não executa nada.
+5. Por baixo (montada, 100 kg, costas) e na guarda o RT não abre a roda.
+6. Faixa baixa: células cinza com a sigla (·Az, ·Rx, ·Mr) e recusa "GRADUAÇÃO".
+7. Defesa (↓), escape (↑) e bater (←) nas finalizações novas.
+8. Costas, LT + LB: → PÉ RETA, → JOELHO, → TOE HOLD, → PANTURR.: o corpo vai ao ashi e a chave começa depois; o outro pode girar na janela.
+9. Costas, RB ←: a entrada simples na perna continua (sem chave).
+10. Y respira (Xbox); I respira (teclado-controle do J2); X / L nas teclas livres. O RT sozinho não respira mais.
+11. Título do solo: "Y AR" (ou "I AR" / "X AR").
+12. Clássico: Y reforça aplicando a pegada; livre, respira.
+13. Em pé: RT + RS = guardas e sprawl; RT na janela da rasteira e do forçar queda = base (ainda a homologar).
+14. As 12 finalizações do LT + LB da 5Q.8 continuam iguais.
+15. Rolamento de joelhos tão rápido quanto o deitado (37 ticks), mesma distância e postura.
+16. Sprawl um pouco mais lento (40 ticks), sem congelar; continua defendendo as quedas.
+17. gamepad.json antigo: aviso de "respirar agora é no Y"; salvar em CONTROLES grava a escolha.
