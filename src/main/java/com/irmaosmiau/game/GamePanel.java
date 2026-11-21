@@ -4019,8 +4019,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     DadosLutadorHud.de(jogadorBranco, "JOGADOR"),
                     DadosLutadorHud.de(jogadorPreto, "PARCEIRO")
             );
+            // as dicas do Miau que o dispositivo principal comanda agora (F11)
+            IrmaoMiau comandado = rota.isPrincipalNoJ2() ? jogadorPreto : jogadorBranco;
             dica = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, rotulos(),
-                    PapelCombate.de(sistemaCombate, jogadorBranco), PapelCombate.de(sistemaCombate, jogadorPreto));
+                    PapelCombate.de(sistemaCombate, comandado), PapelCombate.de(sistemaCombate, jogadorPreto));
         } else if (modoDoisMiaus) {
             lutadores = List.of(
                     DadosLutadorHud.de(jogadorBranco, "J1"),

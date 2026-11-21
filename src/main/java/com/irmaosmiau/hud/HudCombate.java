@@ -46,6 +46,33 @@ public final class HudCombate {
     private final Font fonteMensagem = new Font("Arial", Font.BOLD, 13);
     private final Font fonteDica = new Font("Arial", Font.PLAIN, 11);
 
+    /**
+     * Faixa de dicas: os grupos (separados por {@link AjudaControles#GRUPO}) ganham um
+     * divisor discreto; se nao couber, a fonte diminui (ate 9) em vez de cortar o texto.
+     */
+    private void desenharDica(Graphics2D g, String dica, int largura, int base) {
+        String[] grupos = dica.split(java.util.regex.Pattern.quote(com.irmaosmiau.hud.AjudaControles.GRUPO));
+        String divisor = "  |  ";
+        Font f = fonteDica;
+        FontMetrics fm = g.getFontMetrics(f);
+        while (f.getSize() > 9 && fm.stringWidth(String.join(divisor, grupos)) > largura - 16) {
+            f = f.deriveFont((float) f.getSize() - 1);
+            fm = g.getFontMetrics(f);
+        }
+        g.setFont(f);
+        int x = (largura - fm.stringWidth(String.join(divisor, grupos))) / 2;
+        for (int i = 0; i < grupos.length; i++) {
+            if (i > 0) {
+                g.setColor(new Color(255, 255, 255, 70));
+                g.drawString(divisor, x, base);
+                x += fm.stringWidth(divisor);
+            }
+            g.setColor(TEXTO_SUAVE);
+            g.drawString(grupos[i], x, base);
+            x += fm.stringWidth(grupos[i]);
+        }
+    }
+
     /** Tudo que o HUD mostra num frame. */
     public static final class Estado {
         final List<DadosLutadorHud> lutadores;
@@ -124,10 +151,7 @@ public final class HudCombate {
                 int y0 = altura - ALTURA_FAIXA_INFERIOR;
                 g.setColor(new Color(0, 0, 0, 120));
                 g.fillRect(0, y0, largura, ALTURA_FAIXA_INFERIOR);
-                g.setFont(fonteDica);
-                g.setColor(TEXTO_SUAVE);
-                FontMetrics fm = g.getFontMetrics();
-                g.drawString(e.dicaControles, (largura - fm.stringWidth(e.dicaControles)) / 2, altura - 5);
+                desenharDica(g, e.dicaControles, largura, altura - 5);
             }
         } finally {
             g.dispose();

@@ -39,14 +39,16 @@ class AjudaControlesTest {
         String livre = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.LIVRE, PapelCombate.LIVRE);
         // 5I (pedido): antes "J2: setas" (o J2 nao aplicava pegada).
-        assertEquals("J1: NUM 8456 · 2 pegar   J2: setas · END pegar   ESC pausa/controles · F3 · F4", livre);
+        // polimento dos menus (pedido): F3 (debug) e F4 (cenario) sairam da faixa; entrou o F2 (HUD)
+        assertEquals("J1: NUM 8456 · 2 pegar   J2: setas · END pegar   ESC pausa/controles · F2 HUD", livre);
         String pegada = AjudaControles.dicaHud(AjudaControles.Modo.DOIS_JOGADORES, p,
                 PapelCombate.APLICADOR, PapelCombate.RECEPTOR);
         assertEquals("J1: NUM 8456 · 0 desequilibrar · Y reforçar · CTRL+NUM 4/NUM 6 arrastar   J2: setas · U romper"
-                + "   ESC pausa/controles · F3 · F4", pegada);
+                + "   ESC pausa/controles · F2 HUD", pegada);
         String entrando = AjudaControles.dicaHud(AjudaControles.Modo.TREINO, p,
                 PapelCombate.ENTRANDO, PapelCombate.ENTRANDO);
-        assertEquals("NUM 8456 · ESPAÇO pular · F5 reiniciar · ESC pausa/controles", entrando);
+        // polimento dos menus (pedido): grupos separados e a dica do F11 no treino
+        assertEquals("NUM 8456 · ESPAÇO pular   F11 alternar Miau · F5 reiniciar   ESC pausa/controles", entrando);
     }
 
     @Test

@@ -172,15 +172,20 @@ public final class AjudaControles {
                         + r.tecla(j1, AcaoJogador.PULO_CURTO) + " pulo curto · "
                         + r.tecla(j1, AcaoJogador.AGACHAR) + " agachar · " + pausa + " · F4 cenário";
             case TREINO:
+                // polimento: grupos separados por tres espacos (a barra desenha um divisor entre eles)
                 return juntar(r.movimento(j1) + " · " + r.tecla(j1, AcaoJogador.PULAR) + " pular",
-                        agora(r, j1, papelJ1), "F5 reiniciar · " + pausa + "/controles");
+                        agora(r, j1, papelJ1)) + GRUPO + "F11 alternar Miau · F5 reiniciar" + GRUPO + pausa
+                        + "/controles";
             default:
                 SlotJogador j2 = SlotJogador.JOGADOR_2;
                 return "J1: " + juntar(r.movimento(j1), agora(r, j1, papelJ1))
-                        + "   J2: " + juntar(r.movimento(j2), agora(r, j2, papelJ2))
-                        + "   ESC pausa/controles · F3 · F4";
+                        + GRUPO + "J2: " + juntar(r.movimento(j2), agora(r, j2, papelJ2))
+                        + GRUPO + "ESC pausa/controles · F2 HUD";
         }
     }
+
+    /** Separador de grupos da faixa de dicas (a barra o desenha como um divisor discreto). */
+    public static final String GRUPO = "   ";
 
     private static String juntar(String... partes) {
         List<String> uteis = new ArrayList<>();
