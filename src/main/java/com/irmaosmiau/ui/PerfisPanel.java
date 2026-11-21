@@ -67,6 +67,10 @@ public final class PerfisPanel extends JPanel {
     private final JButton salvar = EstiloTelas.botao("SALVAR");
     private final JButton padraoBase = EstiloTelas.botao("PADRÃO DA BASE");
     private final JButton descartar = EstiloTelas.botao("DESCARTAR");
+    /** Cores do personagem (kimono, calca, faixa visual, pelagem): abre o editor de aparencia. */
+    private final JButton aparencia = EstiloTelas.botao("APARÊNCIA");
+    private transient com.irmaosmiau.entities.AparenciaLutador aparenciaEditando = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
+    private transient com.irmaosmiau.entities.AparenciaLutador aparenciaOriginal = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
     private final JLabel status = EstiloTelas.texto(" ", EstiloTelas.NORMAL, EstiloTelas.TEXTO_SUAVE);
 
     // ---- estado do editor
@@ -187,6 +191,7 @@ public final class PerfisPanel extends JPanel {
         excluir.addActionListener(e -> excluir());
         voltar.addActionListener(e -> voltar());
         salvar.addActionListener(e -> salvar());
+        aparencia.addActionListener(e -> editarAparencia());
         padraoBase.addActionListener(e -> restaurarPadraoDaBase());
         descartar.addActionListener(e -> descartar());
         nome.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
@@ -234,9 +239,10 @@ public final class PerfisPanel extends JPanel {
             y += 27;
         }
 
-        colocar(salvar, 276, 342, 120, 30);
-        colocar(padraoBase, 404, 342, 170, 30);
-        colocar(descartar, 582, 342, 120, 30);
+        colocar(salvar, 276, 342, 104, 30);
+        colocar(padraoBase, 386, 342, 150, 30);
+        colocar(descartar, 542, 342, 110, 30);
+        colocar(aparencia, 658, 342, 116, 30);
 
         status.setVerticalAlignment(JLabel.TOP);
         colocar(status, 276, 380, 500, 38);
@@ -351,6 +357,8 @@ public final class PerfisPanel extends JPanel {
         mostrarAtributos(primeira.getAtributosPadrao());
         nomeOriginal = "";
         atributosOriginais = lerAtributosSemValidar();
+        aparenciaEditando = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
+        aparenciaOriginal = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
         habilitarEditor(false);
     }
 
@@ -362,6 +370,8 @@ public final class PerfisPanel extends JPanel {
             idBaseEditando = p.getIdPersonagemBase();
             nomeOriginal = p.getNome();
             atributosOriginais = p.getAtributos();
+            aparenciaEditando = p.getAparencia();
+            aparenciaOriginal = p.getAparencia();
             nome.setText(p.getNome());
             rotuloBase.setText("Base: " + nomeDaBase(idBaseEditando));
             rotuloId.setText("ID: " + p.getId());
@@ -389,6 +399,8 @@ public final class PerfisPanel extends JPanel {
             idBaseEditando = d.getId();
             nomeOriginal = "";
             atributosOriginais = null;      // novo = sempre "nao salvo"
+            aparenciaEditando = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
+            aparenciaOriginal = com.irmaosmiau.entities.AparenciaLutador.ORIGINAL;
             nome.setText("Meu " + d.getNome().replace("Irmão Miau ", ""));
             rotuloBase.setText("Base: " + d.getNome());
             rotuloId.setText("Novo perfil (o ID é gerado a partir do nome ao salvar)");
@@ -415,6 +427,7 @@ public final class PerfisPanel extends JPanel {
             l.campo.setEnabled(ativo);
         }
         salvar.setEnabled(ativo);
+        aparencia.setEnabled(ativo);
         padraoBase.setEnabled(ativo);
         descartar.setEnabled(ativo);
         excluir.setEnabled(ativo && !novoPerfil);
@@ -438,7 +451,8 @@ public final class PerfisPanel extends JPanel {
             return false;
         }
         return !nome.getText().trim().equals(nomeOriginal)
-                || !PerfilLutador.mesmosValores(lerAtributosSemValidar(), atributosOriginais);
+                || !PerfilLutador.mesmosValores(lerAtributosSemValidar(), atributosOriginais)
+                || !aparenciaEditando.equals(aparenciaOriginal);
     }
 
     private void aoEditar() {
@@ -493,6 +507,9 @@ public final class PerfisPanel extends JPanel {
             } else {
                 salvo = servico.atualizar(editando.getId(), nomeDigitado, atributos);
             }
+            if (!aparenciaEditando.equals(salvo.getAparencia())) {
+                salvo = servico.atualizarAparencia(salvo.getId(), aparenciaEditando);   // as cores do editor
+            }
             recarregarLista(salvo.getId());
             abrir(salvo);
             mostrarStatus("Perfil \"" + salvo.getNome() + "\" salvo.", false);
@@ -508,6 +525,31 @@ public final class PerfisPanel extends JPanel {
             mostrarStatus("Não foi salvo. " + ex.getMessage(), true);
             return false;
         }
+    }
+
+    /** APARENCIA: o editor de cores (previa no renderizador real); vale ao SALVAR o perfil. */
+    void editarAparencia() {
+        if (idBaseEditando == null || (editando == null && !novoPerfil)) {
+            return;
+        }
+        DefinicaoPersonagem d = servico.getCatalogo().buscar(idBaseEditando);
+        if (d == null) {
+            return;
+        }
+        com.irmaosmiau.entities.AparenciaLutador r = EditorAparenciaPanel.editar(this, () -> d.criarLutador(60, 70, 0.95), aparenciaEditando);
+        if (r != null) {
+            definirAparencia(r);
+        }
+    }
+
+    /** A aparencia em edicao (o dialogo devolve; os testes usam direto). */
+    void definirAparencia(com.irmaosmiau.entities.AparenciaLutador a) {
+        aparenciaEditando = a == null ? com.irmaosmiau.entities.AparenciaLutador.ORIGINAL : a;
+        mostrarStatus(temAlteracoesNaoSalvas() ? "Aparência alterada: clique em SALVAR para manter." : " ", false);
+    }
+
+    com.irmaosmiau.entities.AparenciaLutador aparenciaEmEdicao() {
+        return aparenciaEditando;
     }
 
     void excluir() {
