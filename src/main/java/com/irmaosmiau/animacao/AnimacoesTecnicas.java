@@ -249,6 +249,14 @@ public final class AnimacoesTecnicas {
                 q(1.00));
         def("tirar_ganchos:RECEBE", q(0.00), q(0.45, 26, -6, 27, -4, 22, -6, 23, -4), q(1.00));
 
+        // 5Q.7 corretiva: MANTER A GUARDA (guarda aberta, por baixo): o quadril contrai e encaixa, os
+        // joelhos voltam para dentro (os pes na frente do outro), as maos ajustam; volta a pose da guarda.
+        // Nao troca de guarda: so desloca de leve o que a pose da guarda aberta ja tem.
+        int[] manter = {5, -4, 6, 6, 26, 6, 27, -8, 28, 4, 29, -8, 22, -4, 23, -6, 24, -2, 25, -5,
+                20, 4, 21, 8, 18, 2, 19, 4, 16, 3, 17, 5};
+        def("retencao:ATACA", q(0.00), q(0.40, manter), q(0.65, manter), q(1.00));
+        def("retencao:RECEBE", q(0.00), q(0.45, 9, -4, 11, -2, 30, -2), q(1.00));                  // o de cima e travado
+
         // RECUPERAR A GUARDA (escape de quadril, dos 100 kg): fuga de quadril, joelhos entram, bracos empurram
         int[] fugaQuadril = {5, -8, 6, 10, 9, 4, 26, 10, 27, 12, 28, 6, 29, 14, 22, 6, 23, 8, 24, 4, 25, 10,
                 20, 6, 21, 16, 18, 3, 19, 8, 16, 6, 17, 12, 14, 3, 15, 6};
@@ -677,7 +685,7 @@ public final class AnimacoesTecnicas {
     private static final java.util.Set<String> PRESERVA_BRACOS = java.util.Set.of("enquadrar", "enquadrar_joelho",
             "enquadrar_montada", "defender_maos", "esconder_pe", "tirar_ganchos", "escape_quadril", "fugir_do_joelho",
             "recuperar_meia", "virar_joelhos", "escape_montada", "girar_nas_costas", "escapar_neutro",
-            "segurando_pernas", "segurar_pernas");
+            "segurando_pernas", "segurar_pernas", "retencao");
 
     /** 5Q.7: o efeito e uma microanimacao defensiva (preservar o tamanho dos bracos)? */
     public static boolean preservaBracos(MotorSolo.EfeitoVisual e) {

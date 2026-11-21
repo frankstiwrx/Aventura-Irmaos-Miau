@@ -131,4 +131,54 @@ class ArrastoEManter5Q7CorretivaGamePanelTest extends Base5OGamePanel {
             assertTrue(m().getSeguradorPernas().isEmpty());
         });
     }
+
+    @Test
+    void manterAGuardaTemMicroanimacaoSemTrocarDeGuardaNemGanharControle() throws Exception {
+        naEdt(() -> {
+            for (Lado cima : Lado.values()) {
+                novo(InicioLuta.EM_PE);
+                Lado baixo = cima.outro();
+                m().forcarPosicao(Posicao.GUARDA_ABERTA, cima, baixo);
+                ticks(50);
+                IrmaoMiau l = baixo == Lado.A ? j1() : j2();
+                int[] antes = l.copiarPoseCombateExterna();
+                MotorSolo.Resposta r = m().comando(baixo, new ComandoSolo(Direcao.ESQUERDA, Familia.RS));
+                assertEquals(CatalogoTecnicasSolo.RETENCAO, r.tecnica().id(), r.motivo());
+                int mexeu = 0;
+                for (int i = 0; i < 18; i++) {
+                    ticks(1);
+                    int[] p = l.copiarPoseCombateExterna();
+                    double[] dv = IntegridadeMembros.desvios(antes, p, l);
+                    assertTrue(dv[0] <= FOLGA && dv[1] <= 0.5, "MANTER integro tick " + i);
+                    for (int k = 4; k < 30; k++) {
+                        mexeu = Math.max(mexeu, Math.abs(p[k] - antes[k]));
+                    }
+                }
+                assertTrue(mexeu >= 4 && mexeu <= 20, "sutil mas visivel: " + mexeu);
+                ticks(30);
+                assertEquals(Posicao.GUARDA_ABERTA, m().getPosicao(), "nao troca de guarda");
+                com.irmaosmiau.posicional.TecnicaSolo t = CatalogoTecnicasSolo.referencia()
+                        .exigir(CatalogoTecnicasSolo.RETENCAO);
+                assertEquals(com.irmaosmiau.posicional.TecnicaSolo.Efeito.NENHUM, t.efeito(),
+                        "a regra do MANTER nao mudou: nenhum controle a mais so pela animacao");
+                assertTrue(t.sucesso() == null, "nem troca de posicao");
+                assertArrayEquals(antes, l.copiarPoseCombateExterna(), "volta a pose da guarda");
+            }
+        });
+    }
+
+    @Test
+    void manterComoRespostaAPassagemTambemAparece() throws Exception {
+        naEdt(() -> {
+            novo(InicioLuta.EM_PE);
+            m().forcarPosicao(Posicao.GUARDA_ABERTA, Lado.A, Lado.B);
+            ticks(50);
+            assertTrue(m().comando(Lado.A, new ComandoSolo(Direcao.CIMA, Familia.RS)).aceito(), "passar");
+            ticks(2);
+            m().comando(Lado.B, new ComandoSolo(Direcao.ESQUERDA, Familia.RS));      // MANTER na janela
+            assertEquals("retencao", m().efeitoVisual(Lado.B).orElseThrow().tecnica());
+            ticks(30);
+            assertEquals(Posicao.GUARDA_ABERTA, m().getPosicao(), "a passagem foi segurada");
+        });
+    }
 }

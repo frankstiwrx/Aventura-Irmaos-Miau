@@ -465,7 +465,8 @@ public final class MotorSolo {
             CatalogoTecnicasSolo.POSTURA_ARANHA, CatalogoTecnicasSolo.POSTURA_SLX,
             // 5Q.7: defesas de quem esta por baixo (enquadrar, defender as maos, esconder o pe, tirar ganchos)
             CatalogoTecnicasSolo.ENQUADRAR, CatalogoTecnicasSolo.ENQUADRAR_JOELHO, CatalogoTecnicasSolo.ENQUADRAR_MONTADA,
-            CatalogoTecnicasSolo.DEFENDER_MAOS, CatalogoTecnicasSolo.ESCONDER_PE, CatalogoTecnicasSolo.TIRAR_GANCHOS);
+            CatalogoTecnicasSolo.DEFENDER_MAOS, CatalogoTecnicasSolo.ESCONDER_PE, CatalogoTecnicasSolo.TIRAR_GANCHOS,
+            CatalogoTecnicasSolo.RETENCAO);                    // 5Q.7 corretiva: MANTER A GUARDA (guarda aberta)
     static final int TICKS_ANIMACAO_INSTANTANEA = 18;
 
     /**
@@ -1593,6 +1594,11 @@ public final class MotorSolo {
         recarga.put(t.iniciador(), RECARGA_TICKS);
         if (c.isInstantanea() || c.sucesso() == null) {
             // contra de "segurar" (postura, retencao, consolidar...): so desfaz a tentativa
+            if (c.id().equals(CatalogoTecnicasSolo.RETENCAO)) {
+                // 5Q.7 corretiva: o MANTER usado como resposta tambem aparece no corpo (pernas e quadril)
+                efeito(quem, TipoEfeitoVisual.TECNICA_ATAQUE, TICKS_ANIMACAO_INSTANTANEA).tecnica = c.id();
+                efeito(quem.outro(), TipoEfeitoVisual.TECNICA_RECEBE, TICKS_ANIMACAO_INSTANTANEA).tecnica = c.id();
+            }
             instantanea(quem, c);
             if (c.isInstantanea()) {
                 recarga.put(quem, RECARGA_CONTRA_AJUSTE);      // 5Q.5: segurar tambem cansa (nao e gratis)
