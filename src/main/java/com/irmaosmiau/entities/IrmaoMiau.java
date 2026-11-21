@@ -2431,6 +2431,49 @@ public void alternarDeitado() {
     /** 5Q.1: cor do kimono escolhida (casaco e calca). null volta ao padrao do personagem. */
     public void setCorKimono(CorKimono k) {
         corKimono = k == null ? corKimonoPadrao : k.getCor();
+        corCalca = null;                                      // o kimono escolhido vale tambem na calca
+    }
+
+    // ---------------- aparencia personalizada (so visual; o editor de personagens)
+    /** Calca com cor propria (null = a mesma do kimono). */
+    private Color corCalca;
+    /** Faixa com cor propria, so visual (null = a cor da graduacao). */
+    private Color corFaixaVisual;
+
+    /**
+     * Aplica a aparencia personalizada (cada parte so se tiver cor). A pelagem leva junto a cor de contraste
+     * dos detalhes do rosto. Nada de graduacao, atributos ou tecnicas muda.
+     */
+    public void aplicarAparencia(AparenciaLutador a) {
+        if (a == null) {
+            return;
+        }
+        a.cor(AparenciaLutador.Parte.CASACO).ifPresent(c -> corKimono = c);
+        a.cor(AparenciaLutador.Parte.CALCA).ifPresent(c -> corCalca = c);
+        a.cor(AparenciaLutador.Parte.FAIXA).ifPresent(c -> corFaixaVisual = c);
+        a.cor(AparenciaLutador.Parte.PELO).ifPresent(c -> {
+            corPelo = c;
+            corRosto = AparenciaLutador.contraste(c);
+        });
+    }
+
+    /** Cor da calca no desenho. */
+    public Color getCorCalca() {
+        return corCalca != null ? corCalca : corKimono;
+    }
+
+    /** Cor do casaco no desenho. */
+    public Color getCorCasaco() {
+        return corKimono;
+    }
+
+    public Color getCorPelo() {
+        return corPelo;
+    }
+
+    /** Cor dos detalhes do rosto (olhos, nariz, boca). */
+    public Color getCorRosto() {
+        return corRosto;
     }
 
     public CorKimono getCorKimono() {
@@ -2443,6 +2486,9 @@ public void alternarDeitado() {
 
     /** 5Q.1: cor da faixa pela graduacao (fonte unica). */
     public Color getCorFaixa() {
+        if (corFaixaVisual != null) {
+            return corFaixaVisual;                            // personalizada: so o desenho (a graduacao e a mesma)
+        }
         return switch (graduacao) {
             case BRANCA -> new Color(244, 244, 238);
             case AZUL -> new Color(55, 55, 220);

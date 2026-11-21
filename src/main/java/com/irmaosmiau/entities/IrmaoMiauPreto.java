@@ -773,9 +773,9 @@ int[] poseInterpolada =
                 corpoFimY
         );
 
-        raiz.setColor(corKimono);
+        raiz.setColor(getCorCalca());                         // a calca pode ter cor propria
         raiz.fillPolygon(pelve);
-        contornarForma(raiz, pelve, corKimono);   // 5Q.4
+        contornarForma(raiz, pelve, getCorCalca());   // 5Q.4
 
         raiz.setStroke(
                 new BasicStroke(
@@ -1357,6 +1357,7 @@ private void desenharEmPe(
         // =========================
         // DESENHO DAS PERNAS
         // =========================
+        g2.setColor(getCorCalca());                           // a calca pode ter cor propria
         membro(g2, quadrilEsquerdoX, quadrilEsquerdoY, joelhoEsquerdoX, joelhoEsquerdoY, peEsquerdoX, peEsquerdoY);   // 5Q.4: com contorno
 
         membro(g2, quadrilDireitoX, quadrilDireitoY, joelhoDireitoX, joelhoDireitoY, peDireitoX, peDireitoY);   // 5Q.4: com contorno
