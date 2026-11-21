@@ -293,6 +293,10 @@ class SoloArenaAcrobacias5OGamePanelTest extends Base5OGamePanel {
             for (int i = 0; i < 40; i++) {
                 ticks(1);
                 viuNoAr |= "ACROBACIA".equals(j1().getEvasaoAtiva());
+                if (!j1().isEmAcrobacia()) {
+                    // 5Q.8 (pedido): a acrobacia acaba mais cedo; dai em diante e so andar (a regra de sempre)
+                    tecla("brancoDireita", false);
+                }
                 assertEquals(lado, Integer.signum(j1().getX() - j2().getX()), "nao passou para o outro lado");
                 assertTrue(Math.abs(j1().getX() - j2().getX()) >= GamePanel.DISTANCIA_MINIMA_ACROBACIA - 1
                         || !j1().isEmAcrobacia());

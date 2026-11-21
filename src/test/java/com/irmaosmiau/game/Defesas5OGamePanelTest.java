@@ -359,7 +359,7 @@ class Defesas5OGamePanelTest extends Base5OGamePanel {
                     } else {
                         assertNull(desenho(j1()), "original preservado");
                     }
-                    ticks(40);
+                    ticks(75);                                   // 5Q.8 (pedido): de joelhos o rolamento dura 76 ticks
                     assertFalse(j1().isRolando());
                     fim[v.ordinal()] = new double[] {j1().getX(), j1().getY(), j1().getFolegoAtual()};
                 }

@@ -94,7 +94,8 @@ class AcrobaciasCorretiva5Q7GamePanelTest extends Base5OGamePanel {
 
     @Test
     void rolamentoDeJoelhosESprawlNaoMudaram() {
-        assertEquals(46, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO), "rolamento de joelhos da 5Q.7");
+        // 5Q.8 (pedido): o rolamento de joelhos ficou mais 40% mais lento (46 -> 76)
+        assertEquals(76, IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO), "rolamento de joelhos da 5Q.8");
         assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.DEITADO));
         assertEquals(22, IrmaoMiau.duracaoRolamento(EstadoCorporal.EM_PE));
         assertEquals(32, IrmaoMiau.duracaoSprawl());

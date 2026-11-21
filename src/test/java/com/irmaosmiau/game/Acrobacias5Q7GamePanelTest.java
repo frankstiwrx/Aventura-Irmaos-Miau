@@ -112,10 +112,11 @@ class Acrobacias5Q7GamePanelTest extends Base5OGamePanel {
     @Test
     void rolamentoDeJoelhos40PorCentoMaisLentoComAMesmaDistancia() {
         assertEquals(0.6, IrmaoMiau.FATOR_ROLAMENTO_JOELHOS_5Q7, 1e-9);
-        assertEquals(0.48, IrmaoMiau.MULTIPLICADOR_ROLAMENTO_JOELHOS, 1e-9);
-        int antes = (int) Math.round(22 / 0.8);
+        // 5Q.8 (pedido): mais 40% mais lento por cima do da 5Q.7 (0,48 -> 0,288; 46 -> 76 ticks)
+        assertEquals(0.8 * 0.6 * IrmaoMiau.FATOR_ROLAMENTO_JOELHOS_5Q8, IrmaoMiau.MULTIPLICADOR_ROLAMENTO_JOELHOS, 1e-9);
+        int antes = (int) Math.round(22 / 0.48);
         int agora = IrmaoMiau.duracaoRolamento(EstadoCorporal.AJOELHADO);
-        assertEquals(1.67, agora / (double) antes, 0.05, "duracao ~1,67x a da 5Q.6: " + antes + " -> " + agora);
+        assertEquals(1.67, agora / (double) antes, 0.05, "duracao ~1,67x a da 5Q.7: " + antes + " -> " + agora);
         assertEquals(37, IrmaoMiau.duracaoRolamento(EstadoCorporal.DEITADO), "deitado nao mudou");
         assertEquals(22, IrmaoMiau.duracaoRolamento(EstadoCorporal.EM_PE), "em pe nao mudou");
         assertEquals(32, IrmaoMiau.duracaoSprawl(), "sprawl nao mudou");

@@ -212,7 +212,10 @@ public static final double FATOR_ROLAMENTO_JOELHOS_5Q7 = 0.6;
  * 5Q.7: mais 40% mais lento (0,8 x 0,6 = 0,48 -> 46 ticks; a duracao ~1,65x a da 5Q.6). A animacao
  * anda pelo progresso (quadros / duracao) e a velocidade cai na mesma proporcao: sem deslizar.
  */
-public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8 * FATOR_ROLAMENTO_JOELHOS_5Q7;
+/** 5Q.8: mais 40% mais lento (homologacao: ainda rapido demais). Recalibrar aqui. */
+public static final double FATOR_ROLAMENTO_JOELHOS_5Q8 = 0.6;
+/** 5Q.8: 0,8 x 0,6 x 0,6 = 0,288 -> 76 ticks (a mesma distancia; antes 46). */
+public static final double MULTIPLICADOR_ROLAMENTO_JOELHOS = 0.8 * FATOR_ROLAMENTO_JOELHOS_5Q7 * FATOR_ROLAMENTO_JOELHOS_5Q8;
 
 /* Duracao e velocidade do rolamento EM ANDAMENTO (decididas no inicio). */
 private int duracaoRolamentoAtual = DURACAO_ROLAMENTO;
@@ -1646,7 +1649,9 @@ public void alternarDeitado() {
     /** Recarga depois de uma acrobacia: ~0,4 s (a fixa ate a 5Q.6). */
     public static final int RECARGA_ACROBACIA_TICKS = 24;
     /** 5Q.7 corretiva: BASE da recarga dinamica (antes 24 = RECARGA_ACROBACIA_TICKS). */
-    public static final int RECARGA_ACROBACIA_BASE_TICKS = 16;
+    public static final int RECARGA_ACROBACIA_BASE_TICKS = 12;   // 5Q.8: era 16 (5Q.7 corretiva) e 24 (5Q.7)
+    /** 5Q.8: a boa condicao fisica (folego e condicionamento) tambem encurta a execucao (ate 10%). */
+    public static final double REDUCAO_EXECUCAO_POR_CONDICAO = 0.1;
     /** 5Q.7 corretiva: quanto a mobilidade maxima encurta a EXECUCAO (0,2 = ate 20% mais curta). */
     public static final double REDUCAO_EXECUCAO_POR_MOBILIDADE = 0.2;
     private int duracaoAcrobaciaAtual;
@@ -1806,6 +1811,13 @@ public void alternarDeitado() {
      * - condicao = 0,5 x folego atual/maximo + 0,5 x condicionamento atual/maximo; fator de cansaco =
      *   1 + 1,0 x (1 - condicao) (cansado: ate o dobro). Recursos infinitos ficam no maximo: condicao 1.
      */
+    /** 5Q.8: 0..1 = 0,5 x folego/maximo + 0,5 x condicionamento/maximo (infinitos ficam no maximo). */
+    public double condicaoFisica() {
+        double fol = atributos.getFolego() <= 0 ? 1 : folegoAtual / atributos.getFolego();
+        double con = atributos.getCondicionamento() <= 0 ? 1 : condicionamentoAtual / atributos.getCondicionamento();
+        return Math.max(0, Math.min(1, PESO_FOLEGO_ACROBACIA * fol + PESO_CONDICIONAMENTO_ACROBACIA * con));
+    }
+
     public int recargaAcrobaciaDinamica() {
         double mobilidade = mobilidadeAcrobatica();
         double fMob = 1.0 - REDUCAO_MAXIMA_POR_MOBILIDADE * mobilidade;
@@ -1830,7 +1842,8 @@ public void alternarDeitado() {
      * mesma (a velocidade sobe na proporcao) e a animacao anda pelo progresso.
      */
     public int duracaoAcrobacia(TipoAcrobacia tipo) {
-        int d = (int) Math.round(tipo.getDuracaoTicks() * (1 - REDUCAO_EXECUCAO_POR_MOBILIDADE * mobilidadeAcrobatica()));
+        int d = (int) Math.round(tipo.getDuracaoTicks() * (1 - REDUCAO_EXECUCAO_POR_MOBILIDADE * mobilidadeAcrobatica()
+                - REDUCAO_EXECUCAO_POR_CONDICAO * condicaoFisica()));   // 5Q.8: e pela condicao (recursos infinitos = 1)
         return Math.max(TipoAcrobacia.DURACAO_MINIMA_TICKS, Math.min(tipo.getDuracaoTicks(), d));
     }
 

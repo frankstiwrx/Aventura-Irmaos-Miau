@@ -19,7 +19,7 @@ public enum TipoAcrobacia {
     MORTAL_TRAS("MORTAL PARA TRÁS", 30, -55, 0, 7.0, false);
 
     /** 5Q.7 corretiva: nenhuma acrobacia fica mais curta que isto (inicio, ar e aterrissagem legiveis). */
-    public static final int DURACAO_MINIMA_TICKS = 18;
+    public static final int DURACAO_MINIMA_TICKS = 16;   // 5Q.8: era 18
 
     private final String rotulo;
     private final int duracaoTicks;
