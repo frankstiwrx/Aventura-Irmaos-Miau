@@ -336,15 +336,20 @@ class Menus5M3Test {
             sel.comandar(J2, Comando.ESQUERDA);
             assertEquals(0, sel.cursor(J2));
             assertEquals(0, sel.cursor(J1), "J2 tem o seu cursor na partida");
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                              // 5Q.4 (pedido)
-            sel.comandar(J1, Comando.CONFIRMAR);
+            // reorganizacao dos menus (pedido): personagem, faixa e kimono; AVANCAR; INICIAR LUTA
+            for (int i = 0; i < 3; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);
+            }
+            sel.comandar(J1, Comando.CONFIRMAR);              // AVANCAR sem o J2
             assertEquals(0, lutas.get(), "na partida o J2 precisa estar pronto");
-            sel.comandar(J1, Comando.ANTERIOR);
-            assertEquals(SelecaoPartidaPanel.Linha.TEMPO, sel.linhaJ1());
-            sel.comandar(J1, Comando.PROXIMO);
-            sel.comandar(J2, Comando.CONFIRMAR);
-            sel.comandar(J1, Comando.CONFIRMAR);
+            assertFalse(sel.naConfiguracao());
+            for (int i = 0; i < 3; i++) {
+                sel.comandar(J2, Comando.CONFIRMAR);
+            }
+            sel.comandar(J1, Comando.CONFIRMAR);              // AVANCAR
+            for (int i = 0; i < 4; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);          // ARENA -> TEMPO -> REGRAS -> INICIAR LUTA
+            }
         });
         assertEquals(1, lutas.get());
     }

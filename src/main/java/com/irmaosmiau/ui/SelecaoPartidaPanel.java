@@ -59,6 +59,13 @@ import javax.swing.Timer;
  * PRONTO. Pronto, o J1 ajusta a partida e confirma LUTAR (o J2 precisa estar
  * pronto). Cancelar volta uma fase; cancelar escolhendo volta ao menu.
  *
+ * Reorganizacao dos menus (JOGAR): a tela tem duas ETAPAS. Na primeira (lutadores) cada jogador, do
+ * mesmo jeito, confirma personagem -> (perfil) -> FAIXA -> KIMONO e so entao fica PRONTO, com as escolhas
+ * travadas (cancelar volta ao kimono). Com os dois prontos, AVANCAR (qualquer um confirma) abre a segunda
+ * etapa, CONFIGURACOES DA LUTA ({@link ConfiguracaoLuta}: arena, tempo, dificuldade, regras e INICIAR
+ * LUTA). Voltar dela devolve os lutadores intactos. As entradas sao as mesmas nas duas etapas (o aperto
+ * que avanca nunca vale na etapa seguinte). O TREINO nao mudou.
+ *
  * Os espacos bloqueados sao so visuais: nao ha personagens cadastrados para
  * eles, nao revelam nada e nao podem ser confirmados.
  */
@@ -70,6 +77,12 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     @FunctionalInterface
     public interface AoIniciar {
         void iniciar(EscolhaLutador j1, EscolhaLutador j2, String idCenario, int segundosLimite);
+
+        /** Com o modo de luta escolhido nas configuracoes (o padrao ignora o modo). */
+        default void iniciar(EscolhaLutador j1, EscolhaLutador j2, String idCenario, int segundosLimite,
+                com.irmaosmiau.regras.ModoLuta modo) {
+            iniciar(j1, j2, idCenario, segundosLimite);
+        }
     }
 
     /** 5M.3: o que fazer quando o J1 confirma TREINAR (parceiro passivo, mapa e inicio). */
@@ -92,7 +105,12 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     public static final int[] TEMPOS = {0, 60, 90, 180};
 
     /** Fase de um jogador. */
-    public enum Fase { ESCOLHENDO, PERFIL, PRONTO }
+    public enum Fase { ESCOLHENDO, PERFIL,
+        /** JOGAR: escolhendo a faixa (lados mudam, confirmar segue para o kimono). */
+        FAIXA,
+        /** JOGAR: escolhendo o kimono (confirmar deixa PRONTO). */
+        KIMONO,
+        PRONTO }
 
     /** Linhas de configuracao (o J1 navega quando esta pronto). */
     enum Linha { MAPA, TEMPO, DIFICULDADE, PARCEIRO, INICIO, LUTAR,
@@ -137,6 +155,9 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     private long tempoMs;
     private long avisoAguardandoAte = -1;
     private boolean iniciada;
+    /** JOGAR: a segunda etapa (configuracoes da luta) e se ela esta aberta. */
+    private final transient ConfiguracaoLuta config;
+    private boolean naConfiguracao;
     private final Timer timer = new Timer(16, e -> tick(16));
 
     public SelecaoPartidaPanel(CatalogoPersonagens catalogo, OpcoesDeLutadores opcoes, RegistroCenarios cenarios,
@@ -182,6 +203,7 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             nomesMapas.add(cenarios.exigir(id).getNome().toUpperCase(Locale.ROOT));
         }
         mapa = Math.max(0, mapas.indexOf(idCenarioInicial));
+        config = modo == Modo.PARTIDA ? new ConfiguracaoLuta(cenarios, idCenarioInicial) : null;
         for (SlotJogador s : SlotJogador.values()) {
             Jogador j = new Jogador();
             j.cursor = Math.min(s.ordinal(), elenco.size() - 1);    // J1 no 1o, J2 no 2o
@@ -218,7 +240,14 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         teclas(SlotJogador.JOGADOR_2, Comando.CONFIRMAR, "ENTER", "END");
         teclas(SlotJogador.JOGADOR_2, Comando.VOLTAR, "BACK_SPACE");
         getInputMap(WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke("pressed ESCAPE"), "voltarMenu");
-        getActionMap().put("voltarMenu", acao(() -> voltarAoMenu()));
+        getActionMap().put("voltarMenu", acao(() -> {
+            if (naConfiguracao) {
+                voltarAosLutadores();                        // ESC na configuracao: volta uma tela
+                repaint();
+            } else {
+                voltarAoMenu();
+            }
+        }));
     }
 
     /** Cada tecla age uma vez por aperto (segurar nao repete; o auto-repeat do sistema e ignorado). */
@@ -287,10 +316,22 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         if (modo == Modo.TREINO) {
             slot = SlotJogador.JOGADOR_1;                       // treino: um cursor so
         }
+        if (naConfiguracao) {
+            // segunda etapa: um foco so, que os dois jogadores podem mover
+            switch (config.comandar(c, tempoMs)) {
+                case INICIAR -> iniciar();
+                case VOLTAR -> voltarAosLutadores();
+                default -> {
+                }
+            }
+            repaint();
+            return;
+        }
         Jogador j = jogadores.get(slot);
         switch (j.fase) {
             case ESCOLHENDO -> escolhendo(slot, j, c);
             case PERFIL -> perfil(j, c);
+            case FAIXA, KIMONO -> personalizando(slot, j, c);
             default -> pronto(slot, j, c);
         }
         repaint();
@@ -312,7 +353,8 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 j.perfis = opcoes.paraBase(d.getId()).getValor();
                 j.perfil = 0;
                 j.kimono = null;                                  // 5Q.1: kimono padrao do novo personagem
-                j.fase = j.perfis.size() > 1 ? Fase.PERFIL : Fase.PRONTO;
+                Fase depois = modo == Modo.PARTIDA ? Fase.FAIXA : Fase.PRONTO;   // JOGAR: faixa e kimono antes
+                j.fase = j.perfis.size() > 1 ? Fase.PERFIL : depois;
                 if (j.fase == Fase.PRONTO && slot == SlotJogador.JOGADOR_1) {
                     linhaJ1 = Linha.FAIXA;                        // 5Q.4: personaliza antes de lutar
                     parceiroPadrao();
@@ -329,6 +371,10 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             case ESQUERDA -> j.perfil = Math.floorMod(j.perfil - 1, j.perfis.size());
             case DIREITA -> j.perfil = Math.floorMod(j.perfil + 1, j.perfis.size());
             case CONFIRMAR -> {
+                if (modo == Modo.PARTIDA) {
+                    j.fase = Fase.FAIXA;                          // JOGAR: faixa e kimono antes do PRONTO
+                    return;
+                }
                 j.fase = Fase.PRONTO;
                 if (j == jogadores.get(SlotJogador.JOGADOR_1)) {
                     linhaJ1 = Linha.FAIXA;                        // 5Q.4
@@ -341,20 +387,31 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
     }
 
+    /** JOGAR: FAIXA e KIMONO de cada jogador (o mesmo fluxo para J1 e J2). */
+    private void personalizando(SlotJogador slot, Jogador j, Comando c) {
+        boolean faixa = j.fase == Fase.FAIXA;
+        switch (c) {
+            case ESQUERDA -> mudarVisual(slot, j, faixa, -1);
+            case DIREITA -> mudarVisual(slot, j, faixa, 1);
+            case CONFIRMAR -> j.fase = faixa ? Fase.KIMONO : Fase.PRONTO;     // o kimono confirmado = PRONTO
+            case VOLTAR -> j.fase = faixa ? (j.perfis.size() > 1 ? Fase.PERFIL : Fase.ESCOLHENDO) : Fase.FAIXA;
+            default -> {
+            }
+        }
+    }
+
     private void pronto(SlotJogador slot, Jogador j, Comando c) {
-        if (c == Comando.VOLTAR) {
-            j.fase = Fase.ESCOLHENDO;
+        if (modo == Modo.PARTIDA) {
+            // PRONTO: as escolhas ficam travadas; so cancelar (volta ao kimono) ou AVANCAR
+            if (c == Comando.VOLTAR) {
+                j.fase = Fase.KIMONO;
+            } else if (c == Comando.CONFIRMAR) {
+                avancar();
+            }
             return;
         }
-        if (slot != SlotJogador.JOGADOR_1) {
-            // 5Q.1: o J2 so escolhe a propria faixa e o proprio kimono (a partida e configurada pelo J1)
-            switch (c) {
-                case ANTERIOR, PROXIMO -> j.linhaVisual = 1 - j.linhaVisual;
-                case ESQUERDA -> mudarVisual(slot, j, j.linhaVisual == 0, -1);
-                case DIREITA -> mudarVisual(slot, j, j.linhaVisual == 0, 1);
-                default -> {
-                }
-            }
+        if (c == Comando.VOLTAR) {
+            j.fase = Fase.ESCOLHENDO;
             return;
         }
         switch (c) {
@@ -374,6 +431,29 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
             default -> {
             }
         }
+    }
+
+    /** Os dois prontos (JOGAR)? So entao o AVANCAR abre as configuracoes. */
+    boolean ambosProntos() {
+        return jogadores.get(SlotJogador.JOGADOR_1).fase == Fase.PRONTO
+                && jogadores.get(SlotJogador.JOGADOR_2).fase == Fase.PRONTO;
+    }
+
+    /** AVANCAR: abre as configuracoes da luta com os dois prontos; senao avisa que falta o outro. */
+    private void avancar() {
+        if (!ambosProntos()) {
+            avisoAguardandoAte = tempoMs + 900;
+            return;
+        }
+        naConfiguracao = true;
+        config.abrir();
+        leitores.values().forEach(LeitorNavegacao::desarmar);   // o botao que avancou nao vale na outra tela
+    }
+
+    /** Volta das configuracoes para os lutadores: as escolhas e o PRONTO dos dois ficam. */
+    private void voltarAosLutadores() {
+        naConfiguracao = false;
+        leitores.values().forEach(LeitorNavegacao::desarmar);
     }
 
     /**
@@ -408,6 +488,21 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
         SlotJogador j1 = SlotJogador.JOGADOR_1;
         Jogador J1 = jogadores.get(j1);
+        if (naConfiguracao) {
+            switch (config.clicar(x, y, tempoMs)) {
+                case INICIAR -> iniciar();
+                case VOLTAR -> voltarAosLutadores();
+                default -> {
+                }
+            }
+            repaint();
+            return;
+        }
+        if (modo == Modo.PARTIDA) {
+            clicarPartida(x, y, J1);
+            repaint();
+            return;
+        }
         for (int i = 0; i < COLUNAS * LINHAS; i++) {
             if (celula(i).contains(x, y)) {
                 if (J1.fase == Fase.ESCOLHENDO) {
@@ -445,6 +540,35 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         }
         repaint();
     }
+
+    /** JOGAR, primeira etapa: o mouse age pelo J1 (personagem, faixa/kimono) e no AVANCAR. */
+    private void clicarPartida(int x, int y, Jogador J1) {
+        for (int i = 0; i < COLUNAS * LINHAS; i++) {
+            if (celula(i).contains(x, y)) {
+                if (J1.fase == Fase.ESCOLHENDO) {
+                    J1.cursor = i;
+                    comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
+                }
+                return;
+            }
+        }
+        if (y >= 84 && y < 112 && x >= 10 && x < 230 && (J1.fase == Fase.FAIXA || J1.fase == Fase.KIMONO)) {
+            boolean faixa = y < 98;
+            if (faixa == (J1.fase == Fase.FAIXA)) {
+                mudarVisual(SlotJogador.JOGADOR_1, J1, faixa, (x % 230) < 120 ? -1 : 1);
+            }
+        } else if (y >= 84 && y < 112 && x >= 570 && x < 790) {
+            Jogador j2 = jogadores.get(SlotJogador.JOGADOR_2);
+            boolean faixa = y < 98;
+            if ((j2.fase == Fase.FAIXA || j2.fase == Fase.KIMONO) && faixa == (j2.fase == Fase.FAIXA)) {
+                mudarVisual(SlotJogador.JOGADOR_2, j2, faixa, x < 680 ? -1 : 1);
+            }
+        } else if (BOTAO_AVANCAR.contains(x, y)) {
+            avancar();
+        }
+    }
+
+    static final Rectangle BOTAO_AVANCAR = new Rectangle(320, 364, 160, 34);
 
     /** DIFICULDADE e pulada: indisponivel enquanto nao houver IA. */
     private Linha linhaVizinha(int passo) {
@@ -529,8 +653,8 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                     InicioLuta.values()[inicio]);
             return;
         }
-        aoIniciar.iniciar(escolha(SlotJogador.JOGADOR_1), escolha(SlotJogador.JOGADOR_2), mapas.get(mapa),
-                TEMPOS[tempo]);
+        aoIniciar.iniciar(escolha(SlotJogador.JOGADOR_1), escolha(SlotJogador.JOGADOR_2), config.idArena(),
+                config.segundos(), config.modoLuta());
     }
 
     private void voltarAoMenu() {
@@ -636,13 +760,22 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         for (int x = -450; x < 800; x += 36) {
             g.fillPolygon(new int[] {x, x + 18, x + 468, x + 450}, new int[] {0, 0, 450, 450}, 4);
         }
+        if (naConfiguracao) {
+            config.desenhar(g, tempoMs, resumo(SlotJogador.JOGADOR_1), resumo(SlotJogador.JOGADOR_2));
+            g.dispose();
+            return;
+        }
         ArteMenus.letreiro(g, modo == Modo.TREINO ? "TREINO: ESCOLHA SEU LUTADOR" : "ESCOLHA SEU LUTADOR", 400, 44,
                 new Font("Arial", Font.BOLD, 26), ArteMenus.AMARELO);
 
         painelJogador(g, SlotJogador.JOGADOR_1, 10);
         painelJogador(g, SlotJogador.JOGADOR_2, 570);
         grade(g);
-        configuracoes(g);
+        if (modo == Modo.PARTIDA) {
+            rodapePartida(g);
+        } else {
+            configuracoes(g);
+        }
         g.dispose();
     }
 
@@ -731,7 +864,13 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         g.setFont(new Font("Arial", Font.BOLD, 12));
         g.setColor(j.fase == Fase.PRONTO || parceiroTreino ? ArteMenus.AMARELO : ArteMenus.BRANCO);
         String fase = parceiroTreino ? "PASSIVO"
-                : j.fase == Fase.PRONTO ? "PRONTO!" : j.fase == Fase.PERFIL ? "ESCOLHA O PERFIL" : "ESCOLHENDO";
+                : switch (j.fase) {
+                    case PRONTO -> "PRONTO!";
+                    case PERFIL -> "ESCOLHA O PERFIL";
+                    case FAIXA -> "ESCOLHA A FAIXA";
+                    case KIMONO -> "ESCOLHA O KIMONO";
+                    default -> "ESCOLHENDO";
+                };
         g.drawString(fase, x + 210 - g.getFontMetrics().stringWidth(fase), 78);
 
         visual(g, s, j, x, parceiroTreino);
@@ -784,7 +923,10 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
         boolean pronto = jogadores.get(SlotJogador.JOGADOR_1).fase == Fase.PRONTO;
         boolean focoFaixa;
         boolean focoKimono;
-        if (s == SlotJogador.JOGADOR_1) {
+        if (modo == Modo.PARTIDA) {
+            focoFaixa = j.fase == Fase.FAIXA;                    // JOGAR: o mesmo para J1 e J2
+            focoKimono = j.fase == Fase.KIMONO;
+        } else if (s == SlotJogador.JOGADOR_1) {
             focoFaixa = pronto && linhaJ1 == Linha.FAIXA;
             focoKimono = pronto && linhaJ1 == Linha.KIMONO;
         } else if (parceiroTreino) {
@@ -887,6 +1029,57 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
                 : "J1 WASD·ESPAÇO·Q   J2 setas·ENTER·BACKSPACE   ESC menu", 400, 433);
     }
 
+    /** JOGAR, primeira etapa: quem esta pronto, o AVANCAR (habilitado so com os dois) e as dicas. */
+    private void rodapePartida(Graphics2D g) {
+        g.setColor(ArteMenus.AZUL_PAINEL);
+        g.fillRoundRect(240, 258, 320, 184, 14, 14);
+        int y = 290;
+        for (SlotJogador s : SlotJogador.values()) {
+            Fase f = jogadores.get(s).fase;
+            g.setFont(new Font("Arial", Font.BOLD, 14));
+            g.setColor(s == SlotJogador.JOGADOR_1 ? ArteMenus.J1 : ArteMenus.J2);
+            g.drawString(s == SlotJogador.JOGADOR_1 ? "J1" : "J2", 262, y);
+            g.setColor(f == Fase.PRONTO ? ArteMenus.AMARELO : ArteMenus.BRANCO);
+            String t = f == Fase.PRONTO ? "PRONTO" : "AGUARDANDO CONFIRMAÇÃO";
+            g.drawString(t, 538 - g.getFontMetrics().stringWidth(t), y);
+            y += 30;
+        }
+        boolean prontos = ambosProntos();
+        g.setColor(prontos ? new Color(255, 206, 46, 235) : new Color(30, 70, 150));
+        g.fillRoundRect(BOTAO_AVANCAR.x, BOTAO_AVANCAR.y, BOTAO_AVANCAR.width, BOTAO_AVANCAR.height, 12, 12);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setColor(prontos ? ArteMenus.AZUL_ESCURO : new Color(120, 135, 175));
+        ArteMenus.centralizado(g, "AVANÇAR", 400, 388);
+        g.setFont(ArteMenus.PEQUENO);
+        String dica;
+        if (avisoAguardandoAte > tempoMs) {
+            g.setColor(ArteMenus.AMARELO);
+            dica = "AGUARDANDO O OUTRO JOGADOR FICAR PRONTO";
+        } else {
+            g.setColor(ArteMenus.BRANCO);
+            boolean algumPronto = jogadores.values().stream().anyMatch(x -> x.fase == Fase.PRONTO);
+            dica = prontos ? "Confirme AVANÇAR (J1 ou J2)" : algumPronto ? "Aguardando o outro jogador"
+                    : "Personagem · faixa · kimono: confirme cada um";
+        }
+        ArteMenus.centralizado(g, dica, 400, 416);
+        g.setColor(new Color(190, 205, 235));
+        g.setFont(new Font("Arial", Font.PLAIN, 9));
+        ArteMenus.centralizado(g, "J1 WASD·ESPAÇO·Q   J2 setas·ENTER·BACKSPACE   ESC menu",
+                400, 433);
+    }
+
+    /** "MIAU BRANCO · AZUL · KIMONO PRETO" (resumo na segunda etapa). */
+    private String resumo(SlotJogador s) {
+        EscolhaLutador e = escolha(s);
+        if (e == null) {
+            return "-";
+        }
+        String nome = e.isOficial() ? nomeExibido(e.getBase()) : e.getNome().toUpperCase(Locale.ROOT);
+        com.irmaosmiau.entities.CorKimono k = kimonoEfetivo(s);
+        return nome + " · " + jogadores.get(s).faixa.name()
+                + (k == null ? "" : " · KIMONO " + k.getNome().toUpperCase(Locale.ROOT));
+    }
+
     /** Triangulo de seta (as fontes padrao nem sempre tem os caracteres de seta). */
     private static void seta(Graphics2D g, int cx, int cy, int lado) {
         g.fillPolygon(new int[] {cx + 5 * lado, cx - 5 * lado, cx - 5 * lado}, new int[] {cy, cy - 6, cy + 6}, 3);
@@ -938,11 +1131,19 @@ public final class SelecaoPartidaPanel extends JPanel implements TelaNavegavel {
     }
 
     String mapaAtual() {
-        return mapas.get(mapa);
+        return config != null ? config.idArena() : mapas.get(mapa);
     }
 
     int tempoAtual() {
-        return TEMPOS[tempo];
+        return config != null ? config.segundos() : TEMPOS[tempo];
+    }
+
+    boolean naConfiguracao() {
+        return naConfiguracao;
+    }
+
+    ConfiguracaoLuta configuracao() {
+        return config;
     }
 
     Modo modo() {

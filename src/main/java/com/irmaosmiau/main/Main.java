@@ -294,17 +294,23 @@ public class Main {
                 OpcoesDeLutadores.padrao(),
                 RegistroCenarios.padrao(),
                 PreferenciasJogo.global().cenarioValido(RegistroCenarios.padrao()),
-                (j1, j2, cenario, segundos) -> iniciarPartida(janela, j1, j2, cenario, segundos),
+                new com.irmaosmiau.ui.SelecaoPartidaPanel.AoIniciar() {
+                    @Override
+                    public void iniciar(EscolhaLutador j1, EscolhaLutador j2, String cenario, int segundos) {
+                        iniciarPartida(janela, j1, j2, cenario, segundos, com.irmaosmiau.regras.ModoLuta.PADRAO,
+                                null);
+                    }
+
+                    @Override
+                    public void iniciar(EscolhaLutador j1, EscolhaLutador j2, String cenario, int segundos,
+                            com.irmaosmiau.regras.ModoLuta modo) {
+                        iniciarPartida(janela, j1, j2, cenario, segundos, modo, null);   // o modo das configuracoes
+                    }
+                },
                 () -> mostrarMenu(janela),
                 ServicoGamepads::global,
                 () -> PreferenciasDispositivos.global().getAtual()
         ));
-    }
-
-    /** Entrega 5M: luta de JOGAR: sempre EM PE, no mapa e com o tempo escolhidos. */
-    private static void iniciarPartida(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
-            int segundos) {
-        iniciarPartida(janela, j1, j2, cenario, segundos, null);
     }
 
     /**
@@ -313,7 +319,7 @@ public class Main {
      * no modo normal.
      */
     private static void iniciarPartida(JFrame janela, EscolhaLutador j1, EscolhaLutador j2, String cenario,
-            int segundos, com.irmaosmiau.game.ModoDesenvolvedor dev) {
+            int segundos, com.irmaosmiau.regras.ModoLuta modo, com.irmaosmiau.game.ModoDesenvolvedor dev) {
         GamePanel[] atual = new GamePanel[1];
         GamePanel jogo = new GamePanel(
                 TipoPersonagem.AMBOS,
@@ -322,10 +328,11 @@ public class Main {
                 com.irmaosmiau.entities.InicioLuta.EM_PE,
                 () -> mostrarMenu(janela),
                 () -> mostrarSelecao(janela),
-                () -> iniciarPartida(janela, j1, j2, cenario, segundos, atual[0].getModoDesenvolvedor())
+                () -> iniciarPartida(janela, j1, j2, cenario, segundos, modo, atual[0].getModoDesenvolvedor())
         );
         atual[0] = jogo;
         jogo.configurarPartida(dev != null ? dev.cenarioOu(cenario) : cenario, segundos);
+        jogo.configurarModoLuta(modo);                         // regras escolhidas nas configuracoes
         jogo.configurarModoDesenvolvedor(dev);
         trocarTela(janela, jogo);
         jogo.requestFocusInWindow();

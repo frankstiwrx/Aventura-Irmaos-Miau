@@ -56,14 +56,15 @@ class Selecao5Q1Test {
                     (a, b, c, t) -> inicio.set(new EscolhaLutador[] {a, b}), () -> { }, () -> null, () -> null);
             sel.comandar(J1, Comando.CONFIRMAR);                // Branco
             sel.comandar(J2, Comando.CONFIRMAR);                // Preto (o cursor do J2 ja comeca nele)
-            // 5Q.4 (pedido): o J1 ja comeca na FAIXA depois de escolher o personagem
-            assertEquals(SelecaoPartidaPanel.Linha.FAIXA, sel.linhaJ1());
+            // reorganizacao dos menus (pedido): os dois caem na FAIXA; confirmar segue para o KIMONO
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J1));
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
             sel.comandar(J1, Comando.DIREITA);                  // azul
             sel.comandar(J1, Comando.DIREITA);                  // roxa
-            sel.comandar(J1, Comando.PROXIMO);                  // KIMONO
+            sel.comandar(J1, Comando.CONFIRMAR);                // KIMONO
             sel.comandar(J1, Comando.DIREITA);                  // preto (padrao) -> branco
             sel.comandar(J2, Comando.DIREITA);                  // J2: faixa azul
-            sel.comandar(J2, Comando.PROXIMO);                  // J2: kimono
+            sel.comandar(J2, Comando.CONFIRMAR);                // J2: kimono
             sel.comandar(J2, Comando.DIREITA);                  // branco (padrao) -> azul
             assertEquals(Graduacao.ROXA, sel.faixa(J1));
             assertEquals(Graduacao.AZUL, sel.faixa(J2));
@@ -72,8 +73,12 @@ class Selecao5Q1Test {
             sel.setSize(800, 450);
             sel.paint(g);                                      // previa e atributos com a faixa escolhida
             g.dispose();
-            sel.comandar(J1, Comando.CONFIRMAR);                // 5Q.4 (pedido): KIMONO -> LUTAR
-            sel.comandar(J1, Comando.CONFIRMAR);                // LUTAR!
+            sel.comandar(J1, Comando.CONFIRMAR);                // kimono confirmado: PRONTO
+            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J1, Comando.CONFIRMAR);                // AVANCAR
+            for (int i = 0; i < 4; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);            // ... INICIAR LUTA
+            }
         });
         EscolhaLutador[] e = inicio.get();
         assertEquals(Graduacao.ROXA, e[0].getGraduacao());

@@ -55,15 +55,21 @@ class Selecao5Q4Test {
                     (a, b, c, t) -> inicio.set(new EscolhaLutador[] {a, b}), () -> { }, () -> null, () -> null);
             sel.comandar(J1, Comando.CONFIRMAR);
             sel.comandar(J2, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Linha.FAIXA, sel.linhaJ1(), "nao pula para LUTAR");
+            // reorganizacao dos menus (pedido): FAIXA e KIMONO sao etapas de cada jogador
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J1), "nao pula para PRONTO");
             sel.comandar(J1, Comando.DIREITA);                  // azul
             sel.comandar(J1, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Linha.KIMONO, sel.linhaJ1());
+            assertEquals(SelecaoPartidaPanel.Fase.KIMONO, sel.fase(J1));
             sel.comandar(J1, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Linha.LUTAR, sel.linhaJ1());
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
             assertEquals(Graduacao.AZUL, sel.faixa(J1));
             assertEquals(Graduacao.BRANCA, sel.faixa(J2), "o J2 nao muda junto");
-            sel.comandar(J1, Comando.CONFIRMAR);
+            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J1, Comando.CONFIRMAR);                // AVANCAR
+            for (int i = 0; i < 4; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);            // ... INICIAR LUTA
+            }
         });
         assertEquals(Graduacao.AZUL, inicio.get()[0].getGraduacao());
         assertEquals(Graduacao.BRANCA, inicio.get()[1].getGraduacao());
@@ -78,13 +84,19 @@ class Selecao5Q4Test {
                     (a, b, c, t) -> inicio.set(new EscolhaLutador[] {a, b}), () -> { }, () -> null, () -> null);
             sel.comandar(J1, Comando.CONFIRMAR);
             sel.comandar(J2, Comando.CONFIRMAR);
+            // reorganizacao dos menus (pedido): o clique vale na etapa em que cada um esta
             sel.clicar(200, 90);                                // J1 faixa ->
+            sel.comandar(J1, Comando.CONFIRMAR);                // J1 vai ao kimono
             sel.clicar(200, 105);                               // J1 kimono ->
             sel.clicar(700, 90);                                // J2 faixa ->
             sel.clicar(700, 90);                                // J2 faixa -> (roxa)
             assertEquals(Graduacao.AZUL, sel.faixa(J1));
             assertEquals(Graduacao.ROXA, sel.faixa(J2));
-            sel.clicar(400, 380);                               // LUTAR
+            sel.comandar(J1, Comando.CONFIRMAR);                // J1 PRONTO
+            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J2, Comando.CONFIRMAR);                // J2 PRONTO
+            sel.clicar(400, 380);                               // AVANCAR
+            sel.clicar(400, 384);                               // INICIAR LUTA
         });
         EscolhaLutador[] e = inicio.get();
         assertEquals(Graduacao.AZUL, e[0].getGraduacao());

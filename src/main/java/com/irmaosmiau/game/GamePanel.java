@@ -946,6 +946,24 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         ticksDeLuta = 0;
     }
 
+    /** Modo de luta escolhido nas configuracoes (JOGAR); vale tambem nos F5 da mesma partida. */
+    private com.irmaosmiau.regras.ModoLuta modoLuta = com.irmaosmiau.regras.ModoLuta.PADRAO;
+
+    /**
+     * Aplica o modo de luta (so modos disponiveis; um EM BREVE nunca chega aqui pela tela, e se chegar
+     * fica o padrao). Hoje o modo diz que finalizacoes valem ({@link com.irmaosmiau.regras.ModoRegras}).
+     */
+    public void configurarModoLuta(com.irmaosmiau.regras.ModoLuta m) {
+        modoLuta = m != null && m.isDisponivel() ? m : com.irmaosmiau.regras.ModoLuta.PADRAO;
+        if (solo != null) {
+            solo.setModoRegras(modoLuta.getRegras());
+        }
+    }
+
+    com.irmaosmiau.regras.ModoLuta getModoLuta() {
+        return modoLuta;
+    }
+
     /** So corre nos ticks de luta (pausa e fim de jogo nao chegam aqui). */
     private void contarTempoDeLuta() {
         if (limiteSegundos <= 0 || fimDeJogo) {
@@ -1646,6 +1664,9 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         solo = sistemaCombate == null ? null
                 : new com.irmaosmiau.posicional.MotorSolo(jogadorBranco, jogadorPreto, sistemaCombate,
                         LIMITE_ESQUERDO_ARENA, LIMITE_DIREITO_ARENA);
+        if (solo != null) {
+            solo.setModoRegras(modoLuta.getRegras());           // regras da partida (configuracoes da luta)
+        }
         animador.setMotorSolo(solo);
     }
 

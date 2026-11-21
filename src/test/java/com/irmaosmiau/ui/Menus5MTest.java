@@ -82,10 +82,29 @@ class Menus5MTest {
         g.dispose();
     }
 
+    /**
+     * Reorganizacao dos menus (pedido): cada jogador confirma personagem, (perfil,) faixa e kimono; so
+     * entao fica PRONTO.
+     */
+    private void pronto(SlotJogador s) {
+        for (int i = 0; i < 5 && sel.fase(s) != SelecaoPartidaPanel.Fase.PRONTO; i++) {
+            sel.comandar(s, Comando.CONFIRMAR);
+        }
+        assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(s));
+    }
+
     private void prontos() {
-        sel.comandar(J1, Comando.CONFIRMAR);
-        personalizacao(sel);                              // 5Q.4 (pedido)
-        sel.comandar(J2, Comando.CONFIRMAR);
+        pronto(J1);
+        pronto(J2);
+    }
+
+    /** Reorganizacao dos menus (pedido): AVANCAR e, nas configuracoes, confirmar ate INICIAR LUTA. */
+    private void lutar() {
+        sel.comandar(J1, Comando.CONFIRMAR);                // AVANCAR
+        assertTrue(sel.naConfiguracao());
+        for (int i = 0; i < 6 && inicios.get() == 0; i++) {
+            sel.comandar(J1, Comando.CONFIRMAR);            // ARENA -> TEMPO -> REGRAS -> INICIAR LUTA
+        }
     }
 
     // =====================================================
@@ -226,11 +245,12 @@ class Menus5MTest {
     void confirmacaoSimultanea() throws Exception {
         naEdt(() -> {
             sel = selecao();
+            // reorganizacao (pedido): personagem -> faixa -> kimono -> PRONTO, nos dois
             sel.comandar(J2, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2));
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
+            pronto(J2);
             assertEquals(SelecaoPartidaPanel.Fase.ESCOLHENDO, sel.fase(J1));
-            sel.comandar(J1, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
+            pronto(J1);
         });
     }
 
@@ -258,7 +278,7 @@ class Menus5MTest {
             sel = selecao();
             sel.comandar(J2, Comando.ESQUERDA);
             prontos();
-            sel.comandar(J1, Comando.CONFIRMAR);
+            lutar();                                        // reorganizacao (pedido)
         });
         assertEquals(1, inicios.get());
         EscolhaLutador a = (EscolhaLutador) iniciou.get()[0];
@@ -314,7 +334,12 @@ class Menus5MTest {
     void cancelarDesfazPronto() throws Exception {
         naEdt(() -> {
             sel = selecao();
-            sel.comandar(J2, Comando.CONFIRMAR);
+            // reorganizacao (pedido): cancelar depois de PRONTO volta ao kimono; cada cancelar, um passo
+            pronto(J2);
+            sel.comandar(J2, Comando.VOLTAR);
+            assertEquals(SelecaoPartidaPanel.Fase.KIMONO, sel.fase(J2));
+            sel.comandar(J2, Comando.VOLTAR);
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
             sel.comandar(J2, Comando.VOLTAR);
             assertEquals(SelecaoPartidaPanel.Fase.ESCOLHENDO, sel.fase(J2));
             assertEquals(0, voltas.get());
@@ -339,12 +364,14 @@ class Menus5MTest {
     void lutarEsperaOJ2() throws Exception {
         naEdt(() -> {
             sel = selecao();
-            sel.comandar(J1, Comando.CONFIRMAR);
-            sel.comandar(J1, Comando.CONFIRMAR);
+            pronto(J1);                                       // reorganizacao (pedido)
+            sel.comandar(J1, Comando.CONFIRMAR);              // AVANCAR sem o J2: nada
+            assertFalse(sel.naConfiguracao());
             assertEquals(0, inicios.get());
+            pronto(J2);
+            lutar();
+            sel.comandar(J1, Comando.CONFIRMAR);
             sel.comandar(J2, Comando.CONFIRMAR);
-            sel.comandar(J1, Comando.CONFIRMAR);
-            sel.comandar(J1, Comando.CONFIRMAR);
         });
         assertEquals(1, inicios.get(), "inicia uma vez so");
     }
@@ -359,11 +386,12 @@ class Menus5MTest {
             assertEquals(SelecaoPartidaPanel.Fase.PERFIL, sel.fase(J2));
             sel.comandar(J2, Comando.DIREITA);
             sel.comandar(J2, Comando.CONFIRMAR);
-            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2));
+            // reorganizacao (pedido): depois do perfil, faixa e kimono
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
+            pronto(J2);
             assertEquals("Pretinho", sel.escolha(J2).getNome());
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                          // 5Q.4 (pedido)
-            sel.comandar(J1, Comando.CONFIRMAR);
+            pronto(J1);
+            lutar();
         });
         assertEquals("Pretinho", ((EscolhaLutador) iniciou.get()[1]).getNome());
     }
@@ -376,14 +404,15 @@ class Menus5MTest {
             assertTrue(sel.mapaTemOpcoes());
             assertEquals(RegistroCenarios.ID_PADRAO, sel.mapaAtual());
             prontos();
-            sel.comandar(J1, Comando.ANTERIOR);              // LUTAR -> TEMPO
-            sel.comandar(J1, Comando.ANTERIOR);              // TEMPO -> MAPA
-            assertEquals(SelecaoPartidaPanel.Linha.MAPA, sel.linhaJ1());
+            // reorganizacao (pedido): a ARENA esta na segunda tela, com o foco inicial
+            sel.comandar(J1, Comando.CONFIRMAR);             // AVANCAR
+            assertEquals(ConfiguracaoLuta.Area.ARENA, sel.configuracao().foco());
             sel.comandar(J1, Comando.DIREITA);
             assertEquals("original", sel.mapaAtual());
             assertTrue(RegistroCenarios.padrao().contem(sel.mapaAtual()));
-            sel.comandar(J1, Comando.CONFIRMAR);             // volta para LUTAR
-            sel.comandar(J1, Comando.CONFIRMAR);
+            for (int i = 0; i < 4; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);         // ARENA -> TEMPO -> REGRAS -> INICIAR LUTA
+            }
         });
         assertEquals("original", iniciou.get()[2]);
     }
@@ -394,8 +423,9 @@ class Menus5MTest {
         naEdt(() -> {
             sel = selecao();
             prontos();
-            sel.comandar(J1, Comando.ANTERIOR);
-            assertEquals(SelecaoPartidaPanel.Linha.TEMPO, sel.linhaJ1());
+            sel.comandar(J1, Comando.CONFIRMAR);             // reorganizacao (pedido): AVANCAR
+            sel.comandar(J1, Comando.PROXIMO);
+            assertEquals(ConfiguracaoLuta.Area.TEMPO, sel.configuracao().foco());
             List<Integer> vistos = new ArrayList<>();
             for (int i = 0; i < 4; i++) {
                 vistos.add(sel.tempoAtual());
@@ -405,7 +435,8 @@ class Menus5MTest {
             assertEquals(0, sel.tempoAtual(), "da a volta");
             sel.comandar(J1, Comando.ESQUERDA);
             assertEquals(180, sel.tempoAtual());
-            sel.comandar(J1, Comando.PROXIMO);
+            sel.comandar(J1, Comando.PROXIMO);               // REGRAS
+            sel.comandar(J1, Comando.PROXIMO);               // INICIAR LUTA
             sel.comandar(J1, Comando.CONFIRMAR);
         });
         assertEquals(180, iniciou.get()[3]);
@@ -418,18 +449,20 @@ class Menus5MTest {
         naEdt(() -> {
             sel = selecao();
             prontos();
-            for (int i = 0; i < 5; i++) {
-                sel.comandar(J1, Comando.ANTERIOR);
-                assertFalse(sel.linhaJ1() == SelecaoPartidaPanel.Linha.DIFICULDADE);
-            }
+            sel.comandar(J1, Comando.CONFIRMAR);             // reorganizacao (pedido): na segunda tela
             for (int i = 0; i < 5; i++) {
                 sel.comandar(J1, Comando.PROXIMO);
-                assertFalse(sel.linhaJ1() == SelecaoPartidaPanel.Linha.DIFICULDADE);
+                assertFalse(sel.configuracao().foco() == ConfiguracaoLuta.Area.DIFICULDADE);
+            }
+            for (int i = 0; i < 5; i++) {
+                sel.comandar(J1, Comando.ANTERIOR);
+                assertFalse(sel.configuracao().foco() == ConfiguracaoLuta.Area.DIFICULDADE);
             }
         });
     }
 
-    // 27. So o J1 configura a partida
+    // 27. Reorganizacao (pedido): na primeira tela o J2 nao mexe em nada do J1 nem da partida; com os
+    // dois prontos o J2 tambem avanca, e na segunda tela os dois movem o mesmo foco (o J2 nao depende do J1)
     @Test
     void j2NaoMexeNasConfiguracoes() throws Exception {
         naEdt(() -> {
@@ -437,11 +470,15 @@ class Menus5MTest {
             prontos();
             sel.comandar(J2, Comando.ANTERIOR);
             sel.comandar(J2, Comando.DIREITA);
-            assertEquals(SelecaoPartidaPanel.Linha.LUTAR, sel.linhaJ1());
             assertEquals(0, sel.tempoAtual());
-            sel.comandar(J2, Comando.CONFIRMAR);
+            assertEquals(RegistroCenarios.ID_PADRAO, sel.mapaAtual());
+            assertEquals(0, inicios.get());
+            sel.comandar(J2, Comando.CONFIRMAR);             // o J2 avanca
+            assertTrue(sel.naConfiguracao());
+            sel.comandar(J2, Comando.DIREITA);               // e escolhe a arena
+            assertEquals("original", sel.mapaAtual());
         });
-        assertEquals(0, inicios.get());
+        assertEquals(0, inicios.get(), "nada comeca sem INICIAR LUTA");
     }
 
     // 28. Teclado: cada aperto age uma vez (auto-repeat ignorado)
@@ -477,8 +514,21 @@ class Menus5MTest {
             assertEquals(0, sel.cursor(J1));
             p.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.SUL));
             sel.tick(16);
-            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
+            // reorganizacao (pedido): o A confirma o personagem e segue para a faixa
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J1));
             assertEquals(SelecaoPartidaPanel.Fase.ESCOLHENDO, sel.fase(J2));
+            sel.tick(16);
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J1), "segurar o A nao confirma de novo");
+            for (String g : new String[] {"g1", "g1", "g2", "g2", "g2"}) {
+                p.definir(g, EstadoGamepad.repouso());
+                sel.tick(16);
+                p.definir(g, EstadoGamepad.repouso().com(BotaoGamepad.SUL));
+                sel.tick(16);
+            }
+            p.definir("g2", EstadoGamepad.repouso());
+            sel.tick(16);
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2), "o segundo gamepad conclui sozinho");
         });
     }
 
@@ -497,6 +547,8 @@ class Menus5MTest {
             sel.comandar(J1, Comando.ESQUERDA);
             prontos();
             sel.tick(16);
+            pintar(sel);
+            sel.comandar(J1, Comando.CONFIRMAR);             // reorganizacao (pedido): a segunda tela
             pintar(sel);
             assertFalse(sel.aceitaNavegacao());
         });
