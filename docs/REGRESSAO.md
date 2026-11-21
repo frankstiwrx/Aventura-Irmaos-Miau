@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1293, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1300, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -707,3 +707,12 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 3. No controle: cima/baixo anda de linha em linha; lados ajustam os volumes; A liga/desliga; B volta.
 4. Editor de personagens: frase "JOGAR ou TREINO" e linha de instruções; o resto igual.
 5. Luta: a barra de dicas separa os grupos; no treino aparece "F11 alternar Miau"; F2 continua escondendo tudo.
+
+# Aparência personalizada
+
+1. Personagens → escolher um perfil → APARÊNCIA: trocar a parte e mexer em matiz/saturação/brilho; a prévia muda na hora.
+2. Kimono e calça com cores diferentes; a faixa mostra "Só visual: a graduação da luta não muda."
+3. Pelagem bem escura: olhos e boca brancos; pelagem clara: pretos. COR ORIGINAL volta a parte.
+4. OK, depois SALVAR; fechar e abrir o jogo: as cores continuam. CANCELAR não muda nada.
+5. JOGAR/TREINO com o perfil: as cores aparecem na luta; a faixa da graduação escolhida continua valendo nas regras.
+6. Miau Branco e Miau Preto oficiais sem mudança. Tudo também pelo controle (cima/baixo, lados, A, B).

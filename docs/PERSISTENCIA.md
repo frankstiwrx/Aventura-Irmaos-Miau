@@ -137,3 +137,23 @@ Regras da tela de perfis:
 - Trocar de perfil, criar outro ou VOLTAR com mudanças pendentes pergunta: salvar / descartar / cancelar.
 - "PADRÃO DA BASE" copia os valores do oficial para o editor; o oficial nunca é alterado.
 - Arquivos de perfil com problema são listados como aviso e preservados.
+
+## Aparência personalizada (cores)
+
+No editor de personagens, o botão APARÊNCIA abre as cores do perfil: kimono (parte de cima), calça,
+faixa e pelagem (rosto e patas), cada uma independente. A cor é escolhida por matiz, saturação e brilho,
+e a prévia usa o desenho real do lutador. Funciona com mouse, teclado e controle (cima/baixo escolhe,
+os lados mudam a parte e os valores, A confirma, B cancela). As cores valem ao clicar em SALVAR.
+
+- Os olhos, o nariz e a boca ficam brancos sobre pelagem escura e pretos sobre pelagem clara.
+- A faixa é só visual: a graduação da luta, as técnicas e os atributos não mudam.
+- Na seleção (JOGAR/TREINO), o perfil entra com as suas cores. Se um kimono for escolhido lá, ele vale
+  na parte de cima e na calça; a pelagem e a faixa continuam as do perfil.
+- Os personagens oficiais nunca mudam.
+
+No arquivo, só as partes personalizadas são gravadas, como `#RRGGBB` (campo opcional; perfis antigos
+continuam válidos). Os nomes das partes são lógicos e servem para o Rig 2.0:
+
+```json
+"aparencia": { "casaco": "#BE1E28", "calca": "#1E3CA0", "faixa": "#E6B41E", "pelo": "#E68C3C" }
+```
