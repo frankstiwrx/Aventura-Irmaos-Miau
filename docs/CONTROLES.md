@@ -1398,3 +1398,22 @@ TEMPO nas configurações da luta: 1 MIN, 1 MIN 30 S, 2, 3, 4, 5, 6, 7, 8, 9, 10
 O tempo é livre: a faixa dos lutadores não muda nem limita o tempo. REGRAS: FINALIZAÇÃO, PONTOS + FINALIZAÇÃO
 (agora disponível; placar no topo: J1 pontos · V vantagens · P punições | relógio | J2) e ARCADE (em breve).
 Detalhes em `docs/REGRAS.md`. O F2 também esconde o placar.
+
+## TREINO: controlar os dois Miaus (F11 e segundo dispositivo)
+
+Atalhos auditados antes: F2 HUD, F3 debug, F4 cenário, F5 reiniciar, F6 pegadas, F7 movimentos, F8
+laboratório/desenvolvedor, F9 música, F10 efeitos. **F11 estava livre** e foi o escolhido (só faz algo no
+TREINO; no JOGAR não faz nada).
+
+- **Um dispositivo, alternando (F11):** o dispositivo principal (o teclado do J1 e o gamepad do J1) passa a
+  comandar o Miau Preto (J2) com os mesmos botões; outro F11 volta para o Miau Branco. Nada da luta muda
+  (posições, técnicas, fôlego, faixas, kimonos). Enquanto o principal está no J2, o J1 não recebe comandos.
+- **Dois dispositivos, ao mesmo tempo:** PAUSA → LABORATÓRIO → **J2: CONTROLADO**. O J2 passa a ler o
+  próprio dispositivo na hora (teclado-controle do J2 ou um segundo gamepad, pelas associações de
+  CONFIGURAÇÕES), como numa partida. **J2: PASSIVO** volta ao parceiro parado.
+- **Os dois juntos:** com o F11 ativo, o principal comanda o J2 e o dispositivo próprio do J2 fica em
+  espera (duas fontes nunca disputam o mesmo personagem).
+- Na troca, o que estava segurado fica travado até ser solto e os comandos pendentes (RS, D-pad, rodas) são
+  esquecidos: nada fica preso nem se repete no outro personagem. Segurar o F11 alterna uma vez só.
+- Marcador sob o painel do J1: "CONTROLANDO: J1 — MIAU BRANCO (F11 troca)" (some com o F2).
+- Sem comando, o parceiro continua o mesmo parceiro passivo de sempre (nenhuma IA nova).

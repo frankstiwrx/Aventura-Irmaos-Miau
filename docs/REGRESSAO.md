@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1278, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1285, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -688,3 +688,14 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 14. SEM LIMITE: nada acaba pelo relógio; os pontos aparecem no placar.
 15. FINALIZAÇÃO (modo): sem placar de pontos, relógio como antes.
 16. TREINO: igual a antes (sem placar nem tempo).
+
+# TREINO: controle dos dois Miaus
+
+1. TREINO: o marcador mostra "CONTROLANDO: J1 — MIAU BRANCO"; o J1 anda e luta como antes; o parceiro fica parado.
+2. F11: "CONTROLANDO: J2 — MIAU PRETO"; o mesmo controle (Xbox: analógico, RS, LT/LB/RT, A, B...) comanda o Miau Preto; o Branco fica parado.
+3. F11 de novo: volta ao Branco. Segurar o F11 não fica alternando.
+4. Trocar segurando uma direção: ninguém sai andando; soltar e apertar de novo move o personagem novo.
+5. A troca não mexe em posição, fôlego, faixa, kimono nem na posição de solo (teste montada → F11 → defender com o Preto).
+6. PAUSA → LABORATÓRIO → J2: CONTROLADO: o teclado-controle do J2 (ou um segundo gamepad) move o Preto junto com o J1.
+7. Com o J2 controlado e o F11 ligado, o segundo controle não mexe no Preto (fica em espera).
+8. JOGAR: o F11 não faz nada; menus, arbitragem e tempos iguais.
