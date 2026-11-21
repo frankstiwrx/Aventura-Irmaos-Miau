@@ -68,6 +68,12 @@ public class IrmaoMiauPreto extends IrmaoMiau {
         return new int[][] {{5, 22, -8, 52, 35, 57}, {70, 23, 88, 48, 108, 62}};
     }
 
+    /** 5Q.7 (corretiva): pernas em repouso do Preto (os mesmos numeros do desenho da pose). */
+    @Override
+    public int[][] getPernasEmRepouso() {
+        return new int[][] {{24, 97, 15, 132, 4, 171}, {50, 97, 59, 132, 72, 171}};
+    }
+
     /** Atributos oficiais (valores originais, inalterados). */
     public static AtributosLutador atributosOficiais() {
 

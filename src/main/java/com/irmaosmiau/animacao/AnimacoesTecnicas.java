@@ -296,29 +296,24 @@ public final class AnimacoesTecnicas {
                         16, -12, 17, 8, 14, -6, 15, 4, 30, 4),                                       // varre baixo, puxa as mangas
                 q(1.00, 9, -10, 26, 18, 28, 40, 29, -2, 20, -12, 21, 12, 18, -6, 19, 6, 16, -10, 17, 10,
                         14, -5, 15, 5, 30, 4));
+        // 5Q.7 corretiva: a janela do receptor e ANTECIPACAO (o resultado so sai no fim dela): o peso vai
+        // para tras, o pe da frente desliza; quem cai de verdade e desenhado pela transicao de queda, quem
+        // segura faz a reacao de queda que falhou. Antes o pe saia do chao com o joelho e o pe soltos
+        // (perna esticada/encolhida) e as maos iam longe: era a deformacao da homologacao.
+        int[] fimJanelaRasteira = {9, -12, 11, -5, 26, 7, 27, -5, 28, 14, 29, -10, 20, 8, 21, -8, 18, 4, 19, -4,
+                16, -8, 17, -10, 14, -4, 15, -5, 31, -2};
         def("rasteira:RECEBE",
                 q(0.00),
                 q(0.50, 9, 4),
-                q(0.75, 9, -16, 26, 10, 27, -8, 28, 18, 29, -16, 20, 16, 21, -20, 18, 8, 19, -10,
-                        16, -14, 17, -22, 14, -7, 15, -11),                                          // o pe sai do chao
-                q(1.00, 9, -22, 11, -8, 26, 14, 27, -12, 28, 26, 29, -24, 20, 20, 21, -26, 18, 10, 19, -13,
-                        16, -18, 17, -26, 14, -9, 15, -13, 31, -4));                                // perde a base
+                q(0.75, 9, -8, 11, -3, 26, 5, 27, -4, 28, 10, 29, -8, 20, 6, 21, -6, 18, 3, 19, -3,
+                        16, -6, 17, -8, 14, -3, 15, -4),                                            // o pe da frente desliza
+                q(1.00, fimJanelaRasteira));                                                       // perde um pouco a base
 
-        // 5Q.6: RASTEIRA DEFENDIDA: parte de onde a janela parou (o pe saindo do chao), recoloca o pe,
-        // um pequeno balanco e volta a postura da pegada (nada de ficar com a pose de queda)
-        def("rasteira_defendida:RECEBE",
-                q(0.00, 9, -22, 11, -8, 26, 14, 27, -12, 28, 26, 29, -24, 20, 20, 21, -26, 18, 10, 19, -13,
-                        16, -18, 17, -26, 14, -9, 15, -13, 31, -4),
-                q(0.30, 9, -8, 11, -3, 28, 6, 29, -4, 20, 8, 21, -8, 18, 4, 19, -4, 16, -6, 17, -8, 14, -3, 15, -4),
-                q(0.60, 9, 4, 11, 2, 20, -2, 16, 2),                                                // recupera a base
-                q(1.00));
-        // 5Q.7: DERRUBADA FORCADA SEGURADA (RT): a referencia e o "ser empurrado" (aprovado), menor: o
-        // tronco cede um pouco, meio passo de tras, os bracos acompanham (sem esticar: IntegridadeMembros)
-        def("derrubada_forcada_defendida:RECEBE",
-                q(0.00),
-                q(0.25, 9, -10, 11, -5, 6, -3, 16, 6, 17, -10, 20, 4, 21, -12, 24, -4, 28, -2),
-                q(0.60, 9, -3, 11, -1, 16, 2, 17, -3, 20, 1, 21, -4, 24, -2),
-                q(1.00));
+        // 5Q.7 corretiva: UMA reacao generica de QUEDA QUE FALHOU (rasteira e forcar queda, falha ou RT),
+        // no principio do empurrao aprovado: o tronco cede, meio passo de tras para recuperar, os bracos
+        // acompanham, a volta e suave ate a pegada. Muda so o ponto de partida.
+        reacaoQuedaFalhou("rasteira_defendida:RECEBE", fimJanelaRasteira);
+        reacaoQuedaFalhou("derrubada_forcada_defendida:RECEBE", new int[0]);
 
         // =====================================================================
         // ENTREGA 5Q.6: quedas explosivas (LT sem pegada), body lock (RB ->), projecoes do LB + LT
@@ -661,6 +656,15 @@ public final class AnimacoesTecnicas {
     private AnimacoesTecnicas() {
     }
 
+    /** 5Q.7 corretiva: reacao generica de queda que falhou, partindo de {@code inicio} (pares indice, valor). */
+    private static void reacaoQuedaFalhou(String chave, int[] inicio) {
+        def(chave,
+                q(0.00, inicio),
+                q(0.30, 9, -10, 11, -4, 6, -3, 22, -4, 24, -8, 16, 4, 17, -6, 20, 3, 21, -6, 30, -2),   // cede e da meio passo
+                q(0.65, 9, 2, 11, 1, 22, -1, 24, -3, 30, -1),                                           // recupera a base
+                q(1.00));
+    }
+
     private static void alias(String nova, String existente) {
         ANIMACOES.put(nova, ANIMACOES.get(existente));
     }
@@ -673,7 +677,12 @@ public final class AnimacoesTecnicas {
 
     /** 5Q.7: o efeito e uma microanimacao defensiva (preservar o tamanho dos bracos)? */
     public static boolean preservaBracos(MotorSolo.EfeitoVisual e) {
-        return e != null && e.tecnica() != null && PRESERVA_BRACOS.contains(e.tecnica());
+        if (e == null || e.tecnica() == null) {
+            return false;
+        }
+        String t = e.tecnica();
+        int i = t.indexOf(':');                               // LIBERANDO usa "tecnica:ATACA/RECEBE"
+        return PRESERVA_BRACOS.contains(i < 0 ? t : t.substring(0, i));
     }
 
     /** Ha animacao propria para esta chave ("tecnica:ATACA" / "tecnica:RECEBE")? */

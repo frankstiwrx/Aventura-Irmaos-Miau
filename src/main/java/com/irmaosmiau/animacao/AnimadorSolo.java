@@ -32,6 +32,29 @@ public final class AnimadorSolo {
         this.posturas = posturas;
     }
 
+    /** 5Q.7: de onde vem a pose LIMPA da pegada (a base da camada, sem reacoes passageiras). */
+    private java.util.function.Function<IrmaoMiau, int[]> fontePegada = l -> null;
+
+    public void usarPoseDaPegada(java.util.function.Function<IrmaoMiau, int[]> fonte) {
+        this.fontePegada = fonte == null ? l -> null : fonte;
+    }
+
+    /**
+     * 5Q.7 (corretiva): antes era a pose ATUAL (a base + as reacoes da camada naquele tick); ela era
+     * guardada no inicio da tecnica e devolvida no fim, entao uma reacao passageira (inclinacao do
+     * desequilibrio, passo do arrasto) virava parte da "pegada" e se acumulava nas tentativas seguintes.
+     */
+    private int[] poseLimpaDaPegada(IrmaoMiau l) {
+        int[] limpa = fontePegada.apply(l);
+        int[] atual = l.copiarPoseCombateExterna();
+        return limpa != null && atual != null && limpa.length == atual.length ? limpa : atual;
+    }
+
+    /** 5Q.7: a tecnica do solo assumiu a pose a partir da pegada (a camada da pegada fica parada). */
+    public boolean assumiuPegada(IrmaoMiau l) {
+        return daPegada.containsKey(l);
+    }
+
     public boolean quer(IrmaoMiau l, MotorSolo m) {
         // 5Q: tambem fora do vinculo enquanto houver um efeito do motor (empurrar, ser empurrado, levantar...)
         return m != null && l.getTransicaoAtiva() == null && !m.isAterrissando()
@@ -65,7 +88,7 @@ public final class AnimadorSolo {
         boolean deOutro = l.isPoseCombateExternaAtiva()
                 && (nossa0 == null || !Arrays.equals(nossa0, l.copiarPoseCombateExterna()));
         if (propria && !m.conectado(l) && (deOutro || daPegada.containsKey(l))) {
-            int[] pegada = daPegada.computeIfAbsent(l, k -> k.copiarPoseCombateExterna());
+            int[] pegada = daPegada.computeIfAbsent(l, this::poseLimpaDaPegada);
             if (pegada != null && pegada.length == partida.length) {
                 partida = pegada;
             }
@@ -122,7 +145,7 @@ public final class AnimadorSolo {
         // 5Q.7: a tecnica partiu da pose da PEGADA (bracos ja estendidos ate o kimono): os bracos giram
         // e dobram sem mudar de tamanho (antes o antebraco esticava ate ~1,6x na rasteira/derrubada)
         if (daPegada.containsKey(l) || ef.map(AnimacoesTecnicas::preservaBracos).orElse(false)) {
-            IntegridadeMembros.preservarBracos(antesDaTecnica, pose, l.getBracosEmRepouso());
+            IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l);   // 5Q.7 corretiva: corpo inteiro
         }
         // 5Q.7: quem arrasta pelas pernas da passos curtos (pelo x real: parado, os pes ficam)
         if (ef.map(e -> e.tipo() == MotorSolo.TipoEfeitoVisual.TECNICA_ATAQUE

@@ -72,6 +72,14 @@ public abstract class IrmaoMiau {
         return new int[][] {{3, 22, -14, 42, 3, 58}, {73, 20, 95, 36, 111, 29}};
     }
 
+    /**
+     * 5Q.7 (corretiva): juntas das pernas em REPOUSO {quadril x, y, joelho x, y, pe x, y} da perna de
+     * tras e da perna da frente (os numeros do desenho da pose, relativos ao topo do tronco).
+     */
+    public int[][] getPernasEmRepouso() {
+        return new int[][] {{22, 100, 10, 136, 0, 174}, {52, 100, 66, 137, 82, 171}};
+    }
+
     public double getEixoCinturaX() {
 
         return x

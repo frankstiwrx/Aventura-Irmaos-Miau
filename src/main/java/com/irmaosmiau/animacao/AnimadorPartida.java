@@ -84,6 +84,9 @@ public final class AnimadorPartida {
     public AnimadorPartida(ControladorAnimacoes controlador, double msPorTick) {
         this.controlador = controlador;
         this.msPorTick = msPorTick;
+        // 5Q.7 (corretiva): a pose da pegada guardada quando uma tecnica do solo assume e a BASE limpa da
+        // camada (sem as reacoes passageiras dela: desequilibrio, passo do arrasto, forca, receptor)
+        solo.usarPoseDaPegada(camada::poseBase);
     }
 
     /**
@@ -103,7 +106,12 @@ public final class AnimadorPartida {
         reacoes.observar(sistema, tick);
         for (IrmaoMiau l : lutadores) {
             atualizar(l, sistema, deslocandoConjunto, tick);
-            camada.atualizar(l, sistema, deslocandoConjunto, tick);
+            // 5Q.7 (corretiva): enquanto a tecnica do solo e dona da pose (rasteira, forcar queda, quedas da
+            // pegada), a camada da pegada NAO soma as reacoes dela por cima nem adota o quadro da tecnica
+            // como base (antes as duas reacoes se somavam e a cintura "quebrava"; a base ficava suja)
+            if (!solo.assumiuPegada(l)) {
+                camada.atualizar(l, sistema, deslocandoConjunto, tick);
+            }
         }
     }
 
