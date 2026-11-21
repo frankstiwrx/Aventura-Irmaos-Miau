@@ -208,13 +208,17 @@ public final class AnimacoesTecnicas {
         // fica SUSTENTADA (maos nas canelas / pernas juntas e esticadas) enquanto o arrasto durar. Os
         // passos de quem arrasta sao procedurais (AnimadorSolo.passosDoArrasto), pelo x real.
         alias("segurar_pernas:ATACA", "prender_pernas:ATACA");
-        alias("segurar_pernas:RECEBE", "prender_pernas:RECEBE");
         int[] segurando = {9, 26, 11, 8, 6, 4, 26, 8, 22, -6, 20, 20, 21, 32, 18, 10, 19, 16, 16, 14, 17, 34,
                 14, 7, 15, 17, 30, -6, 31, 6};                                                    // inclinado, maos nos tornozelos
         def("segurando_pernas:ATACA", q(0.00, segurando), q(1.00, segurando));
-        int[] segurado = {22, -8, 23, 8, 24, -12, 25, 16, 26, 4, 27, 8, 28, -6, 29, 16,         // pernas juntas e puxadas
-                20, -10, 21, 6, 18, -5, 19, 3, 16, -12, 17, 4, 14, -6, 15, 2, 9, -4};            // bracos ficam para tras
+        // 5Q.7 corretiva: quem e segurado continua DEITADO como estava (tronco e cintura sem mexer: antes
+        // joelhos e pes soltos dobravam a cintura); so as pernas esticam um pouco para quem segura e os
+        // bracos ficam para tras. Deitado: +x local sobe na tela, +y local vai para o adversario.
+        int[] segurado = {22, 0, 23, 5, 24, 0, 25, 9, 26, 0, 27, 5, 28, 0, 29, 9,
+                16, 3, 17, -4, 20, 3, 21, -4};                                                     // bracos arrastam de leve
         def("segurando_pernas:RECEBE", q(0.00, segurado), q(1.00, segurado));
+        // a entrada do SEGURAR para quem recebe: as pernas sao puxadas aos poucos ate a pose acima
+        def("segurar_pernas:RECEBE", q(0.00), q(0.60, 22, 0, 23, 3, 24, 0, 25, 6, 26, 0, 27, 3, 28, 0, 29, 6), q(1.00, segurado));
 
         // =====================================================================
         // ENTREGA 5Q.7: microanimacoes DEFENSIVAS e de recuperacao (quem esta por baixo). Curtas e

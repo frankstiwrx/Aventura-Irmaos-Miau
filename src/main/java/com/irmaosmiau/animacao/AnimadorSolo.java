@@ -96,6 +96,21 @@ public final class AnimadorSolo {
             daPegada.remove(l);
         }
         int[] pose = Arrays.copyOf(partida, partida.length);
+        // 5Q.7 corretiva: no solo livre quem esta deitado e desenhado pelo desenho legado (corpo reto). Ao
+        // ser segurado pelas pernas ele passava para a pose procedural de deitado (tronco 15 graus fora das
+        // pernas, perna da frente dobrada): a troca parecia a cintura dobrando. Agora o segurado usa o
+        // deitado RETO (so a rotacao global), o mesmo desenho de antes de segurar.
+        boolean seguradoPelasPernas = ef0.map(e -> "segurando_pernas".equals(e.tecnica())
+                || "segurar_pernas".equals(e.tecnica())
+                || "segurando_pernas:RECEBE".equals(e.tecnica())).orElse(false);
+        if (!cima && !m.conectado(l) && l.isDeitado() && seguradoPelasPernas) {
+            for (int i = 4; i < pose.length; i++) {
+                if (i != 10) {
+                    pose[i] = 0;
+                }
+            }
+            bracosAoLongoDoCorpo(pose, l.getBracosEmRepouso());
+        }
         double dy = base.dy() + (cima ? alturaPorCima(p) : 0);
         if (cima && l.isAjoelhado()) {
             switch (p) {
@@ -148,9 +163,24 @@ public final class AnimadorSolo {
             IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l);   // 5Q.7 corretiva: corpo inteiro
         }
         // 5Q.7: quem arrasta pelas pernas da passos curtos (pelo x real: parado, os pes ficam)
-        if (ef.map(e -> e.tipo() == MotorSolo.TipoEfeitoVisual.TECNICA_ATAQUE
-                && "segurando_pernas".equals(e.tecnica())).orElse(false)) {
-            passosDoArrasto(pose, l.getX());
+        // 5Q.7 corretiva: e mostra o ESFORCO de puxar enquanto anda (inclina para tras, bracos puxam);
+        // de joelhos, os passos sao curtos e so dos joelhos; quem e arrastado ajusta o quadril de leve
+        boolean segurando = ef.map(e -> "segurando_pernas".equals(e.tecnica())).orElse(false);
+        int andou = segurando ? l.getX() - ultimoXArrasto.getOrDefault(l, l.getX()) : 0;
+        if (segurando) {
+            ultimoXArrasto.put(l, l.getX());
+            double esforco = esforcoArrasto.getOrDefault(l, 0.0);
+            esforco = andou != 0 ? Math.min(1.0, esforco + 0.15) : Math.max(0.0, esforco - 0.1);
+            esforcoArrasto.put(l, esforco);
+            if (ef.get().tipo() == MotorSolo.TipoEfeitoVisual.TECNICA_ATAQUE) {
+                passosDoArrasto(pose, l.getX(), l.isAjoelhado());
+                esforcoDoArrasto(pose, esforco);
+            } else {
+                quadrilArrastado(pose, l.getX(), esforco);
+            }
+        } else {
+            ultimoXArrasto.remove(l);
+            esforcoArrasto.remove(l);
         }
         double dx = desloc == null ? 0.0 : desloc[0];
         dy += desloc == null ? 0.0 : desloc[1];
@@ -237,9 +267,65 @@ public final class AnimadorSolo {
     /** 5Q.7: comprimento (px de x real) de um ciclo de passos de quem arrasta. */
     public static final int CICLO_PASSO_ARRASTO_PX = 24;
 
+    /**
+     * 5Q.7 corretiva: deitado reto, os bracos ficam ao longo do corpo (na direcao dos pes, +y local), com
+     * o mesmo tamanho do repouso (sem isso o braco do rig apontava para cima, para fora do chao).
+     */
+    static void bracosAoLongoDoCorpo(int[] pose, int[][] repouso) {
+        int[][] idx = {{14, 16}, {18, 20}};
+        for (int b = 0; b < 2; b++) {
+            int[] r = repouso[b];
+            double l1 = Math.hypot(r[2] - r[0], r[3] - r[1]);
+            double l2 = Math.hypot(r[4] - r[2], r[5] - r[3]);
+            double ex = r[0] + 2;
+            double ey = r[1] + l1;
+            pose[idx[b][0]] = (int) Math.round(ex - r[2]);
+            pose[idx[b][0] + 1] = (int) Math.round(ey - r[3]);
+            pose[idx[b][1]] = (int) Math.round(ex - r[4]);
+            pose[idx[b][1] + 1] = (int) Math.round(ey + l2 - r[5]);
+        }
+    }
+
+    private final Map<IrmaoMiau, Integer> ultimoXArrasto = new IdentityHashMap<>();
+    /** 5Q.7 corretiva: 0..1, sobe enquanto anda arrastando e volta parado (sem estalo). */
+    private final Map<IrmaoMiau, Double> esforcoArrasto = new IdentityHashMap<>();
+    /** 5Q.7 corretiva: inclinacao para tras (graus) e puxada das maos (px) no esforco maximo. */
+    public static final int INCLINACAO_ESFORCO_ARRASTO = 8;
+    public static final int PUXADA_MAOS_ARRASTO = 5;
+
+    /** 5Q.7 corretiva: quem arrasta inclina o tronco para tras e as maos puxam (os bracos acompanham). */
+    static void esforcoDoArrasto(int[] pose, double esforco) {
+        pose[9] -= (int) Math.round(INCLINACAO_ESFORCO_ARRASTO * esforco);
+        pose[11] -= (int) Math.round(3 * esforco);
+        int p = (int) Math.round(PUXADA_MAOS_ARRASTO * esforco);
+        pose[16] -= p;
+        pose[20] -= p;
+        pose[14] -= p / 2;
+        pose[18] -= p / 2;
+    }
+
+    /** 5Q.7 corretiva: quem e arrastado mexe so um pouco o quadril e as pernas conforme desliza. */
+    static void quadrilArrastado(int[] pose, int x, double esforco) {
+        double f = Math.sin(2 * Math.PI * Math.floorMod(x, CICLO_PASSO_ARRASTO_PX) / CICLO_PASSO_ARRASTO_PX);
+        int a = (int) Math.round(2 * f * esforco);
+        pose[6] += a;
+        pose[25] += a;
+        pose[29] -= a;
+    }
+
     /** 5Q.7: passos curtos de quem arrasta: joelho e pe sobem alternados conforme o x anda. */
     static void passosDoArrasto(int[] pose, int x) {
+        passosDoArrasto(pose, x, false);
+    }
+
+    /** 5Q.7 corretiva: de joelhos, so os joelhos andam (curtos), sem levantar os pes. */
+    static void passosDoArrasto(int[] pose, int x, boolean deJoelhos) {
         double f = Math.sin(2 * Math.PI * Math.floorMod(x, CICLO_PASSO_ARRASTO_PX) / CICLO_PASSO_ARRASTO_PX);
+        if (deJoelhos) {
+            pose[22] += (int) Math.round(3 * f);
+            pose[26] -= (int) Math.round(3 * f);
+            return;
+        }
         int tras = (int) Math.round(Math.max(0, f) * 8);
         int frente = (int) Math.round(Math.max(0, -f) * 8);
         pose[22] -= tras / 2;
