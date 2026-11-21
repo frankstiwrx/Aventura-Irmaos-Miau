@@ -888,6 +888,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             }
             atualizarEntradasCombate();
             atualizarSolo();                                     // 5P
+            arbitrar();                                          // pontos + finalizacao
 
         } else {
 
@@ -958,6 +959,35 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (solo != null) {
             solo.setModoRegras(modoLuta.getRegras());
         }
+        novaArbitragem();
+    }
+
+    /**
+     * Arbitragem (modo PONTOS + FINALIZACAO): so le o motor e decide pontos, vantagens e o resultado no fim
+     * do tempo. Nova a cada luta; nada no FINALIZACAO nem no treino.
+     */
+    private com.irmaosmiau.regras.ArbitroJiuJitsu arbitro;
+
+    private void novaArbitragem() {
+        arbitro = modoLuta.isPontuado() && modoDoisMiaus && !modoTreino
+                ? new com.irmaosmiau.regras.ArbitroJiuJitsu(INTERVALO_GAME_LOOP_MS) : null;
+    }
+
+    /** A arbitragem da luta (vazio fora do modo com pontos). */
+    java.util.Optional<com.irmaosmiau.regras.ArbitroJiuJitsu> getArbitro() {
+        return java.util.Optional.ofNullable(arbitro);
+    }
+
+    /** Um tick de arbitragem, depois do motor (pausa e fim de jogo nao chegam aqui). */
+    private void arbitrar() {
+        if (arbitro == null || solo == null || fimDeJogo) {
+            return;
+        }
+        arbitro.observar(solo);
+        for (com.irmaosmiau.regras.ArbitroJiuJitsu.Aviso a : arbitro.consumirAvisos()) {
+            avisos.adicionar((a.lado() == com.irmaosmiau.posicional.Lado.A ? "J1 · " : "J2 · ") + a.texto(),
+                    a.natureza());
+        }
     }
 
     com.irmaosmiau.regras.ModoLuta getModoLuta() {
@@ -972,7 +1002,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         ticksDeLuta++;
         if (getSegundosRestantes() <= 0) {
             fimDeJogo = true;
-            mensagemFim = "TEMPO ESGOTADO · " + resultadoPorTempo();
+            mensagemFim = "TEMPO ESGOTADO · " + (arbitro != null ? arbitro.encerrarPorTempo().texto()   // pontos
+                    : resultadoPorTempo());
         }
     }
 
@@ -1667,6 +1698,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         if (solo != null) {
             solo.setModoRegras(modoLuta.getRegras());           // regras da partida (configuracoes da luta)
         }
+        novaArbitragem();                                       // placar zerado a cada luta
         animador.setMotorSolo(solo);
     }
 
@@ -3424,7 +3456,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 solo.limparVitoria();
             } else {
                 fimDeJogo = true;
-                mensagemFim = txt;
+                mensagemFim = txt + (arbitro != null ? " · PLACAR " + arbitro.getPlacar().texto() : "");
             }
         }
 
@@ -3579,7 +3611,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         // =========================
         if (!hudOculto) {                                         // F2: modo cinematografico (so visual)
             hud.desenhar(g2, montarEstadoHud(), LARGURA, ALTURA);
-            desenharRelogio(g2);
+            if (arbitro != null) {
+                com.irmaosmiau.hud.PlacarLuta.desenhar(g2, arbitro.getPlacar(), getSegundosRestantes(), LARGURA);
+            } else {
+                desenharRelogio(g2);
+            }
             avisos.desenhar(g2, LARGURA);                             // 5P.1: aviso discreto no topo
             desenharLaboratorio(g2);                                  // 5Q.2: HUD tecnico (so no laboratorio)
             desenharSeloDesenvolvedor(g2);                            // 5Q.4: selo permanente
@@ -4311,6 +4347,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     }
 
     /** 5M: aciona ESC (pausa) pelo mapa de acoes, como o teclado. */
+    /** Testes: adianta o relogio da luta (como se esses ticks de luta tivessem passado). */
+    void adiantarTempoDeLutaParaTestes(long ticks) {
+        ticksDeLuta += ticks;
+    }
+
     void alternarPausaParaTestes() {
         getActionMap().get("alternarPausa").actionPerformed(null);
     }

@@ -8,17 +8,19 @@ package com.irmaosmiau.regras;
  *
  * - FINALIZACAO: a luta de hoje. Vence quem finaliza; com tempo, o fim do tempo encerra pelo criterio
  *   atual do jogo. Sem pontuacao tecnica. Usa a elegibilidade {@link ModoRegras#LIVRE}.
- * - PONTOS_E_FINALIZACAO: inspirado nas competicoes de jiu-jitsu (quedas, raspagens, passagens, montada,
- *   costas...). Depende de pontuacao e arbitragem, que ainda nao existem. Quando existir, usara uma
- *   elegibilidade de campeonato conferida com um regulamento real.
+ * - PONTOS_E_FINALIZACAO: adaptacao das regras da IBJJF (jun/2024): finalizacao encerra na hora; quedas,
+ *   raspagens, passagens, joelho na barriga, montada e costas pontuam com 3 s de estabilizacao; no fim do
+ *   tempo vence quem tem mais pontos, depois vantagens, depois menos punicoes ({@link ArbitroJiuJitsu}).
+ *   As finalizacoes seguem a elegibilidade LIVRE: a graduacao de cada personagem ja bloqueia o que a tabela
+ *   da IBJJF proibe para a faixa nos casos conferidos (ver docs/REGRAS.md). O tempo e livre.
  * - ARCADE: modo livre, com rounds e condicoes de vitoria proprias (nao e regra oficial).
  *
  * Cada modo diz a {@link ModoRegras} (que finalizacoes valem) e, no futuro, pode dizer tempos proprios.
  */
 public enum ModoLuta {
     FINALIZACAO("FINALIZAÇÃO", "Vence quem finalizar. Sem pontos.", true, ModoRegras.LIVRE),
-    PONTOS_E_FINALIZACAO("PONTOS + FINALIZAÇÃO", "Pontuação de competição: em breve.", false,
-            ModoRegras.CAMPEONATO_PROVISORIO),
+    PONTOS_E_FINALIZACAO("PONTOS + FINALIZAÇÃO", "Pontos, vantagens e finalização (IBJJF).", true,
+            ModoRegras.LIVRE),
     ARCADE("ARCADE", "Rounds e regras próprias: em breve.", false, ModoRegras.LIVRE);
 
     /** O modo com que a tela abre. */
@@ -47,6 +49,11 @@ public enum ModoLuta {
     /** O motor suporta este modo hoje? Os outros nao podem iniciar uma partida. */
     public boolean isDisponivel() {
         return disponivel;
+    }
+
+    /** O modo tem placar de pontos (arbitragem)? */
+    public boolean isPontuado() {
+        return this == PONTOS_E_FINALIZACAO;
     }
 
     /** As finalizacoes que valem neste modo. */

@@ -18,9 +18,12 @@ class ModoLutaGamePanelTest extends Base5OGamePanel {
             assertEquals(ModoLuta.FINALIZACAO, painel.getModoLuta(), "padrao");
             painel.configurarModoLuta(ModoLuta.FINALIZACAO);
             assertEquals(ModoRegras.LIVRE, painel.getMotorSolo().getModoRegras());
+            // sistema de regras (pedido): PONTOS + FINALIZACAO ficou disponivel; o ARCADE continua EM BREVE
             painel.configurarModoLuta(ModoLuta.PONTOS_E_FINALIZACAO);
-            assertEquals(ModoLuta.FINALIZACAO, painel.getModoLuta(), "EM BREVE nao entra");
+            assertEquals(ModoLuta.PONTOS_E_FINALIZACAO, painel.getModoLuta());
             assertEquals(ModoRegras.LIVRE, painel.getMotorSolo().getModoRegras());
+            painel.configurarModoLuta(ModoLuta.ARCADE);
+            assertEquals(ModoLuta.FINALIZACAO, painel.getModoLuta(), "EM BREVE nao entra");
             painel.configurarModoLuta(null);
             assertEquals(ModoLuta.FINALIZACAO, painel.getModoLuta());
         });

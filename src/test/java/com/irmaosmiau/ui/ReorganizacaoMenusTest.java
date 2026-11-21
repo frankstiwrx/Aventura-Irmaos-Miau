@@ -257,7 +257,8 @@ class ReorganizacaoMenusTest {
         });
     }
 
-    // 11: modo EM BREVE nao inicia a luta (nem pelo mouse)
+    // 11: modo EM BREVE nao inicia a luta (nem pelo mouse). Sistema de regras (pedido): PONTOS +
+    // FINALIZACAO ficou disponivel; o ARCADE continua EM BREVE
     @Test
     void regraEmBreveNaoIniciaPartida() throws Exception {
         naEdt(() -> {
@@ -269,17 +270,19 @@ class ReorganizacaoMenusTest {
             sel.comandar(J1, Comando.PROXIMO);                  // REGRAS
             sel.comandar(J1, Comando.DIREITA);
             assertEquals(ModoLuta.PONTOS_E_FINALIZACAO, sel.configuracao().modoLuta());
-            assertFalse(sel.configuracao().modoLuta().isDisponivel());
+            assertTrue(sel.configuracao().modoLuta().isDisponivel());
+            sel.comandar(J1, Comando.DIREITA);                  // ARCADE
+            assertEquals(ModoLuta.ARCADE, sel.configuracao().modoLuta());
             sel.comandar(J1, Comando.PROXIMO);
             sel.comandar(J1, Comando.CONFIRMAR);
             assertEquals(0, inicios.get(), "EM BREVE nao comeca");
             assertEquals(ConfiguracaoLuta.Area.REGRAS, sel.configuracao().foco(), "volta para as regras");
             sel.clicar(400, 384);
             assertEquals(0, inicios.get());
-            sel.comandar(J1, Comando.DIREITA);                  // ARCADE: tambem em breve
-            sel.comandar(J1, Comando.DIREITA);                  // FINALIZACAO
+            sel.comandar(J1, Comando.ESQUERDA);                 // PONTOS + FINALIZACAO
             sel.clicar(400, 384);
             assertEquals(1, inicios.get());
+            assertEquals(ModoLuta.PONTOS_E_FINALIZACAO, iniciou.get()[4], "o modo chega a partida");
         });
         assertTrue(ModoLuta.FINALIZACAO.isDisponivel());
         assertFalse(ModoLuta.ARCADE.isDisponivel());
@@ -323,6 +326,43 @@ class ReorganizacaoMenusTest {
             sel.tick(16);
             assertFalse(sel.naConfiguracao());
             assertEquals(0, inicios.get());
+        });
+    }
+
+    // 19 + 21 + 22: mudar a faixa (cancelando e confirmando de novo) nao muda o tempo escolhido, e tempo e
+    // modo chegam a partida
+    @Test
+    void faixaNaoMudaOTempoEscolhido() throws Exception {
+        naEdt(() -> {
+            sel = nova(null, null);
+            pronto(J1);
+            pronto(J2);
+            sel.comandar(J1, Comando.CONFIRMAR);                // AVANCAR
+            sel.comandar(J1, Comando.PROXIMO);                  // TEMPO
+            for (int i = 0; i < 11; i++) {
+                sel.comandar(J1, Comando.DIREITA);              // ... 10 MIN
+            }
+            assertEquals(600, sel.tempoAtual());
+            sel.comandar(J1, Comando.VOLTAR);                   // volta aos lutadores
+            sel.comandar(J2, Comando.VOLTAR);                   // J2 corrige: kimono
+            sel.comandar(J2, Comando.VOLTAR);                   // faixa
+            sel.comandar(J2, Comando.DIREITA);
+            sel.comandar(J2, Comando.DIREITA);
+            sel.comandar(J2, Comando.DIREITA);
+            sel.comandar(J2, Comando.DIREITA);                  // preta
+            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J2, Comando.CONFIRMAR);
+            assertEquals(Graduacao.PRETA, sel.faixa(J2));
+            sel.comandar(J2, Comando.CONFIRMAR);                // AVANCAR
+            assertEquals(600, sel.tempoAtual(), "a faixa nao escolhe o tempo");
+            sel.comandar(J1, Comando.PROXIMO);
+            sel.comandar(J1, Comando.PROXIMO);                  // REGRAS
+            sel.comandar(J1, Comando.DIREITA);                  // PONTOS + FINALIZACAO
+            sel.comandar(J1, Comando.PROXIMO);
+            sel.comandar(J1, Comando.CONFIRMAR);
+            assertEquals(1, inicios.get());
+            assertEquals(600, iniciou.get()[3]);
+            assertEquals(ModoLuta.PONTOS_E_FINALIZACAO, iniciou.get()[4]);
         });
     }
 
