@@ -160,7 +160,7 @@ public final class AnimadorSolo {
         // 5Q.7: a tecnica partiu da pose da PEGADA (bracos ja estendidos ate o kimono): os bracos giram
         // e dobram sem mudar de tamanho (antes o antebraco esticava ate ~1,6x na rasteira/derrubada)
         if (daPegada.containsKey(l) || ef.map(AnimacoesTecnicas::preservaBracos).orElse(false)) {
-            IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l);   // 5Q.7 corretiva: corpo inteiro
+            IntegridadeMembros.preservarCorpo(antesDaTecnica, pose, l, daPegada.containsKey(l));   // 5Q.8
         }
         // 5Q.7: quem arrasta pelas pernas da passos curtos (pelo x real: parado, os pes ficam)
         // 5Q.7 corretiva: e mostra o ESFORCO de puxar enquanto anda (inclina para tras, bracos puxam);

@@ -1888,7 +1888,10 @@ public final class MotorSolo {
         if (base.get(def) > 0) {
             lutador(def).getEfeitos().aplicar(com.irmaosmiau.entities.EfeitosTemporarios.Tipo.DESEQUILIBRIO,
                     com.irmaosmiau.combate.SistemaCombate.DURACAO_DESEQUILIBRIO_TICKS);   // 5Q.4: o mesmo desequilibrio
-            efeito(def, TipoEfeitoVisual.EMPURRADO, 22).tecnica = CatalogoTecnicasSolo.DERRUBADA_FORCADA;
+            // 5Q.8: a reacao do forcar que so desequilibra e a reacao generica de queda que falhou (menor
+            // que o empurrao inteiro, que na pegada levantava os bracos e girava muito o tronco)
+            efeito(def, TipoEfeitoVisual.TECNICA_RECEBE, TICKS_REACAO_DEFENDIDA + 4).tecnica =
+                    CatalogoTecnicasSolo.DERRUBADA_FORCADA + "_defendida";
             exposicao.put(def, new Exposto(Exposicao.BASE, 12));
             exposicao.put(ini, new Exposto(Exposicao.AVANCO, 20));
             registrar("SUCESSO", CatalogoTecnicasSolo.DERRUBADA_FORCADA, ini,

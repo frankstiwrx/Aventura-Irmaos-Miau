@@ -32,6 +32,13 @@ public final class IntegridadeMembros {
     public static final int INCLINACAO_MAXIMA_TRONCO = 26;
     public static final int GIRO_MAXIMO_CINTURA = 14;
     public static final int TORCAO_MAXIMA_TRONCO_CINTURA = 22;
+    /**
+     * 5Q.8: nas reacoes a partir da PEGADA o corpo inclina INTEIRO: a torcao tronco-cintura fica em ate 6
+     * graus e a cintura acompanha o tronco (antes o tronco girava 12-16 graus sobre a faixa reta e
+     * parecia a cintura quebrando); os bracos giram no maximo 15 graus (seguram o kimono).
+     */
+    public static final int TORCAO_MAXIMA_NA_PEGADA = 6;
+    public static final double GIRO_MAXIMO_BRACO_NA_PEGADA = 15.0;
     public static final int DESLOCAMENTO_MAXIMO_CINTURA = 8;
 
     /** Indices do rig (cotovelo x, mao x) do braco de tras e do braco da frente. */
@@ -44,11 +51,20 @@ public final class IntegridadeMembros {
 
     /** 5Q.7 corretiva: corpo inteiro (bracos, pernas, tronco e cintura) com as medidas do lutador. */
     public static void preservarCorpo(int[] antes, int[] pose, IrmaoMiau l) {
+        preservarCorpo(antes, pose, l, false);
+    }
+
+    /** 5Q.8: {@code naPegada} = a tecnica partiu da pegada em pe (corpo inclina inteiro, bracos firmes). */
+    public static void preservarCorpo(int[] antes, int[] pose, IrmaoMiau l, boolean naPegada) {
         if (antes == null || pose == null || l == null || antes.length < 30 || pose.length < 30) {
             return;
         }
-        preservarTronco(antes, pose);
-        preservarBracos(antes, pose, l.getBracosEmRepouso());
+        preservarTronco(antes, pose, naPegada ? TORCAO_MAXIMA_NA_PEGADA : TORCAO_MAXIMA_TRONCO_CINTURA, naPegada);
+        int[][] rb = l.getBracosEmRepouso();
+        for (int b = 0; b < 2; b++) {
+            preservar(antes, pose, rb[b], INDICES[b][0], INDICES[b][1],
+                    naPegada ? GIRO_MAXIMO_BRACO_NA_PEGADA : GIRO_MAXIMO_GRAUS, ALCANCE_MINIMO);
+        }
         preservarPernas(antes, pose, l.getPernasEmRepouso());
     }
 
@@ -83,13 +99,24 @@ public final class IntegridadeMembros {
      * somadas ficam dentro dos limites (tronco, cintura e a diferenca entre os dois).
      */
     public static void preservarTronco(int[] antes, int[] pose) {
+        preservarTronco(antes, pose, TORCAO_MAXIMA_TRONCO_CINTURA, false);
+    }
+
+    /**
+     * @param cinturaAcompanha true = a cintura gira junto com o tronco (o corpo inclina inteiro) em vez
+     *                         de o tronco parar no limite da torcao
+     */
+    public static void preservarTronco(int[] antes, int[] pose, int torcaoMaxima, boolean cinturaAcompanha) {
         pose[7] = antes[7];
         pose[8] = antes[8];
         pose[4] = antes[4] + limitar(pose[4] - antes[4], DESLOCAMENTO_MAXIMO_CINTURA);
         pose[5] = antes[5] + limitar(pose[5] - antes[5], DESLOCAMENTO_MAXIMO_CINTURA);
         int dCintura = limitar(pose[6] - antes[6], GIRO_MAXIMO_CINTURA);
         int dTronco = limitar(pose[9] - antes[9], INCLINACAO_MAXIMA_TRONCO);
-        dTronco = dCintura + limitar(dTronco - dCintura, TORCAO_MAXIMA_TRONCO_CINTURA);
+        if (cinturaAcompanha) {
+            dCintura = limitar(dTronco - limitar(dTronco - dCintura, torcaoMaxima), GIRO_MAXIMO_CINTURA);
+        }
+        dTronco = dCintura + limitar(dTronco - dCintura, torcaoMaxima);
         pose[6] = antes[6] + dCintura;
         pose[9] = antes[9] + dTronco;
     }
