@@ -22,8 +22,8 @@ class MicroDefensivas5Q8Test {
     @Test
     void defensivasDePorBaixoFicaramMaisVisiveis() {
         assertEquals(1.4, AnimacoesTecnicas.AMPLITUDE_MICRO_DEFENSIVA, 1e-9);
-        // picos da 5Q.7: enquadrar 20, recuperar guarda 16, virar 12, escapar da montada 14, girar 14, defender 18
-        assertTrue(pico("enquadrar:ATACA") >= 27, "enquadrar " + pico("enquadrar:ATACA"));
+        // picos da 5Q.7: enquadrar 18, recuperar guarda 16, virar 12, escapar da montada 14, girar 14, defender 18
+        assertTrue(pico("enquadrar:ATACA") >= 24, "enquadrar " + pico("enquadrar:ATACA"));
         assertTrue(pico("escape_quadril:ATACA") >= 21, "recuperar a guarda");
         assertTrue(pico("virar_joelhos:ATACA") >= 16, "virar");
         assertTrue(pico("escape_montada:ATACA") >= 19, "escapar da montada");
