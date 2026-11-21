@@ -1973,12 +1973,45 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         return quadroSolo(slot, explosivo ? com.irmaosmiau.posicional.TecnicaSolo.Familia.R1 : com.irmaosmiau.posicional.TecnicaSolo.Familia.RS);
     }
 
+    // =====================================================
+    // MODO DESENVOLVEDOR: CODIGO DA RODA ABERTA (hud.IdentificacaoRodas)
+    // =====================================================
+    /** Chave de contexto da ultima roda montada para cada slot (so para mostrar o codigo no F8). */
+    private final java.util.Map<SlotJogador, String> chaveRoda = new java.util.EnumMap<>(SlotJogador.class);
+
+    /** Chave da roda aberta agora (testes). */
+    String chaveRodaAtual(SlotJogador slot) {
+        return montarQuadroDpad(slot) == null ? null : chaveRoda.get(slot);
+    }
+
+    /** "RODA: M-026" sob a roda, so com o Modo Desenvolvedor (F8) ligado; nada muda na roda. */
+    private void desenharCodigoRoda(Graphics2D g0, SlotJogador slot, int x) {
+        if (dev == null) {
+            return;
+        }
+        String t = com.irmaosmiau.hud.IdentificacaoRodas.rotulo(chaveRoda.get(slot));
+        Graphics2D g = (Graphics2D) g0.create();
+        g.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING, java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(new Font("Arial", Font.BOLD, 9));
+        int w = Math.min(PainelDpadContextual.LARGURA, g.getFontMetrics().stringWidth(t) + 10);
+        int y = PainelDpadContextual.Y + PainelDpadContextual.ALTURA + 2;
+        g.setColor(new Color(170, 30, 30, 200));                  // a cor do selo do desenvolvedor
+        g.fillRoundRect(x, y, w, 13, 6, 6);
+        g.setColor(Color.WHITE);
+        g.drawString(t, x + 5, y + 10);
+        g.dispose();
+    }
+
     /** 5P.2: cruz da familia no solo (ou em pe com o motor): tecnicas reais e espacos reservados. */
     PainelDpadContextual.Quadro quadroSolo(SlotJogador slot, com.irmaosmiau.posicional.TecnicaSolo.Familia fam) {
         java.util.Optional<com.irmaosmiau.posicional.MotorSolo.Ataque> atk = solo.getAtaque();
         if (atk.isPresent()) {
+            chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.finalizacao(atk.get().atacante() == lado(slot),
+                    atk.get().fase() == com.irmaosmiau.posicional.MotorSolo.FaseFinalizacao.DISPUTA));
             return quadroFinalizacao(slot, atk.get());                      // 5Q: disputa tem prioridade no HUD
         }
+        chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.motor(solo.getEstado(), lado(slot), fam,
+                jogadorBranco.isAjoelhado() || jogadorPreto.isAjoelhado()));
         boolean explosivo = fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.R1;
         com.irmaosmiau.posicional.Lado l = lado(slot);
         com.irmaosmiau.posicional.EstadoPosicional e = solo.getEstado();
@@ -1998,6 +2031,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 m.put(d, new CelulaContextual(new PosicaoComando(CamadaComando.UM, d), CelulaContextual.Tipo.EXECUTAVEL,
                         "MEIA", null, null, true, com.irmaosmiau.controles.NaturezaAcao.DEFESA));
             }
+            chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.caindo());
             return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, "CAINDO: COMO RECEBER?", m);
         }
         String nome;
@@ -2381,6 +2415,8 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         }
         PainelDpadContextual.Quadro q = PainelDpadContextual.montar(slot.getSigla(), camada, nomeCamada(slot, camada),
                 RepertorioContextual.paraCombate(sistemaCombate, slot, ator, outro));
+        chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.pegadasEmPe(
+                com.irmaosmiau.controles.PapelCombate.de(sistemaCombate, ator), camada));
         if (camada == CamadaComando.UM && aplicaPegadaEstabelecida(slot)) {
             // 5P.2: aplicando a pegada: RS <- tiro de guarda, RS v derrubada forcada (do motor)
             java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m = new java.util.EnumMap<>(q.celulas());
@@ -2531,6 +2567,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                     reservada ? CelulaContextual.Tipo.RESERVADA : CelulaContextual.Tipo.EXECUTAVEL,
                     rotuloCurtoFamilia(fam, d), null, null, r.disponivel()));
         }
+        chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.familiaEmPe(fam));
         String nome = fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS
                 ? "DEFESAS (" + nomeModificador(slot, AcaoJogador.MODIFICADOR_DEFESA) + ")"
                 : "QUEDAS: EM BREVE (" + nomeModificador(slot, AcaoJogador.MODIFICADOR_PROJECAO) + ")";
@@ -2568,6 +2605,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             m.put(ds[i], new CelulaContextual(new PosicaoComando(CamadaComando.UM, ds[i]),
                     CelulaContextual.Tipo.RESERVADA, rot[i], null, null, false));
         }
+        chaveRoda.put(slot, com.irmaosmiau.hud.IdentificacaoRodas.semMotor());
         return new PainelDpadContextual.Quadro(slot.getSigla(), CamadaComando.UM, "SOLO: EM BREVE", m);
     }
 
@@ -3688,10 +3726,12 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             PainelDpadContextual.Quadro dpad1 = montarQuadroDpad(SlotJogador.JOGADOR_1);
             if (PainelDpadContextual.deveMostrar(dpad1)) {             // 5Q.5: roda vazia nao aparece
                 PainelDpadContextual.desenhar(g2, 10, dpad1);
+                desenharCodigoRoda(g2, SlotJogador.JOGADOR_1, 10);              // F8: o codigo da roda
             }
             PainelDpadContextual.Quadro dpad2 = montarQuadroDpad(SlotJogador.JOGADOR_2);
             if (PainelDpadContextual.deveMostrar(dpad2)) {
                 PainelDpadContextual.desenhar(g2, LARGURA - 10 - PainelDpadContextual.LARGURA, dpad2);
+                desenharCodigoRoda(g2, SlotJogador.JOGADOR_2, LARGURA - 10 - PainelDpadContextual.LARGURA);
             }
 
             if (debugVisivel) {
