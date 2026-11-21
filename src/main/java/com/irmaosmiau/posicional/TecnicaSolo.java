@@ -45,10 +45,12 @@ public record TecnicaSolo(
      * - R1: tatico / explosivo (quedas em pe, upa, levantar, sair da posicao);
      * - L1: guardas (em pe: entradas; no chao: variacoes) e finalizacoes futuras;
      * - L2: quedas especificas (em pe) / controles de manga e finalizacoes futuras;
-     * - L1_L2: especiais (berimbolo) e a terceira familia de finalizacoes.
+     * - L1_L2: especiais (berimbolo) e a terceira familia de finalizacoes;
+     * - R2 (complemento da 5Q.8): RT segurado POR CIMA na montada, nos cem quilos e nas costas = a quarta
+     *   roda de finalizacoes. Fora dessas posicoes o RT continua sendo defesa (guardas, sprawl) e base.
      */
     public enum Familia {
-        RS("RS"), R1("R1"), L1("L1"), L2("L2"), L1_L2("L1+L2");
+        RS("RS"), R1("R1"), L1("L1"), L2("L2"), L1_L2("L1+L2"), R2("R2");
 
         private final String rotulo;
 

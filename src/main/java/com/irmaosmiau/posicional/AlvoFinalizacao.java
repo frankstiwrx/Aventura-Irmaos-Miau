@@ -43,7 +43,9 @@ public enum AlvoFinalizacao {
             Map.entry("banana_split", QUADRIL),
             // 5Q.8
             Map.entry("baratoplata", OMBRO), Map.entry("tarikoplata", OMBRO), Map.entry("monoplata", OMBRO),
-            Map.entry("mao_de_vaca", PUNHO));
+            Map.entry("mao_de_vaca", PUNHO),
+            // complemento 5Q.8 (biceps: BRACO, o padrao da categoria)
+            Map.entry("mir_lock", OMBRO));
 
     /** O alvo da finalizacao (pelo id-base; senao o padrao da categoria). */
     public static AlvoFinalizacao de(Finalizacao f) {

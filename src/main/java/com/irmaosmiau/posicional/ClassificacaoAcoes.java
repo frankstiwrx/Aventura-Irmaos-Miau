@@ -31,6 +31,9 @@ public final class ClassificacaoAcoes {
         if (t == null) {
             return NaturezaAcao.CONTROLE;
         }
+        if (CatalogoTecnicasSolo.CHAVE_DEPOIS_DA_ENTRADA.containsKey(t.id())) {
+            return NaturezaAcao.FINALIZACAO;               // complemento 5Q.8: entrada que termina numa chave
+        }
         if (ESCAPES.contains(t.id()) || t.papel() == PapelPosicional.CONTROLADO) {
             return NaturezaAcao.DEFESA;
         }

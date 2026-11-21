@@ -682,6 +682,12 @@ public final class AnimacoesTecnicas {
                 q(0.00),
                 q(0.60, 26, 8, 27, -4, 28, 12, 29, -4),
                 q(1.00, 26, 14, 27, -8, 28, 22, 29, -10, 20, 8, 21, 6, 18, 4, 19, 3));
+        // complemento 5Q.8: das costas para a perna (LT + LB) usa o mesmo corpo da entrada do RB <-
+        for (String id : new String[] {"costas_perna_pe_reta", "costas_perna_joelho", "costas_perna_toe_hold",
+            "costas_perna_panturrilha"}) {
+            alias(id + ":ATACA", "entrada_perna_dominante:ATACA");
+            alias(id + ":RECEBE", "entrada_perna_dominante:RECEBE");
+        }
 
         // ---------------- 17. UNDERHOOK NA MEIA-GUARDA (ajuste de quem esta por baixo): braco por baixo
         def("underhook_meia:ATACA",

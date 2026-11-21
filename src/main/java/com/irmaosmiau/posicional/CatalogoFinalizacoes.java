@@ -96,6 +96,7 @@ public final class CatalogoFinalizacoes {
         Familia l1 = Familia.L1;            // ashi garami (5Q.6): L1 = joelho/quadril
         Familia l2 = Familia.L2;
         Familia l12 = Familia.L1_L2;
+        Familia r2 = Familia.R2;            // complemento 5Q.8: RT por cima (montada, cem quilos, costas)
         Direcao cima = Direcao.CIMA;
         Direcao dir = Direcao.DIREITA;
         Direcao baixo = Direcao.BAIXO;
@@ -145,6 +146,14 @@ public final class CatalogoFinalizacoes {
         c.f(l12, dir, "darce", "D'arce", "D'ARCE", es, RX, ctl, 55, recuperouGuarda);
         c.f(l12, baixo, "anaconda", "Anaconda", "ANACONDA", es, MR, ctl, 55, recuperouGuarda);
         c.f(l12, esq, "gravata_peruana", "Gravata peruana (peruvian necktie)", "PERUANA", es, MR, ctl, 60, FICA);
+        // Complemento 5Q.8: RT dos cem quilos. Auditoria: o baseball bat ja existe (LT <-) e a chave de braco
+        // do lado de la ja existe como o armlock girando (LB v): no lugar, o Von Flue e o Mir lock.
+        c.f(r2, cima, "cortador_papel", "Estrangulamento cortador de papel (paper cutter)", "PAPEL", es, AZ, ctl, 50,
+                FICA);
+        c.f(r2, dir, "lapela", "Estrangulamento de lapela dos 100 kg", "LAPELA", es, RX, ctl, 55, FICA);
+        c.f(r2, baixo, "von_flue", "Estrangulamento Von Flue (ombro no pescoço)", "VON FLUE", es, RX, ctl, 50, FICA);
+        c.f(r2, esq, "mir_lock", "Mir lock (chave de ombro com o punho preso)", "MIR LOCK", br, RX, ctl, 55,
+                recuperouGuarda);
 
         // ================= MONTADA (quem controla)
         Desfecho meia = para(Posicao.MEIA_GUARDA, INI, OUT);
@@ -165,6 +174,14 @@ public final class CatalogoFinalizacoes {
                 perdeuMontada);
         c.f(l12, baixo, "gola_unica", "Estrangulamento de gola única", "GOLA ÚNICA", es, AZ, ctl, 45, FICA);
         c.f(l12, esq, "mao_de_vaca", "Mão de vaca (chave de punho)", "MÃO DE VACA", br, RX, ctl, 45, FICA);
+        // Complemento 5Q.8: RT da montada. Auditoria: o triangulo da montada (LT <-) e o ezequiel (LT ->) ja
+        // existem: no lugar, a lapela, o antebraco e a guilhotina de cotovelo alto (variacao da guilhotina da
+        // guarda, outra entrada); a chave de biceps e o ataque novo ao braco.
+        c.f(r2, cima, "lapela", "Estrangulamento de lapela da montada", "LAPELA", es, AZ, ctl, 50, FICA);
+        c.f(r2, dir, "biceps", "Chave de bíceps (esmagamento)", "BÍCEPS", br, MR, ctl, 55, FICA);
+        c.f(r2, baixo, "antebraco", "Estrangulamento com o antebraço", "ANTEBRAÇO", es, AZ, ctl, 45, FICA);
+        c.f(r2, esq, "guilhotina", "Guilhotina da montada (cotovelo alto)", "GUILHOT.", es, RX, ctl, 55,
+                perdeuMontada);
 
         // ================= COSTAS (quem controla)
         Desfecho girou = para(Posicao.GUARDA, OUT, INI);
@@ -177,6 +194,13 @@ public final class CatalogoFinalizacoes {
         c.f(l2, dir, "arco_flecha", "Arco e flecha", "ARCO", es, AZ, ctl, 50, FICA);
         c.f(l2, baixo, "gola_tras", "Estrangulamento de gola por trás", "GOLA", es, AZ, ctl, 40, FICA);
         c.f(l2, esq, "cruzado_tras", "Estrangulamento cruzado pelas costas", "CRUZADO", es, RX, ctl, 50, FICA);
+        // Complemento 5Q.8: RT das costas. Auditoria: mata-leao, cruzado, gola e arco ja existem e as quatro
+        // chaves de braco/ombro tambem (LB): no lugar do ataque de ombro, o triangulo pelas costas (controle
+        // do corpo com as pernas; falhando, o outro gira para a guarda).
+        c.f(r2, cima, "short_choke", "Short choke (estrangulamento curto)", "SHORT", es, AZ, ctl, 45, FICA);
+        c.f(r2, dir, "ezequiel", "Ezequiel pelas costas", "EZEQUIEL", es, RX, ctl, 50, FICA);
+        c.f(r2, baixo, "triangulo", "Triângulo pelas costas", "TRIÂNGULO", es, MR, ctl, 55, girou);
+        c.f(r2, esq, "lapela", "Estrangulamento de lapela por trás", "LAPELA", es, AZ, ctl, 45, FICA);
 
         // ================= CONTROLE DE PERNA (ashi garami): as chaves de perna
         c.em(Posicao.ASHI_GARAMI, PapelPosicional.CONTROLADOR, para(Posicao.SOLO_DISPUTADO, NADA, NADA));

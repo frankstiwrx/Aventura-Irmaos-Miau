@@ -100,7 +100,8 @@ class LaboratorioTreinoTest {
         lab.aplicar(m, null, a, b);
         ticks(30);
         List<LaboratorioTreino.Item> cat = lab.catalogo(m);
-        assertEquals(8, cat.size(), "as 8 finalizacoes das costas, so para quem controla");
+        // complemento 5Q.8 (pedido): + as 4 da roda RT das costas
+        assertEquals(12, cat.size(), "as 12 finalizacoes das costas, so para quem controla");
         assertTrue(cat.stream().allMatch(i -> i.lado() == Lado.B));
         LaboratorioTreino.Item mata = cat.stream().filter(i -> i.finalizacao().tecnicaBase().equals("mata_leao"))
                 .findFirst().orElseThrow();

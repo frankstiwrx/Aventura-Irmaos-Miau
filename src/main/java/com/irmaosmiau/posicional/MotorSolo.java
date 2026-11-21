@@ -332,6 +332,12 @@ public final class MotorSolo {
     private com.irmaosmiau.regras.ModoRegras modoRegras = com.irmaosmiau.regras.ModoRegras.LIVRE;
     private Ataque ataque;
     private Vitoria vitoria;
+    /** Complemento 5Q.8: chave que comeca quando a entrada das costas chega ao ashi (null = nenhuma). */
+    private Finalizacao chaveEncadeada;
+    private Lado ladoEncadeado;
+    private int ticksAteAChave;
+    /** Complemento 5Q.8: a chave encadeada comeca depois de o corpo chegar ao ashi (ticks). */
+    public static final int TICKS_ATE_A_CHAVE = 16;
     private final Map<Lado, Efeito> efeitos = new EnumMap<>(Lado.class);
 
     public CatalogoFinalizacoes getCatalogoFinalizacoes() {
@@ -436,6 +442,9 @@ public final class MotorSolo {
             // 5Q.5: entradas no controle de perna (transicao corporal ate o ashi garami)
             CatalogoTecnicasSolo.ENTRADA_PERNA_GUARDA, CatalogoTecnicasSolo.ENTRADA_PERNA_DOMINANTE,
             CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA, CatalogoTecnicasSolo.ENTRADA_PERNA_ABERTA + "_dlr",
+            // complemento 5Q.8: das costas para a perna (o mesmo corpo da entrada do RB <-)
+            CatalogoTecnicasSolo.COSTAS_PERNA_PE_RETA, CatalogoTecnicasSolo.COSTAS_PERNA_JOELHO,
+            CatalogoTecnicasSolo.COSTAS_PERNA_TOE_HOLD, CatalogoTecnicasSolo.COSTAS_PERNA_PANTURRILHA,
             // 5Q.6: quedas explosivas, body lock, projecoes e entradas de guarda do LB + LT
             CatalogoTecnicasSolo.SINGLE_LEG, CatalogoTecnicasSolo.HIGH_CROTCH, CatalogoTecnicasSolo.ANKLE_PICK,
             CatalogoTecnicasSolo.CARREGADA_OMBRO, CatalogoTecnicasSolo.BODY_LOCK,
@@ -499,6 +508,48 @@ public final class MotorSolo {
         };
     }
 
+    /** Complemento 5Q.8: a chave que a entrada encadeia (null = a tecnica nao encadeia nada). */
+    public Finalizacao chaveDaEntrada(String idTecnica) {
+        String id = CatalogoTecnicasSolo.CHAVE_DEPOIS_DA_ENTRADA.get(idTecnica);
+        return id == null ? null : catalogoFinalizacoes.buscar(id).orElseThrow();
+    }
+
+    /**
+     * Complemento 5Q.8: este lado tem finalizacoes nesta familia AGORA (posicao e papel)? Usado para o RT
+     * por cima: na montada, nos cem quilos e nas costas o RT abre a roda de finalizacoes; fora disso ele
+     * continua sendo a defesa/base de sempre.
+     */
+    public boolean temFinalizacoes(Lado lado, TecnicaSolo.Familia familia) {
+        return catalogoFinalizacoes.todas().stream().anyMatch(f -> f.familia() == familia
+                && f.posicao() == estado.getPosicao() && estado.temPapel(lado, f.papel()));
+    }
+
+    /** Complemento 5Q.8: chave encadeada esperando o corpo chegar ao ashi (testes e HUD). */
+    public Optional<Finalizacao> getChaveEncadeada() {
+        return Optional.ofNullable(chaveEncadeada);
+    }
+
+    /** A chave encadeada comeca quando o corpo chega (o requisito de controle ja foi a propria entrada). */
+    private void atualizarChaveEncadeada() {
+        if (chaveEncadeada == null || --ticksAteAChave > 0) {
+            return;
+        }
+        Finalizacao f = chaveEncadeada;
+        Lado l = ladoEncadeado;
+        chaveEncadeada = null;
+        ladoEncadeado = null;
+        if (ataque != null || tentativa != null || vitoria != null || estado.getPosicao() != f.posicao()
+                || !estado.temPapel(l, f.papel())) {
+            return;                                            // o outro escapou ou algo mudou: fica o ashi
+        }
+        IrmaoMiau eu = lutador(l);
+        if (eu.getFolegoAtual() < com.irmaosmiau.entities.CustosFolego.custoSolo(f.custo(), eu.getAtributos().getFolego())) {
+            registrar("RECUSA", f.id(), l, "SEM FÔLEGO");
+            return;
+        }
+        comecarAtaque(l, f);
+    }
+
     /** Por que a finalizacao nao pode comecar agora (null = pode). Nada e cobrado na recusa. */
     public String motivoFinalizacao(Lado lado, Finalizacao f) {
         IrmaoMiau eu = lutador(lado);
@@ -536,6 +587,11 @@ public final class MotorSolo {
             registrar("RECUSA", f.id(), lado, m);
             return new Resposta(Resultado.RECUSADA, f.nome().toUpperCase(java.util.Locale.ROOT) + " · " + m, null);
         }
+        comecarAtaque(lado, f);
+        return new Resposta(Resultado.INICIADA, f.nome(), null);
+    }
+
+    private void comecarAtaque(Lado lado, Finalizacao f) {
         IrmaoMiau eu = lutador(lado);
         double custo = com.irmaosmiau.entities.CustosFolego.custoSolo(f.custo(), eu.getAtributos().getFolego());
         eu.gastarFolegoEsforco(custo, f.id());
@@ -545,7 +601,6 @@ public final class MotorSolo {
         ataque = new Ataque(f, lado, janela);
         exposicao.put(lado, new Exposto(Exposicao.BASE, janela + 6));
         registrar("FIN_ENTRADA", f.id(), lado, "");
-        return new Resposta(Resultado.INICIADA, f.nome(), null);
     }
 
     private double eficienciaAtaque() {
@@ -1194,6 +1249,19 @@ public final class MotorSolo {
         if (recarga.get(lado) > 0) {
             return "EM RECUPERAÇÃO";
         }
+        Finalizacao chave = chaveDaEntrada(t.id());
+        if (chave != null) {
+            // complemento 5Q.8: a entrada das costas so comeca se a chave do fim for permitida para quem entra
+            if (!eu.getGraduacao().alcanca(chave.graduacao())) {
+                return "GRADUAÇÃO " + chave.graduacao().name();
+            }
+            if (!eu.aprendeu(chave.tecnicaBase())) {
+                return "NÃO APRENDIDA";
+            }
+            if (!modoRegras.permite(chave)) {
+                return "PROIBIDA NO MODO";
+            }
+        }
         if (t.id().equals(CatalogoTecnicasSolo.POSTURA) && posturaBloqueada(lado)) {
             return "POSTURA QUEBRADA";                         // 5Q.5: a janela da guilhotina e real
         }
@@ -1300,6 +1368,7 @@ public final class MotorSolo {
         atualizarArrasto(ia, ib);                                 // 5Q.7
         avancoDaQueda();                                          // 5Q.6
         atualizarFinalizacao();                                   // 5Q
+        atualizarChaveEncadeada();                                // complemento 5Q.8
         sincronizarEmPe();
         coerencia();
         if (aterrissagemCima != null && --aterrissagemTicks <= 0) {
@@ -1531,6 +1600,12 @@ public final class MotorSolo {
                     }
                     entrar(tec.sucesso().aplicar(estado, ini), ini, tec.papel() == PapelPosicional.POR_BAIXO
                             || tec.papel() == PapelPosicional.CONTROLADO);
+                    Finalizacao chave = chaveDaEntrada(tec.id());
+                    if (chave != null) {
+                        chaveEncadeada = chave;                // complemento 5Q.8: chegou ao ashi -> a chave
+                        ladoEncadeado = ini;
+                        ticksAteAChave = TICKS_ATE_A_CHAVE;
+                    }
                     if (tec.id().equals(CatalogoTecnicasSolo.LEVANTAR_TECNICO)) {
                         lutador(ini).preferirTransicao(com.irmaosmiau.entities.TransicaoPostura.LEVANTADA_TECNICA);   // 5Q.5
                     }
@@ -2220,6 +2295,8 @@ public final class MotorSolo {
             soltarPernas(seguradorPernas, null);               // 5Q.7: posicao nova acaba com o arrasto
         }
         estado = novo;
+        chaveEncadeada = null;                                 // complemento 5Q.8: posicao nova cancela a chave
+        ladoEncadeado = null;
         afastarAte.clear();                                    // 5Q.5: posicao nova cancela o afastamento
         recuoDoChao.clear();
         postura.put(Lado.A, 0);

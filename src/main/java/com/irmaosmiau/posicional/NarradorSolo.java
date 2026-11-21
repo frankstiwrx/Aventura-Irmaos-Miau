@@ -122,6 +122,9 @@ public final class NarradorSolo {
             case CatalogoTecnicasSolo.ASHI_PARA_SLX -> q + " subiu para o single-leg X!";
             case CatalogoTecnicasSolo.ASHI_PARA_GUARDA -> q + " recompôs a guarda!";
             case CatalogoTecnicasSolo.RASPAGEM_ASHI -> q + " raspou do ashi e levantou!";
+            case CatalogoTecnicasSolo.COSTAS_PERNA_PE_RETA, CatalogoTecnicasSolo.COSTAS_PERNA_JOELHO,
+                    CatalogoTecnicasSolo.COSTAS_PERNA_TOE_HOLD, CatalogoTecnicasSolo.COSTAS_PERNA_PANTURRILHA ->
+                    q + " largou as costas e foi na perna!";   // complemento 5Q.8 (a chave vem em seguida)
             case CatalogoTecnicasSolo.JOELHO_DIRETO -> q + " colocou o joelho na barriga!";
             case CatalogoTecnicasSolo.BERIMBOLO -> q + " pegou as costas com berimbolo!";
             case CatalogoTecnicasSolo.PASSAR_BORBOLETA, CatalogoTecnicasSolo.PASSAR_DLR,

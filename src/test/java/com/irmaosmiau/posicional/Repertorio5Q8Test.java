@@ -70,7 +70,7 @@ class Repertorio5Q8Test {
     @Test
     void dozeFinalizacoesNovasNoLtLbDeCadaPosicao() {
         CatalogoFinalizacoes c = CatalogoFinalizacoes.referencia();
-        assertEquals(58, c.todas().size());
+        assertEquals(70, c.todas().size());            // complemento 5Q.8 (pedido): + as 12 do RT
         for (Map.Entry<Posicao, List<String>> e : NOVAS.entrySet()) {
             for (int i = 0; i < 4; i++) {
                 Finalizacao f = c.naPosicao(e.getKey(), Familia.L1_L2, ORDEM[i]).orElseThrow();

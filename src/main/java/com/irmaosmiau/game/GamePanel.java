@@ -1525,7 +1525,10 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         pedirSolo(slot, direcaoDaAcao(a), input.isAtiva(slot, AcaoJogador.MODIFICADOR_PROJECAO));
                     }
                 }
-                doSlot.clear();
+                boolean rt = input.isAtiva(slot, AcaoJogador.MODIFICADOR_DEFESA);
+                // complemento 5Q.8: com o RT (3 / INSERT) segurado as teclas de pegada ficam para a familia do RT
+                // (a roda de finalizacoes por cima); atualizarFamilias as consome e elas nunca pegam
+                doSlot.removeIf(a -> !(rt && java.util.Arrays.asList(ACOES_PEGADA).contains(a)));
             }
         }
         // Entrega 5O: RT/RB + direcao da tecnica = defesas/quedas (nunca pegada); Y + direcao = acrobacia.
@@ -1784,12 +1787,15 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
     /** 5P.2: "LB · GUARDAS", "LT · QUEDAS", "LT+LB · ESPECIAIS", "LB · FINALIZ.*" (botoes do dispositivo). */
     private String nomeFamiliaL(SlotJogador slot, com.irmaosmiau.posicional.TecnicaSolo.Familia fam, com.irmaosmiau.posicional.EstadoPosicional e,
             java.util.Map<com.irmaosmiau.controles.DirecaoTecnica, CelulaContextual> m) {
+        if (fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.R2) {
+            return nomeModificador(slot, AcaoJogador.MODIFICADOR_DEFESA) + " · FINALIZ.";   // complemento 5Q.8
+        }
         String botoes = nomeCamada(slot, fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L1 ? CamadaComando.TRES
                 : fam == com.irmaosmiau.posicional.TecnicaSolo.Familia.L2 ? CamadaComando.DOIS : CamadaComando.QUATRO).replace(" + RS", "");
         boolean soReservadas = !m.isEmpty() && m.values().stream().noneMatch(CelulaContextual::isExecutavel);
         // 5Q: finalizacoes reais (ids "tecnica@posicao") ou entradas na perna
         boolean ataques = m.values().stream().anyMatch(c -> (c.idTransicao() != null && c.idTransicao().contains("@"))
-                || "→ PERNA".equals(c.rotulo()));
+                || (c.rotulo() != null && c.rotulo().startsWith("→ ")));   // complemento 5Q.8: "→ PÉ RETA"...
         String o;
         if (ataques && e.getPosicao() == com.irmaosmiau.posicional.Posicao.ASHI_GARAMI) {
             // 5Q.6: no ashi as tres rodas sao de perna (LT tornozelo/pe, LB joelho/quadril)
@@ -1959,7 +1965,14 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
             com.irmaosmiau.controles.DirecaoTecnica nova = pad.filter(e -> e.familia() == fam)
                     .map(com.irmaosmiau.controles.FamiliaTecnica.Escolha::direcao).orElse(teclaNova);
             if (fam == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS) {
-                if (presoNoSolo(ator)) {
+                if (rodaRtPorCima(slot)) {
+                    // complemento 5Q.8: por cima na montada, nos cem quilos e nas costas o RT abre a roda de
+                    // finalizacoes. So a INCLINACAO do RS com o RT segurado escolhe; soltar o RT nao executa nada.
+                    ator.getDefesa().soltar();
+                    if (nova != null) {
+                        pedirSolo(slot, nova, com.irmaosmiau.posicional.TecnicaSolo.Familia.R2);
+                    }
+                } else if (presoNoSolo(ator)) {
                     ator.getDefesa().soltar();                     // 5P: ligado no solo nao ha guarda em pe
                 } else {
                     atualizarDefesas(slot, ator, outro, segurada, nova);
@@ -2261,10 +2274,23 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
 
     /** 5P.2: familia que o HUD mostra (R1 pelo RB; L1/L2/L1+L2 pelas camadas do Contextual). */
     com.irmaosmiau.posicional.TecnicaSolo.Familia familiaHud(SlotJogador slot) {
+        if (familiaDo(slot) == com.irmaosmiau.controles.FamiliaTecnica.DEFESAS && rodaRtPorCima(slot)) {
+            return com.irmaosmiau.posicional.TecnicaSolo.Familia.R2;              // complemento 5Q.8
+        }
         if (familiaDo(slot) == com.irmaosmiau.controles.FamiliaTecnica.PROJECOES) {
             return com.irmaosmiau.posicional.TecnicaSolo.Familia.R1;
         }
         return familiaDaCamada(dispositivos.camadaAtiva(slot));
+    }
+
+    /**
+     * Complemento 5Q.8: o RT deste slot abre a roda de finalizacoes agora? So no solo, por cima, na montada,
+     * nos cem quilos e nas costas (onde o catalogo tem a familia R2 para este lado). Em pe, por baixo e nas
+     * outras posicoes o RT continua sendo defesa (guardas, sprawl) e base contra as quedas.
+     */
+    boolean rodaRtPorCima(SlotJogador slot) {
+        return solo != null && !parceiroPassivo(slot) && soloConduz(slot)
+                && solo.temFinalizacoes(lado(slot), com.irmaosmiau.posicional.TecnicaSolo.Familia.R2);
     }
 
     /** 5P.2: celula de uma direcao: tecnica do motor (executavel) ou espaco de finalizacao (reservado). */
@@ -2274,8 +2300,16 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                 com.irmaosmiau.posicional.TecnicaSolo.Direcao.valueOf(d.name()), fam);
         java.util.Optional<com.irmaosmiau.posicional.TecnicaSolo> t = solo.tecnicaPara(l, cmd);              // 5Q.6: em pe x de joelhos
         if (t.isPresent()) {
+            String motivo = solo.motivoSem(l, t.get());
+            String rot = t.get().rotulo();
+            com.irmaosmiau.posicional.Finalizacao chave = solo.chaveDaEntrada(t.get().id());
+            if (chave != null && motivo != null && motivo.startsWith("GRADUAÇÃO")) {
+                rot += "·" + chave.graduacao().getSigla();      // complemento 5Q.8: a faixa da chave do fim
+            } else if (chave != null && ("PROIBIDA NO MODO".equals(motivo) || "NÃO APRENDIDA".equals(motivo))) {
+                rot += "·X";
+            }
             return java.util.Optional.of(new CelulaContextual(new PosicaoComando(CamadaComando.UM, d),
-                    CelulaContextual.Tipo.EXECUTAVEL, t.get().rotulo(), null, null, solo.motivoSem(l, t.get()) == null,
+                    CelulaContextual.Tipo.EXECUTAVEL, rot, null, null, motivo == null,
                     com.irmaosmiau.posicional.ClassificacaoAcoes.de(t.get())));            // 5Q.6: cor pela natureza
         }
         java.util.Optional<com.irmaosmiau.posicional.Finalizacao> fz =

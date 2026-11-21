@@ -63,6 +63,13 @@ public final class RegistroFinalizacoes {
         }
     }
 
+    /** Complemento 5Q.8: as quatro entradas do LT + LB nas costas (a direcao escolhe a chave do ashi). */
+    private static final Map<Direcao, String> COSTAS_PARA_A_PERNA = Map.of(
+            Direcao.CIMA, CatalogoTecnicasSolo.COSTAS_PERNA_PE_RETA,
+            Direcao.DIREITA, CatalogoTecnicasSolo.COSTAS_PERNA_JOELHO,
+            Direcao.BAIXO, CatalogoTecnicasSolo.COSTAS_PERNA_TOE_HOLD,
+            Direcao.ESQUERDA, CatalogoTecnicasSolo.COSTAS_PERNA_PANTURRILHA);
+
     private final Map<String, Espaco> porId;
 
     private RegistroFinalizacoes(Map<String, Espaco> porId) {
@@ -129,6 +136,12 @@ public final class RegistroFinalizacoes {
                         nome = real.nome();
                         curto = real.rotulo();
                         tecnica = real.id();
+                    } else if (f == Familia.L1_L2 && p == Posicao.COSTAS) {
+                        // complemento 5Q.8: nas costas o LT + LB e a entrada na perna que ja vai para a chave
+                        Finalizacao alvo = cat.naPosicao(Posicao.ASHI_GARAMI, Familia.L1_L2, d).orElseThrow();
+                        tecnica = COSTAS_PARA_A_PERNA.get(d);
+                        nome = "Das costas para a perna (" + alvo.nome() + ")";
+                        curto = "→ " + alvo.rotulo();
                     } else if (f == Familia.L1_L2) {
                         Finalizacao alvo = cat.naPosicao(Posicao.ASHI_GARAMI, Familia.L1_L2, d).orElseThrow();
                         nome = "Entrada na perna (depois: " + alvo.nome() + ")";

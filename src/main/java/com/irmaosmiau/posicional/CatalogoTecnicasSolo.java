@@ -158,6 +158,23 @@ public final class CatalogoTecnicasSolo {
     public static final String LIVRAR_SLX = "livrar_slx";
     public static final String ENTRADA_PERNA_GUARDA = "entrada_perna_guarda";
     public static final String ENTRADA_PERNA_DOMINANTE = "entrada_perna_dominante";
+    /**
+     * Complemento 5Q.8: LT + LB nas COSTAS (antes os 4 espacos mostravam "RB<- PERNA" e eram recusados como
+     * "FINALIZACAO FUTURA"). Cada direcao e uma ENTRADA real no controle de perna (o outro pode girar e
+     * escapar na janela) que, chegando ao ashi garami, ja comeca a chave escolhida - a MESMA chave do LT + LB
+     * do ashi (mesmo mapa: ^ pe reta, -> joelho, v toe hold, <- panturrilha). Nao sao tecnicas-base novas:
+     * sao rotas novas para chaves que ja existem. A entrada simples na perna continua no RB <-.
+     */
+    public static final String COSTAS_PERNA_PE_RETA = "costas_perna_pe_reta";
+    public static final String COSTAS_PERNA_JOELHO = "costas_perna_joelho";
+    public static final String COSTAS_PERNA_TOE_HOLD = "costas_perna_toe_hold";
+    public static final String COSTAS_PERNA_PANTURRILHA = "costas_perna_panturrilha";
+    /** Complemento 5Q.8: a chave (id do CatalogoFinalizacoes, no ashi) que cada entrada das costas encadeia. */
+    public static final java.util.Map<String, String> CHAVE_DEPOIS_DA_ENTRADA = java.util.Map.of(
+            COSTAS_PERNA_PE_RETA, "chave_pe_reta@ashi_garami",
+            COSTAS_PERNA_JOELHO, "chave_joelho@ashi_garami",
+            COSTAS_PERNA_TOE_HOLD, "toe_hold@ashi_garami",
+            COSTAS_PERNA_PANTURRILHA, "panturrilha@ashi_garami");
     public static final String ENTRADA_PERNA_ABERTA = "entrada_perna_aberta";
     public static final String CONSOLIDAR_ASHI = "consolidar_ashi";
     public static final String SOLTAR_PERNA = "soltar_perna";
@@ -722,6 +739,22 @@ public final class CatalogoTecnicasSolo {
                 entradaPerna, 3.5, 16, Exposicao.CONTROLE_REDUZIDO, Criterio.CONTROLE_PROPRIO, 50, ashi,
                 ESCAPE_QUADRIL, RECUPERAR_MEIA, ESCAPE_MONTADA, GIRAR_NAS_COSTAS, FUGIR_DO_JOELHO);
         c.falhas.put(ENTRADA_PERNA_DOMINANTE, para(Posicao.GUARDA_ABERTA, INI, OUT));   // o outro recupera a guarda
+        // Complemento 5Q.8: LT + LB das costas = entrar na perna JA indo para uma chave (rotulo "→ chave").
+        // Mesma disputa da entrada do RB <- (controle 50, o outro escapa girando na janela, falhando o outro
+        // recupera a guarda); a graduacao exigida e a da chave.
+        Set<Posicao> soCostas = EnumSet.of(Posicao.COSTAS);
+        String[][] costasPerna = {
+            {COSTAS_PERNA_PE_RETA, "Largar as costas e atacar o pé (chave de pé reta)", "→ PÉ RETA"},
+            {COSTAS_PERNA_JOELHO, "Largar as costas e atacar o joelho (chave de joelho)", "→ JOELHO"},
+            {COSTAS_PERNA_TOE_HOLD, "Largar as costas e atacar o pé (toe hold)", "→ TOE HOLD"},
+            {COSTAS_PERNA_PANTURRILHA, "Largar as costas e atacar a panturrilha", "→ PANTURR."}};
+        Direcao[] ordemPerna = {Direcao.CIMA, Direcao.DIREITA, Direcao.BAIXO, Direcao.ESQUERDA};
+        for (int i = 0; i < 4; i++) {
+            c.transicao(costasPerna[i][0], costasPerna[i][1], costasPerna[i][2], soCostas, ctrl,
+                    List.of(l12(ordemPerna[i])), 3.5, 16, Exposicao.CONTROLE_REDUZIDO, Criterio.CONTROLE_PROPRIO, 50,
+                    ashi, GIRAR_NAS_COSTAS, ESCAPAR_NEUTRO);
+            c.falhas.put(costasPerna[i][0], para(Posicao.GUARDA_ABERTA, INI, OUT));
+        }
         c.transicao(ENTRADA_PERNA_ABERTA, "Controlar a perna (ashi garami)", "ASHI", EnumSet.of(Posicao.GUARDA_ABERTA,
                 Posicao.SINGLE_LEG_X), baixo, List.of(l12(Direcao.CIMA)), 3.0, 10, Exposicao.BASE, semPostura, 0, ashi,
                 CONTROLAR_PERNAS, POSTURA_SLX);
