@@ -152,3 +152,9 @@ não existem** no jogo, como ideias (nenhum é compromisso de entrega):
 
 - Desenho único para o deitado no solo livre (hoje: desenho legado parado, pose reta quando segurado).
 - Recalibrar com os testes físicos: execução/recarga das acrobacias, janela do R3 guardado, esforço do arrasto.
+
+## Depois da 5Q.8
+
+- Animações próprias para as 12 finalizações novas (hoje pose da categoria).
+- Crucifixo (posição nova nas costas) e 50/50 como posição (hoje só variação de chave de pé).
+- Pontuação e regras oficiais (não iniciadas, como pedido).

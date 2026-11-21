@@ -1265,3 +1265,32 @@ diferença mecânica. O ← ficou com o PRENDER; o → virou SEGURAR.
 PÉS (RS ↓), puxar guarda, levantar ou qualquer outra técnica aceita; rolar para longe (a distância
 passa do limite) também solta. O segurador solta sozinho ao mudar de ação, ao ficar sem fôlego ou
 se a posição mudar.
+
+## Entrega 5Q.8 — repertório e menus
+
+### LT + LB (as rodas que só tinham "→ PERNA")
+
+| Posição (quem controla) | ↑ | → | ↓ | ← |
+|---|---|---|---|---|
+| Guarda fechada (por baixo) | Gogoplata (Mr) | Baratoplata (Rx) | Tarikoplata (Mr) | Ezequiel da guarda (Az) |
+| Montada | Monoplata (Mr) | Armlock em S (Az) | Gola única (Az) | Mão de vaca (Rx) |
+| Cem quilos | Norte-sul (Rx) | D'arce (Rx) | Anaconda (Mr) | Gravata peruana (Mr) |
+
+A **entrada na perna** ("→ PERNA") ocupava as quatro direções do LT + LB com a mesma técnica. Agora:
+**RB ←** nas posições dominantes (montada, cem quilos, joelho na barriga, costas) e **RS →** na
+guarda fechada por baixo (o SOLTAR estava repetido no RS ← e no RS →; ficou no RS ←; o RB dali está
+todo ocupado: desequilibrar, ângulo e afastar).
+
+Adaptações das sugestões: o *arm triangle* da montada já existia (katagatame, LT →) e a chave de
+punho também (LB ←): no lugar entraram a **gola única** e a **mão de vaca** (punho com as duas mãos).
+
+### RS (rodas "RT AR")
+
+| Posição | ↑ | → | ↓ | ← |
+|---|---|---|---|---|
+| Costas (por cima) | MONTADA (virar para a montada) | 100 KG | GANCHOS (preservado) | TRIÂNGULO (triângulo de corpo) |
+| Ashi (quem controla, por baixo) | G. ABERTA (recompor a guarda) | SLX (subir para o single-leg X) | AJUSTAR (preservado) | RASPAR (raspar levantando, precisa de controle ≥ 45) |
+
+O outro responde na janela: nas costas, GIRAR; no ashi, girar/livrar a perna e esconder o pé. O
+crucifixo e a 50/50 não são posições do motor (a 50/50 existe só como variação de chave de pé):
+ficaram de fora.

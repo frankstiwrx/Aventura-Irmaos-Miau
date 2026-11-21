@@ -284,3 +284,12 @@ defensivas da 5Q.7, PÉS, PRENDER, cores, rolamento de joelhos, sprawl.
 - O personagem deitado no solo livre usa o desenho legado; enquanto é segurado usa a pose (reta).
   A troca no início e no fim da pegada é um pequeno salto de desenho (sem dobrar a cintura).
 - As finalizações de perna continuam parecidas entre si; Rig 2.0 continua fora.
+
+## Entrega 5Q.8
+
+- **Ajustadas:** reação do forçar queda que só desequilibra (agora a genérica); corpo inclinando
+  inteiro nas reações a partir da pegada; arrasto (passos pelo tempo, de joelhos, esforço contínuo,
+  braços do arrastado); microanimações defensivas 40% maiores.
+- **Novas:** triângulo de corpo (costas).
+- **Provisórias:** as 12 finalizações novas usam a pose da categoria (braço/estrangulamento), como as
+  de perna; as rotas novas das costas e do ashi usam a transição de posição de sempre.

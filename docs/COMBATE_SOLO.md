@@ -585,3 +585,60 @@ O MANTER da guarda aberta (`retencao`, RS ← / →) ganhou microanimação (`re
 contrai e encaixa, os joelhos voltam para dentro, as mãos ajustam; volta à pose da guarda. Também
 aparece quando é usado como resposta a uma passagem. A regra não mudou (sem efeito, sem troca de
 posição). Os MANTER das guardas borboleta, De La Riva, aranha e SLX já tinham animação (5Q.6).
+
+## Entrega 5Q.8 — correções finais e mobilidade
+
+### Deformações restantes (rasteira e forçar queda que falham)
+
+Uma sonda com sequências **aleatórias** (rasteira, forçar queda, empurrão, RT em instantes
+variados, arrastar a dupla, desequilibrar; J1 e J2 atacando) não achou acúmulo nem tronco fora do
+quadril. O que restava era de leitura:
+
+- o FORÇAR QUEDA que só desequilibra usava a reação **inteira** do empurrão (tronco 22°, cabeça 12°,
+  braços subindo 26 px): agora usa a reação genérica de queda que falhou;
+- o tronco girava 12–16° sobre a faixa reta (parecia a cintura quebrando): nas reações a partir da
+  pegada o corpo inclina **inteiro** — a cintura acompanha o tronco (torção até 6°,
+  `IntegridadeMembros.TORCAO_MAXIMA_NA_PEGADA`) — e os braços giram no máximo 15°
+  (`GIRO_MAXIMO_BRACO_NA_PEGADA`, seguram o kimono).
+
+A sonda virou teste (`Integridade5Q8GamePanelTest`, semente fixa).
+
+### Arrasto
+
+- Os passos andam pelo **tempo** enquanto há deslocamento (`AnimadorSolo.TICKS_PASSO_ARRASTO` 22,
+  `TICKS_PASSO_ARRASTO_JOELHOS` 26): de joelhos o arrasto é lento e, pelo x, a pose parecia parada.
+- Em pé: o pé do passo sobe e recua, o quadril sobe e desce; de joelhos: joelho e canela sobem e
+  recuam juntos, o quadril balança. Tudo antes da integridade (coxa e canela não mudam de tamanho).
+- O esforço de quem puxa (inclinação e mãos) fica contínuo enquanto arrasta
+  (`TICKS_ANDANDO_ARRASTO` 8) e volta suave ao parar.
+- Quem é arrastado: deitado reto; enquanto é puxado, os braços ficam para trás (lado da cabeça) e
+  voltam quando para.
+
+### Microanimações defensivas
+
+Recuperar a guarda, virar, enquadrar/criar espaço (100 kg), escapar e enquadrar (montada), girar e
+defender (costas): **40% mais amplas** (`AnimacoesTecnicas.AMPLITUDE_MICRO_DEFENSIVA`), ainda curtas e
+com a integridade do corpo. MANTER A GUARDA continua sutil.
+
+### Rolamento de joelhos e acrobacias
+
+| Parâmetro | 5Q.7 corretiva | 5Q.8 |
+|---|---|---|
+| Rolamento técnico de joelhos | 46 ticks (0,48) | **76 ticks** (0,288; `FATOR_ROLAMENTO_JOELHOS_5Q8` = 0,6) |
+| Execução das acrobacias | base × (1 − 0,2 × mobilidade) | base × (1 − 0,2 × mobilidade − 0,1 × condição) |
+| Execução mínima | 18 | 16 |
+| Recarga-base | 16 | 12 |
+
+Condição = 0,5 × fôlego + 0,5 × condicionamento (frações do máximo; recursos infinitos = 1).
+Preto faixa preta descansado (ou com recursos infinitos): estrela ~20 ticks, recarga ~4. Sprawl,
+rolamento deitado e em pé não mudaram.
+
+### RT nas quedas
+
+Fluxo verificado no código (nenhum comportamento novo): faz base quem **aperta o RT** desde pouco antes
+do início da janela (`BUFFER_BASE_TICKS`) até a resolução, ou quem está com a guarda corporal ativa
+(`MotorSolo.fazBase`). Rasteira: o RT segura **se** quem defende não acabou de andar nem está
+desequilibrado/exposto (senão a rasteira ainda pode entrar). Forçar queda: o RT segura se quem defende
+não está exposto; quem forçou perde 25 de base e fica com o avanço exposto. Nos dois casos o defensor
+faz a reação curta de queda que falhou. Segurar o RT de antes (sem apertar) é respirar, não base.
+Ainda a confirmar no controle.

@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1207, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1219, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -631,3 +631,21 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 16. Modo Desenvolvedor / treino com recursos infinitos: acrobacias encadeadas fluidas.
 17. Rolamento de joelhos (46 ticks), sprawl e rolamentos convencionais iguais.
 18. Preservados: PÉS, microanimações defensivas, cores das mensagens, barra inferior, PRENDER no RS ←, músicas externas, itens da 5Q.6.
+
+# Entrega 5Q.8 — arrasto, correções finais e repertório
+
+1. Rasteira que falha 3× seguidas e FORÇAR QUEDA que falha 3× seguidas: o corpo inclina inteiro, sem cintura quebrada nem braços para cima.
+2. Alternar rasteira, forçar queda e empurrão e arrastar a dupla: nada se acumula.
+3. **RT** durante a rasteira e durante o forçar queda (ainda não testado na homologação): segura, reação curta.
+4. Arrastar em pé (para trás e para frente): passos visíveis, quem puxa inclina; o arrastado deitado reto, braços para trás.
+5. Arrastar de joelhos: joelhos andando, sem "pose parada deslizando".
+6. 100 kg / montada / costas por baixo: as microanimações aparecem mais.
+7. Guarda fechada, LT + LB: gogoplata, baratoplata, tarikoplata, ezequiel.
+8. Montada, LT + LB: monoplata, armlock em S, gola única, mão de vaca.
+9. Cem quilos, LT + LB: norte-sul, D'arce, anaconda, gravata peruana.
+10. Entrada na perna: RB ← na montada/cem quilos/joelho na barriga/costas; RS → na guarda fechada (SOLTAR no RS ←).
+11. Costas por cima, RS: MONTADA, 100 KG, GANCHOS, TRIÂNGULO.
+12. Ashi por baixo, RS: G. ABERTA, SLX, AJUSTAR, RASPAR.
+13. Mensagens das finalizações novas em vermelho; execução neutra.
+14. Rolamento técnico de joelhos bem mais lento (76 ticks); estrela e mortais mais fluidos com boa condição.
+15. Preservados: quedas, tiro de guarda, levantada técnica, deslocamentos, mapas, áudio, cores, F8.

@@ -280,3 +280,24 @@ mão de vaca é uma chave de punho. O comando (LB + LT ↓) não mudou.
 
 O "47" das especificações antigas não corresponde ao código: a contagem certa é a desta tabela
 (conferida por `Finalizacoes5Q5Test`).
+
+## Entrega 5Q.8 — +12 finalizações
+
+| Posição | Família | Finalização | Faixa | Categoria / alvo | Requisito | Se falhar |
+|---|---|---|---|---|---|---|
+| Guarda fechada | LT + LB ↑ | Gogoplata | marrom | estrangulamento / pescoço | outro sem postura | a guarda abre |
+| Guarda fechada | LT + LB → | Baratoplata | roxa | braço / ombro | outro sem postura | a guarda abre |
+| Guarda fechada | LT + LB ↓ | Tarikoplata | marrom | braço / ombro | outro sem postura | a guarda abre |
+| Guarda fechada | LT + LB ← | Ezequiel da guarda | azul | estrangulamento | controle 40 | a posição fica |
+| Montada | LT + LB ↑ | Monoplata | marrom | braço / ombro | controle 55 | perde a montada |
+| Montada | LT + LB → | Armlock em S | azul | braço | controle 55 | perde a montada |
+| Montada | LT + LB ↓ | Gola única | azul | estrangulamento | controle 45 | a posição fica |
+| Montada | LT + LB ← | Mão de vaca | roxa | braço / punho | controle 45 | a posição fica |
+| Cem quilos | LT + LB ↑ | Norte-sul | roxa | estrangulamento | controle 50 | a posição fica |
+| Cem quilos | LT + LB → | D'arce | roxa | estrangulamento | controle 55 | o outro recupera a guarda |
+| Cem quilos | LT + LB ↓ | Anaconda | marrom | estrangulamento | controle 55 | o outro recupera a guarda |
+| Cem quilos | LT + LB ← | Gravata peruana | marrom | estrangulamento | controle 60 | a posição fica |
+
+Repertório: **58 finalizações executáveis, 41 técnicas-base** (antes 46 / 29). As novas usam a
+mesma disputa (pressão, defender, escapar, bater), os parâmetros centralizados e a pose provisória
+da categoria (animações próprias ficam para depois, como as de perna).
