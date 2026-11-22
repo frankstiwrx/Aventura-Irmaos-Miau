@@ -11,16 +11,20 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `previas/prancha-cinco-perspectivas.png` / `.svg` | Prancha principal: frente, 3/4 frontal, perfil, 3/4 costas e costas, com guias de proporção. |
 | `previas/combate-3-4.png` / `.svg` | Posição de combate na vista principal (3/4, 40°). |
 | `previas/estrutura-3-4.png` / `.svg` | Vista técnica: raízes, articulações, ossos, ordem das camadas e guinada da câmera. |
-| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. |
-| `referencias/` | As referências recebidas: o SVG de perspectivas e quatro capturas do Rig 2.0 experimental. |
+| `previas-refinadas/` | As mesmas três prévias após o refinamento 6.0.2 (perfil, pescoço e gola), mais `comparativo-prancha.png` e `comparativo-combate.png` (antes × depois). |
+| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.2. |
+| `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
-Para regenerar as prévias, com Java 23 e sem compilar o projeto:
+As prévias de `previas/` são as originais da 6.0.1 e não são regeradas; o gerador daquela versão está no commit `e99b380`. Para regenerar as prévias refinadas e os comparativos, com Java 23 e sem compilar o projeto:
 
 ```
-java docs/rig2/ConceitoRig2.java docs/rig2/previas
+java docs/rig2/ConceitoRig2.java docs/rig2/previas-refinadas docs/rig2/previas
 ```
 
-O gerador também confere que braço, antebraço, coxa e canela mantêm o comprimento nas duas poses.
+O segundo argumento é opcional e só serve para montar os comparativos. O gerador também confere:
+- que braço, antebraço, coxa, canela e pescoço mantêm o comprimento nas duas poses;
+- que o pescoço continua preso ao tronco e que a cabeça mantém a altura nas cinco vistas;
+- que o rosto de frente e o de 3/4 não usam a silhueta de perfil.
 
 ## 1. Análise das referências
 
@@ -168,7 +172,7 @@ Para levar o conceito ao renderizador, seriam necessários:
 - **Vista 3/4:** o ângulo de 40° e a trapaça de 75% do rosto são escolhas iniciais para avaliarmos juntos.
 - **Mãos:** em escorço forte (braço apontado para a câmera), a pata não muda de forma, e a mão fechada em pegada ainda não existe nesse modelo.
 - **Pés:** são formas simples; não há pé virado de sola nem dedos dobrados.
-- **Pescoço:** não há pescoço visível. A cabeça repousa sobre a gola, como hoje.
+- **Pescoço:** na 6.0.1 a cabeça repousava sobre a gola, sem pescoço visível. Isso foi tratado no refinamento 6.0.2 (seção 8).
 - **Calça:** não tem reforço visível nos joelhos; ficou de fora para não poluir.
 - **Integração:** nenhuma medição de desempenho foi feita no jogo, e nada foi integrado.
 
@@ -186,3 +190,49 @@ Ele não tocaria no renderizador de produção. A integração ao jogo só viria
 - Pequena variação de largura da manga quando o braço se estende, simulando o tecido esticado.
 - Bochechas mais marcadas no 3/4, se a leitura do rosto ainda parecer "plana".
 - Uma versão do conceito com o Miau Preto e com kimono branco e azul.
+
+## 8. Refinamento 6.0.2: perfil, pescoço e gola
+
+Evolução localizada da 6.0.1. Proporções, kimono, lapelas, mangas, pernas, rosto de frente e rosto em 3/4 foram mantidos. Os resultados estão em `previas-refinadas/`; as prévias originais continuam em `previas/`.
+
+### Rosto de perfil (90°)
+Antes, a cabeça de perfil era o círculo do crânio com um focinho oval colado à frente. Agora ela tem uma silhueta própria (`PERFIL` no gerador), desenhada a partir da referência anatômica, mas mantendo o cartum:
+- **Testa e focinho:** o crânio continua redondo atrás e em cima. A testa desce em uma "parada" suave na altura do olho, e uma ponte curta leva ao nariz.
+- **Nariz:** projeta-se na ponta do focinho e virou uma cunha rosa visível. Antes, de perfil, ele quase sumia.
+- **Boca e queixo:** a boca desce do nariz e volta para trás, e logo abaixo há um queixo pequeno. A mandíbula curva de volta até o pescoço.
+- **Bochecha:** um traço leve marca a almofada dos bigodes, no mesmo cinza do contorno do focinho no 3/4.
+- **Olho:** recuou da borda da testa para cerca de um terço do focinho e ficou um oval estreito.
+- **Orelhas:**
+  - Antes, as duas ficavam exatamente sobrepostas.
+  - Agora a de longe aparece um pouco à frente e mais baixa, em branco acinzentado; a de perto fica sobre o alto da cabeça.
+- **Tamanho preservado:** cerca de 72 de altura e 80 de comprimento, os mesmos valores da 6.0.1 de perfil.
+
+A silhueta de perfil só entra perto de 90° (peso suave entre ~60° e 90°, e o mesmo do outro lado). Fora disso, a cabeça é exatamente a da 6.0.1.
+- Entre as duas silhuetas, o contorno é uma mistura dos raios medidos a partir do centro. Os traços do rosto também se interpolam, então uma rotação contínua não dá salto.
+- A trapaça do rosto (corpo 40° → rosto 30°) virou uma curva suave que continua dando 30° no 3/4 e chega a 90° sem salto. Antes, havia um degrau em 90°.
+
+### Pescoço e gola
+- **O pescoço:** um cilindro de pelo do pivô do pescoço até o pivô da cabeça.
+  - Tem 26 de largura no alto e 29 na base.
+  - Segue a inclinação do tronco porque usa os mesmos pivôs.
+  - Recebe uma sombra curta projetada pela cabeça e uma sombra lateral.
+- **A cabeça subiu 5 unidades** (centro em y 31; era 36). Aparece uma faixa curta de pescoço acima da gola, sem alongar o personagem. O tamanho da cabeça não mudou, mas a altura total cresceu 5 unidades (as guias "orelhas" e "olhos" subiram junto).
+- **Ordem de desenho:** o pescoço é desenhado depois do corpo do casaco e antes da gola de trás e das lapelas.
+  - Assim, a gola o abraça por fora.
+  - O pescoço termina reto na borda de baixo da gola, então não aparece abaixo dela nas vistas de costas e a gola nunca o atravessa.
+- **Peito em V:** passou a usar o mesmo tom da base do pescoço, para o pelo continuar do pescoço ao peito sem degrau. A gola em si não precisou mudar de geometria.
+
+### Verificações (executadas pelo gerador)
+- Braço, antebraço, coxa e canela mantêm o comprimento nas duas poses.
+- A distância entre o pivô do pescoço e o pivô da cabeça é constante, ou seja, o pescoço é rígido.
+- A base do pescoço fica dentro do tronco nas cinco vistas e nas duas poses.
+- A silhueta da cabeça mede entre 69 e 74 de altura e entre 69 e 82 de largura em todas as vistas.
+- Frente (0°), 3/4 (40°), 3/4 costas (140°) e costas (180°) têm peso de perfil 0, ou seja, usam exatamente a cabeça da 6.0.1. O perfil (90°) tem peso 1.
+- A guinada do rosto não salta perto de 90°.
+- Conferência visual: `comparativo-prancha.png` e `comparativo-combate.png` mostram antes e depois lado a lado.
+
+### Limitações do refinamento
+- A silhueta de perfil é uma curva desenhada à mão, não sai do elipsoide. Nos ângulos intermediários (60° a 90°), a mistura de raios é uma aproximação e ainda não foi vista em animação.
+- **Rosto de frente e em 3/4:** a cabeça é a mesma da 6.0.1, mas agora fica 5 unidades mais alta e com o pescoço visível embaixo.
+- **Pescoço no combate:** como o tronco inclina 8° e a cabeça recua, o pescoço aparece um pouco mais que na pose neutra. Vale avaliar se deve ficar mais curto nessa pose.
+- O Miau Preto continua sem versão.
