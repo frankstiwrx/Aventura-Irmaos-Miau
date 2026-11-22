@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1312, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1323, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -729,3 +729,11 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 8. TREINO → AVANÇAR: CONFIGURAÇÕES DO TREINO com ARENA, INÍCIO e INICIAR TREINO (sem tempo nem regras). Voltar mantém as escolhas.
 9. No treino: sem relógio nem placar; F11, J2 controlado no laboratório, rodas e técnicas iguais.
 10. Segurar A ou X não confirma duas vezes.
+
+# Técnicas dos perfis personalizados
+
+1. TREINO com um perfil do Branco: na guarda fechada por baixo, omoplata (LT ↓) e gogoplata (LT + LB ↑) não mostram "GRADUAÇÃO".
+2. O mesmo com um perfil do Preto (tarikoplata, LT + LB ↓).
+3. JOGAR em FINALIZAÇÃO com perfis: as mesmas técnicas liberadas; os atributos continuam os do editor.
+4. JOGAR em PONTOS + FINALIZAÇÃO com perfis: omoplata e gogoplata mostram "GRADUAÇÃO" (o perfil conta como faixa branca).
+5. Originais: continuam dependendo da faixa escolhida na seleção.

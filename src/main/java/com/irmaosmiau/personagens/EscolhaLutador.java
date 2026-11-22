@@ -81,6 +81,7 @@ public final class EscolhaLutador {
         if (perfil != null) {
             // aparencia do editor (so visual); o kimono escolhido na selecao vale no casaco e na calca
             l.aplicarAparencia(kimono == null ? perfil.getAparencia() : perfil.getAparencia().semKimono());
+            l.liberarTecnicasDaBase();      // permissoes da base, sem bonus de graduacao (PermissoesTecnicas)
         }
         return l;
     }

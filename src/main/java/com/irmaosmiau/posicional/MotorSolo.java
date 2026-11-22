@@ -352,6 +352,17 @@ public final class MotorSolo {
         modoRegras = m == null ? com.irmaosmiau.regras.ModoRegras.LIVRE : m;
     }
 
+    /** PONTOS + FINALIZACAO: a graduacao logica vale para todos, inclusive perfis (PermissoesTecnicas). */
+    private boolean regulamentoDeFaixa;
+
+    public void setRegulamentoDeFaixa(boolean ligado) {
+        regulamentoDeFaixa = ligado;
+    }
+
+    public boolean isRegulamentoDeFaixa() {
+        return regulamentoDeFaixa;
+    }
+
     public Optional<Ataque> getAtaque() {
         return Optional.ofNullable(ataque);
     }
@@ -553,7 +564,7 @@ public final class MotorSolo {
     /** Por que a finalizacao nao pode comecar agora (null = pode). Nada e cobrado na recusa. */
     public String motivoFinalizacao(Lado lado, Finalizacao f) {
         IrmaoMiau eu = lutador(lado);
-        if (!eu.getGraduacao().alcanca(f.graduacao())) {
+        if (!PermissoesTecnicas.graduacaoPermite(eu, f.graduacao(), regulamentoDeFaixa)) {
             return "GRADUAÇÃO " + f.graduacao().name();
         }
         if (!eu.aprendeu(f.tecnicaBase())) {
@@ -1252,7 +1263,7 @@ public final class MotorSolo {
         Finalizacao chave = chaveDaEntrada(t.id());
         if (chave != null) {
             // complemento 5Q.8: a entrada das costas so comeca se a chave do fim for permitida para quem entra
-            if (!eu.getGraduacao().alcanca(chave.graduacao())) {
+            if (!PermissoesTecnicas.graduacaoPermite(eu, chave.graduacao(), regulamentoDeFaixa)) {
                 return "GRADUAÇÃO " + chave.graduacao().name();
             }
             if (!eu.aprendeu(chave.tecnicaBase())) {

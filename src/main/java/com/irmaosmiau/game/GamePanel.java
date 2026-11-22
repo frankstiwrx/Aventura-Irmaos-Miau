@@ -1025,6 +1025,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
         modoLuta = m != null && m.isDisponivel() ? m : com.irmaosmiau.regras.ModoLuta.PADRAO;
         if (solo != null) {
             solo.setModoRegras(modoLuta.getRegras());
+            solo.setRegulamentoDeFaixa(regulamentoDeFaixa());
         }
         novaArbitragem();
     }
@@ -1034,6 +1035,11 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
      * do tempo. Nova a cada luta; nada no FINALIZACAO nem no treino.
      */
     private com.irmaosmiau.regras.ArbitroJiuJitsu arbitro;
+
+    /** PONTOS + FINALIZACAO fora do treino: a graduacao logica e o regulamento de faixa (perfis inclusos). */
+    private boolean regulamentoDeFaixa() {
+        return modoLuta.isPontuado() && !modoTreino;
+    }
 
     private void novaArbitragem() {
         arbitro = modoLuta.isPontuado() && modoDoisMiaus && !modoTreino
@@ -1764,6 +1770,7 @@ public class GamePanel extends JPanel implements com.irmaosmiau.ui.TelaNavegavel
                         LIMITE_ESQUERDO_ARENA, LIMITE_DIREITO_ARENA);
         if (solo != null) {
             solo.setModoRegras(modoLuta.getRegras());           // regras da partida (configuracoes da luta)
+            solo.setRegulamentoDeFaixa(regulamentoDeFaixa());
         }
         novaArbitragem();                                       // placar zerado a cada luta
         animador.setMotorSolo(solo);

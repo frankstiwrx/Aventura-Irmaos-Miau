@@ -103,6 +103,17 @@ nome do jogo não basta para classificar): Aoki lock, Estima lock, chave de joel
 com giro, banana split, Mir lock, Von Flue. O `CAMPEONATO_PROVISORIO` antigo (só pé reto nas pernas) **não**
 é usado: ele bloquearia o que a IBJJF permite para marrom e preta.
 
+### Perfis personalizados
+
+O perfil não tem seleção de faixa: a graduação lógica dele é a **branca** (sem bônus de atributos), e a cor
+da faixa desenhada é só aparência. As permissões ficam em `PermissoesTecnicas`, separadas da graduação:
+
+- **TREINO e FINALIZAÇÃO (modos livres):** o perfil usa todas as técnicas que o personagem-base tem, sem a
+  trava de graduação. Posição, papel, pegada/controle, fôlego e técnicas não aprendidas continuam valendo.
+- **PONTOS + FINALIZAÇÃO:** o regulamento de faixa vale para todos. O perfil conta como **faixa branca**
+  (a graduação lógica dele), a forma mais restritiva da tabela acima; a personalização não libera técnica
+  proibida. Uma graduação regulamentar própria para perfis ainda não existe: seria uma decisão nova.
+
 ## Diferenças e limitações conhecidas
 
 - O motor não modela detalhes de posição: braços presos na montada (montada sobre os dois braços = vantagem

@@ -2514,6 +2514,20 @@ public void alternarDeitado() {
         g.fillRect(x, y + h - 1, w, 1);
     }
 
+    /**
+     * Perfil personalizado: as tecnicas da base valem sem a trava de graduacao nos modos casuais e no
+     * treino (ver PermissoesTecnicas). Nao muda graduacao, atributos nem aparencia.
+     */
+    private boolean tecnicasDaBaseLiberadas;
+
+    public void liberarTecnicasDaBase() {
+        tecnicasDaBaseLiberadas = true;
+    }
+
+    public boolean isTecnicasDaBaseLiberadas() {
+        return tecnicasDaBaseLiberadas;
+    }
+
     /** A tecnica (id base, ex.: "armlock") foi aprendida? Padrao: todas. */
     public boolean aprendeu(String tecnicaBase) {
         return !naoAprendidas.contains(tecnicaBase);
