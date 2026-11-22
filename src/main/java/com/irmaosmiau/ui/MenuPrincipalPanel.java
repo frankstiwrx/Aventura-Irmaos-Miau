@@ -115,7 +115,37 @@ public final class MenuPrincipalPanel extends JPanel {
         g.setFont(new Font("Arial", Font.PLAIN, 10));
         g.setColor(ArteMenus.BRANCO);
         ArteMenus.centralizado(g, "↑↓ escolher · ENTER / A confirmar · ESC / B voltar", 400, 439);
+        creditosEVersao(g);
         g.dispose();
+    }
+
+    /**
+     * Creditos (canto inferior esquerdo) e versao BETA (canto inferior direito), pequenos, nos cantos livres ao
+     * lado da barra de descricao: nada cobre as opcoes nem a descricao. So no menu principal.
+     */
+    private static void creditosEVersao(Graphics2D g) {
+        Font f = new Font("Arial", Font.PLAIN, 10);
+        // "by frankstiwrx · 2026" em duas linhas: a linha inteira nao cabe ao lado da barra
+        texto(g, "by " + VersaoJogo.AUTOR, f, 6, 425, false);
+        texto(g, "· " + VersaoJogo.ANO, f, 6, 439, false);
+        texto(g, VersaoJogo.VERSAO, new Font("Arial", Font.BOLD, 11), 794, 425, true);
+        Font fb = new Font("Arial", Font.BOLD, 9);
+        g.setFont(fb);
+        int w = g.getFontMetrics().stringWidth(VersaoJogo.ETAPA) + 8;
+        g.setColor(new Color(255, 206, 46, 230));
+        g.fillRoundRect(794 - w, 430, w, 12, 6, 6);
+        g.setColor(ArteMenus.AZUL_ESCURO);
+        g.drawString(VersaoJogo.ETAPA, 794 - w + 4, 439);
+    }
+
+    /** Texto pequeno com sombra (legivel sobre o patio). */
+    private static void texto(Graphics2D g, String t, Font f, int x, int y, boolean alinharDireita) {
+        g.setFont(f);
+        int xx = alinharDireita ? x - g.getFontMetrics().stringWidth(t) : x;
+        g.setColor(new Color(0, 0, 0, 150));
+        g.drawString(t, xx + 1, y + 1);
+        g.setColor(new Color(235, 240, 250));
+        g.drawString(t, xx, y);
     }
 
     /** A descricao da opcao com o foco (a primeira, se nenhuma). */
