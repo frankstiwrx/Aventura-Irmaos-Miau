@@ -12,9 +12,11 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `previas/combate-3-4.png` / `.svg` | Posição de combate na vista principal (3/4, 40°). |
 | `previas/estrutura-3-4.png` / `.svg` | Vista técnica: raízes, articulações, ossos, ordem das camadas e guinada da câmera. |
 | `previas-refinadas/` | As mesmas três prévias após o refinamento 6.0.2 (perfil, pescoço e gola), mais `comparativo-prancha.png` e `comparativo-combate.png` (antes × depois). |
-| `previas-6.0.3/` | Versão atual: pescoço com metade da exposição da 6.0.2 e perfil sem o traço da bochecha. Inclui `comparativo-prancha.png` e `comparativo-combate.png` com as três versões (6.0.1, 6.0.2 e 6.0.3). |
-| `previas-6.0.4/` | **Versão atual:** pescoço curto, cabeça mais perto da gola. Inclui os comparativos 6.0.1 × 6.0.3 × 6.0.4 (`comparativo-prancha.png`, `comparativo-combate.png`) e o detalhe ampliado da cabeça, do pescoço e da gola (`comparativo-detalhe-pescoco.png`). |
-| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.4. |
+| `previas-6.0.3/` | Pescoço com metade da exposição da 6.0.2 e perfil sem o traço da bochecha. Inclui `comparativo-prancha.png` e `comparativo-combate.png` com as três versões (6.0.1, 6.0.2 e 6.0.3). |
+| `previas-6.0.4/` | **Versão visual aprovada (referência atual):** pescoço curto, cabeça mais perto da gola. Inclui os comparativos 6.0.1 × 6.0.3 × 6.0.4 (`comparativo-prancha.png`, `comparativo-combate.png`) e o detalhe ampliado da cabeça, do pescoço e da gola (`comparativo-detalhe-pescoco.png`). |
+| `ConceitoRig2.java` | Modelo do Rig 2.0 (esqueleto, poses parametrizadas, câmera e desenho) e gerador das prévias em PNG e SVG. Gera a versão 6.0.4 sem nenhuma diferença de pixel e contém as verificações da 6.1. |
+| `LaboratorioRig2.java` | **6.1:** laboratório interativo em Swing que usa o mesmo modelo: rotação contínua de 0° a 180°, giro da cabeça, poses, braços, presets de pernas e esqueleto (seção 11). |
+| `laboratorio-6.1/` | Capturas da janela do laboratório e, em `rotacao/`, as folhas de contato da rotação (passo de 5°, ângulos críticos com passo de 1° e teste dos braços). |
 | `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
 As prévias de cada versão ficam congeladas:
@@ -307,3 +309,176 @@ O gerador rodou todas as conferências desta versão, e todas passaram:
 
 ### Observação
 Na pose de combate o tronco inclina 8° e a cabeça recua um pouco, por isso o pescoço aparece ligeiramente mais do que na pose neutra. Vale observar isso quando as poses começarem a ser animadas.
+
+## 11. Laboratório interativo (Superentrega 6.1)
+
+O conceito 6.0.4 virou um laboratório interativo, em que o personagem é calculado a cada ângulo, não escolhido entre imagens prontas. O laboratório é experimental e isolado: não usa nenhuma classe do jogo, não altera `Main`, `MainPrototipo`, `GamePanel`, menus, MiauStudio nem `pom.xml`, e não entra no build do Maven.
+
+### Como abrir (Windows, Java 22 ou mais novo, a partir da raiz do repositório)
+
+Opção direta (o Java compila em memória os dois arquivos da pasta):
+
+```
+java docs/rig2/LaboratorioRig2.java
+```
+
+Opção com compilação explícita (os `.class` vão para uma pasta temporária, fora do repositório):
+
+```
+javac -d "%TEMP%\rig2-lab" docs\rig2\ConceitoRig2.java docs\rig2\LaboratorioRig2.java
+java -cp "%TEMP%\rig2-lab" LaboratorioRig2
+```
+
+No PowerShell, troque `%TEMP%` por `$env:TEMP`.
+
+Para gerar de novo as capturas e testar automaticamente todos os controles, sem abrir a janela:
+
+```
+java docs/rig2/LaboratorioRig2.java --capturas docs/rig2/laboratorio-6.1
+```
+
+Para rodar só as verificações do modelo:
+
+```
+java docs/rig2/ConceitoRig2.java --verificar-6.1
+```
+
+### O que dá para controlar
+- **Rotação do corpo:** controle deslizante de 0° a 180°, em passos de 1°, com atalhos para 0°, 40°, 90°, 140° e 180°. Pelo teclado, ← → ou A/D giram 1°, e com Shift giram 10°.
+- **Cabeça em relação ao tronco:** de −60° a +60° (Q/E no teclado). O painel mostra também o ângulo final em que o rosto é desenhado.
+- **Pose-base:** NEUTRA ou COMBATE. Trocar a pose mantém o ângulo do corpo.
+- **Cada braço:**
+  - um preset: Da pose, Levantado, Estendido à frente, Recolhido junto ao tronco, Cotovelo flexionado ou Abaixado e solto;
+  - três controles deslizantes: elevação lateral (−90° a 170°), avanço à frente (−50° a 150°) e flexão do cotovelo (0° a 150°).
+- **Pernas (presets):** Da pose, Joelhos flexionados, Perna esquerda à frente, Perna direita à frente e Pés abertos.
+- **Mostrar esqueleto e diagnóstico:**
+  - raízes em azul, articulações em amarelo e ossos em laranja (mais escuros do lado longe);
+  - eixo do tronco, centro da cabeça com a direção do rosto, pelve, e ombros e quadris marcados como "perto" e "longe";
+  - ângulos do corpo e do rosto.
+- **Restaurar pose** e **Restaurar perspectiva** (40°, cabeça a 0°; tecla R).
+- **Ao abrir:** corpo a 40°, pose de combate, cabeça na orientação original da pose.
+- **No painel:** uma conferência ao vivo de que os ossos mantêm o comprimento.
+
+### Auditoria e reaproveitamento
+O laboratório usa o mesmo modelo de `ConceitoRig2.java`. Não foi criado um segundo sistema corporal.
+
+**O que já existia e foi reaproveitado:**
+- o esqueleto 3D leve (pelve como raiz; pescoço, cabeça, ombros e quadris derivados dela);
+- o IK de dois ossos com comprimento fixo;
+- a câmera que só gira em torno do eixo vertical;
+- o tronco por seções elípticas, as lapelas e a gola presas à superfície;
+- a cabeça com a mistura contínua para a silhueta de perfil;
+- a ordem de camadas.
+
+**O que dependia de construções fixas:**
+- as duas poses eram listas fixas de alvos de IK;
+- alguns detalhes apareciam ou sumiam por limiar, aparecendo ou sumindo de uma vez num ângulo exato: olho, nariz e boca, parte interna da orelha, nó da faixa, abertura do casaco, dedos dos pés, vinco das dobras, cor do lado longe e contorno do focinho no 3/4.
+
+**O que mudou no modelo (e as prévias 6.0.4 continuam idênticas):**
+1. **Poses parametrizadas (`PoseBase`, `ParametrosPose`, `montarPose`):**
+   - Cada braço passou a ser descrito por três ângulos em relação ao tronco (elevação, avanço e flexão do cotovelo); o IK continua garantindo os comprimentos.
+   - Os valores padrão são calculados a partir das poses originais e as reproduzem exatamente.
+   - A câmera não faz parte da pose, então girar o personagem nunca altera os membros.
+2. **Giro próprio da cabeça:**
+   - O rosto é desenhado com a guinada da vista mais o giro da cabeça, passando pela mesma "trapaça" de câmera da 6.0.2 (agora também para guinadas negativas).
+   - A cabeça continua presa ao pivô do pescoço e não muda de desenho nem de tamanho.
+3. **Transições graduais:**
+   - Todos os detalhes acima aparecem e somem por esmaecimento ao longo de poucos graus.
+   - Nos cinco ângulos de referência, os valores continuam exatamente os da 6.0.4.
+4. **Camadas dos braços:**
+   - O braço longe continua atrás do tronco, como na 6.0.4.
+   - Perto das vistas de frente e de costas puras, onde nenhum lado é "longe", o braço passa para trás do tronco gradualmente.
+   - Uma pata "da frente" que fica escondida atrás do tronco nas vistas de costas também vai para trás. Para decidir isso, a profundidade da pata é comparada com a da superfície visível do casaco no mesmo ponto da tela.
+   - Isso corrigiu as patas da guarda de combate, que antes eram desenhadas por cima das costas entre ~140° e 180°.
+
+**Como cada parte reage à rotação:**
+- Tronco, gola, lapelas e faixa são calculados das elipses a cada ângulo.
+- Braços, pernas, mãos e pés vêm do esqueleto projetado.
+- A cabeça mistura a silhueta frontal e a de perfil conforme a guinada do rosto.
+- As orelhas são triângulos em 3D com profundidade na base.
+- O focinho, o nariz e a boca são pontos na superfície da cabeça.
+
+### Verificações executadas
+
+**`java docs/rig2/ConceitoRig2.java --verificar-6.1`:** todas passaram.
+- **Comprimentos 3D constantes** em 21 poses: neutra, combate, teste 7.3, os cinco presets de pernas nas duas poses e oito combinações de extremos dos controles.
+  - braço 39, antebraço 30, coxa 46,5, canela 46;
+  - tronco (cintura → pescoço) 82;
+  - pescoço → cabeça.
+- **Limites dos controles:** valores fora da faixa são ajustados para os extremos.
+- **Poses padrão:** os parâmetros padrão reproduzem exatamente as mãos das poses NEUTRA e COMBATE.
+- **Rotação de 0° a 180° em passos de 0,5°,** em todas as poses, num total de 7.581 vistas:
+  - nenhuma coordenada inválida;
+  - nenhum osso projetado maior que o real, ou seja, a projeção só encurta;
+  - nenhuma junta salta mais do que uma rotação rígida permite (o maior passo foi 0,99 do limite).
+- **Pose de teste:** braço direito flexionado e esquerdo estendido, idêntica depois de 40° → 90° → 140° → 0°.
+- **Guinada do rosto contínua,** inclusive com a cabeça girada ±60° (variação máxima de 0,135° por passo de 0,1°).
+- **Continuidade visual:** diferença média por pixel entre quadros vizinhos, com passo de 1°. Não há nenhum salto isolado; o pior quadro de cada pose fica em até 1,6 vez a mediana.
+
+  | Pose | Pior quadro | Diferença | Mediana |
+  |---|---|---|---|
+  | Neutra | 72° | 1,35 | 0,95 |
+  | Combate | 7° | 1,57 | 1,01 |
+  | Teste | 3° | 1,81 | 1,17 |
+
+**Preservação da 6.0.4:** as três prévias 6.0.4 foram geradas de novo e comparadas pixel a pixel com as do commit. Deu 0 pixels diferentes.
+
+**`java docs/rig2/LaboratorioRig2.java --capturas docs/rig2/laboratorio-6.1`:**
+- Gerou as capturas a partir da própria janela Swing.
+- Executou o teste 7.3 e confirmou as articulações idênticas.
+- Exercitou todos os controles sem exceções: extremos de todos os sliders, todos os presets de braço e de pernas nas duas poses, rotação com a cabeça em ±60°, botões, esqueleto e teclado.
+
+**A janela real foi aberta com `java docs/rig2/LaboratorioRig2.java`:** apareceu com o título "Rig 2.0 · Laboratório interativo (6.1) · experimental", sem nada na saída de erro, e foi fechada em seguida.
+
+### Capturas (`laboratorio-6.1/`)
+- `janela-000.png`, `janela-040.png`, `janela-065.png`, `janela-090.png`, `janela-140.png`, `janela-180.png`: a janela completa em cada ângulo, na pose de combate.
+- `janela-bracos-flexionado-e-estendido.png`: braço direito recolhido e flexionado, esquerdo estendido, a 40°.
+- `teste-7.3-rotacao-com-bracos.png`: a mesma pose em 40°, 90°, 140° e 0°.
+- `janela-esqueleto-3-4.png`: esqueleto e diagnóstico em 3/4.
+- `janela-neutra-cabeca-e-perna.png`: pose neutra a 65°, cabeça girada +25° e perna esquerda à frente.
+- **Sequências de rotação** (`rotacao/`):
+  - `combate-passo-5.png` e `neutra-passo-5.png`: de 0° a 180°, em passos de 5°;
+  - `combate-angulos-criticos.png`: passo de 1° em 0–10°, 38–42°, 88–96° e 138–142°;
+  - `teste-bracos-passo-10.png`: a pose de teste dos braços, em passos de 10°.
+
+### Limitações
+- **Troca de camada entre ~3° e ~15°** (e o simétrico perto de 180°): o braço longe é desenhado duas vezes, uma atrás e outra na frente, e a cópia da frente vai sumindo. Por alguns graus a pata aparece semitransparente. Uma solução definitiva seria dividir o braço em segmentos com profundidade própria (antebraço na frente, braço atrás).
+- **Pernas:** na vista exatamente frontal ou de costas são unidas numa só silhueta; fora dela, ficam separadas. A diferença é pequena porque a junção fica sob a saia do casaco.
+- **Pernas só por presets:** o controle individual de quadril, joelho e pé ainda não existe.
+- **Mãos e pés:** são formas 2D orientadas pelo antebraço e pela guinada do pé. Não há pata fechada para pegada nem sola visível.
+- **Cotovelo:** com a elevação lateral muito alta e o avanço muito negativo, ele segue o vetor polo da pose. Algumas combinações extremas deixam o cotovelo em posições pouco naturais, mas sem quebrar o osso. Limites anatômicos por articulação ainda não existem.
+- **Rotação só em torno do eixo vertical:** deitar, cair e girar no chão exigiriam outro eixo de câmera ou de corpo.
+- **Só o Miau Branco:** o Miau Preto ainda não tem versão.
+- **Desempenho:** o desenho recalcula a silhueta e as faixas a cada quadro. No laboratório é imediato, mas não foi medido para dois lutadores a 60 fps.
+
+### Compatibilidade futura com o MiauStudio (análise, sem implementação)
+- **Como é a pose do MiauStudio:** 26 valores 2D (`ConversorMiauStudio`, índices 4..29).
+  - deslocamento e rotação de cintura e peito;
+  - rotação global e da cabeça;
+  - deslocamento da cabeça;
+  - deslocamentos de cotovelos, mãos, joelhos e pés em relação às juntas de repouso (`getBracosEmRepouso`, `getPernasEmRepouso`).
+  - Os valores estão em pixels locais da vista lateral e não têm profundidade.
+- **O que pode ser reaproveitado:**
+  - as rotações de cintura, peito e cabeça (viram a inclinação do tronco e o giro da cabeça do Rig 2.0);
+  - as posições 2D de mãos e pés (viram alvos de IK);
+  - a escolha do lado da dobra (vira o vetor polo).
+- **Como interpretar uma pose antiga:** tratar a vista do MiauStudio como guinada de 90° (perfil).
+  - O x e o y 2D viram z (frente do lutador) e y do corpo, com x lateral = 0.
+  - Depois, o IK do Rig 2.0 recalcula cotovelos e joelhos com os comprimentos novos.
+  - Com isso, qualquer pose antiga passa a poder ser vista de outros ângulos.
+- **Diferenças entre os esqueletos:**
+  - **Comprimentos:** o Rig 2.0 tem braços 145% e pernas 120% maiores; as poses antigas precisam ser reescaladas em torno da raiz de cada membro.
+  - **Profundidade:** não existe nas poses antigas; os dois braços ficam no mesmo plano, então o lado (perto/longe) teria que vir de uma convenção.
+  - **Pescoço:** o MiauStudio não tem pescoço separado.
+  - **Poses de chão:** usam a rotação global de 90° e precisariam de um eixo de câmera ou de corpo diferente.
+- **Adaptações necessárias:**
+  - um conversor de pose (2D lateral → parâmetros do Rig 2.0);
+  - um campo opcional de profundidade por articulação no formato de projeto, para as poses novas;
+  - um modo de pré-visualização girável dentro do MiauStudio.
+  - As animações conjuntas (pegadas, chão) exigem ainda que os dois lutadores compartilhem a mesma câmera.
+
+### Próximos passos sugeridos
+1. **Converter uma pose de cada tipo** (guarda em pé, pegada, chão) e comparar no laboratório a vista de 90° com o desenho atual do jogo. É o primeiro passo da 6.2.
+2. **Dividir o braço em segmentos com profundidade própria,** para eliminar a troca de camada por esmaecimento.
+3. **Controle individual das pernas e limites anatômicos** por articulação.
+4. **Integração com o jogo:** só depois de aprovar as etapas anteriores, um renderizador do Rig 2.0 ao lado do atual (sem substituí-lo), ativado apenas em modo experimental, medindo o desempenho com dois lutadores.
