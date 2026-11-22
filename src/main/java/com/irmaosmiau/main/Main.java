@@ -189,9 +189,9 @@ public class Main {
     }
 
     /**
-     * Entrega 5M.3: o TREINO usa a selecao em grade nova (modo TREINO): so o
-     * J1 escolhe; parceiro passivo, mapa e inicio sao linhas de configuracao.
-     * O inicio continua lembrado na sessao (como na selecao antiga).
+     * O TREINO usa a mesma selecao do JOGAR (modo TREINO): um dispositivo escolhe
+     * o lutador e o parceiro; a segunda tela tem a arena e o inicio (lembrado na
+     * sessao, como na selecao antiga).
      */
     private static void mostrarSelecaoTreino(JFrame janela, OpcoesDeLutadores opcoes) {
         AudioJogo.trilhas().tocar(com.irmaosmiau.audio.ContextoMusical.MENU_TREINAMENTO);   // 5Q.6

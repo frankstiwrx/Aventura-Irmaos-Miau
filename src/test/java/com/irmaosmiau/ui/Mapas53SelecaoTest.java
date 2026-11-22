@@ -43,16 +43,13 @@ class Mapas53SelecaoTest {
                     RegistroCenarios.padrao(), RegistroCenarios.ID_PADRAO, InicioLuta.DE_JOELHOS,
                     (j, p, c, i) -> mapa.set(c), () -> { }, () -> null, () -> null);
             SlotJogador j1 = SlotJogador.JOGADOR_1;
-            sel.comandar(j1, Comando.CONFIRMAR);
-            personalizacao(sel);                              // 5Q.4 (pedido)
-            sel.comandar(j1, Comando.ANTERIOR);
-            sel.comandar(j1, Comando.ANTERIOR);
-            sel.comandar(j1, Comando.ANTERIOR);               // MAPA
-            assertEquals(SelecaoPartidaPanel.Linha.MAPA, sel.linhaJ1());
+            personalizacao(sel);                              // treino igual ao JOGAR (pedido): a tela da arena
+            assertEquals(ConfiguracaoLuta.Area.ARENA, sel.configuracao().foco());
             for (int i = 0; i < vezesDireita; i++) {
                 sel.comandar(j1, Comando.DIREITA);
             }
-            sel.comandar(j1, Comando.CONFIRMAR);
+            sel.comandar(j1, Comando.CONFIRMAR);              // INICIO
+            sel.comandar(j1, Comando.CONFIRMAR);              // INICIAR TREINO
             sel.comandar(j1, Comando.CONFIRMAR);
         });
         return mapa.get();
@@ -70,11 +67,11 @@ class Mapas53SelecaoTest {
     }
 
     /**
-     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
-     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
+     * Selecao do TREINO igual a do JOGAR (pedido): o mesmo controle confirma faixa e kimono do lutador e
+     * depois personagem, faixa e kimono do parceiro, e AVANCA para a tela da arena.
      */
     private static void personalizacao(SelecaoPartidaPanel s) {
-        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
+        for (int i = 0; i < 8 && !s.naConfiguracao(); i++) {
             s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
         }
     }

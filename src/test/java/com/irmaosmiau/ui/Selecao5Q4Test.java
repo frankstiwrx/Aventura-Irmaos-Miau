@@ -111,11 +111,17 @@ class Selecao5Q4Test {
             SelecaoPartidaPanel sel = SelecaoPartidaPanel.treino(CatalogoPersonagens.padrao(), opcoes(),
                     RegistroCenarios.padrao(), RegistroCenarios.ID_PADRAO, InicioLuta.DE_JOELHOS,
                     (j, p, c, i) -> inicio.set(new EscolhaLutador[] {j, p}), () -> { }, () -> null, () -> null);
-            sel.comandar(J1, Comando.CONFIRMAR);
+            // treino igual ao JOGAR (pedido): lutador pronto, depois o parceiro na faixa
+            for (int i = 0; i < 4; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);
+            }
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
             sel.clicar(700, 90);                                // parceiro faixa ->
-            assertEquals(SelecaoPartidaPanel.Linha.FAIXA_PARCEIRO, sel.linhaJ1());
             assertEquals(Graduacao.BRANCA, sel.faixa(J1));
-            sel.clicar(400, 380);
+            sel.comandar(J1, Comando.CONFIRMAR);
+            sel.comandar(J1, Comando.CONFIRMAR);                // parceiro PRONTO
+            sel.clicar(400, 380);                               // AVANCAR
+            sel.clicar(400, 384);                               // INICIAR TREINO
         });
         assertEquals(Graduacao.BRANCA, inicio.get()[0].getGraduacao());
         assertEquals(Graduacao.AZUL, inicio.get()[1].getGraduacao());

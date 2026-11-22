@@ -185,7 +185,7 @@ class Menus5M3Test {
         });
     }
 
-    // 8. So o J1 escolhe: os comandos do J2 (setas / segundo gamepad) movem o mesmo cursor
+    // 8. Um dispositivo so: os comandos do J2 (setas / segundo gamepad) movem o lutador da vez
     @Test
     void soOJ1Escolhe() throws Exception {
         naEdt(() -> {
@@ -199,14 +199,14 @@ class Menus5M3Test {
         });
     }
 
-    // 9. O J2 nao precisa confirmar
+    // 9. O J2 nao precisa confirmar (pedido): o mesmo controle confirma os dois e inicia uma vez so
     @Test
     void j2NaoPrecisaConfirmar() throws Exception {
         naEdt(() -> {
             sel = treino();
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                          // 5Q.4 (pedido)
-            sel.comandar(J1, Comando.CONFIRMAR);
+            for (int i = 0; i < 14; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);
+            }
         });
         assertEquals(1, inicios.get());
     }
@@ -225,30 +225,23 @@ class Menus5M3Test {
         assertEquals(0, inicios.get());
     }
 
-    // 11. Perfis: do jogador (fase extra) e como parceiro
+    // 11. Perfis (pedido): o X / Quadrado abre os perfis do lutador e depois os do parceiro
     @Test
     void perfisNoTreino() throws Exception {
         servico().criarAPartirDoPersonagem("branquinho", "Branquinho", CatalogoPersonagens.ID_BRANCO);
         servico().criarAPartirDoPersonagem("pretinho", "Pretinho", CatalogoPersonagens.ID_PRETO);
         naEdt(() -> {
             sel = treino();
-            sel.comandar(J1, Comando.CONFIRMAR);
+            sel.comandar(J1, Comando.PERFIS);
             assertEquals(SelecaoPartidaPanel.Fase.PERFIL, sel.fase(J1));
-            sel.comandar(J1, Comando.DIREITA);
             sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                          // 5Q.4 (pedido)
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
             assertEquals("Branquinho", sel.escolha(J1).getNome());
             assertEquals("Irmão Miau Preto", sel.escolha(J2).getNome(), "parceiro padrao: o outro irmao oficial");
-            sel.comandar(J1, Comando.ANTERIOR);               // LUTAR -> INICIO
-            sel.comandar(J1, Comando.ANTERIOR);               // INICIO -> PARCEIRO
-            assertEquals(SelecaoPartidaPanel.Linha.PARCEIRO, sel.linhaJ1());
-            List<String> vistos = new ArrayList<>();
-            for (int i = 0; i < 4; i++) {
-                sel.comandar(J1, Comando.DIREITA);
-                vistos.add(sel.escolha(J2).getNome());
-            }
-            assertTrue(vistos.contains("Pretinho"), vistos.toString());
-            assertTrue(vistos.contains("Branquinho"), "parceiro pode ser qualquer opcao, como antes");
+            sel.comandar(J1, Comando.PERFIS);                 // agora vale para o parceiro
+            sel.comandar(J1, Comando.CONFIRMAR);
+            assertEquals("Pretinho", sel.escolha(J2).getNome());
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2));
         });
     }
 
@@ -258,14 +251,10 @@ class Menus5M3Test {
         naEdt(() -> {
             sel = treino();
             sel.comandar(J1, Comando.DIREITA);                // Preto
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                              // 5Q.4 (pedido)
-            sel.comandar(J1, Comando.ANTERIOR);
-            sel.comandar(J1, Comando.ANTERIOR);
-            sel.comandar(J1, Comando.ANTERIOR);               // MAPA
-            assertEquals(SelecaoPartidaPanel.Linha.MAPA, sel.linhaJ1());
-            sel.comandar(J1, Comando.DIREITA);
-            sel.comandar(J1, Comando.CONFIRMAR);               // volta para TREINAR
+            personalizacao(sel);                              // treino igual ao JOGAR (pedido): tela da arena
+            sel.comandar(J1, Comando.DIREITA);                // ARENA seguinte
+            sel.comandar(J1, Comando.CONFIRMAR);               // INICIO
+            sel.comandar(J1, Comando.CONFIRMAR);               // INICIAR TREINO
             sel.comandar(J1, Comando.CONFIRMAR);
             sel.comandar(J1, Comando.CONFIRMAR);               // nao inicia duas vezes
         });
@@ -278,26 +267,28 @@ class Menus5M3Test {
         assertEquals(InicioLuta.DE_JOELHOS, t[3]);
     }
 
-    // 13. Regras antigas do treino: inicio lembrado, de joelhos/em pe, voltar ao menu, sem tempo
+    // 13. Regras antigas do treino (pedido: o inicio fica na tela da arena): inicio lembrado, sem tempo
     @Test
     void regrasAntigasDoTreino() throws Exception {
         naEdt(() -> {
             sel = treino(InicioLuta.EM_PE, null, null);
             assertEquals(InicioLuta.EM_PE, sel.inicioAtual(), "comeca com o inicio da sessao");
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                              // 5Q.4 (pedido)
-            sel.comandar(J1, Comando.ANTERIOR);               // INICIO
-            assertEquals(SelecaoPartidaPanel.Linha.INICIO, sel.linhaJ1());
+            personalizacao(sel);
+            sel.comandar(J1, Comando.PROXIMO);                // INICIO
+            assertEquals(ConfiguracaoLuta.Area.INICIO, sel.configuracao().foco());
             sel.comandar(J1, Comando.DIREITA);
             assertEquals(InicioLuta.values()[(InicioLuta.EM_PE.ordinal() + 1) % InicioLuta.values().length],
                     sel.inicioAtual());
             for (int i = 0; i < 6; i++) {
-                sel.comandar(J1, Comando.ANTERIOR);
-                assertFalse(sel.linhaJ1() == SelecaoPartidaPanel.Linha.TEMPO, "treino sem tempo");
-                assertFalse(sel.linhaJ1() == SelecaoPartidaPanel.Linha.DIFICULDADE, "treino sem dificuldade");
+                sel.comandar(J1, i < 3 ? Comando.ANTERIOR : Comando.PROXIMO);
+                ConfiguracaoLuta.Area a = sel.configuracao().foco();
+                assertFalse(a == ConfiguracaoLuta.Area.TEMPO || a == ConfiguracaoLuta.Area.REGRAS
+                        || a == ConfiguracaoLuta.Area.DIFICULDADE, "treino sem tempo, dificuldade e regras");
             }
-            sel.comandar(J1, Comando.VOLTAR);                 // pronto -> escolhendo
-            sel.comandar(J1, Comando.VOLTAR);                 // escolhendo -> menu
+            assertEquals(0, sel.tempoAtual(), "treino sem limite");
+            for (int i = 0; i < 10 && voltas.get() == 0; i++) {
+                sel.comandar(J1, Comando.VOLTAR);             // arena -> parceiro -> lutador -> menu
+            }
         });
         assertEquals(1, voltas.get());
         SelecaoLutadoresPanel.lembrarInicioDaSessao(InicioLuta.EM_PE);
@@ -319,7 +310,7 @@ class Menus5M3Test {
             assertEquals(1, sel.cursor(J1));
             p.definir("g1", EstadoGamepad.repouso().com(BotaoGamepad.SUL));
             sel.tick(16);
-            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J1));
+            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J1), "(pedido) original: faixa e kimono");
         });
     }
 
@@ -448,11 +439,11 @@ class Menus5M3Test {
     }
 
     /**
-     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
-     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
+     * Selecao do TREINO igual a do JOGAR (pedido): o mesmo controle confirma faixa e kimono do lutador e
+     * depois personagem, faixa e kimono do parceiro, e AVANCA para a tela da arena.
      */
     private static void personalizacao(SelecaoPartidaPanel s) {
-        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
+        for (int i = 0; i < 8 && !s.naConfiguracao(); i++) {
             s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
         }
     }

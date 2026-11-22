@@ -21,6 +21,9 @@ import java.util.Map;
 /**
  * Segunda tela de JOGAR: CONFIGURACOES DA LUTA (ARENA | TEMPO | DIFICULDADE | REGRAS e INICIAR LUTA).
  *
+ * No TREINO ({@link #treino}) a mesma tela mostra so a ARENA (e o INICIO de joelhos / em pe que o treino ja
+ * tinha) e INICIAR TREINO: sem tempo, dificuldade nem regras (o treino continua sem limite e sem arbitragem).
+ *
  * So estado, comandos e desenho; a {@link SelecaoPartidaPanel} cuida das entradas (as mesmas da primeira
  * tela, entao um aperto nunca vale nas duas) e das escolhas dos lutadores, que ficam intactas.
  *
@@ -35,7 +38,9 @@ final class ConfiguracaoLuta {
     enum Resultado { NADA, INICIAR, VOLTAR }
 
     /** Areas com foco (DIFICULDADE nao entra enquanto estiver EM BREVE). */
-    enum Area { ARENA, TEMPO, DIFICULDADE, REGRAS, INICIAR }
+    enum Area { ARENA, TEMPO, DIFICULDADE, REGRAS, INICIAR,
+        /** TREINO: de joelhos / em pe. */
+        INICIO }
 
     static final Rectangle PREVIA = new Rectangle(40, 104, 336, 189);
     static final Rectangle BOTAO_INICIAR = new Rectangle(300, 366, 200, 36);
@@ -50,6 +55,26 @@ final class ConfiguracaoLuta {
     private Area foco = Area.ARENA;
     private long avisoAte = -1;
     private String aviso = "";
+    /** TREINO: so arena e inicio. */
+    private boolean treino;
+    private int inicio;
+
+    /** A segunda tela do TREINO: ARENA, INICIO e INICIAR TREINO. */
+    static ConfiguracaoLuta treino(RegistroCenarios cenarios, String idArenaInicial,
+            com.irmaosmiau.entities.InicioLuta inicioInicial) {
+        ConfiguracaoLuta c = new ConfiguracaoLuta(cenarios, idArenaInicial);
+        c.treino = true;
+        c.inicio = (inicioInicial == null ? com.irmaosmiau.entities.InicioLuta.PADRAO_TELAS : inicioInicial).ordinal();
+        return c;
+    }
+
+    boolean isTreino() {
+        return treino;
+    }
+
+    com.irmaosmiau.entities.InicioLuta inicio() {
+        return com.irmaosmiau.entities.InicioLuta.values()[inicio];
+    }
 
     ConfiguracaoLuta(RegistroCenarios cenarios, String idArenaInicial) {
         this.cenarios = cenarios;
@@ -96,6 +121,9 @@ final class ConfiguracaoLuta {
 
     /** INICIAR LUTA: so com um modo de regras que o motor suporta. */
     Resultado iniciar(long agoraMs) {
+        if (treino) {
+            return Resultado.INICIAR;                          // treino: sem regras competitivas
+        }
         if (!modoLuta().isDisponivel()) {
             aviso = modoLuta().getNome() + ": EM BREVE · escolha outra regra";
             avisoAte = agoraMs + 1400;
@@ -106,7 +134,8 @@ final class ConfiguracaoLuta {
     }
 
     private Area vizinha(int passo) {
-        Area[] ordem = {Area.ARENA, Area.TEMPO, Area.REGRAS, Area.INICIAR};
+        Area[] ordem = treino ? new Area[] {Area.ARENA, Area.INICIO, Area.INICIAR}
+                : new Area[] {Area.ARENA, Area.TEMPO, Area.REGRAS, Area.INICIAR};
         int i = java.util.Arrays.asList(ordem).indexOf(foco);
         return ordem[Math.max(0, Math.min(ordem.length - 1, i + passo))];
     }
@@ -116,6 +145,7 @@ final class ConfiguracaoLuta {
             case ARENA -> arena = Math.floorMod(arena + passo, arenas.size());
             case TEMPO -> tempo = Math.floorMod(tempo + passo, SelecaoPartidaPanel.TEMPOS.length);
             case REGRAS -> regra = Math.floorMod(regra + passo, ModoLuta.values().length);
+            case INICIO -> inicio = Math.floorMod(inicio + passo, com.irmaosmiau.entities.InicioLuta.values().length);
             default -> {
             }
         }
@@ -130,6 +160,11 @@ final class ConfiguracaoLuta {
         if (PREVIA.contains(x, y) || (y >= 296 && y < 330 && x >= 40 && x < 376)) {
             foco = Area.ARENA;
             mudar(x < PREVIA.x + PREVIA.width / 2 ? -1 : 1);
+        } else if (treino) {
+            if (x >= 410 && x < 760 && y >= 96 && y < 150) {
+                foco = Area.INICIO;
+                mudar(x < 585 ? -1 : 1);
+            }
         } else if (x >= 410 && x < 760 && y >= 96 && y < 150) {
             foco = Area.TEMPO;
             mudar(x < 585 ? -1 : 1);
@@ -179,12 +214,15 @@ final class ConfiguracaoLuta {
     // DESENHO (mesma identidade da selecao de lutadores)
     // =====================================================
     void desenhar(Graphics2D g, long agoraMs, String resumoJ1, String resumoJ2) {
-        ArteMenus.letreiro(g, "CONFIGURAÇÕES DA LUTA", 400, 44, new Font("Arial", Font.BOLD, 26), ArteMenus.AMARELO);
+        ArteMenus.letreiro(g, treino ? "CONFIGURAÇÕES DO TREINO" : "CONFIGURAÇÕES DA LUTA", 400, 44,
+                new Font("Arial", Font.BOLD, 26), ArteMenus.AMARELO);
         g.setFont(new Font("Arial", Font.BOLD, 11));
         g.setColor(ArteMenus.J1);
-        g.drawString("J1 · " + resumoJ1, 40, 72);
+        String r1 = (treino ? "LUTADOR · " : "J1 · ") + resumoJ1;
+        String r2 = (treino ? "PARCEIRO · " : "J2 · ") + resumoJ2;
+        g.drawString(r1, 40, 72);
         g.setColor(ArteMenus.J2);
-        g.drawString("J2 · " + resumoJ2, 760 - g.getFontMetrics().stringWidth("J2 · " + resumoJ2), 72);
+        g.drawString(r2, 760 - g.getFontMetrics().stringWidth(r2), 72);
 
         // ARENA: a previa grande com o nome e as setas
         boolean fa = foco == Area.ARENA;
@@ -201,6 +239,11 @@ final class ConfiguracaoLuta {
         g.setFont(new Font("Arial", Font.PLAIN, 9));
         g.setColor(new Color(190, 205, 235));
         ArteMenus.centralizado(g, (arena + 1) + " / " + arenas.size(), 208, 334);
+
+        if (treino) {
+            desenharTreino(g, agoraMs);
+            return;
+        }
 
         // TEMPO, DIFICULDADE e REGRAS
         boolean ft = foco == Area.TEMPO;
@@ -249,6 +292,37 @@ final class ConfiguracaoLuta {
         g.setColor(new Color(190, 205, 235));
         g.setFont(new Font("Arial", Font.PLAIN, 9));
         ArteMenus.centralizado(g, "J1 WASD·ESPAÇO·Q   J2 setas·ENTER·BACKSPACE   gamepad A/B   ESC volta aos lutadores",
+                400, 437);
+    }
+
+    /** TREINO: INICIO a direita da arena e INICIAR TREINO (sem tempo, dificuldade nem regras). */
+    private void desenharTreino(Graphics2D g, long agoraMs) {
+        boolean fi0 = foco == Area.INICIO;
+        painel(g, 402, 80, 370, 62, fi0);
+        rotulo(g, "INÍCIO", 416, 98, fi0);
+        valor(g, inicio().getRotulo().toUpperCase(Locale.ROOT), 587, 128, fi0, true);
+        painel(g, 402, 150, 370, 192, false);
+        rotulo(g, "TREINO LIVRE", 416, 168, false);
+        g.setFont(ArteMenus.PEQUENO);
+        g.setColor(ArteMenus.BRANCO);
+        int y = 196;
+        for (String t : new String[] {"Sem limite de tempo", "Sem arbitragem nem placar",
+            "F11 alterna o Miau controlado", "Laboratório na pausa"}) {
+            ArteMenus.centralizado(g, t, 587, y);
+            y += 26;
+        }
+        boolean fi = foco == Area.INICIAR;
+        g.setColor(fi ? new Color(255, 206, 46, 235) : new Color(30, 70, 150));
+        g.fillRoundRect(BOTAO_INICIAR.x, BOTAO_INICIAR.y, BOTAO_INICIAR.width, BOTAO_INICIAR.height, 12, 12);
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.setColor(fi ? ArteMenus.AZUL_ESCURO : new Color(170, 190, 230));
+        ArteMenus.centralizado(g, "INICIAR TREINO", 400, 390);
+        g.setFont(ArteMenus.PEQUENO);
+        g.setColor(ArteMenus.BRANCO);
+        ArteMenus.centralizado(g, "cima/baixo escolhe · lados mudam · confirme INICIAR TREINO", 400, 420);
+        g.setColor(new Color(190, 205, 235));
+        g.setFont(new Font("Arial", Font.PLAIN, 9));
+        ArteMenus.centralizado(g, "WASD/setas · ESPAÇO/ENTER · gamepad A/B · Q/BACKSPACE/ESC volta aos lutadores",
                 400, 437);
     }
 

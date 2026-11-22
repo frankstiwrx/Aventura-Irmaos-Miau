@@ -95,33 +95,22 @@ class Selecao5Q1Test {
             SelecaoPartidaPanel sel = SelecaoPartidaPanel.treino(CatalogoPersonagens.padrao(), opcoes(),
                     RegistroCenarios.padrao(), RegistroCenarios.ID_PADRAO, InicioLuta.DE_JOELHOS,
                     (j, p, c, i) -> inicio.set(new EscolhaLutador[] {j, p}), () -> { }, () -> null, () -> null);
-            sel.comandar(J1, Comando.CONFIRMAR);
-            personalizacao(sel);                                // 5Q.4 (pedido)
-            for (int i = 0; i < 5; i++) {
-                sel.comandar(J1, Comando.ANTERIOR);             // ... -> FAIXA DO PARCEIRO
-            }
-            assertEquals(SelecaoPartidaPanel.Linha.FAIXA_PARCEIRO, sel.linhaJ1());
+            // treino igual ao JOGAR (pedido): o mesmo controle faz o lutador e depois o parceiro
+            sel.comandar(J1, Comando.CONFIRMAR);                // lutador: FAIXA
+            sel.comandar(J1, Comando.DIREITA);                  // azul
+            sel.comandar(J1, Comando.CONFIRMAR);                // KIMONO
+            sel.comandar(J1, Comando.CONFIRMAR);                // PRONTO
+            sel.comandar(J1, Comando.CONFIRMAR);                // parceiro: FAIXA
             for (int i = 0; i < 4; i++) {
                 sel.comandar(J1, Comando.DIREITA);              // parceiro faixa preta
             }
-            sel.comandar(J1, Comando.ANTERIOR);
-            sel.comandar(J1, Comando.ANTERIOR);                 // FAIXA do jogador
-            sel.comandar(J1, Comando.DIREITA);                  // azul
-            personalizacao(sel);                                // 5Q.4 (pedido): confirmar segue as linhas ate LUTAR
-            sel.comandar(J1, Comando.CONFIRMAR);                // TREINAR
+            for (int i = 0; i < 6; i++) {
+                sel.comandar(J1, Comando.CONFIRMAR);            // KIMONO, PRONTO, AVANCAR, ARENA, INICIO, INICIAR
+            }
         });
         EscolhaLutador[] e = inicio.get();
         assertEquals(Graduacao.AZUL, e[0].getGraduacao());
         assertEquals(Graduacao.PRETA, e[1].getGraduacao());
     }
 
-    /**
-     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
-     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
-     */
-    private static void personalizacao(SelecaoPartidaPanel s) {
-        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
-            s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
-        }
-    }
 }

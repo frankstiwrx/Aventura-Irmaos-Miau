@@ -376,19 +376,16 @@ class Menus5MTest {
         assertEquals(1, inicios.get(), "inicia uma vez so");
     }
 
-    // 23. Perfil personalizado aparece como fase extra e e o escolhido
+    // 23. Perfil personalizado (pedido): X / Quadrado abre os perfis; confirmado, fica PRONTO direto
     @Test
     void perfilPersonalizado() throws Exception {
         servico().criarAPartirDoPersonagem("pretinho", "Pretinho", CatalogoPersonagens.ID_PRETO);
         naEdt(() -> {
             sel = selecao();
-            sel.comandar(J2, Comando.CONFIRMAR);
+            sel.comandar(J2, Comando.PERFIS);
             assertEquals(SelecaoPartidaPanel.Fase.PERFIL, sel.fase(J2));
-            sel.comandar(J2, Comando.DIREITA);
             sel.comandar(J2, Comando.CONFIRMAR);
-            // reorganizacao (pedido): depois do perfil, faixa e kimono
-            assertEquals(SelecaoPartidaPanel.Fase.FAIXA, sel.fase(J2));
-            pronto(J2);
+            assertEquals(SelecaoPartidaPanel.Fase.PRONTO, sel.fase(J2), "perfil: sem faixa nem kimono");
             assertEquals("Pretinho", sel.escolha(J2).getNome());
             pronto(J1);
             lutar();
@@ -562,13 +559,4 @@ class Menus5MTest {
         });
     }
 
-    /**
-     * 5Q.4 (pedido): depois de escolher o personagem o J1 cai na FAIXA (antes ia direto para LUTAR);
-     * confirma faixa e kimono (e os do parceiro, no treino) como o jogador faria, ate voltar a LUTAR.
-     */
-    private static void personalizacao(SelecaoPartidaPanel s) {
-        for (int i = 0; i < 6 && s.linhaJ1() != SelecaoPartidaPanel.Linha.LUTAR; i++) {
-            s.comandar(SlotJogador.JOGADOR_1, Comando.CONFIRMAR);
-        }
-    }
 }
