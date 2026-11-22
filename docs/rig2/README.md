@@ -19,6 +19,12 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `laboratorio-6.1/` | Capturas da janela do laboratório e, em `rotacao/`, as folhas de contato da rotação (passo de 5°, ângulos críticos com passo de 1° e teste dos braços). |
 | `AnimacoesRig2.java` | **6.2:** camada de animação baseada em tempo (contrato `Animacao`, `Reprodutor`), as animações idle neutro, idle de combate, caminhada e transições, e as verificações da 6.2 (seção 12). |
 | `laboratorio-6.2/` | Capturas da janela com as animações e, em `quadros/`, as folhas de contato (idles, caminhada em várias perspectivas, transições e caminhada girando). |
+| `MovimentosRig2.java` | **6.3:** corrida, agachamento (descer, sustentar, levantar), pulo e componentes de movimento reutilizáveis. |
+| `DuelosRig2.java` | **6.3:** dois lutadores numa linha do tempo única, contatos, pegadas 1 a 3 e derrubada forçada (defendida). |
+| `BibliotecaRig2.java` | **6.3:** registro central com metadados das animações executáveis e dos itens pendentes do catálogo. |
+| `LaboratorioCombateRig2.java` | **6.3:** laboratório de combate (lista, filtros, linha do tempo, um ou dois lutadores, contatos). |
+| `laboratorio-6.3/` | Capturas da 6.3. |
+| `CATALOGO-ANIMACOES.md`, `MIGRACAO.md`, `inventario/`, `historico/` | **6.3:** catálogo mestre, arquitetura e plano de migração, inventário do jogo, versões homologadas e cópia da 6.2. |
 | `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
 As prévias de cada versão ficam congeladas:
@@ -683,3 +689,112 @@ Nenhuma decisão desta entrega compromete a migração futura. O que já ajuda n
 2. Deslocamentos de combate em pé (passo à frente e para trás, e lateral, na guarda), já sobre o idle de combate.
 3. Retorno suave ao parar e mistura (cross-fade) entre quaisquer duas animações, reutilizando `ParametrosPose.interpolar`.
 4. O objeto `Proporcoes` por personagem e a orientação completa da raiz, preparando o Miau Preto e as posições de chão.
+
+## 13. Inventário, biblioteca e primeiro laboratório de combate (Superentrega 6.3)
+
+### Preservação
+A 6.2 aprovada está em `historico/rig2-6.2-aprovado.zip`, com os três arquivos do commit `679ff7b` e um LEIA-ME. A cópia foi extraída e executada fora do repositório: as verificações e as capturas funcionaram. O registro dos marcos 6.0.4, 6.1 e 6.2 está em `historico/VERSOES.md`.
+
+### Inventário e catálogo
+O inventário foi feito **a partir do código compilado do jogo**, sem alterá-lo, por `inventario/InventarioJogo.java`. Ele cobre:
+- os catálogos de técnicas, finalizações e transições;
+- as chaves de quadros-chave de `AnimacoesTecnicas`, com as articulações que cada uma move de fato;
+- as transições de postura, as acrobacias e as posições;
+- os JSON de conteúdo;
+- uma lista dos movimentos individuais, com a classe ou o arquivo de origem de cada um.
+
+**Números:**
+- 267 movimentos em 25 categorias;
+- 127 deles têm animação própria no jogo atual;
+- 233 exigem dois lutadores;
+- 241 exigem o chão.
+
+O catálogo mestre (`CATALOGO-ANIMACOES.md`, gerado por `inventario/gerar_catalogo.py`) mostra, para cada um:
+- origem e condições;
+- início e fim;
+- duração em ticks (16 ms);
+- articulações;
+- eventos;
+- complexidade;
+- requisitos no Rig 2.0;
+- estado.
+
+A arquitetura, a matriz de compatibilidade, as dependências e o plano de migração estão em `MIGRACAO.md`.
+
+### O que foi construído
+- **Modelo:**
+  - aparência por personagem: o Miau Preto tem pelo preto, traços claros e kimono branco, como no jogo; o Branco continua idêntico à 6.0.4;
+  - alvo e fechamento das mãos;
+  - pontos de contato nomeados (punho, pata, antebraço, manga, cotovelo, ombro, peito, golas, nuca, faixa, quadril, joelho, tornozelo).
+- **Movimentos básicos** (`MovimentosRig2.java`), montados com componentes reutilizáveis:
+  - **corrida no lugar:** com fase de suspensão;
+  - **agachar, agachado e levantar:** com equilíbrio verificado;
+  - **pulo:** preparação, impulso, voo balístico, aterrissagem com absorção e recuperação.
+- **Dois lutadores** (`DuelosRig2.java):**
+  - uma linha do tempo única para os dois;
+  - as mãos de A seguem os contatos de B a cada quadro;
+  - ordem de desenho por profundidade;
+  - **pegadas 1, 2 e 3** (entrada de 0,48 s, igual aos 30 quadros do jogo, e a pegada mantida em loop);
+  - **derrubada forçada no desfecho defendido**, a partir da pegada 1. A janela de preparação é a do motor (16 ticks): A carrega o peso, dá um passo e empurra; B perde a base, dá um passo atrás e recupera; os dois voltam à pegada.
+- **Registro central** (`BibliotecaRig2.java`): reúne as 15 animações executáveis com metadados e os itens pendentes do catálogo.
+- **Laboratório de combate** (`LaboratorioCombateRig2.java`):
+  - lista com filtro por categoria; os pendentes aparecem em cinza, sem execução;
+  - informações da animação, reprodução, pausa, reinício, velocidade (0,25× a 2×) e linha do tempo com eventos;
+  - perspectiva, esqueleto, pontos de contato e um ou dois lutadores;
+  - troca Branco ↔ Preto, distância, orientação de cada lutador e posição lateral.
+- **Vista de duelo 2,5D:** é a mais útil para avaliar duas pessoas. Use a vista 90° com A girado −50° e B girado +50°: os dois ficam em 3/4 para a câmera, como num jogo de luta.
+
+### O que ficou pendente e por quê
+- **Pegada 4 (gola e nuca):** está em implementação. Na distância do jogo, o braço precisa contornar a cabeça do Miau (raio 35) e a atravessa; mais perto, os troncos se tocam.
+- **Quedas de verdade** (o desfecho de sucesso da derrubada, a queda com a pegada e as outras 16): o corpo ainda não pode cair nem deitar, porque a raiz só gira em torno do eixo vertical. Não improvisei uma queda visualmente errada; esse é o primeiro item do plano em `MIGRACAO.md`.
+- **Disputa de pegada mais reta:** para as cabeças grandes não se sobreporem na distância da pegada, os dois ficam com o tronco quase reto e o queixo recolhido (tronco a 1° em vez dos 8° da guarda solo).
+
+### Como executar (raiz do repositório, Java 22 ou mais novo)
+| Para | Comando |
+|---|---|
+| Laboratório de combate (abre em ~9 s: compila seis arquivos em memória) | `java docs/rig2/LaboratorioCombateRig2.java` |
+| Laboratório de combate compilado (abre mais rápido) | `javac -d "%TEMP%\rig2" docs\rig2\*.java` e depois `java -cp "%TEMP%\rig2" LaboratorioCombateRig2` |
+| Laboratório 6.1/6.2 (agora também com corrida, agachamento e pulo) | `java docs/rig2/LaboratorioRig2.java` |
+| Verificações dos movimentos básicos | `java docs/rig2/MovimentosRig2.java` |
+| Verificações de dois lutadores | `java docs/rig2/DuelosRig2.java` |
+| Lista do registro | `java docs/rig2/BibliotecaRig2.java` |
+| Capturas da 6.3 e teste dos controles | `java docs/rig2/LaboratorioCombateRig2.java --capturas-6.3 docs/rig2/laboratorio-6.3` |
+| Inventário (precisa do jogo compilado em `target/classes`) e catálogo | `javac -cp target/classes -d <pasta> docs/rig2/inventario/InventarioJogo.java`; `java -Dstdout.encoding=UTF-8 -cp "target/classes;<pasta>" InventarioJogo > docs/rig2/inventario/inventario-jogo.tsv`; `python docs/rig2/inventario/gerar_catalogo.py` |
+
+### Verificações (todas passaram)
+- **Regressão:**
+  - prévias 6.0.4 geradas de novo, com **0 pixels diferentes**;
+  - `ConceitoRig2.java --verificar-6.1` inteiro;
+  - `AnimacoesRig2.java` (6.2) com os mesmos números de antes;
+  - rotinas de controles da 6.1 e da 6.2 (numa pasta temporária) sem exceções;
+  - a janela da 6.2 e a de combate abrem sem erros.
+- **Movimentos básicos:**
+  - integridade a 1/120 s, sem saltos isolados;
+  - loops que fecham, e transições que terminam exatamente no primeiro quadro seguinte;
+  - corrida com 30% do ciclo em suspensão e apoio sem escorregar;
+  - agachamento com o quadril 44 unidades abaixo, calcanhares no chão e o centro do corpo sobre a base dos pés;
+  - pulo com os dois pés fora do chão durante todo o voo (pé até 66 unidades), absorção de 20 unidades e fim no idle.
+- **Dois lutadores:**
+  - patas exatamente nos contatos (erro de ~10⁻¹⁴);
+  - nenhum braço atravessa o tronco ou a cabeça do outro;
+  - cabeças a no mínimo 72 unidades;
+  - loops e encadeamentos sem salto;
+  - 40 ciclos sem deslocamento acumulado;
+  - a perspectiva não altera a cena.
+- **Derrubada forçada:** começa e termina na pegada 1, os eventos ficam em ordem, a pegada nunca solta e os pés que não dão passo ficam plantados no mundo.
+- **Laboratório de combate:** todas as animações reproduzidas, pausadas, aceleradas, arrastadas e paradas; todos os controles e filtros exercitados; os pendentes ficam sem execução; nenhuma exceção.
+
+### Capturas (`laboratorio-6.3/`)
+- **Janela:**
+  - `janela-derrubada-forcada-040.png`;
+  - `janela-pegada-2-esqueleto-090.png`;
+  - `janela-pulo-040.png`;
+  - `janela-pendente-queda-pegada.png`.
+- **Folhas de contato (`quadros/`):**
+  - corrida (40° e 90°), pulo (40° e 90°), agachar, agachado e levantar;
+  - pegadas 1 a 3 em 40°, 90° e 140°, e em duelo 2,5D;
+  - derrubada forçada em 40°, 90°, 140°, em duelo 2,5D e com esqueleto;
+  - os dois lutadores nas cinco perspectivas.
+
+### Estado
+Nada da 6.3 está homologado: corrida, agachamento, pulo, pegadas 1 a 3 e derrubada forçada estão **aguardando a homologação visual** de vocês.
