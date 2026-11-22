@@ -83,7 +83,7 @@ public class ConceitoRig2 {
     // ===================================================================== esqueleto
     /** Indice 0 = lado direito do lutador (-x), 1 = lado esquerdo (+x). */
     static final class Corpo {
-        double inclinacao, baixar, cabecaZ = 2;
+        double inclinacao, baixar, cabecaZ = 2, giroCabeca;
         final V[] ombro = new V[2], cotovelo = new V[2], mao = new V[2];
         final V[] quadril = new V[2], joelho = new V[2], tornozelo = new V[2];
         final double[] guinadaPe = new double[2];
@@ -115,48 +115,186 @@ public class ConceitoRig2 {
         return new V[] {a.mais(u.vezes(ao)).mais(p.vezes(h)), a.mais(u.vezes(dist))};
     }
 
-    static void montar(Corpo c, V[] maos, V[] polosB, V[] pes, V[] polosP) {
-        c.pelve = c.transformar(new V(0, 165, 0));
-        c.pescoco = c.transformar(new V(0, PESCOCO_Y, 0));
-        c.cabeca = c.transformar(new V(0, CABECA_Y, c.cabecaZ));
-        for (int i = 0; i < 2; i++) {
-            double s = i == 0 ? -1 : 1;
-            c.ombro[i] = c.transformar(new V(s * 34, 90, 0));
-            V[] b = ik(c.ombro[i], maos[i], BRACO, ANTEBRACO, polosB[i]);
-            c.cotovelo[i] = b[0];
-            c.mao[i] = b[1];
-            c.quadril[i] = c.transformar(new V(s * 16, 170, 0));
-            V[] p = ik(c.quadril[i], pes[i], COXA, CANELA, polosP[i]);
-            c.joelho[i] = p[0];
-            c.tornozelo[i] = p[1];
-        }
-    }
+    // ===================================================================== poses parametrizadas (6.1)
+    /** Limites dos controles experimentais (graus). */
+    static final double ELEVACAO_MIN = -90, ELEVACAO_MAX = 170, AVANCO_MIN = -50, AVANCO_MAX = 150;
+    static final double FLEXAO_MIN = 0, FLEXAO_MAX = 150, GIRO_CABECA_MAX = 60;
 
-    static Corpo neutro() {
-        Corpo c = new Corpo();
-        montar(c,
+    /** Pose-base: alvos de IK no espaco do corpo (x lateral, y para baixo, z para a frente do lutador). */
+    enum PoseBase {
+        NEUTRA("Neutra", 0, 0, 2, new double[] {0, 0},
                 new V[] {new V(-46, 152, 4), new V(46, 152, 4)},
                 new V[] {new V(-1, .2, -.8), new V(1, .2, -.8)},
                 new V[] {new V(-19, 258, -3), new V(19, 258, 3)},
-                new V[] {new V(0, 0, 1), new V(0, 0, 1)});
-        return c;
-    }
-
-    /** Base de combate: quadril baixo, tronco 10 graus a frente, guarda alta, pe esquerdo a frente. */
-    static Corpo combate() {
-        Corpo c = new Corpo();
-        c.inclinacao = 8;
-        c.baixar = 16;
-        c.cabecaZ = -3;
-        c.guinadaPe[0] = -28;
-        c.guinadaPe[1] = 8;
-        montar(c,
+                new V[] {new V(0, 0, 1), new V(0, 0, 1)}),
+        /** Quadril baixo, tronco 8 graus a frente, guarda a frente do peito, pe esquerdo a frente. */
+        COMBATE("Combate", 8, 16, -3, new double[] {-28, 8},
                 new V[] {new V(-4, 118, 46), new V(22, 122, 64)},
                 new V[] {new V(-.6, 1, -.4), new V(.5, 1, -.3)},
                 new V[] {new V(-26, 258, -22), new V(22, 258, 26)},
                 new V[] {new V(-.3, 0, 1), new V(.2, 0, 1)});
+
+        final String nome;
+        final double inclinacao, baixar, cabecaZ;
+        final double[] guinadaPe;
+        final V[] maos, polosBraco, pes, polosPerna;
+
+        PoseBase(String nome, double inclinacao, double baixar, double cabecaZ, double[] guinadaPe,
+                 V[] maos, V[] polosBraco, V[] pes, V[] polosPerna) {
+            this.nome = nome; this.inclinacao = inclinacao; this.baixar = baixar; this.cabecaZ = cabecaZ;
+            this.guinadaPe = guinadaPe; this.maos = maos; this.polosBraco = polosBraco; this.pes = pes; this.polosPerna = polosPerna;
+        }
+
+        @Override public String toString() { return nome; }
+    }
+
+    /** Presets experimentais das pernas (aplicados sobre a pose-base). */
+    enum PresetPernas {
+        DA_POSE("Da pose"), JOELHOS("Joelhos flexionados"), ESQUERDA_FRENTE("Perna esquerda à frente"),
+        DIREITA_FRENTE("Perna direita à frente"), PES_ABERTOS("Pés abertos");
+        final String nome;
+        PresetPernas(String nome) { this.nome = nome; }
+        @Override public String toString() { return nome; }
+    }
+
+    /**
+     * Rotacao de um braco a partir de dois angulos absolutos em relacao ao tronco:
+     * avanco (flexao do ombro, em torno do eixo lateral) e elevacao (abducao, em torno do eixo frontal).
+     * Com os dois em zero o braco aponta para baixo.
+     */
+    static V girarBraco(V v, double elevacao, double avanco, double lado) {
+        double e = Math.toRadians(-lado * elevacao), a = Math.toRadians(avanco);
+        V r1 = new V(v.x(), v.y() * Math.cos(a) - v.z() * Math.sin(a), v.y() * Math.sin(a) + v.z() * Math.cos(a));
+        return new V(r1.x() * Math.cos(e) - r1.y() * Math.sin(e), r1.x() * Math.sin(e) + r1.y() * Math.cos(e), r1.z());
+    }
+
+    static V desgirarBraco(V v, double elevacao, double avanco, double lado) {
+        double e = Math.toRadians(lado * elevacao), a = Math.toRadians(-avanco);
+        V r1 = new V(v.x() * Math.cos(e) - v.y() * Math.sin(e), v.x() * Math.sin(e) + v.y() * Math.cos(e), v.z());
+        return new V(r1.x(), r1.y() * Math.cos(a) - r1.z() * Math.sin(a), r1.y() * Math.sin(a) + r1.z() * Math.cos(a));
+    }
+
+    static double alcance(double flexao) {
+        return Math.sqrt(BRACO * BRACO + ANTEBRACO * ANTEBRACO + 2 * BRACO * ANTEBRACO * Math.cos(Math.toRadians(flexao)));
+    }
+
+    static double limitar(double v, double min, double max) { return Math.max(min, Math.min(max, v)); }
+
+    /**
+     * Parametros de pose do laboratorio. Os bracos sao descritos por angulos (elevacao, avanco,
+     * flexao do cotovelo) relativos ao tronco; a vista (guinada da camera) nao faz parte da pose,
+     * por isso girar o personagem nunca altera os membros.
+     */
+    static final class ParametrosPose {
+        PoseBase base;
+        PresetPernas pernas = PresetPernas.DA_POSE;
+        double giroCabeca;
+        final double[] elevacao = new double[2], avanco = new double[2], flexao = new double[2];
+        final V[] poloLocal = new V[2];
+
+        /** Valores que reproduzem exatamente a pose-base. */
+        static ParametrosPose padrao(PoseBase b) {
+            ParametrosPose p = new ParametrosPose();
+            p.base = b;
+            p.restaurarBracos();
+            return p;
+        }
+
+        void restaurarBracos() {
+            Corpo c = new Corpo();
+            c.inclinacao = base.inclinacao;
+            c.baixar = base.baixar;
+            for (int i = 0; i < 2; i++) {
+                double lado = i == 0 ? -1 : 1;
+                V ombro = c.transformar(new V(lado * 34, 90, 0));
+                V v = base.maos[i].menos(ombro);
+                double d = limitar(v.tam(), Math.abs(BRACO - ANTEBRACO) + .01, BRACO + ANTEBRACO - .01);
+                V u = v.unit();
+                avanco[i] = Math.toDegrees(Math.asin(limitar(u.z(), -1, 1)));
+                elevacao[i] = -lado * Math.toDegrees(Math.atan2(-u.x(), u.y()));
+                double cosF = (d * d - BRACO * BRACO - ANTEBRACO * ANTEBRACO) / (2 * BRACO * ANTEBRACO);
+                flexao[i] = Math.toDegrees(Math.acos(limitar(cosF, -1, 1)));
+                poloLocal[i] = desgirarBraco(base.polosBraco[i], elevacao[i], avanco[i], lado);
+            }
+        }
+
+        void limitarTudo() {
+            giroCabeca = limitar(giroCabeca, -GIRO_CABECA_MAX, GIRO_CABECA_MAX);
+            for (int i = 0; i < 2; i++) {
+                elevacao[i] = limitar(elevacao[i], ELEVACAO_MIN, ELEVACAO_MAX);
+                avanco[i] = limitar(avanco[i], AVANCO_MIN, AVANCO_MAX);
+                flexao[i] = limitar(flexao[i], FLEXAO_MIN, FLEXAO_MAX);
+            }
+        }
+
+        ParametrosPose copia() {
+            ParametrosPose p = new ParametrosPose();
+            p.base = base; p.pernas = pernas; p.giroCabeca = giroCabeca;
+            for (int i = 0; i < 2; i++) {
+                p.elevacao[i] = elevacao[i]; p.avanco[i] = avanco[i]; p.flexao[i] = flexao[i]; p.poloLocal[i] = poloLocal[i];
+            }
+            return p;
+        }
+    }
+
+    /** Monta o esqueleto de uma pose. A camera nao participa: a mesma pose serve para qualquer vista. */
+    static Corpo montarPose(ParametrosPose pp) {
+        pp.limitarTudo();
+        PoseBase b = pp.base;
+        Corpo c = new Corpo();
+        c.inclinacao = b.inclinacao;
+        c.baixar = b.baixar;
+        c.cabecaZ = b.cabecaZ;
+        c.giroCabeca = pp.giroCabeca;
+        V[] pes = b.pes.clone(), polosP = b.polosPerna.clone();
+        c.guinadaPe[0] = b.guinadaPe[0];
+        c.guinadaPe[1] = b.guinadaPe[1];
+        switch (pp.pernas) {
+            case JOELHOS -> c.baixar += 14;
+            case ESQUERDA_FRENTE -> {
+                pes = new V[] {new V(-20, 258, -22), new V(18, 258, 26)};
+                polosP = new V[] {new V(-.2, 0, 1), new V(.2, 0, 1)};
+                c.guinadaPe[0] = -24;
+                c.guinadaPe[1] = 6;
+            }
+            case DIREITA_FRENTE -> {
+                pes = new V[] {new V(-18, 258, 26), new V(20, 258, -22)};
+                polosP = new V[] {new V(-.2, 0, 1), new V(.2, 0, 1)};
+                c.guinadaPe[0] = -6;
+                c.guinadaPe[1] = 24;
+            }
+            case PES_ABERTOS -> {
+                for (int i = 0; i < 2; i++) {
+                    double lado = i == 0 ? -1 : 1;
+                    pes[i] = pes[i].mais(new V(lado * 12, 0, 0));
+                    c.guinadaPe[i] += lado * 20;
+                }
+            }
+            default -> { }
+        }
+        c.pelve = c.transformar(new V(0, 165, 0));
+        c.pescoco = c.transformar(new V(0, PESCOCO_Y, 0));
+        c.cabeca = c.transformar(new V(0, CABECA_Y, c.cabecaZ));
+        for (int i = 0; i < 2; i++) {
+            double lado = i == 0 ? -1 : 1;
+            c.ombro[i] = c.transformar(new V(lado * 34, 90, 0));
+            V dirB = girarBraco(new V(0, 1, 0), pp.elevacao[i], pp.avanco[i], lado);
+            V alvo = c.ombro[i].mais(dirB.vezes(alcance(pp.flexao[i])));
+            V[] br = ik(c.ombro[i], alvo, BRACO, ANTEBRACO, girarBraco(pp.poloLocal[i], pp.elevacao[i], pp.avanco[i], lado));
+            c.cotovelo[i] = br[0];
+            c.mao[i] = br[1];
+            c.quadril[i] = c.transformar(new V(lado * 16, 170, 0));
+            V[] pe = ik(c.quadril[i], pes[i], COXA, CANELA, polosP[i]);
+            c.joelho[i] = pe[0];
+            c.tornozelo[i] = pe[1];
+        }
         return c;
     }
+
+    static Corpo neutro() { return montarPose(ParametrosPose.padrao(PoseBase.NEUTRA)); }
+
+    static Corpo combate() { return montarPose(ParametrosPose.padrao(PoseBase.COMBATE)); }
+
 
     // ===================================================================== pintor duplo (Java2D + SVG)
     static final class Pintor {
@@ -354,22 +492,86 @@ public class ConceitoRig2 {
         void figura() {
             sombraChao();
             int perto = ladoPerto(), longe = perto < 0 ? -1 : 1 - perto;
-            if (longe >= 0) braco(longe, true);
+            if (longe >= 0) braco(longe, fatorLonge());
+            // 6.1: um braco "da frente" cuja pata esta do outro lado do peito (vistas de costas com a guarda
+            // a frente) passa para tras do tronco, com transicao suave pela profundidade da pata.
+            double[] frente = {frenteBraco(0), frenteBraco(1)};
+            for (int i = 0; i < 2; i++) if (i != longe && frente[i] < 1) braco(i, 0);
             pernas(perto);
             casaco();
             faixa();
-            cabeca(c.cabeca, guinadaCabeca(cam.graus));
-            if (perto >= 0) braco(perto, false);
-            else { braco(0, false); braco(1, false); }
+            cabeca(c.cabeca, guinadaRosto());
+            if (perto >= 0) {
+                // 6.1: perto das vistas de frente/costas puras o braco longe ainda esta ao lado do peito;
+                // ele passa para tras do tronco gradualmente (copia na frente que desaparece entre ~3 e ~15 graus)
+                double fl = fatorLonge();
+                if (fl < 1) comOpacidade((1 - fl) * frente[longe], () -> braco(longe, fl));
+                comOpacidade(frente[perto], () -> braco(perto, 0));
+            } else for (int i = 0; i < 2; i++) { int b = i; comOpacidade(frente[b], () -> braco(b, 0)); }
         }
 
         /**
-         * "Trapaca" de camera classica da animacao 2D: entre a frente e o perfil o rosto gira 75% do
-         * angulo do corpo, para manter os dois olhos legiveis no 3/4 de combate (corpo 40 -> rosto 30).
+         * 1 = pata a frente do tronco ou fora da silhueta dele; 0 = pata escondida atras do tronco.
+         * Compara a profundidade da pata com a da superficie visivel do casaco no mesmo ponto da tela;
+         * as duas medidas sao continuas, entao a troca de camada e gradual.
+         */
+        double frenteBraco(int i) {
+            V m = c.mao[i];
+            double hx = cam.x(m), prof = cam.prof(m), y = m.y() - c.baixar;
+            if (y < TY[0] || y > 196) return 1;
+            double min = Double.MAX_VALUE, max = -Double.MAX_VALUE, profSup = Double.NaN, melhor = Double.MAX_VALUE;
+            for (double f = 0; f < 360; f += 3) {
+                V s = sup(y, f, 0);
+                double sx = cam.x(s);
+                min = Math.min(min, sx);
+                max = Math.max(max, sx);
+                if (vis(y, f) >= 0 && Math.abs(sx - hx) < melhor) { melhor = Math.abs(sx - hx); profSup = cam.prof(s); }
+            }
+            double fora = Math.max(min - hx, hx - max);
+            return Math.max(suave(-2, 6, fora), Double.isNaN(profSup) ? 1 : suave(-8, 4, prof - profSup));
+        }
+
+        /** 6.1: guinada final do rosto = vista + giro proprio da cabeca, com a trapaca de camera. */
+        double guinadaRosto() { return guinadaCabeca(cam.graus + c.giroCabeca); }
+
+        /**
+         * 6.1: quanto o lado longe escurece (0 nas vistas de frente/costas puras, 1 a partir de ~15 graus).
+         * Antes era 0 ou 1; a mistura evita um "estalo" de cor ao sair da vista frontal.
+         */
+        double fatorLonge() { return suave(.05, .25, Math.abs(cam.s)); }
+
+        /** Interpolacao suave classica (0 abaixo de a, 1 acima de b). */
+        static double suave(double a, double b, double x) {
+            double t = limitar((x - a) / (b - a), 0, 1);
+            return t * t * (3 - 2 * t);
+        }
+
+        static Color misturar(Color a, Color b, double t) {
+            if (t <= 0) return a;
+            if (t >= 1) return b;
+            return new Color((int) Math.round(a.getRed() + (b.getRed() - a.getRed()) * t),
+                    (int) Math.round(a.getGreen() + (b.getGreen() - a.getGreen()) * t),
+                    (int) Math.round(a.getBlue() + (b.getBlue() - a.getBlue()) * t),
+                    (int) Math.round(a.getAlpha() + (b.getAlpha() - a.getAlpha()) * t));
+        }
+
+        /** Desenha com opacidade reduzida (para elementos que aparecem/somem conforme a vista). */
+        void comOpacidade(double f, Runnable r) {
+            if (f <= 0.001) return;
+            double antes = p.alfa;
+            p.alfa = antes * Math.min(1, f);
+            r.run();
+            p.alfa = antes;
+        }
+
+        /**
+         * "Trapaca" de camera classica da animacao 2D: entre a frente e o perfil o rosto gira menos que
+         * o corpo, para manter os dois olhos legiveis no 3/4 de combate (corpo 40 -> rosto 30).
+         * 6.1: simetrica para guinadas negativas (cabeca virada para o outro lado).
          */
         static double guinadaCabeca(double g) {
             // 6.0.2: curva suave (sem salto em 90 graus); continua dando exatamente 30 para o corpo a 40.
-            return g > 0 && g < 90 ? g - 10 / Math.sin(Math.toRadians(80)) * Math.sin(Math.toRadians(2 * g)) : g;
+            return g > -90 && g < 90 ? g - 10 / Math.sin(Math.toRadians(80)) * Math.sin(Math.toRadians(2 * g)) : g;
         }
 
         void sombraChao() {
@@ -380,11 +582,13 @@ public class ConceitoRig2 {
         }
 
         // ---------- roupa: luz de cima/esquerda, igual em todas as vistas
-        void sombrear(Area a, Color base, Color borda, double w) {
+        void sombrear(Area a, Color base, Color borda, double w) { sombrear(a, base == GI_LONGE ? 1 : 0, base, borda, w); }
+
+        void sombrear(Area a, double longe, Color base, Color borda, double w) {
             p.preencher(a, base);
             Area luz = new Area(a);
             luz.subtract(a.createTransformedArea(AffineTransform.getTranslateInstance(2.2, 2.6)));
-            p.preencher(luz, base == GI_LONGE ? new Color(34, 36, 41) : GI_LUZ);
+            p.preencher(luz, misturar(GI_LUZ, new Color(34, 36, 41), longe));
             Area sombra = new Area(a);
             sombra.subtract(a.createTransformedArea(AffineTransform.getTranslateInstance(-2.6, -3.2)));
             p.preencher(sombra, GI_SOMBRA);
@@ -397,21 +601,24 @@ public class ConceitoRig2 {
             double la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
             if (la < 1 || lb < 1) return;
             double mx = ax / la + bx / lb, my = ay / la + by / lb, lm = Math.hypot(mx, my);
-            if (lm < .5) return; // membro quase reto (dobra < ~30 graus): sem vinco
+            // 6.1: o vinco aparece gradualmente conforme a dobra aumenta (antes surgia de uma vez)
+            double f = suave(.42, .5, lm); // totalmente visivel a partir de .5, como na 6.0.4
+            if (f <= 0) return;
             mx /= lm; my /= lm;
             // um unico vinco curto, perpendicular a bissetriz, no lado interno da dobra
             double ox = j.getX() + mx * largura * .28, oy = j.getY() + my * largura * .28, px = -my, py = mx;
             Path2D v = new Path2D.Double();
             v.moveTo(ox - px * 5, oy - py * 5);
             v.quadTo(ox - mx * 2.5, oy - my * 2.5, ox + px * 5, oy + py * 5);
-            p.tracar(v, cor, .9);
+            comOpacidade(f, () -> p.tracar(v, cor, .9));
         }
 
-        void braco(int i, boolean longe) {
+        /** longe: 0 = lado perto (ou vista frontal), 1 = totalmente do lado longe. */
+        void braco(int i, double longe) {
             Point2D s = cam.p(c.ombro[i]), e = cam.p(c.cotovelo[i]), w = cam.p(c.mao[i]);
             Area manga = tubo(s, e, w, 27, 24, 24, 13);
-            Color borda = longe ? BORDA_LONGE : BORDA;
-            sombrear(manga, longe ? GI_LONGE : GI, borda, 1.2);
+            Color borda = misturar(BORDA, BORDA_LONGE, longe);
+            sombrear(manga, longe, misturar(GI, GI_LONGE, longe), borda, 1.2);
             dobra(s, e, w, 27, borda);
             // punho da manga (barra do kimono)
             double dx = w.getX() - e.getX(), dy = w.getY() - e.getY(), l = Math.max(.01, Math.hypot(dx, dy));
@@ -420,7 +627,7 @@ public class ConceitoRig2 {
             pata(w, Math.atan2(dy, dx), longe);
         }
 
-        void pata(Point2D punho, double ang, boolean longe) {
+        void pata(Point2D punho, double ang, double longe) {
             p.salvar();
             p.mover(punho.getX(), punho.getY());
             p.girar(ang);
@@ -429,14 +636,14 @@ public class ConceitoRig2 {
             Path2D m = new Path2D.Double();
             m.moveTo(-7, -6); m.quadTo(-9, -10, -3, -10); m.lineTo(5, -8); m.quadTo(11, -7, 11, 0);
             m.quadTo(11, 8, 4, 9); m.lineTo(-4, 8); m.quadTo(-10, 6, -8, 1); m.quadTo(-14, -1, -10, -5); m.closePath();
-            p.forma(m, longe ? PELO_LONGE : PELO, PELO_BORDA, .9);
+            p.forma(m, misturar(PELO, PELO_LONGE, longe), PELO_BORDA, .9);
             p.linha(PELO_BORDA, .75, 6, -5, 9, -5);
             p.linha(PELO_BORDA, .75, 7, 0, 10, 0);
             p.linha(PELO_BORDA, .75, 6, 5, 9, 5);
             p.restaurar();
         }
 
-        void pe(int i, boolean longe) {
+        void pe(int i, double longe) {
             double a = Math.toRadians(c.guinadaPe[i]);
             V d = new V(Math.sin(a), 0, Math.cos(a));
             V t = c.tornozelo[i];
@@ -444,15 +651,18 @@ public class ConceitoRig2 {
             double rel = Math.toRadians(cam.graus) + a;
             double rx = Math.hypot(10.5 * Math.cos(rel), 15 * Math.sin(rel)), ry = 7;
             p.forma(new Ellipse2D.Double(centro.getX() - rx, centro.getY() - ry, 2 * rx, 2 * ry),
-                    longe ? PELO_LONGE : PELO, PELO_BORDA, .9);
-            if (Math.cos(rel) > -.3) {
-                V lado = new V(Math.cos(a), 0, -Math.sin(a));
+                    misturar(PELO, PELO_LONGE, longe), PELO_BORDA, .9);
+            // 6.1: os dedos somem gradualmente quando o pe vira de costas (antes sumiam de uma vez em -0,3)
+            double f = suave(-.3, -.2, Math.cos(rel));
+            V lado = new V(Math.cos(a), 0, -Math.sin(a));
+            // lado do dedo maior: troca de lado em rel = 0/180, onde o deslocamento e so de profundidade (~0,3 px)
+            double sinal = Math.signum(Math.sin(rel) + 1e-9);
+            comOpacidade(f, () -> {
                 for (int k = -1; k <= 1; k += 2) {
-                    Point2D q = cam.p(t.mais(new V(0, 7, 0)).mais(d.vezes(17 + 3 * k * Math.signum(Math.sin(rel) + 1e-9)))
-                            .mais(lado.vezes(4 * k)));
+                    Point2D q = cam.p(t.mais(new V(0, 7, 0)).mais(d.vezes(17 + 3 * k * sinal)).mais(lado.vezes(4 * k)));
                     p.linha(PELO_BORDA, .8, q.getX(), q.getY() + 1, q.getX(), q.getY() + 5);
                 }
-            }
+            });
         }
 
         Area perna(int i) {
@@ -471,17 +681,19 @@ public class ConceitoRig2 {
 
         void pernas(int perto) {
             if (perto < 0) {
-                pe(0, false); pe(1, false);
+                pe(0, 0); pe(1, 0);
                 Area a = perna(0); a.add(perna(1)); a.add(quadris());
                 sombrear(a, GI, BORDA, 1.2);
                 for (int i = 0; i < 2; i++) dobraJoelho(i, BORDA);
                 return;
             }
             int longe = 1 - perto;
-            pe(longe, true);
-            sombrear(perna(longe), GI_LONGE, BORDA_LONGE, 1.2);
-            dobraJoelho(longe, BORDA_LONGE);
-            pe(perto, false);
+            double f = fatorLonge();
+            Color borda = misturar(BORDA, BORDA_LONGE, f);
+            pe(longe, f);
+            sombrear(perna(longe), f, misturar(GI, GI_LONGE, f), borda, 1.2);
+            dobraJoelho(longe, borda);
+            pe(perto, 0);
             Area a = perna(perto); a.add(quadris());
             sombrear(a, GI, BORDA, 1.2);
             dobraJoelho(perto, BORDA);
@@ -611,10 +823,10 @@ public class ConceitoRig2 {
             lapela(LAPELA_FORA, 11, GOLA, BORDA);
             // saia do casaco: abertura frontal e continuacao da borda do painel
             List<Point2D> fenda = new ArrayList<>();
-            if (vis(184, -8) > .05) {
-                fenda.add(sp(170, -16, .4)); fenda.add(sp(196, -15, .4)); fenda.add(sp(196, 2, .4));
-                p.forma(poligono(fenda), GI_SOMBRA, BORDA, .8);
-            }
+            // 6.1: a abertura some gradualmente quando a frente do casaco vira para tras
+            double ff = suave(.0, .05, vis(184, -8));
+            fenda.add(sp(170, -16, .4)); fenda.add(sp(196, -15, .4)); fenda.add(sp(196, 2, .4));
+            comOpacidade(ff, () -> p.forma(poligono(fenda), GI_SOMBRA, BORDA, .8));
             linhaSup(new double[][] {{162, -20}, {196, -15}}, .5, BORDA, 1);
         }
 
@@ -643,9 +855,13 @@ public class ConceitoRig2 {
                 if (meio.size() > 3) p.tracar(polilinha(meio.subList(1, meio.size() - 1)), FAIXA_LUZ, .8);
             }
             double frente = cam.prof(c.dir(new V(0, 0, 1), 155));
-            if (frente < -.08) return; // no (amarracao) fica escondido nas vistas de costas
+            // no (amarracao) fica escondido nas vistas de costas; 6.1: some gradualmente entre ~92 e ~98 graus
+            double fk = suave(-.14, -.04, frente);
+            if (fk <= 0) return;
             double fs = Math.max(.42, frente);
             Point2D k = sp(155.5, 0, 4.5);
+            double alfaAntes = p.alfa;
+            p.alfa = alfaAntes * fk;
             p.salvar();
             p.mover(k.getX(), k.getY());
             p.escalarXY(fs, 1);
@@ -655,6 +871,7 @@ public class ConceitoRig2 {
             p.forma(pts(-9.5, -4, .5, -7, 10.5, -3, 7.5, 5, -3.5, 7, -10.5, 2), FAIXA, FAIXA_BORDA, 1.2);
             p.linha(FAIXA_LUZ, 1, -5.5, -3, 1.5, -4, 6.5, -1);
             p.restaurar();
+            p.alfa = alfaAntes;
         }
 
         static Path2D pts(double... xy) {
@@ -758,7 +975,7 @@ public class ConceitoRig2 {
             Area n = new Area(trapezio(topo, base, 26, 29));
             p.preencher(n, PELO);
             Area sombra = new Area(n);
-            sombra.intersect(silhuetaCabeca(topo, guinadaCabeca(cam.graus))
+            sombra.intersect(silhuetaCabeca(topo, guinadaRosto())
                     .createTransformedArea(AffineTransform.getTranslateInstance(0, 5)));
             p.preencher(sombra, PELO_SOMBRA);
             Area lado = new Area(n);
@@ -787,9 +1004,14 @@ public class ConceitoRig2 {
             sombra.subtract(cab.createTransformedArea(AffineTransform.getTranslateInstance(-4.5, -3.5)));
             p.preencher(sombra, PELO_SOMBRA);
 
-            boolean rosto = cs > -.05;
-            // contorno do focinho no 3/4: o focinho encobre a bochecha mais distante
-            if (rosto && Math.abs(sn) > .25 && cs > .1) {
+            // 6.1: nariz e boca somem gradualmente logo depois do perfil (antes sumiam de uma vez em ~93 graus)
+            double fRosto = suave(-.15, 0, cs);
+            boolean rosto = fRosto > 0;
+            // contorno do focinho no 3/4: o focinho encobre a bochecha mais distante (6.1: com entrada suave)
+            double fContorno = suave(.2, .3, Math.abs(sn)) * suave(.05, .15, cs);
+            if (fContorno > 0) {
+                double alfaAntes = p.alfa;
+                p.alfa = alfaAntes * fContorno;
                 double rx = Math.hypot(RAIO_CABECA * cs, 38 * sn);
                 Point2D cc = hp.apply(new V(0, 0, -2)), fc = hp.apply(new V(0, 10, .84 * RAIO_CABECA));
                 Shape cranio = new Ellipse2D.Double(cc.getX() - rx, cc.getY() - RAIO_CABECA, 2 * rx, 2 * RAIO_CABECA);
@@ -800,20 +1022,25 @@ public class ConceitoRig2 {
                     if (cranio.contains(q)) arcoF.add(q);
                 }
                 if (arcoF.size() > 2) p.tracar(polilinha(arcoF), new Color(205, 209, 216), 1.1);
+                p.alfa = alfaAntes;
             }
             // 6.0.3: o traco interno da bochecha no perfil foi removido; o focinho e definido pela silhueta.
             // olhos sobre a esfera: aproximam-se e estreitam conforme giram; no perfil recuam da testa
             for (int s = -1; s <= 1; s += 2) {
                 double lon = 18 * s, k = encara.applyAsDouble(lon);
-                if (k <= .12) continue;
+                double fOlho = suave(.12, .22, k); // 6.1: o olho fecha gradualmente ao passar para tras
+                if (fOlho <= 0) continue;
                 double la = Math.toRadians(lon), lt = Math.toRadians(-3);
                 Point2D o = hp.apply(new V(RAIO_CABECA * Math.cos(lt) * Math.sin(la), RAIO_CABECA * Math.sin(lt),
                         RAIO_CABECA * Math.cos(lt) * Math.cos(la)));
                 o = lerp(o, pp.apply(25.0, -4.0), w);
                 double larg = (1 - w) * 3.1 * Math.max(.42, k) + w * 2.5, alt = (1 - w) * 3.2 + w * 3.1;
-                p.preencher(new Ellipse2D.Double(o.getX() - larg, o.getY() - alt, 2 * larg, 2 * alt), OLHO);
+                Ellipse2D olho = new Ellipse2D.Double(o.getX() - larg, o.getY() - alt, 2 * larg, 2 * alt);
+                comOpacidade(fOlho, () -> p.preencher(olho, OLHO));
             }
             if (rosto) {
+                double alfaAntes = p.alfa;
+                p.alfa = alfaAntes * fRosto;
                 // perfil: nariz como uma cunha rosa na ponta do focinho
                 Point2D a = lerp(hp.apply(new V(-3.5, 8, 38.5)), pp.apply(40.2, 3.2), w);
                 Point2D f = lerp(hp.apply(new V(0, 8.5, 41.8)), pp.apply(45.9, 5.6), w);
@@ -826,6 +1053,7 @@ public class ConceitoRig2 {
                 Point2D inicio = lerp(d, pp.apply(43.4, 9.8), w);
                 p.linha(BOCA, 1.4, inicio.getX(), inicio.getY(), m1.getX(), m1.getY(), me.getX(), me.getY());
                 p.linha(BOCA, 1.4, m1.getX(), m1.getY(), md.getX(), md.getY());
+                p.alfa = alfaAntes;
             }
         }
 
@@ -845,11 +1073,14 @@ public class ConceitoRig2 {
             Area concha = new Area(poligono(List.of(a, b, c2)));
             concha.add(new Area(poligono(List.of(a, b, f))));
             concha.add(new Area(poligono(List.of(f, b, c2))));
-            p.preencher(concha, longe && w > .5 ? PELO_LONGE : PELO);
+            // 6.1: a orelha de longe escurece gradualmente conforme o perfil se forma (antes: degrau em w = 0,5)
+            p.preencher(concha, longe ? misturar(PELO, PELO_LONGE, suave(.3, .7, w)) : PELO);
             double k = encara.applyAsDouble(lon);
-            if (k > .15) { // parte interna so aparece quando a orelha encara a camera
+            double fInterna = suave(.10, .20, k); // parte interna so aparece quando a orelha encara a camera
+            if (fInterna > 0) {
                 Point2D m = lerp(lerp(a, c2, .5), b, .25);
-                p.preencher(poligono(List.of(lerp(m, a, .55), lerp(m, b, .62), lerp(m, c2, .55))), ORELHA_INTERNA);
+                Path2D interna = poligono(List.of(lerp(m, a, .55), lerp(m, b, .62), lerp(m, c2, .55)));
+                comOpacidade(fInterna, () -> p.preencher(interna, ORELHA_INTERNA));
             }
         }
 
@@ -1072,6 +1303,203 @@ public class ConceitoRig2 {
                 + " rosto de frente/3/4 sem mistura de perfil, rotacao do rosto continua.");
     }
 
+    // ===================================================================== verificacoes do laboratorio (6.1)
+    /** Pose de teste obrigatoria (7.3): braco direito flexionado, braco esquerdo estendido a frente. */
+    static ParametrosPose poseTesteBracos() {
+        ParametrosPose p = ParametrosPose.padrao(PoseBase.COMBATE);
+        p.elevacao[0] = 10; p.avanco[0] = 35; p.flexao[0] = 130;   // direito: recolhido e dobrado
+        p.elevacao[1] = 0;  p.avanco[1] = 90; p.flexao[1] = 0;     // esquerdo: estendido a frente
+        return p;
+    }
+
+    /** Juntas do corpo como lista, na ordem: pelve, pescoco, cabeca, e por lado ombro..tornozelo. */
+    static List<V> juntas(Corpo c) {
+        List<V> r = new ArrayList<>(List.of(c.pelve, c.pescoco, c.cabeca));
+        for (int i = 0; i < 2; i++) r.addAll(List.of(c.ombro[i], c.cotovelo[i], c.mao[i], c.quadril[i], c.joelho[i], c.tornozelo[i]));
+        return r;
+    }
+
+    /** Ossos {pai, filho} pelos indices de juntas(). */
+    static final int[][] OSSOS = {{0, 1}, {1, 2}, {3, 4}, {4, 5}, {6, 7}, {7, 8}, {9, 10}, {10, 11}, {12, 13}, {13, 14}};
+
+    /** Quadro offscreen de uma vista (usado nas verificacoes e nas capturas). */
+    static BufferedImage quadro(Corpo c, double guinada, int w, int h, double esc, boolean esqueleto) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        Pintor p = new Pintor(g, w, h);
+        fundo(p);
+        figura(p, c, guinada, w / 2.0, h - 24, esc, 1, false);
+        if (esqueleto) {
+            p.salvar();
+            p.mover(w / 2.0, h - 24);
+            p.escalar(esc);
+            p.mover(0, -CHAO);
+            new Desenho(p, c, guinada).esqueleto(false);
+            p.restaurar();
+        }
+        g.dispose();
+        return img;
+    }
+
+    /**
+     * Verificacoes deterministicas da 6.1. Retorna o relatorio (uma linha por conferencia); lanca
+     * AssertionError na primeira falha.
+     */
+    static List<String> verificarLaboratorio() {
+        List<String> rel = new ArrayList<>();
+        Map<String, ParametrosPose> poses = new LinkedHashMap<>();
+        poses.put("neutra", ParametrosPose.padrao(PoseBase.NEUTRA));
+        poses.put("combate", ParametrosPose.padrao(PoseBase.COMBATE));
+        poses.put("teste 7.3 (bracos)", poseTesteBracos());
+        for (PresetPernas pr : PresetPernas.values()) {
+            ParametrosPose q = ParametrosPose.padrao(PoseBase.COMBATE);
+            q.pernas = pr;
+            poses.put("combate + " + pr.nome, q);
+            ParametrosPose n = ParametrosPose.padrao(PoseBase.NEUTRA);
+            n.pernas = pr;
+            poses.put("neutra + " + pr.nome, n);
+        }
+        double[] extremos = {ELEVACAO_MIN, ELEVACAO_MAX};
+        for (double e : extremos) for (double a : new double[] {AVANCO_MIN, AVANCO_MAX}) for (double f : new double[] {FLEXAO_MIN, FLEXAO_MAX}) {
+            ParametrosPose q = ParametrosPose.padrao(PoseBase.NEUTRA);
+            q.elevacao[0] = q.elevacao[1] = e; q.avanco[0] = q.avanco[1] = a; q.flexao[0] = q.flexao[1] = f;
+            q.giroCabeca = e > 0 ? GIRO_CABECA_MAX : -GIRO_CABECA_MAX;
+            poses.put("extremos e=" + (int) e + " a=" + (int) a + " f=" + (int) f, q);
+        }
+
+        // 1) comprimentos dos ossos (3D) em todas as poses
+        int nPoses = 0;
+        for (Map.Entry<String, ParametrosPose> en : poses.entrySet()) {
+            Corpo c = montarPose(en.getValue());
+            double tronco = c.pescoco.menos(c.transformar(new V(0, PIVO_CINTURA, 0))).tam();
+            checar(tronco, PIVO_CINTURA - PESCOCO_Y, "tronco (cintura->pescoco) em " + en.getKey());
+            checar(c.cabeca.menos(c.pescoco).tam(), Math.hypot(PESCOCO_Y - CABECA_Y, c.cabecaZ), "pescoco->cabeca em " + en.getKey());
+            for (int i = 0; i < 2; i++) {
+                checar(c.cotovelo[i].menos(c.ombro[i]).tam(), BRACO, "braco em " + en.getKey());
+                checar(c.mao[i].menos(c.cotovelo[i]).tam(), ANTEBRACO, "antebraco em " + en.getKey());
+                checar(c.joelho[i].menos(c.quadril[i]).tam(), COXA, "coxa em " + en.getKey());
+                checar(c.tornozelo[i].menos(c.joelho[i]).tam(), CANELA, "canela em " + en.getKey());
+            }
+            nPoses++;
+        }
+        rel.add("OK: comprimentos 3D constantes (braco 39, antebraco 30, coxa 46,5, canela 46, tronco 82, pescoco)"
+                + " em " + nPoses + " poses, incluindo presets de pernas e limites dos controles.");
+
+        // 2) limites dos controles
+        ParametrosPose lim = ParametrosPose.padrao(PoseBase.COMBATE);
+        lim.elevacao[0] = 999; lim.avanco[0] = -999; lim.flexao[0] = 999; lim.giroCabeca = -999;
+        lim.limitarTudo();
+        checar(lim.elevacao[0], ELEVACAO_MAX, "limite da elevacao");
+        checar(lim.avanco[0], AVANCO_MIN, "limite do avanco");
+        checar(lim.flexao[0], FLEXAO_MAX, "limite da flexao");
+        checar(lim.giroCabeca, -GIRO_CABECA_MAX, "limite do giro da cabeca");
+        rel.add("OK: controles limitados (elevacao " + (int) ELEVACAO_MIN + ".." + (int) ELEVACAO_MAX + ", avanco "
+                + (int) AVANCO_MIN + ".." + (int) AVANCO_MAX + ", flexao " + (int) FLEXAO_MIN + ".." + (int) FLEXAO_MAX
+                + ", cabeca +-" + (int) GIRO_CABECA_MAX + ").");
+
+        // 3) padrao reproduz a pose-base (os parametros nao perdem informacao)
+        for (PoseBase b : PoseBase.values()) {
+            Corpo c = montarPose(ParametrosPose.padrao(b));
+            for (int i = 0; i < 2; i++) {
+                V alvo = c.ombro[i].mais(b.maos[i].menos(c.ombro[i]));
+                if (c.mao[i].menos(alvo).tam() > 1e-6) throw new AssertionError("pose-base " + b + " nao reproduzida no braco " + i);
+            }
+        }
+        rel.add("OK: os parametros padrao reproduzem exatamente as maos das poses NEUTRA e COMBATE.");
+
+        // 4) rotacao continua: coordenadas validas, projecao so encurta, juntas sem saltos
+        int amostras = 0;
+        double piorRazao = 0;
+        for (Map.Entry<String, ParametrosPose> en : poses.entrySet()) {
+            Corpo c = montarPose(en.getValue());
+            List<V> js = juntas(c);
+            Point2D[] antes = null;
+            for (double g = 0; g <= 180.0001; g += .5) {
+                Camera cam = new Camera(g);
+                Point2D[] agora = new Point2D[js.size()];
+                for (int k = 0; k < js.size(); k++) {
+                    agora[k] = cam.p(js.get(k));
+                    if (!Double.isFinite(agora[k].getX()) || !Double.isFinite(agora[k].getY()))
+                        throw new AssertionError("coordenada invalida em " + en.getKey() + " a " + g);
+                }
+                for (int[] o : OSSOS) {
+                    double l3 = js.get(o[1]).menos(js.get(o[0])).tam(), l2 = agora[o[1]].distance(agora[o[0]]);
+                    if (l2 > l3 * 1.006 + 1e-9) throw new AssertionError("osso projetado maior que o real em " + en.getKey() + " a " + g);
+                }
+                if (antes != null) for (int k = 0; k < js.size(); k++) {
+                    V v = js.get(k);
+                    double raio = Math.hypot(v.x(), v.z()), limite = raio * Math.toRadians(.5) * 1.006 + 1e-9;
+                    double passo = agora[k].distance(antes[k]);
+                    piorRazao = Math.max(piorRazao, passo / Math.max(limite, 1e-9));
+                    if (passo > limite) throw new AssertionError("salto de junta em " + en.getKey() + " a " + g);
+                }
+                antes = agora;
+                amostras++;
+            }
+        }
+        rel.add(String.format(Locale.ROOT, "OK: %d vistas (0 a 180 graus, passo 0,5) sem coordenadas invalidas; nenhum osso"
+                + " projetado maior que o real; maior passo de junta = %.2f do limite de uma rotacao rigida.", amostras, piorRazao));
+
+        // 5) a pose nao muda ao girar a camera (40 -> 90 -> 140 -> 0)
+        Corpo t = montarPose(poseTesteBracos());
+        List<V> inicio = new ArrayList<>(juntas(t));
+        for (double g : new double[] {40, 90, 140, 0}) quadro(t, g, 220, 330, 1, true);
+        if (!inicio.equals(juntas(t))) throw new AssertionError("a pose mudou durante a rotacao");
+        rel.add("OK: pose de teste (braco direito flexionado, esquerdo estendido) identica apos 40 -> 90 -> 140 -> 0.");
+
+        // 6) rosto: guinada continua, inclusive com giro proprio da cabeca
+        double maiorSalto = 0;
+        for (double giro : new double[] {-GIRO_CABECA_MAX, 0, GIRO_CABECA_MAX}) {
+            double ant = Desenho.guinadaCabeca(giro);
+            for (double g = .1; g <= 180.0001; g += .1) {
+                double at = Desenho.guinadaCabeca(g + giro);
+                maiorSalto = Math.max(maiorSalto, Math.abs(at - ant));
+                ant = at;
+            }
+        }
+        if (maiorSalto > .2) throw new AssertionError("salto na guinada do rosto: " + maiorSalto);
+        rel.add(String.format(Locale.ROOT, "OK: guinada do rosto continua (maior variacao %.3f grau por passo de 0,1).", maiorSalto));
+        return rel;
+    }
+
+    /**
+     * Continuidade visual: diferenca media por pixel entre quadros vizinhos (passo de 1 grau).
+     * Retorna {angulo do maior salto, maior diferenca, mediana} por pose.
+     */
+    static Map<String, double[]> continuidadeVisual() {
+        Map<String, double[]> r = new LinkedHashMap<>();
+        Map<String, ParametrosPose> poses = new LinkedHashMap<>();
+        poses.put("neutra", ParametrosPose.padrao(PoseBase.NEUTRA));
+        poses.put("combate", ParametrosPose.padrao(PoseBase.COMBATE));
+        poses.put("teste 7.3", poseTesteBracos());
+        for (Map.Entry<String, ParametrosPose> en : poses.entrySet()) {
+            Corpo c = montarPose(en.getValue());
+            BufferedImage ant = null;
+            double[] difs = new double[181];
+            for (int g = 0; g <= 180; g++) {
+                BufferedImage q = quadro(c, g, 200, 300, .95, false);
+                if (ant != null) difs[g] = diferencaMedia(ant, q);
+                ant = q;
+            }
+            double[] ord = Arrays.copyOfRange(difs, 1, 181);
+            Arrays.sort(ord);
+            int pior = 1;
+            for (int g = 1; g <= 180; g++) if (difs[g] > difs[pior]) pior = g;
+            r.put(en.getKey(), new double[] {pior, difs[pior], ord[ord.length / 2]});
+        }
+        return r;
+    }
+
+    static double diferencaMedia(BufferedImage a, BufferedImage b) {
+        long soma = 0;
+        for (int y = 0; y < a.getHeight(); y++)
+            for (int x = 0; x < a.getWidth(); x++) {
+                int p = a.getRGB(x, y), q = b.getRGB(x, y);
+                soma += Math.abs((p >> 16 & 255) - (q >> 16 & 255)) + Math.abs((p >> 8 & 255) - (q >> 8 & 255)) + Math.abs((p & 255) - (q & 255));
+            }
+        return soma / (3.0 * a.getWidth() * a.getHeight());
+    }
+
     /** Rotulo de cada versao, pelo nome da pasta de previas (a pasta gerada agora e a versao atual). */
     static final String VERSAO_ATUAL = "6.0.4  ·  pescoço curto, cabeça perto da gola";
     static String rotulo(Path dir, Path atual) {
@@ -1162,6 +1590,14 @@ public class ConceitoRig2 {
     }
 
     public static void main(String[] args) throws Exception {
+        if (args.length > 0 && args[0].equals("--verificar-6.1")) {
+            verificar();
+            verificarLaboratorio().forEach(System.out::println);
+            for (Map.Entry<String, double[]> en : continuidadeVisual().entrySet())
+                System.out.printf(Locale.ROOT, "continuidade visual (%s): maior diferenca %.3f em %d graus; mediana %.3f%n",
+                        en.getKey(), en.getValue()[1], (int) en.getValue()[0], en.getValue()[2]);
+            return;
+        }
         Path saida = Paths.get(args.length > 0 ? args[0] : ".");
         Files.createDirectories(saida);
         verificar();
