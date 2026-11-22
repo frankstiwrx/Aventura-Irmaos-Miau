@@ -1360,21 +1360,37 @@ funcionando. Pausa, ajuda e fim de jogo continuam aparecendo. Cada partida come�
 ## Menus de luta (JOGAR): seleção dos lutadores e configurações da luta
 
 Fluxo: MENU PRINCIPAL → JOGAR → **SELEÇÃO DOS LUTADORES** → **CONFIGURAÇÕES DA LUTA** → COMBATE.
-O TREINO não mudou.
+O TREINO usa a mesma seleção (veja abaixo).
 
 ### Seleção dos lutadores (o mesmo fluxo para J1 e J2)
 
 | Etapa | Direções | Confirmar | Cancelar |
 |---|---|---|---|
-| Personagem | move o cursor na grade | vai para o perfil (se houver) ou a faixa | volta ao menu |
-| Perfil | troca o perfil | vai para a faixa | volta ao personagem |
-| Faixa | troca a faixa | vai para o kimono | volta ao perfil/personagem |
+| Personagem | move o cursor na grade | o **original**: vai para a faixa | volta ao menu |
+| Personagem + **X / Quadrado** | — | abre os **perfis** daquele personagem | — |
+| Perfil | troca o perfil | **PRONTO** (sem faixa nem kimono) | volta ao personagem |
+| Faixa | troca a faixa | vai para o kimono | volta ao personagem |
 | Kimono | troca o kimono | **PRONTO** (sem confirmação extra) | volta à faixa |
-| PRONTO | nada (escolhas travadas) | AVANÇAR (só com os dois prontos) | volta ao kimono |
+| PRONTO | nada (escolhas travadas) | AVANÇAR (só com os dois prontos) | volta ao kimono (ou à lista de perfis) |
 
-Teclas: J1 WASD · ESPAÇO (ou H) confirma · Q cancela; J2 setas · ENTER (ou END) confirma · BACKSPACE
-cancela; gamepad A confirma, B cancela (cada slot com o seu gamepad). ESC volta ao menu. Com os dois
-prontos, **J1 ou J2** confirmam AVANÇAR.
+Teclas: J1 WASD · ESPAÇO (ou H) confirma · Q cancela · **E perfis**; J2 setas · ENTER (ou END) confirma ·
+BACKSPACE cancela · **J perfis** (o X do teclado-controle do J2); gamepad A confirma, B cancela, **X / Quadrado
+abre os perfis** (cada slot com o seu gamepad). O X só tem esse papel nesta tela: nos outros menus ele não faz
+nada. ESC volta ao menu. Com os dois prontos, **J1 ou J2** confirmam AVANÇAR.
+
+**Perfis personalizados:** a lista mostra os perfis salvos daquele personagem-base (nome, "Base: Miau
+Branco" e a prévia). Sem perfis, aparece "SEM PERFIS DESTE MIAU" e o original continua disponível. O perfil
+entra como foi salvo no editor de personagens: atributos e aparência (kimono, calça, faixa visual e
+pelagem). Ele não passa pela faixa nem pelo kimono, e a sua graduação é a branca, sem bônus.
+
+### TREINO: a mesma seleção, com um controle só
+
+O TREINO usa a mesma tela (painéis LUTADOR e PARCEIRO, grade, X / Quadrado para os perfis). Qualquer
+teclado ou gamepad move o lutador da vez: primeiro o LUTADOR, depois o PARCEIRO (o cursor dele começa no
+outro irmão). Cancelar com o parceiro ainda escolhendo volta ao lutador. Com os dois prontos, AVANÇAR abre as
+**CONFIGURAÇÕES DO TREINO**: ARENA (com a prévia), INÍCIO (de joelhos / em pé, lembrado na sessão) e
+**INICIAR TREINO**. Sem tempo, dificuldade nem regras: o treino continua sem limite e sem arbitragem.
+Voltar dessa tela devolve os dois lutadores prontos e a arena escolhida.
 
 ### Configurações da luta
 

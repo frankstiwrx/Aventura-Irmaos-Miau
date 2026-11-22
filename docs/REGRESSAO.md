@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1300, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1312, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -716,3 +716,16 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 4. OK, depois SALVAR; fechar e abrir o jogo: as cores continuam. CANCELAR não muda nada.
 5. JOGAR/TREINO com o perfil: as cores aparecem na luta; a faixa da graduação escolhida continua valendo nas regras.
 6. Miau Branco e Miau Preto oficiais sem mudança. Tudo também pelo controle (cima/baixo, lados, A, B).
+
+# Seleção: perfis pelo X e TREINO igual ao JOGAR
+
+1. JOGAR: confirmar um Miau segue faixa → kimono → PRONTO, como antes.
+2. Sobre o Miau Branco, X (Xbox) / Quadrado (PlayStation), ou E (J1) / J (J2) no teclado: abre os perfis do Branco, com nome, "Base: Miau Branco" e prévia. A dica "X / □ — ESCOLHER PERFIL" aparece no centro.
+3. Confirmar o perfil: PRONTO direto, faixa e kimono "DO PERFIL". As cores e os atributos são os do editor.
+4. Escolher a faixa preta no original, cancelar e escolher o perfil: os atributos são os do perfil, sem aumento.
+5. Cancelar no perfil pronto volta à lista; cancelar de novo volta ao personagem; confirmar segue a faixa.
+6. J1 e J2 escolhem perfis cada um com o seu controle; AVANÇAR, arena, tempo e regras como antes.
+7. TREINO: painéis LUTADOR e PARCEIRO; um controle só escolhe os dois (o parceiro depois do lutador). Cancelar no parceiro volta ao lutador.
+8. TREINO → AVANÇAR: CONFIGURAÇÕES DO TREINO com ARENA, INÍCIO e INICIAR TREINO (sem tempo nem regras). Voltar mantém as escolhas.
+9. No treino: sem relógio nem placar; F11, J2 controlado no laboratório, rodas e técnicas iguais.
+10. Segurar A ou X não confirma duas vezes.

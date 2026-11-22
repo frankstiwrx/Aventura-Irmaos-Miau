@@ -147,8 +147,8 @@ os lados mudam a parte e os valores, A confirma, B cancela). As cores valem ao c
 
 - Os olhos, o nariz e a boca ficam brancos sobre pelagem escura e pretos sobre pelagem clara.
 - A faixa é só visual: a graduação da luta, as técnicas e os atributos não mudam.
-- Na seleção (JOGAR/TREINO), o perfil entra com as suas cores. Se um kimono for escolhido lá, ele vale
-  na parte de cima e na calça; a pelagem e a faixa continuam as do perfil.
+- Na seleção (JOGAR/TREINO, X / Quadrado sobre o personagem-base), o perfil entra com as suas cores e os
+  seus atributos, sem passar pela faixa nem pelo kimono: nenhuma escolha do menu muda o perfil.
 - Os personagens oficiais nunca mudam.
 
 No arquivo, só as partes personalizadas são gravadas, como `#RRGGBB` (campo opcional; perfis antigos
