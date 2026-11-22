@@ -90,18 +90,13 @@ public class Main {
             new com.irmaosmiau.ui.NavegadorMenus(janela, ServicoGamepads::global, System::currentTimeMillis)
                     .instalar();
 
+            // Sem janela de avisos na abertura: cada tela mostra os seus (CONFIGURACOES e CONTROLES, que tem
+            // o botao AVISOS). Para diagnostico, eles ficam tambem na saida de erro.
             java.util.List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
             avisos.addAll(controles.getAvisos());
             avisos.addAll(dispositivos.getAvisos());
             avisos.addAll(gamepad.getAvisos());
-            if (!avisos.isEmpty()) {
-                JOptionPane.showMessageDialog(
-                        janela,
-                        String.join(System.lineSeparator() + System.lineSeparator(), avisos),
-                        "Configurações",
-                        JOptionPane.WARNING_MESSAGE
-                );
-            }
+            avisos.forEach(a -> System.err.println("[configurações] " + a));
         });
     }
 

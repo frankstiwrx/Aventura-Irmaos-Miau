@@ -125,6 +125,9 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
     private final JButton restaurar = EstiloTelas.botao("RESTAURAR PADRÕES");
     private final JButton salvar = EstiloTelas.botao("SALVAR");
     private final JButton voltar = NavegadorMenus.marcarVoltar(EstiloTelas.botao("VOLTAR"));
+    /** Avisos da leitura dos controles (so aparece se houver algum; ver AvisosControles). */
+    private final JButton botaoAvisos = EstiloTelas.botao("AVISOS");
+    private final List<String> avisosLeitura = new java.util.ArrayList<>();
 
     private final transient KeyEventDispatcher captura = this::capturarEvento;
 
@@ -158,11 +161,15 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
         montar();
         montarLista();
 
-        List<String> avisos = new java.util.ArrayList<>(preferencias.getAvisos());
-        avisos.addAll(preferenciasDispositivos.getAvisos());
-        avisos.addAll(preferenciasGamepad.getAvisos());
-        if (!avisos.isEmpty()) {
-            mostrarStatus(avisos.get(avisos.size() - 1), true);
+        avisosLeitura.addAll(preferencias.getAvisos());
+        avisosLeitura.addAll(preferenciasDispositivos.getAvisos());
+        avisosLeitura.addAll(preferenciasGamepad.getAvisos());
+        botaoAvisos.setText("AVISOS (" + avisosLeitura.size() + ")");
+        botaoAvisos.setVisible(!avisosLeitura.isEmpty());
+        botaoAvisos.addActionListener(e -> mostrarAvisos());
+        String resumo = AvisosControles.resumo(avisosLeitura);
+        if (resumo != null) {
+            mostrarStatus(resumo, true);                  // so o que pede acao; as atualizacoes ficam em AVISOS
         } else if (!edicao.isValido()) {
             mostrarProblemas();
         }
@@ -253,6 +260,7 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
         botoes.add(restaurar);
         botoes.add(salvar);
         botoes.add(voltar);
+        botoes.add(botaoAvisos);
         base.add(botoes, BorderLayout.SOUTH);
         add(base, BorderLayout.SOUTH);
     }
@@ -786,6 +794,8 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
             preferenciasDispositivos.salvar(edicaoDispositivos);
             preferenciasGamepad.salvar(edicaoGamepad);
             mostrarStatus("Controles salvos. Valem a partir da próxima partida.", false);
+            avisosLeitura.clear();                        // gravado: as migracoes ja estao no arquivo
+            botaoAvisos.setVisible(false);
             status.setForeground(EstiloTelas.OK);
             return true;
         } catch (PersistenciaException ex) {
@@ -819,6 +829,15 @@ public final class ControlesPanel extends JPanel implements TelaNavegavel {
     private void mostrarProblemas() {
         mostrarStatus("Resolva antes de salvar: " + edicao.problemas().stream()
                 .map(ProblemaControle::descricao).collect(Collectors.joining("; ")), true);
+    }
+
+    /** AVISOS: os detalhes da leitura dos controles, sob pedido. */
+    void mostrarAvisos() {
+        dialogos.avisar(this, "Avisos dos controles", AvisosControles.detalhes(avisosLeitura));
+    }
+
+    JButton botaoAvisos() {
+        return botaoAvisos;
     }
 
     private void mostrarStatus(String texto, boolean erro) {
