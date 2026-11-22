@@ -91,6 +91,8 @@ public class ConceitoRig2 {
         final double[] guinadaPe = new double[2];
         /** 6.2: inclinacao do pe em graus (positivo = calcanhar levantado, negativo = ponta levantada). */
         final double[] inclinacaoPe = new double[2];
+        /** 6.3: 0 = pata aberta (como na 6.0.4), 1 = fechada (segurando). */
+        final double[] maoFechada = new double[2];
         V cabeca, pescoco, pelve;
 
         /** Coordenada neutra -> pose: desloca o quadril, abaixa o corpo e inclina o tronco em torno da cintura. */
@@ -203,6 +205,9 @@ public class ConceitoRig2 {
         // pernas
         final V[] pe = new V[2], poloPerna = new V[2];
         final double[] guinadaPe = new double[2], inclinacaoPe = new double[2];
+        // 6.3: alvo opcional da mao (espaco do corpo; null = usa os angulos) e mao fechada (0..1)
+        final V[] alvoMao = new V[2];
+        final double[] maoFechada = new double[2];
 
         /** Valores que reproduzem exatamente a pose-base. */
         static ParametrosPose padrao(PoseBase b) {
@@ -265,6 +270,7 @@ public class ConceitoRig2 {
             for (int i = 0; i < 2; i++) {
                 p.elevacao[i] = elevacao[i]; p.avanco[i] = avanco[i]; p.flexao[i] = flexao[i]; p.poloLocal[i] = poloLocal[i];
                 p.pe[i] = pe[i]; p.poloPerna[i] = poloPerna[i]; p.guinadaPe[i] = guinadaPe[i]; p.inclinacaoPe[i] = inclinacaoPe[i];
+                p.alvoMao[i] = alvoMao[i]; p.maoFechada[i] = maoFechada[i];
             }
             return p;
         }
@@ -292,6 +298,9 @@ public class ConceitoRig2 {
                 r.poloPerna[i] = mixDir(a.poloPerna[i], b.poloPerna[i], kPernas);
                 r.guinadaPe[i] = mix(a.guinadaPe[i], b.guinadaPe[i], kPernas);
                 r.inclinacaoPe[i] = mix(a.inclinacaoPe[i], b.inclinacaoPe[i], kPernas);
+                r.maoFechada[i] = mix(a.maoFechada[i], b.maoFechada[i], kBracos);
+                r.alvoMao[i] = a.alvoMao[i] != null && b.alvoMao[i] != null ? mixV(a.alvoMao[i], b.alvoMao[i], kBracos)
+                        : kBracos >= 1 ? b.alvoMao[i] : a.alvoMao[i];
             }
             return r;
         }
@@ -355,7 +364,8 @@ public class ConceitoRig2 {
             double lado = i == 0 ? -1 : 1;
             c.ombro[i] = c.transformar(new V(lado * 34, 90 - pp.ombros, 0));
             V dirB = girarBraco(new V(0, 1, 0), pp.elevacao[i], pp.avanco[i], lado);
-            V alvo = c.ombro[i].mais(dirB.vezes(alcance(pp.flexao[i])));
+            V alvo = pp.alvoMao[i] != null ? pp.alvoMao[i] : c.ombro[i].mais(dirB.vezes(alcance(pp.flexao[i])));
+            c.maoFechada[i] = pp.maoFechada[i];
             V[] br = ik(c.ombro[i], alvo, BRACO, ANTEBRACO, girarBraco(pp.poloLocal[i], pp.elevacao[i], pp.avanco[i], lado));
             c.cotovelo[i] = br[0];
             c.mao[i] = br[1];
@@ -365,6 +375,40 @@ public class ConceitoRig2 {
             c.tornozelo[i] = pe[1];
         }
         return c;
+    }
+
+    /** 6.3: ponto da superficie do casaco (y neutro, angulo em graus a partir da frente, afastamento). */
+    static V superficie(Corpo c, double y, double phi, double off) {
+        double f = Math.toRadians(phi);
+        return c.transformar(new V((interp(TA, y) + off) * Math.sin(f), y, (interp(TB, y) + off) * Math.cos(f)));
+    }
+
+    /**
+     * 6.3: pontos de contato reutilizaveis, no espaco do corpo. Lados: _dir = lado direito do lutador (-x), _esq = esquerdo.
+     * Maos (punho e centro da pata), antebracos, cotovelos, ombros, peito, golas (lapelas), nuca (gola de tras), mangas
+     * (perto do punho), faixa, quadris, joelhos e tornozelos.
+     */
+    static Map<String, V> pontosContato(Corpo c) {
+        Map<String, V> m = new LinkedHashMap<>();
+        String[] lado = {"dir", "esq"};
+        for (int i = 0; i < 2; i++) {
+            V w = c.mao[i], e = c.cotovelo[i], u = w.menos(e).unit();
+            m.put("punho_" + lado[i], w);
+            m.put("pata_" + lado[i], w.mais(u.vezes(8)));
+            m.put("antebraco_" + lado[i], e.mais(w).vezes(.5));
+            m.put("manga_" + lado[i], w.mais(e.menos(w).vezes(.28)));
+            m.put("cotovelo_" + lado[i], e);
+            m.put("ombro_" + lado[i], c.ombro[i]);
+            m.put("quadril_" + lado[i], c.quadril[i]);
+            m.put("joelho_" + lado[i], c.joelho[i]);
+            m.put("tornozelo_" + lado[i], c.tornozelo[i]);
+        }
+        m.put("peito", superficie(c, 112, 0, 2));
+        m.put("gola_dir", superficie(c, 96, -24, 3));
+        m.put("gola_esq", superficie(c, 96, 24, 3));
+        m.put("nuca", superficie(c, 74, 180, 3));
+        m.put("faixa", superficie(c, 155, 0, 4));
+        return m;
     }
 
     static Corpo neutro() { return montarPose(ParametrosPose.padrao(PoseBase.NEUTRA)); }
@@ -536,12 +580,40 @@ public class ConceitoRig2 {
     }
 
     // ===================================================================== desenho do personagem
+    /**
+     * 6.3: aparencia de um personagem. BRANCO reproduz exatamente as cores da 6.0.4; PRETO segue o Miau Preto do jogo
+     * (pelo preto, rosto com tracos claros, kimono branco). contornoPelo = null: sem contorno no pelo (como a 6.0.4).
+     */
+    record Aparencia(String nome, Color pelo, Color peloLonge, Color peloSombra, Color peloBorda, Color orelhaInterna,
+                     Color olho, Color nariz, Color boca, Color gi, Color giLonge, Color giLuz, Color giLuzLonge, Color giSombra,
+                     Color borda, Color bordaLonge, Color gola, Color costura, Color faixa, Color faixaLuz, Color faixaBorda,
+                     Color faixaPonta, Color ponteira, Color bordaPeito, Color contornoFocinho, Color contornoPelo) {
+
+        static final Aparencia BRANCO = new Aparencia("Miau Branco", PELO, PELO_LONGE, PELO_SOMBRA, PELO_BORDA, ORELHA_INTERNA,
+                OLHO, NARIZ, BOCA, GI, GI_LONGE, GI_LUZ, new Color(34, 36, 41), GI_SOMBRA, BORDA, BORDA_LONGE, GOLA, COSTURA,
+                FAIXA, FAIXA_LUZ, FAIXA_BORDA, new Color(20, 20, 22), PONTEIRA, new Color(150, 154, 162), new Color(205, 209, 216), null);
+
+        static final Aparencia PRETO = new Aparencia("Miau Preto", new Color(14, 14, 16), new Color(30, 30, 34), new Color(0, 0, 0),
+                new Color(110, 112, 120), new Color(78, 64, 70), new Color(236, 236, 236), NARIZ, new Color(228, 228, 228),
+                new Color(236, 236, 232), new Color(200, 200, 198), new Color(255, 255, 255), new Color(220, 220, 218),
+                new Color(184, 186, 192), new Color(128, 132, 140), new Color(110, 114, 122), new Color(220, 220, 216),
+                new Color(168, 172, 180), FAIXA, FAIXA_LUZ, FAIXA_BORDA, new Color(20, 20, 22), PONTEIRA, new Color(70, 72, 80),
+                new Color(74, 76, 84), new Color(96, 98, 108));
+
+        @Override public String toString() { return nome; }
+    }
+
     static final class Desenho {
         final Pintor p;
         final Corpo c;
         final Camera cam;
 
         Desenho(Pintor p, Corpo c, double guinada) { this.p = p; this.c = c; this.cam = new Camera(guinada); }
+
+        /** 6.3: aparencia do personagem (cores do pelo, do kimono e da faixa); padrao = Miau Branco da 6.0.4. */
+        Aparencia ap = Aparencia.BRANCO;
+
+        Desenho(Pintor p, Corpo c, double guinada, Aparencia ap) { this(p, c, guinada); this.ap = ap; }
 
         // ---------- superficie do casaco
         V sup(double y, double phi, double off) {
@@ -658,16 +730,16 @@ public class ConceitoRig2 {
         }
 
         // ---------- roupa: luz de cima/esquerda, igual em todas as vistas
-        void sombrear(Area a, Color base, Color borda, double w) { sombrear(a, base == GI_LONGE ? 1 : 0, base, borda, w); }
+        void sombrear(Area a, Color base, Color borda, double w) { sombrear(a, base == ap.giLonge() ? 1 : 0, base, borda, w); }
 
         void sombrear(Area a, double longe, Color base, Color borda, double w) {
             p.preencher(a, base);
             Area luz = new Area(a);
             luz.subtract(a.createTransformedArea(AffineTransform.getTranslateInstance(2.2, 2.6)));
-            p.preencher(luz, misturar(GI_LUZ, new Color(34, 36, 41), longe));
+            p.preencher(luz, misturar(ap.giLuz(), ap.giLuzLonge(), longe));
             Area sombra = new Area(a);
             sombra.subtract(a.createTransformedArea(AffineTransform.getTranslateInstance(-2.6, -3.2)));
-            p.preencher(sombra, GI_SOMBRA);
+            p.preencher(sombra, ap.giSombra());
             p.tracar(a, borda, w);
         }
 
@@ -693,29 +765,32 @@ public class ConceitoRig2 {
         void braco(int i, double longe) {
             Point2D s = cam.p(c.ombro[i]), e = cam.p(c.cotovelo[i]), w = cam.p(c.mao[i]);
             Area manga = tubo(s, e, w, 27, 24, 24, 13);
-            Color borda = misturar(BORDA, BORDA_LONGE, longe);
-            sombrear(manga, longe, misturar(GI, GI_LONGE, longe), borda, 1.2);
+            Color borda = misturar(ap.borda(), ap.bordaLonge(), longe);
+            sombrear(manga, longe, misturar(ap.gi(), ap.giLonge(), longe), borda, 1.2);
             dobra(s, e, w, 27, borda);
             // punho da manga (barra do kimono)
             double dx = w.getX() - e.getX(), dy = w.getY() - e.getY(), l = Math.max(.01, Math.hypot(dx, dy));
             double ux = dx / l, uy = dy / l, bx = w.getX() - ux * 6, by = w.getY() - uy * 6;
             p.linha(borda, 1, bx - uy * 12, by + ux * 12, bx + uy * 12, by - ux * 12);
-            pata(w, Math.atan2(dy, dx), longe);
+            pata(w, Math.atan2(dy, dx), longe, c.maoFechada[i]);
         }
 
-        void pata(Point2D punho, double ang, double longe) {
+        void pata(Point2D punho, double ang, double longe) { pata(punho, ang, longe, 0); }
+
+        void pata(Point2D punho, double ang, double longe, double fechada) {
             p.salvar();
             p.mover(punho.getX(), punho.getY());
             p.girar(ang);
             p.mover(6, 0);
             p.escalar(1.25);
+            if (fechada > 0) p.escalarXY(1 - .24 * fechada, 1 - .08 * fechada); // 6.3: punho fechado na pegada
             Path2D m = new Path2D.Double();
             m.moveTo(-7, -6); m.quadTo(-9, -10, -3, -10); m.lineTo(5, -8); m.quadTo(11, -7, 11, 0);
             m.quadTo(11, 8, 4, 9); m.lineTo(-4, 8); m.quadTo(-10, 6, -8, 1); m.quadTo(-14, -1, -10, -5); m.closePath();
-            p.forma(m, misturar(PELO, PELO_LONGE, longe), PELO_BORDA, .9);
-            p.linha(PELO_BORDA, .75, 6, -5, 9, -5);
-            p.linha(PELO_BORDA, .75, 7, 0, 10, 0);
-            p.linha(PELO_BORDA, .75, 6, 5, 9, 5);
+            p.forma(m, misturar(ap.pelo(), ap.peloLonge(), longe), ap.peloBorda(), .9);
+            p.linha(ap.peloBorda(), .75, 6, -5, 9, -5);
+            p.linha(ap.peloBorda(), .75, 7, 0, 10, 0);
+            p.linha(ap.peloBorda(), .75, 6, 5, 9, 5);
             p.restaurar();
         }
 
@@ -732,7 +807,7 @@ public class ConceitoRig2 {
             double rel = Math.toRadians(cam.graus) + a;
             double rx = Math.hypot(10.5 * Math.cos(rel), 15 * Math.sin(rel) * Math.cos(ip)), ry = 7;
             p.forma(new Ellipse2D.Double(centro.getX() - rx, centro.getY() - ry, 2 * rx, 2 * ry),
-                    misturar(PELO, PELO_LONGE, longe), PELO_BORDA, .9);
+                    misturar(ap.pelo(), ap.peloLonge(), longe), ap.peloBorda(), .9);
             // 6.1: os dedos somem gradualmente quando o pe vira de costas (antes sumiam de uma vez em -0,3)
             double f = suave(-.3, -.2, Math.cos(rel));
             V lado = new V(Math.cos(a), 0, -Math.sin(a));
@@ -741,7 +816,7 @@ public class ConceitoRig2 {
             comOpacidade(f, () -> {
                 for (int k = -1; k <= 1; k += 2) {
                     Point2D q = cam.p(ponto.apply(17 + 3 * k * sinal).mais(lado.vezes(4 * k)));
-                    p.linha(PELO_BORDA, .8, q.getX(), q.getY() + 1, q.getX(), q.getY() + 5);
+                    p.linha(ap.peloBorda(), .8, q.getX(), q.getY() + 1, q.getX(), q.getY() + 5);
                 }
             });
         }
@@ -764,20 +839,20 @@ public class ConceitoRig2 {
             if (perto < 0) {
                 pe(0, 0); pe(1, 0);
                 Area a = perna(0); a.add(perna(1)); a.add(quadris());
-                sombrear(a, GI, BORDA, 1.2);
-                for (int i = 0; i < 2; i++) dobraJoelho(i, BORDA);
+                sombrear(a, ap.gi(), ap.borda(), 1.2);
+                for (int i = 0; i < 2; i++) dobraJoelho(i, ap.borda());
                 return;
             }
             int longe = 1 - perto;
             double f = fatorLonge();
-            Color borda = misturar(BORDA, BORDA_LONGE, f);
+            Color borda = misturar(ap.borda(), ap.bordaLonge(), f);
             pe(longe, f);
-            sombrear(perna(longe), f, misturar(GI, GI_LONGE, f), borda, 1.2);
+            sombrear(perna(longe), f, misturar(ap.gi(), ap.giLonge(), f), borda, 1.2);
             dobraJoelho(longe, borda);
             pe(perto, 0);
             Area a = perna(perto); a.add(quadris());
-            sombrear(a, GI, BORDA, 1.2);
-            dobraJoelho(perto, BORDA);
+            sombrear(a, ap.gi(), ap.borda(), 1.2);
+            dobraJoelho(perto, ap.borda());
         }
 
         void dobraJoelho(int i, Color cor) {
@@ -842,7 +917,7 @@ public class ConceitoRig2 {
                     Collections.reverse(volta);
                     poly.addAll(volta);
                     p.forma(poligono(poly), fill, borda, 1);
-                    p.tracar(polilinha(meio), COSTURA, .7);
+                    p.tracar(polilinha(meio), ap.costura(), .7);
                 }
                 esq.clear(); dir.clear(); meio.clear();
             };
@@ -866,7 +941,7 @@ public class ConceitoRig2 {
                     List<Point2D> volta = new ArrayList<>(baixo);
                     Collections.reverse(volta);
                     poly.addAll(volta);
-                    p.forma(poligono(poly), GOLA, BORDA, 1);
+                    p.forma(poligono(poly), ap.gola(), ap.borda(), 1);
                 }
                 cima.clear(); baixo.clear();
             };
@@ -879,11 +954,11 @@ public class ConceitoRig2 {
 
         void casaco() {
             Area corpo = tronco();
-            sombrear(corpo, GI, BORDA, 1.3);
+            sombrear(corpo, ap.gi(), ap.borda(), 1.3);
             // costuras laterais e das costas (indicam a orientacao do tronco)
-            linhaSup(new double[][] {{100, -90}, {194, -90}}, .5, COSTURA, .8);
-            linhaSup(new double[][] {{100, 90}, {194, 90}}, .5, COSTURA, .8);
-            linhaSup(new double[][] {{84, 180}, {148, 180}}, .5, COSTURA, .8);
+            linhaSup(new double[][] {{100, -90}, {194, -90}}, .5, ap.costura(), .8);
+            linhaSup(new double[][] {{100, 90}, {194, 90}}, .5, ap.costura(), .8);
+            linhaSup(new double[][] {{84, 180}, {148, 180}}, .5, ap.costura(), .8);
             // peito de pelo na abertura em V
             List<Point2D> v = new ArrayList<>(), volta = new ArrayList<>();
             for (double y = 77; y <= 109; y += 2) {
@@ -895,20 +970,20 @@ public class ConceitoRig2 {
                 Collections.reverse(volta);
                 v.addAll(volta);
                 // 6.0.2: mesmo tom da base do pescoco, para o peito continuar o pescoco sem degrau
-                p.forma(poligono(v), PELO_SOMBRA, new Color(150, 154, 162), .8);
+                p.forma(poligono(v), ap.peloSombra(), ap.bordaPeito(), .8);
             }
             pescoco(); // 6.0.2: depois do corpo do casaco, antes da gola que o abraca
             golaTras();
             // lapela de baixo (painel direito) e de cima (painel esquerdo, cruza por cima)
-            lapela(LAPELA_DENTRO, 11, GOLA, BORDA);
-            lapela(LAPELA_FORA, 11, GOLA, BORDA);
+            lapela(LAPELA_DENTRO, 11, ap.gola(), ap.borda());
+            lapela(LAPELA_FORA, 11, ap.gola(), ap.borda());
             // saia do casaco: abertura frontal e continuacao da borda do painel
             List<Point2D> fenda = new ArrayList<>();
             // 6.1: a abertura some gradualmente quando a frente do casaco vira para tras
             double ff = suave(.0, .05, vis(184, -8));
             fenda.add(sp(170, -16, .4)); fenda.add(sp(196, -15, .4)); fenda.add(sp(196, 2, .4));
-            comOpacidade(ff, () -> p.forma(poligono(fenda), GI_SOMBRA, BORDA, .8));
-            linhaSup(new double[][] {{162, -20}, {196, -15}}, .5, BORDA, 1);
+            comOpacidade(ff, () -> p.forma(poligono(fenda), ap.giSombra(), ap.borda(), .8));
+            linhaSup(new double[][] {{162, -20}, {196, -15}}, .5, ap.borda(), 1);
         }
 
         /** Centro das lapelas {y, angulo na superficie}: o painel esquerdo cruza por cima do direito. */
@@ -931,9 +1006,9 @@ public class ConceitoRig2 {
                 List<Point2D> volta = new ArrayList<>(baixo);
                 Collections.reverse(volta);
                 poly.addAll(volta);
-                p.forma(poligono(poly), FAIXA, FAIXA_BORDA, 1.1);
+                p.forma(poligono(poly), ap.faixa(), ap.faixaBorda(), 1.1);
                 List<Point2D> meio = arco(155.3, 1.9);
-                if (meio.size() > 3) p.tracar(polilinha(meio.subList(1, meio.size() - 1)), FAIXA_LUZ, .8);
+                if (meio.size() > 3) p.tracar(polilinha(meio.subList(1, meio.size() - 1)), ap.faixaLuz(), .8);
             }
             double frente = cam.prof(c.dir(new V(0, 0, 1), 155));
             // no (amarracao) fica escondido nas vistas de costas; 6.1: some gradualmente entre ~92 e ~98 graus
@@ -946,11 +1021,11 @@ public class ConceitoRig2 {
             p.salvar();
             p.mover(k.getX(), k.getY());
             p.escalarXY(fs, 1);
-            p.forma(pts(-3.5, -1, 4.5, 1, -5.5, 30, -14.5, 27), FAIXA, FAIXA_BORDA, 1);
-            p.forma(pts(.5, 0, 9.5, -1, 22.5, 22, 13.5, 27), new Color(20, 20, 22), FAIXA_BORDA, 1);
-            p.preencher(pts(10.5, 17, 18.5, 13, 22.5, 22, 13.5, 27), PONTEIRA);
-            p.forma(pts(-9.5, -4, .5, -7, 10.5, -3, 7.5, 5, -3.5, 7, -10.5, 2), FAIXA, FAIXA_BORDA, 1.2);
-            p.linha(FAIXA_LUZ, 1, -5.5, -3, 1.5, -4, 6.5, -1);
+            p.forma(pts(-3.5, -1, 4.5, 1, -5.5, 30, -14.5, 27), ap.faixa(), ap.faixaBorda(), 1);
+            p.forma(pts(.5, 0, 9.5, -1, 22.5, 22, 13.5, 27), ap.faixaPonta(), ap.faixaBorda(), 1);
+            p.preencher(pts(10.5, 17, 18.5, 13, 22.5, 22, 13.5, 27), ap.ponteira());
+            p.forma(pts(-9.5, -4, .5, -7, 10.5, -3, 7.5, 5, -3.5, 7, -10.5, 2), ap.faixa(), ap.faixaBorda(), 1.2);
+            p.linha(ap.faixaLuz(), 1, -5.5, -3, 1.5, -4, 6.5, -1);
             p.restaurar();
             p.alfa = alfaAntes;
         }
@@ -1054,14 +1129,14 @@ public class ConceitoRig2 {
             // termina reto logo abaixo da borda de baixo da gola (y ~78,5): nunca aparece abaixo dela
             Point2D base = lerp(topo, cam.p(c.pescoco), (79 - CABECA_Y) / (PESCOCO_Y - CABECA_Y));
             Area n = new Area(trapezio(topo, base, 26, 29));
-            p.preencher(n, PELO);
+            p.preencher(n, ap.pelo());
             Area sombra = new Area(n);
             sombra.intersect(silhuetaCabeca(topo, guinadaRosto())
                     .createTransformedArea(AffineTransform.getTranslateInstance(0, 5)));
-            p.preencher(sombra, PELO_SOMBRA);
+            p.preencher(sombra, ap.peloSombra());
             Area lado = new Area(n);
             lado.subtract(n.createTransformedArea(AffineTransform.getTranslateInstance(-4, 0)));
-            p.preencher(lado, PELO_SOMBRA);
+            p.preencher(lado, ap.peloSombra());
         }
 
         /** Cabeca: cranio levemente mais fundo que largo + focinho; o rosto vive na superficie e gira com ela. */
@@ -1079,11 +1154,12 @@ public class ConceitoRig2 {
             for (int i = 0; i < 2; i++) orelha(hp, ordem[i], encara, i == 0, w, dir);
 
             Area cab = silhuetaCabeca(c2, guinada);
-            p.preencher(cab, PELO);
+            p.preencher(cab, ap.pelo());
+            if (ap.contornoPelo() != null) p.tracar(cab, ap.contornoPelo(), 1.1);
             // volume: meia-lua de sombra embaixo/a direita (luz fixa da tela)
             Area sombra = new Area(cab);
             sombra.subtract(cab.createTransformedArea(AffineTransform.getTranslateInstance(-4.5, -3.5)));
-            p.preencher(sombra, PELO_SOMBRA);
+            p.preencher(sombra, ap.peloSombra());
 
             // 6.1: nariz e boca somem gradualmente logo depois do perfil (antes sumiam de uma vez em ~93 graus)
             double fRosto = suave(-.15, 0, cs);
@@ -1102,7 +1178,7 @@ public class ConceitoRig2 {
                     Point2D q = pt(fc.getX() + dir * 13 * Math.cos(ar), fc.getY() + 10 * Math.sin(ar));
                     if (cranio.contains(q)) arcoF.add(q);
                 }
-                if (arcoF.size() > 2) p.tracar(polilinha(arcoF), new Color(205, 209, 216), 1.1);
+                if (arcoF.size() > 2) p.tracar(polilinha(arcoF), ap.contornoFocinho(), 1.1);
                 p.alfa = alfaAntes;
             }
             // 6.0.3: o traco interno da bochecha no perfil foi removido; o focinho e definido pela silhueta.
@@ -1117,7 +1193,7 @@ public class ConceitoRig2 {
                 o = lerp(o, pp.apply(25.0, -4.0), w);
                 double larg = (1 - w) * 3.1 * Math.max(.42, k) + w * 2.5, alt = (1 - w) * 3.2 + w * 3.1;
                 Ellipse2D olho = new Ellipse2D.Double(o.getX() - larg, o.getY() - alt, 2 * larg, 2 * alt);
-                comOpacidade(fOlho, () -> p.preencher(olho, OLHO));
+                comOpacidade(fOlho, () -> p.preencher(olho, ap.olho()));
             }
             if (rosto) {
                 double alfaAntes = p.alfa;
@@ -1127,13 +1203,13 @@ public class ConceitoRig2 {
                 Point2D f = lerp(hp.apply(new V(0, 8.5, 41.8)), pp.apply(45.9, 5.6), w);
                 Point2D b = lerp(hp.apply(new V(3.5, 8, 38.5)), pp.apply(45.0, 9.6), w);
                 Point2D d = lerp(hp.apply(new V(0, 12.5, 40.2)), pp.apply(41.6, 9.4), w);
-                p.preencher(poligono(List.of(a, f, b, d)), NARIZ);
+                p.preencher(poligono(List.of(a, f, b, d)), ap.nariz());
                 Point2D m1 = lerp(hp.apply(new V(0, 17.5, 39.5)), pp.apply(41.8, 14.8), w);
                 Point2D me = lerp(hp.apply(new V(-5, 21.5, 37.5)), pp.apply(36.0, 17.6), w);
                 Point2D md = lerp(hp.apply(new V(5, 21.5, 37.5)), pp.apply(36.0, 17.6), w);
                 Point2D inicio = lerp(d, pp.apply(43.4, 9.8), w);
-                p.linha(BOCA, 1.4, inicio.getX(), inicio.getY(), m1.getX(), m1.getY(), me.getX(), me.getY());
-                p.linha(BOCA, 1.4, m1.getX(), m1.getY(), md.getX(), md.getY());
+                p.linha(ap.boca(), 1.4, inicio.getX(), inicio.getY(), m1.getX(), m1.getY(), me.getX(), me.getY());
+                p.linha(ap.boca(), 1.4, m1.getX(), m1.getY(), md.getX(), md.getY());
                 p.alfa = alfaAntes;
             }
         }
@@ -1155,13 +1231,13 @@ public class ConceitoRig2 {
             concha.add(new Area(poligono(List.of(a, b, f))));
             concha.add(new Area(poligono(List.of(f, b, c2))));
             // 6.1: a orelha de longe escurece gradualmente conforme o perfil se forma (antes: degrau em w = 0,5)
-            p.preencher(concha, longe ? misturar(PELO, PELO_LONGE, suave(.3, .7, w)) : PELO);
+            p.preencher(concha, longe ? misturar(ap.pelo(), ap.peloLonge(), suave(.3, .7, w)) : ap.pelo());
             double k = encara.applyAsDouble(lon);
             double fInterna = suave(.10, .20, k); // parte interna so aparece quando a orelha encara a camera
             if (fInterna > 0) {
                 Point2D m = lerp(lerp(a, c2, .5), b, .25);
                 Path2D interna = poligono(List.of(lerp(m, a, .55), lerp(m, b, .62), lerp(m, c2, .55)));
-                comOpacidade(fInterna, () -> p.preencher(interna, ORELHA_INTERNA));
+                comOpacidade(fInterna, () -> p.preencher(interna, ap.orelhaInterna()));
             }
         }
 
@@ -1231,11 +1307,15 @@ public class ConceitoRig2 {
     }
 
     static void figura(Pintor p, Corpo c, double guinada, double ox, double chao, double esc, double alfa, boolean tecnico) {
+        figura(p, c, guinada, ox, chao, esc, alfa, tecnico, Aparencia.BRANCO);
+    }
+
+    static void figura(Pintor p, Corpo c, double guinada, double ox, double chao, double esc, double alfa, boolean tecnico, Aparencia ap) {
         p.salvar();
         p.mover(ox, chao);
         p.escalar(esc);
         p.mover(0, -CHAO);
-        Desenho d = new Desenho(p, c, guinada);
+        Desenho d = new Desenho(p, c, guinada, ap);
         double a = p.alfa;
         p.alfa = alfa;
         d.figura();
