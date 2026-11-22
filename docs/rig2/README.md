@@ -14,9 +14,11 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `previas-refinadas/` | As mesmas três prévias após o refinamento 6.0.2 (perfil, pescoço e gola), mais `comparativo-prancha.png` e `comparativo-combate.png` (antes × depois). |
 | `previas-6.0.3/` | Pescoço com metade da exposição da 6.0.2 e perfil sem o traço da bochecha. Inclui `comparativo-prancha.png` e `comparativo-combate.png` com as três versões (6.0.1, 6.0.2 e 6.0.3). |
 | `previas-6.0.4/` | **Versão visual aprovada (referência atual):** pescoço curto, cabeça mais perto da gola. Inclui os comparativos 6.0.1 × 6.0.3 × 6.0.4 (`comparativo-prancha.png`, `comparativo-combate.png`) e o detalhe ampliado da cabeça, do pescoço e da gola (`comparativo-detalhe-pescoco.png`). |
-| `ConceitoRig2.java` | Modelo do Rig 2.0 (esqueleto, poses parametrizadas, câmera e desenho) e gerador das prévias em PNG e SVG. Gera a versão 6.0.4 sem nenhuma diferença de pixel e contém as verificações da 6.1. |
+| `ConceitoRig2.java` | Modelo do Rig 2.0 (esqueleto, poses parametrizadas, câmera e desenho) e gerador das prévias em PNG e SVG. Gera a versão 6.0.4 sem nenhuma diferença de pixel e contém as verificações da 6.1. Na 6.2, a pose ficou explícita (quadril, ombros, pés livres com inclinação) para poder ser animada. |
 | `LaboratorioRig2.java` | **6.1:** laboratório interativo em Swing que usa o mesmo modelo: rotação contínua de 0° a 180°, giro da cabeça, poses, braços, presets de pernas e esqueleto (seção 11). |
 | `laboratorio-6.1/` | Capturas da janela do laboratório e, em `rotacao/`, as folhas de contato da rotação (passo de 5°, ângulos críticos com passo de 1° e teste dos braços). |
+| `AnimacoesRig2.java` | **6.2:** camada de animação baseada em tempo (contrato `Animacao`, `Reprodutor`), as animações idle neutro, idle de combate, caminhada e transições, e as verificações da 6.2 (seção 12). |
+| `laboratorio-6.2/` | Capturas da janela com as animações e, em `quadros/`, as folhas de contato (idles, caminhada em várias perspectivas, transições e caminhada girando). |
 | `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
 As prévias de cada versão ficam congeladas:
@@ -482,3 +484,202 @@ O laboratório usa o mesmo modelo de `ConceitoRig2.java`. Não foi criado um seg
 2. **Dividir o braço em segmentos com profundidade própria,** para eliminar a troca de camada por esmaecimento.
 3. **Controle individual das pernas e limites anatômicos** por articulação.
 4. **Integração com o jogo:** só depois de aprovar as etapas anteriores, um renderizador do Rig 2.0 ao lado do atual (sem substituí-lo), ativado apenas em modo experimental, medindo o desempenho com dois lutadores.
+
+## 12. Primeiras animações dinâmicas (Superentrega 6.2)
+
+O Rig 2.0 ganhou uma camada de animação baseada em tempo e cinco animações:
+- idle neutro com respiração;
+- idle de combate;
+- caminhada;
+- transição neutra → combate;
+- transição combate → neutra.
+
+Tudo continua no laboratório experimental. O jogo, o MiauStudio e o `pom.xml` não foram tocados, e nada foi convertido das animações antigas. As animações foram criadas direto no Rig 2.0.
+
+### Estrutura (três arquivos, um papel cada)
+| Arquivo | Papel |
+|---|---|
+| `ConceitoRig2.java` | **Modelo do corpo e desenho.** Esqueleto, IK de dois ossos, câmera, kimono e cabeça. Não sabe nada de tempo nem de janela. |
+| `AnimacoesRig2.java` | **Camada de animação (nova).** Contrato `Animacao`, as cinco animações, o `Reprodutor` e as verificações da 6.2. Não usa Swing nem o relógio do sistema. |
+| `LaboratorioRig2.java` | **Janela Swing.** Pede animações, avança o relógio com o tempo real e mostra o resultado. |
+
+**Uma animação é uma função pura do tempo:** `amostrar(t)` devolve os parâmetros do corpo (`ParametrosPose`) no instante `t`. O contrato também tem:
+- identificador e nome;
+- duração;
+- se repete em loop;
+- o deslocamento do corpo (para o chão "rolar" na caminhada no lugar);
+- a animação seguinte (usada pelas transições);
+- a pose-base em que o personagem termina.
+
+**O `Reprodutor` guarda o relógio:**
+- reproduzir, pausar, continuar, parar e reiniciar;
+- velocidades de 0,5× a 2,0×;
+- loop, e o encadeamento da transição para o idle, levando o tempo que sobrou;
+- um passo máximo de 0,25 s por chamada, para que uma janela travada não faça o personagem "teleportar".
+
+**Por que funções puras do tempo:**
+- O movimento não depende da quantidade de repinturas: a janela avança o relógio pelo tempo real (`System.nanoTime`).
+- Qualquer instante é reproduzível nos testes.
+- No futuro, o laço do jogo pode alimentar o mesmo `Reprodutor` com o seu próprio `dt`.
+
+**Mudanças no modelo, só o necessário** (as prévias 6.0.4 continuam idênticas pixel a pixel):
+- **Pose explícita:** `ParametrosPose` passou a guardar todos os canais (inclinação do tronco, altura e deslocamento do quadril, ombros, ângulos dos braços, alvos dos tornozelos, polos dos joelhos, guinada e inclinação dos pés). A `PoseBase` continua fornecendo os valores padrão. Assim uma animação pode interpolar qualquer canal, e `ParametrosPose.interpolar(a, b, …)` mistura duas poses canal a canal.
+- **Corpo:** ganhou o deslocamento do quadril (lateral e para a frente), aplicado ao corpo todo exceto aos pés, e a elevação dos ombros.
+- **Pés:** ganharam inclinação em torno do tornozelo (calcanhar levantado ou ponta levantada). Sem inclinação, o pé é desenhado exatamente como na 6.0.4.
+- **Pernas:** a caminhada controla cada perna pelo alvo do tornozelo, pelo polo do joelho e pela orientação e inclinação do pé. Quadril, coxa, joelho, canela e tornozelo participam, sempre pelo IK com comprimentos fixos; as pernas não são deslocadas como peças rígidas.
+
+### As animações
+- **Idle neutro (ciclo de 7,2 s, duas respirações):**
+  - na inspiração, os ombros sobem um pouco e o peito se abre (o tronco recua menos de 1°);
+  - os braços acompanham;
+  - o peso passa devagar de uma perna para a outra;
+  - a cabeça faz pequenos ajustes (até ±1,5°).
+  - Os pés ficam plantados, e cabeça, pescoço, kimono e proporções não mudam.
+- **Idle de combate (ciclo de 2,4 s):**
+  - transferência de peso entre as pernas e "quique" leve dos joelhos (duas vezes por ciclo);
+  - oscilação curta do tronco;
+  - os braços ajustam a guarda em fases opostas;
+  - a respiração continua.
+  - A pose de combate aprovada não foi redesenhada.
+- **Caminhada no lugar (ciclo de 1,1 s, dois passos):** cada perna alterna apoio (60%) e balanço (40%).
+  - **Apoio:** o tornozelo recua em linha reta na mesma velocidade com que o chão rola sob o personagem. O pé de apoio não escorrega em relação ao chão, e as marcas do chão na janela andam junto com ele. No fim do apoio o calcanhar sobe, com a ponta do pé no chão.
+  - **Balanço:** a perna avança por uma curva que sai e chega com a velocidade do chão (sem tranco no toque), levanta o pé e pousa a ponta primeiro.
+  - **Quadril:** sobe no meio do apoio, desce no duplo apoio e leva o peso para a perna de apoio; o tronco inclina 3° à frente.
+  - **Braços:** balançam em oposição às pernas, sem marcha militar.
+  - **Medidas relativas:** o passo (55% da perna) e a altura do pé (15%) são relativos ao comprimento da perna, para servirem a outros personagens.
+- **Transições (1,0 s e 1,1 s):** cada canal tem seu próprio tempo.
+  - **Indo para o combate:** os joelhos dobram primeiro, depois quadril e tronco, e por último os braços sobem para a guarda.
+  - **Voltando:** os braços descem primeiro e as pernas por último.
+  - **Passos:** cada pé dá um pequeno passo para mudar de base (levanta, avança e pousa), um de cada vez, com o peso indo para o pé que fica no chão. Os pés não deslizam.
+  - **Começo e fim:** a transição parte da pose mostrada naquele instante (mesmo no meio de outra animação) e termina exatamente no primeiro quadro do idle de destino, que assume sem salto.
+
+### Prioridade entre controles manuais e animação
+- **Perspectiva:** a rotação do corpo é sempre manual e pode mudar durante a reprodução sem reiniciar o ciclo.
+- **Cabeça:** o giro é sempre manual, também durante a reprodução. A animação só soma um pequeno acréscimo (no máximo ±1,5°), e o total fica limitado a ±60°.
+- **Durante a reprodução ou a pausa:** tronco, braços e pernas pertencem à animação. Os controles dos braços e o preset de pernas ficam bloqueados e mostram os valores animados.
+- **Parar:** volta à edição manual, com a pose de antes. Se uma transição terminou, volta à nova pose-base, porque a troca de pose foi confirmada.
+- **Restaurar pose:** para a animação e restaura.
+- **Trocar a pose-base:** com "Transição animada ao trocar a pose" marcada (padrão), a troca vira a transição correspondente, seguida do idle. Desmarcada, troca na hora, como na 6.1.
+
+### Como executar
+Abrir o laboratório (Java 22 ou mais novo, a partir da raiz do repositório):
+
+```
+java docs/rig2/LaboratorioRig2.java
+```
+
+Na seção "Animações (6.2)":
+1. Escolha a animação.
+2. Use ▶ Reproduzir, ❚❚ Pausar, ■ Parar e ↺ Reiniciar; a velocidade vai de 0,5× a 2,0×.
+3. Para ver as transições, também dá para trocar a "Pose-base" entre Neutra e Combate.
+
+Durante a reprodução continuam disponíveis a rotação do corpo (controle deslizante ou ← →), a cabeça (Q/E), o esqueleto e os botões de restauração.
+
+| O que | Comando |
+|---|---|
+| Verificações das animações | `java docs/rig2/AnimacoesRig2.java` |
+| Capturas da 6.2 e teste dos controles de reprodução | `java docs/rig2/LaboratorioRig2.java --capturas-6.2 docs/rig2/laboratorio-6.2` |
+| Regressão da 6.1 (escreva numa pasta temporária, para não sobrescrever as capturas da 6.1) | `java docs/rig2/LaboratorioRig2.java --capturas <pasta temporária>` |
+| Verificações do modelo | `java docs/rig2/ConceitoRig2.java --verificar-6.1` |
+
+### Verificações executadas (todas passaram)
+
+**`java docs/rig2/AnimacoesRig2.java`:**
+- **Integridade em todos os quadros:** cada animação foi amostrada a 1/120 s, três ciclos nos loops. Em todos os quadros:
+  - braço, antebraço, coxa, canela, tronco e pescoço com comprimento constante;
+  - coordenadas válidas;
+  - cabeça presa ao pescoço;
+  - todo tornozelo alcança o alvo (pé nenhum flutua por falta de alcance) e nenhum pé fica abaixo do chão.
+- **Loops (idle neutro, idle de combate, caminhada):**
+  - o fim coincide com o início (diferença de ~10⁻¹⁴);
+  - a velocidade é a mesma dos dois lados da emenda;
+  - depois de 40 ciclos tocados pelo reprodutor não há desvio acumulado.
+- **Caminhada:**
+  - o pé de apoio acompanha o chão (erro de 10⁻¹⁰) e fica no chão, inclusive com o calcanhar levantado;
+  - sempre há um pé apoiado e as pernas alternam;
+  - o joelho dobra de 29° a 70°, e o pé inclina de −10° a 22°;
+  - os braços ficam em oposição às pernas.
+- **Transições:** começam na pose de partida, terminam exatamente no primeiro quadro do idle e são encadeadas sem salto. Também partem corretamente de uma pose qualquer, por exemplo no meio da caminhada.
+- **Reprodutor:**
+  - a 60 quadros/s e com quadros irregulares chega à mesma pose;
+  - pausar, continuar, 2×, reiniciar e parar funcionam;
+  - o giro manual da cabeça é somado;
+  - o passo máximo é respeitado.
+- **Continuidade visual:** diferença média por pixel entre quadros a 30 por segundo, a 40°. Nenhum salto isolado e nenhum salto na emenda dos loops.
+
+  | Animação | Maior | Mediana | Emenda do loop |
+  |---|---|---|---|
+  | Idle neutro | 0,17 | 0,10 | 0,14 |
+  | Idle de combate | 0,86 | 0,61 | 0,66 |
+  | Caminhada | 3,54 | 2,77 | 2,69 |
+  | Transição neutra → combate | 5,83 | 4,00 | — |
+  | Transição combate → neutra | 5,21 | 3,45 | — |
+
+**`--capturas-6.2`:**
+- Gerou as capturas a partir da própria janela.
+- Fez o experimento da caminhada girando 40° → 65° → 90° → 140° → 40°: o relógio sempre avançou e o ciclo não reiniciou.
+- Exercitou pela interface, sem exceções:
+  - reproduzir, pausar, continuar, as quatro velocidades, reiniciar e parar em todas as animações;
+  - a rotação do corpo e da cabeça durante a reprodução;
+  - o esqueleto;
+  - a troca de pose com transição animada nos dois sentidos, terminando no idle e na pose manual corretos;
+  - o bloqueio e a liberação dos controles manuais.
+
+**Regressão:**
+- `ConceitoRig2.java --verificar-6.1` passou inteiro.
+- As prévias 6.0.4 geradas de novo deram 0 pixels diferentes.
+- A rotina de controles da 6.1 (`--capturas`, numa pasta temporária) passou sem exceções.
+- A janela real foi aberta e apareceu com o título "Rig 2.0 · Laboratório interativo (6.2) · experimental", sem nada na saída de erro.
+
+### Capturas (`laboratorio-6.2/`)
+- **Janela:**
+  - `janela-caminhada-040.png`, `janela-caminhada-090.png` e `janela-caminhada-esqueleto-040.png`;
+  - `janela-idle-neutro-040.png` e `janela-idle-combate-040.png`;
+  - `janela-transicao-neutra-combate-040.png`.
+- **Folhas de contato (`quadros/`):**
+  - `idle-neutro-040.png` e `idle-combate-040.png`: 8 quadros por ciclo;
+  - `caminhada-040.png`, `caminhada-090.png` e `caminhada-140.png`: 12 quadros por ciclo;
+  - `caminhada-000.png` e `caminhada-180.png`;
+  - `caminhada-esqueleto-040.png`;
+  - `transicao-neutra-combate-040.png`, `transicao-neutra-combate-090.png` e `transicao-combate-neutra-040.png`;
+  - `caminhada-girando.png`: 24 quadros de 40° a 140° e de volta, sem reiniciar o ciclo.
+
+### Limitações
+- **Caminhada no lugar:** o personagem não se desloca pelo cenário. As marcas do chão mostram o deslocamento equivalente. Mover a raiz de verdade é o próximo passo natural, e o pé de apoio já está pronto para isso, porque não escorrega.
+- **Torção do tronco:** o modelo ainda não tem a rotação dos ombros contra o quadril na caminhada. É o que mais deixaria o andar natural.
+- **Joelhos:** nunca ficam totalmente estendidos (mínimo de 29°), porque a altura do quadril vem da pose neutra aprovada, que já tem os joelhos levemente dobrados.
+- **Pés:** a inclinação move a forma do pé, mas não a deforma; o rolamento da ponta é aproximado.
+- **Mãos:** não giram nem fecham.
+- **Movimento secundário:** não há balanço de tecido, das pontas da faixa nem das orelhas, porque não há simulação de pano.
+- **Presets de pernas:** são ignorados durante a reprodução (a animação controla as pernas) e voltam ao parar.
+- **Parar:** é imediato. Um retorno suave à pose manual pode ser feito com a mesma interpolação das transições.
+- **Herdado da 6.1:** perto de 0° e 180°, a pata do lado longe ainda passa por alguns graus de semitransparência ao trocar de camada.
+- **Desempenho:** não medi com dois lutadores no jogo.
+
+### Sugestão para a postura de combate (registrada, não implementada)
+Para uma guarda mais de jiu-jítsu, preparada para disputar pegadas:
+- mãos um pouco mais à frente e mais abertas, na altura do peito do adversário;
+- cotovelos mais junto ao corpo;
+- queixo levemente para baixo;
+- base um pouco menos larga e joelhos um pouco mais flexionados.
+
+Pode ser avaliada numa entrega própria, sem mudar a pose aprovada antes disso.
+
+### Direção de longo prazo: o Rig 2.0 como base do jogo inteiro
+Nenhuma decisão desta entrega compromete a migração futura. O que já ajuda nela:
+- **Corpo sem tela:** o modelo do corpo é separado do desenho e da janela, e as animações são funções puras do tempo sobre esse modelo. O laço do jogo poderá usar o `Reprodutor` como está.
+- **Alvos para as mãos e os pés:** as poses são descritas por ângulos e alvos de IK no espaço do corpo, não por imagens nem por coordenadas da tela. Isso é o que permitirá pegadas e contatos entre dois lutadores, porque as mãos de um viram alvos sobre o kimono do outro.
+- **Animações independentes da perspectiva:** a câmera nunca faz parte da animação, então a mesma animação serve para qualquer ângulo, inclusive o espelhamento esquerda/direita do jogo.
+- **Medidas relativas:** a caminhada usa medidas relativas ao comprimento da perna.
+
+**Riscos identificados e alternativas propostas** (nenhum bloqueia a 6.2):
+1. **Proporções globais:** as medidas (braço 39, antebraço 30, coxa 46,5, canela 46, cabeça 70) ainda são constantes de todo o modelo. Para personagens com outras proporções, antes da integração, sugiro transformá-las num objeto `Proporcoes` por personagem, passado ao modelo, e manter as animações em medidas relativas. Não fiz isso agora para não mexer no modelo aprovado sem necessidade.
+2. **Localização do código:** o código vive em `docs/rig2/`, sem pacote, para ficar fora do build. Na integração, ele deve ir para um pacote próprio em `src/` (por exemplo `com.irmaosmiau.rig2`), separando modelo, animação e desenho como já está separado hoje. É uma mudança mecânica.
+3. **Posições no chão:** a orientação do corpo hoje é só a guinada mais a inclinação do tronco. Posições de chão, quedas e rolamentos vão exigir uma orientação completa da raiz (rolagem e arfagem). Convém acrescentá-la ao `Corpo` antes de começar essas animações.
+4. **Compatibilidade com as mecânicas atuais:** as animações antigas são acionadas pelo motor de combate (pegadas, raspagens, finalizações). Para preservar todas as mecânicas, a integração deve ter, para cada animação antiga, uma equivalente no Rig 2.0 com o mesmo identificador e a mesma duração, chamada pelo mesmo ponto do motor. Assim, as regras e os tempos de reação continuam iguais, e os dois sistemas podem ser comparados lado a lado, com o atual preservado até a validação.
+
+### Próximas evoluções recomendadas
+1. Torção do tronco e deslocamento real da raiz na caminhada; depois, parada e partida (transição idle ↔ caminhada).
+2. Deslocamentos de combate em pé (passo à frente e para trás, e lateral, na guarda), já sobre o idle de combate.
+3. Retorno suave ao parar e mistura (cross-fade) entre quaisquer duas animações, reutilizando `ParametrosPose.interpolar`.
+4. O objeto `Proporcoes` por personagem e a orientação completa da raiz, preparando o Miau Preto e as posições de chão.
