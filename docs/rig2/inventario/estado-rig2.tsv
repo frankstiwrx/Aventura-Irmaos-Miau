@@ -2,3 +2,13 @@
 andar	Homologada	caminhada	aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2
 idle_combate	Homologada	idle-combate	aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2
 respiracao	Homologada	idle-neutro	aprovada manualmente na 6.2 (respiracao visual; o folego do jogo nao foi alterado)
+correr	Aguardando homologação visual	corrida	6.3: testes de MovimentosRig2 (suspensao, apoio sem escorregar, loop); capturas laboratorio-6.3/quadros/corrida-*
+agachar	Aguardando homologação visual	agachar + agachado + levantar-agachamento	6.3: testes de MovimentosRig2 (profundidade, calcanhares, equilibrio); capturas agachar/agachado/levantar-*
+pular	Aguardando homologação visual	pulo	6.3: testes de MovimentosRig2 (voo, absorcao, fim no idle); capturas pulo-*
+pegada_1	Aguardando homologação visual	pegada_1 + pegada_1-mantida	6.3: testes de DuelosRig2 (contato exato, sem atravessar, cabecas separadas); capturas pegada_1-*
+pegada_2	Aguardando homologação visual	pegada_2 + pegada_2-mantida	6.3: testes de DuelosRig2; capturas pegada_2-*
+pegada_3	Aguardando homologação visual	pegada_3 + pegada_3-mantida	6.3: testes de DuelosRig2; capturas pegada_3-*
+pegada_4	Em implementação	(sem animação executável)	6.3: o braço atravessa a cabeça (raio 35) a caminho da nuca na distância do jogo; ver README seção 13
+derrubada_forcada	Aguardando homologação visual	derrubada_forcada (só o desfecho DEFENDIDO)	6.3: testes de DuelosRig2; o desfecho de sucesso (queda) depende de orientação da raiz
+derrubada_forcada_defendida	Aguardando homologação visual	derrubada_forcada (reação de B)	6.3: a reação do defensor faz parte da técnica sincronizada
+queda_pegada	Em análise	-	6.3: primeira queda candidata; bloqueada pela falta de orientação da raiz (deitar/cair)

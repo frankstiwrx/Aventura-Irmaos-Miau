@@ -77,6 +77,8 @@ def classificar(t):
         if destino not in EM_PE:
             return 'Queda / entrada'
         return 'Em pé (outra)'
+    if t['papel'] in ('POR_BAIXO', 'CONTROLADOR') and origens & (GUARDAS | {'ASHI_GARAMI'}) and t['por_cima'] == 'INICIADOR'             and destino not in GUARDAS:
+        return 'Raspagem / reversão'
     if 'EM_PE_CONTRA_SOLO' in origens and destino in DOMINIO and t['papel'] in ('POR_CIMA', 'QUALQUER'):
         return 'Passagem de guarda'
     if destino in EM_PE or destino == 'EM_PE_CONTRA_SOLO':

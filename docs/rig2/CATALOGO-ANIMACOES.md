@@ -23,8 +23,8 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 |---|---|
 | Movimentos inventariados | **267** |
 | Com animação própria no jogo atual (quadros-chave, JSON ou procedural dedicado) | 127 |
-| Já reproduzidos no Rig 2.0 (algum estado além de "Não iniciada") | 3 |
-| Pendentes no Rig 2.0 | 264 |
+| Já reproduzidos no Rig 2.0 (algum estado além de "Não iniciada") | 12 |
+| Pendentes no Rig 2.0 | 255 |
 | Exigem dois personagens | 233 |
 | Exigem movimentação no chão | 241 |
 | Dependem de orientação completa da raiz (deitar, cair, rolar), ainda inexistente no Rig 2.0 | 241 |
@@ -36,23 +36,23 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | Finalização: estrangulamento | 34 | 0 |
 | Finalização: braco | 26 | 0 |
 | Troca / entrada de guarda | 19 | 0 |
-| Queda / entrada | 18 | 0 |
+| Queda / entrada | 18 | 1 |
 | Controle de perna (ashi) | 12 | 0 |
+| Raspagem / reversão | 11 | 0 |
 | Finalização: perna | 10 | 0 |
 | Passagem de guarda | 9 | 0 |
-| Levantada / saída de posição | 9 | 0 |
-| Raspagem / reversão | 9 | 0 |
 | Escape / reposição | 9 | 0 |
-| Reação / estado (quadros-chave) | 8 | 0 |
+| Reação / estado (quadros-chave) | 8 | 1 |
 | Transição de postura | 8 | 0 |
+| Levantada / saída de posição | 7 | 0 |
 | Transição de controle | 7 | 0 |
 | Acrobacia / rolamento | 7 | 0 |
 | Puxada de guarda | 6 | 0 |
 | Transição posicional (motor legado) | 6 | 0 |
-| Movimento básico | 6 | 3 |
+| Movimento básico | 6 | 6 |
 | Movimento no chão | 6 | 0 |
 | Defesa em pé | 4 | 0 |
-| Pegada | 4 | 0 |
+| Pegada | 4 | 4 |
 | Finalização (pose genérica) | 3 | 0 |
 | Expressão | 2 | 0 |
 | Chão (outra) | 1 | 0 |
@@ -60,16 +60,28 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 
 | Estado no Rig 2.0 | Quantidade |
 |---|---|
-| Não iniciada | 264 |
+| Não iniciada | 254 |
+| Aguardando homologação visual | 8 |
 | Homologada | 3 |
+| Em análise | 1 |
+| Em implementação | 1 |
 
 ## Movimentos já reproduzidos no Rig 2.0
 
 | ID no jogo | Nome | Estado | Animação no Rig 2.0 | Evidência |
 |---|---|---|---|---|
+| `derrubada_forcada` | Derrubada forçada [FORÇAR QUEDA] | Aguardando homologação visual | derrubada_forcada (só o desfecho DEFENDIDO) | 6.3: testes de DuelosRig2; o desfecho de sucesso (queda) depende de orientação da raiz |
+| `derrubada_forcada_defendida` | derrubada forcada defendida | Aguardando homologação visual | derrubada_forcada (reação de B) | 6.3: a reação do defensor faz parte da técnica sincronizada |
 | `andar` | Andar | Homologada | caminhada | aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2 |
+| `correr` | Correr | Aguardando homologação visual | corrida | 6.3: testes de MovimentosRig2 (suspensao, apoio sem escorregar, loop); capturas laboratorio-6.3/quadros/corrida-* |
+| `agachar` | Agachar | Aguardando homologação visual | agachar + agachado + levantar-agachamento | 6.3: testes de MovimentosRig2 (profundidade, calcanhares, equilibrio); capturas agachar/agachado/levantar-* |
+| `pular` | Pular | Aguardando homologação visual | pulo | 6.3: testes de MovimentosRig2 (voo, absorcao, fim no idle); capturas pulo-* |
 | `idle_combate` | Idle de combate | Homologada | idle-combate | aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2 |
 | `respiracao` | Respiração / exaustão | Homologada | idle-neutro | aprovada manualmente na 6.2 (respiracao visual; o folego do jogo nao foi alterado) |
+| `pegada_1` | Pegada 1 — Uma lapela + um braco. | Aguardando homologação visual | pegada_1 + pegada_1-mantida | 6.3: testes de DuelosRig2 (contato exato, sem atravessar, cabecas separadas); capturas pegada_1-* |
+| `pegada_2` | Pegada 2 — Cruzada: maos invertidas (frente na manga, tras cruza para a gola). (Entrega 5L) | Aguardando homologação visual | pegada_2 + pegada_2-mantida | 6.3: testes de DuelosRig2; capturas pegada_2-* |
+| `pegada_3` | Pegada 3 — Duas mangas: as duas maos nas mangas. (Entrega 5L) | Aguardando homologação visual | pegada_3 + pegada_3-mantida | 6.3: testes de DuelosRig2; capturas pegada_3-* |
+| `pegada_4` | Pegada 4 — Gola e nuca: mao da frente na nuca, mao de tras na gola. (Entrega 5L) | Em implementação | (sem animação executável) | 6.3: o braço atravessa a cabeça (raio 35) a caminho da nuca na distância do jogo; ver README seção 13 |
 
 ## Catálogo por categoria
 
@@ -227,9 +239,9 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
 |---|---|---|---|---|---|---|---|---|---|
 | `empurrao` | Empurrão / pressão [EMPURRÃO] | EM_PE_PEGADA, EM_PE_SEPARADOS → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 10 ticks (~160 ms) | própria (quadros-chave) | braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `queda_pegada` | Queda com a pegada [QUEDA] | EM_PE_PEGADA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 24 ticks (~384 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `queda_pegada` | Queda com a pegada [QUEDA] | EM_PE_PEGADA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 24 ticks (~384 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Em análise | dois personagens, orientação da raiz (deitar/cair) |
 | `entrada_pernas` | Entrada nas pernas [PERNAS] | EM_PE_PEGADA, EM_PE_SEPARADOS → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | própria (quadros-chave) | braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `derrubada_forcada` | Derrubada forçada [FORÇAR QUEDA] | EM_PE_PEGADA → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | própria (quadros-chave) | braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `derrubada_forcada` | Derrubada forçada [FORÇAR QUEDA] | EM_PE_PEGADA → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | própria (quadros-chave) | braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | alta | Aguardando homologação visual | dois personagens, orientação da raiz (deitar/cair) |
 | `rasteira` | Rasteira [RASTEIRA] | EM_PE_PEGADA → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 10 ticks (~160 ms) | própria (quadros-chave) | braço dir., braço esq., cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
 | `projecao_quadril` | Projeção de quadril [QUADRIL] | EM_PE_PEGADA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 22 ticks (~352 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
 | `queda_manga` | Queda pela manga [MANGA] | EM_PE_PEGADA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 18 ticks (~288 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
@@ -262,6 +274,22 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | `soltar_perna` | Soltar a perna [SOLTAR] | ASHI_GARAMI → SOLO_DISPUTADO (por cima: NENHUM) | janela de 6 ticks (~96 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
 | `girar_livrar_perna` | Girar e livrar a perna [GIRAR] | ASHI_GARAMI → SOLO_DISPUTADO (por cima: NENHUM) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
 
+### Raspagem / reversão (11)
+
+| ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
+|---|---|---|---|---|---|---|---|---|---|
+| `raspagem` | Raspagem [RASPAR] | GUARDA, GUARDA_ABERTA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `raspagem_meia` | Raspagem da meia-guarda [RASPAR] | MEIA_GUARDA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `raspagem_borboleta` | Raspagem de borboleta (elevação) [ELEVAR] | GUARDA_BORBOLETA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `raspagem_dlr` | Raspagem De La Riva [RASPAR] | DE_LA_RIVA → MEIA_GUARDA (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `berimbolo` | Berimbolo [BERIMBOLO] | DE_LA_RIVA → COSTAS (por cima: INICIADOR) | janela de 20 ticks (~320 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `berimbolo_kiss` | Kiss of the dragon (inversão por baixo) [KISS DRAGON] | DE_LA_RIVA → COSTAS (por cima: INICIADOR) | janela de 24 ticks (~384 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., joelho esq., pé dir., pé esq., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `berimbolo_invertido` | Baby bolo (berimbolo para cima) [BABY BOLO] | DE_LA_RIVA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., mão dir., mão esq., pé dir., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `raspagem_laco` | Raspagem do laço [RASPAR] | GUARDA_LACO → MEIA_GUARDA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `raspagem_aranha` | Raspagem da aranha [RASPAR] | GUARDA_ARANHA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `raspagem_slx` | Raspagem da single-leg X [RASPAR] | SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `raspagem_ashi` | Raspar levantando (do ashi) [RASPAR] | ASHI_GARAMI → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+
 ### Finalização: perna (10)
 
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
@@ -291,34 +319,6 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | `passar_aranha` | Passar a aranha [PASSAR] | GUARDA_ARANHA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 20 ticks (~320 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
 | `passar_slx` | Livrar a perna e passar [PASSAR] | SINGLE_LEG_X → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 18 ticks (~288 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
 
-### Levantada / saída de posição (9)
-
-| ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
-|---|---|---|---|---|---|---|---|---|---|
-| `levantar_tecnico` | Levantar técnico [LEVANTAR] | EM_PE_CONTRA_SOLO → EM_PE_SEPARADOS (por cima: NENHUM) | janela de 14 ticks (~224 ms) | própria (quadros-chave) | braço esq., joelho dir., mão dir., mão esq., pé dir., rotação global | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `levantar_do_solo` | Levantar [LEVANTAR] | SOLO_DISPUTADO → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 10 ticks (~160 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `levantar_da_guarda` | Levantar da guarda [LEVANTAR] | DE_LA_RIVA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_SEPARADOS (por cima: NENHUM) | janela de 16 ticks (~256 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `afastar_da_guarda` | Abrir e afastar com os pés [AFASTAR] | DE_LA_RIVA, GUARDA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: OUTRO) | janela de 12 ticks (~192 ms) | própria (quadros-chave) | braço dir., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `sair_da_guarda` | Criar espaço e levantar [LEVANTAR] | DE_LA_RIVA, GUARDA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `abandonar_posicao` | Soltar a posição [SOLTAR] | CONTROLE_LATERAL, COSTAS, JOELHO_BARRIGA, MONTADA → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 6 ticks (~96 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `raspagem_slx` | Raspagem da single-leg X [RASPAR] | SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `raspagem_ashi` | Raspar levantando (do ashi) [RASPAR] | ASHI_GARAMI → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `levantar_do_ashi` | Levantar e puxar a perna [LEVANTAR] | ASHI_GARAMI → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-
-### Raspagem / reversão (9)
-
-| ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
-|---|---|---|---|---|---|---|---|---|---|
-| `raspagem` | Raspagem [RASPAR] | GUARDA, GUARDA_ABERTA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `raspagem_meia` | Raspagem da meia-guarda [RASPAR] | MEIA_GUARDA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `raspagem_borboleta` | Raspagem de borboleta (elevação) [ELEVAR] | GUARDA_BORBOLETA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
-| `raspagem_dlr` | Raspagem De La Riva [RASPAR] | DE_LA_RIVA → MEIA_GUARDA (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `berimbolo` | Berimbolo [BERIMBOLO] | DE_LA_RIVA → COSTAS (por cima: INICIADOR) | janela de 20 ticks (~320 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `berimbolo_kiss` | Kiss of the dragon (inversão por baixo) [KISS DRAGON] | DE_LA_RIVA → COSTAS (por cima: INICIADOR) | janela de 24 ticks (~384 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., joelho esq., pé dir., pé esq., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `berimbolo_invertido` | Baby bolo (berimbolo para cima) [BABY BOLO] | DE_LA_RIVA → CONTROLE_LATERAL (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho dir., mão dir., mão esq., pé dir., rotação global, tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `raspagem_laco` | Raspagem do laço [RASPAR] | GUARDA_LACO → MEIA_GUARDA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-| `raspagem_aranha` | Raspagem da aranha [RASPAR] | GUARDA_ARANHA → GUARDA_ABERTA (por cima: INICIADOR) | janela de 14 ticks (~224 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
-
 ### Escape / reposição (9)
 
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
@@ -337,7 +337,7 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
 |---|---|---|---|---|---|---|---|---|---|
-| `derrubada_forcada_defendida` | derrubada forcada defendida | - → - | relativa ao efeito | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho esq., mão dir., mão esq., pé esq., tronco | sim | média | Não iniciada | dois personagens |
+| `derrubada_forcada_defendida` | derrubada forcada defendida | - → - | relativa ao efeito | própria (quadros-chave) | cabeça, cintura, deslocamento, joelho esq., mão dir., mão esq., pé esq., tronco | sim | média | Aguardando homologação visual | dois personagens |
 | `desequilibrar_pes` | desequilibrar pes | - → - | relativa ao efeito | própria (quadros-chave) | cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | média | Não iniciada | dois personagens |
 | `pernas_presas` | pernas presas | - → - | relativa ao efeito | própria (quadros-chave) | braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | média | Não iniciada | dois personagens |
 | `postura_firme` | postura firme | - → - | relativa ao efeito | própria (quadros-chave) | braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., tronco | sim | média | Não iniciada | dois personagens |
@@ -358,6 +358,18 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | `RAPIDA_LEVANTAR_DO_CHAO` | rapida levantar do chao | DEITADO → EM_PE | 16 ticks | própria (interpolação de poses) | - | não | média | Não iniciada | orientação da raiz (deitar/cair) |
 | `RAPIDA_LEVANTAR` | rapida levantar | AJOELHADO → EM_PE | 8 ticks | própria (interpolação de poses) | - | não | média | Não iniciada | orientação da raiz (deitar/cair) |
 | `LEVANTADA_TECNICA` | levantada tecnica | DEITADO → EM_PE | 30 ticks | própria (interpolação de poses) | - | não | média | Não iniciada | orientação da raiz (deitar/cair) |
+
+### Levantada / saída de posição (7)
+
+| ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
+|---|---|---|---|---|---|---|---|---|---|
+| `levantar_tecnico` | Levantar técnico [LEVANTAR] | EM_PE_CONTRA_SOLO → EM_PE_SEPARADOS (por cima: NENHUM) | janela de 14 ticks (~224 ms) | própria (quadros-chave) | braço esq., joelho dir., mão dir., mão esq., pé dir., rotação global | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `levantar_do_solo` | Levantar [LEVANTAR] | SOLO_DISPUTADO → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 10 ticks (~160 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `levantar_da_guarda` | Levantar da guarda [LEVANTAR] | DE_LA_RIVA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_SEPARADOS (por cima: NENHUM) | janela de 16 ticks (~256 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `afastar_da_guarda` | Abrir e afastar com os pés [AFASTAR] | DE_LA_RIVA, GUARDA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: OUTRO) | janela de 12 ticks (~192 ms) | própria (quadros-chave) | braço dir., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `sair_da_guarda` | Criar espaço e levantar [LEVANTAR] | DE_LA_RIVA, GUARDA, GUARDA_ABERTA, GUARDA_ARANHA, GUARDA_BORBOLETA, GUARDA_LACO, MEIA_GUARDA, SINGLE_LEG_X → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 16 ticks (~256 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
+| `abandonar_posicao` | Soltar a posição [SOLTAR] | CONTROLE_LATERAL, COSTAS, JOELHO_BARRIGA, MONTADA → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 6 ticks (~96 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair) |
+| `levantar_do_ashi` | Levantar e puxar a perna [LEVANTAR] | ASHI_GARAMI → EM_PE_CONTRA_SOLO (por cima: INICIADOR) | janela de 12 ticks (~192 ms) | provisória (pose genérica) | não determinado (pose provisória genérica) | sim | muito alta | Não iniciada | dois personagens, orientação da raiz (deitar/cair), camadas por membro (pernas enroscadas) |
 
 ### Transição de controle (7)
 
@@ -410,9 +422,9 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
 |---|---|---|---|---|---|---|---|---|---|
 | `andar` | Andar | - → - | - | própria (procedural) | - | não | baixa | Homologada | - |
-| `correr` | Correr | - → - | - | própria (procedural) | - | não | baixa | Não iniciada | - |
-| `agachar` | Agachar | - → - | - | própria (procedural) | - | não | baixa | Não iniciada | - |
-| `pular` | Pular | - → - | - | própria (procedural) | - | não | baixa | Não iniciada | - |
+| `correr` | Correr | - → - | - | própria (procedural) | - | não | baixa | Aguardando homologação visual | - |
+| `agachar` | Agachar | - → - | - | própria (procedural) | - | não | baixa | Aguardando homologação visual | - |
+| `pular` | Pular | - → - | - | própria (procedural) | - | não | baixa | Aguardando homologação visual | - |
 | `idle_combate` | Idle de combate | - → - | loop | própria (procedural) | - | não | baixa | Homologada | - |
 | `respiracao` | Respiração / exaustão | - → - | loop | própria (procedural) | - | não | baixa | Homologada | - |
 
@@ -440,10 +452,10 @@ Um tick do jogo = 16 ms (`GamePanel.INTERVALO_GAME_LOOP_MS`).
 
 | ID | Nome | Início → fim | Duração | Animação no jogo | Articulações | 2P | Complexidade | Rig 2.0 | Requisitos Rig 2.0 |
 |---|---|---|---|---|---|---|---|---|---|
-| `pegada_1` | Pegada 1 — Uma lapela + um braco. | EM_PE_SEPARADOS → estado PEGADA_1 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_1.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Não iniciada | dois personagens, mãos (pegada) |
-| `pegada_2` | Pegada 2 — Cruzada: maos invertidas (frente na manga, tras cruza para a gola). (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_2 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_2.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Não iniciada | dois personagens, mãos (pegada) |
-| `pegada_3` | Pegada 3 — Duas mangas: as duas maos nas mangas. (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_3 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_3.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Não iniciada | dois personagens, mãos (pegada) |
-| `pegada_4` | Pegada 4 — Gola e nuca: mao da frente na nuca, mao de tras na gola. (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_4 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_4.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Não iniciada | dois personagens, mãos (pegada) |
+| `pegada_1` | Pegada 1 — Uma lapela + um braco. | EM_PE_SEPARADOS → estado PEGADA_1 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_1.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Aguardando homologação visual | dois personagens, mãos (pegada) |
+| `pegada_2` | Pegada 2 — Cruzada: maos invertidas (frente na manga, tras cruza para a gola). (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_2 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_2.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Aguardando homologação visual | dois personagens, mãos (pegada) |
+| `pegada_3` | Pegada 3 — Duas mangas: as duas maos nas mangas. (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_3 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_3.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Aguardando homologação visual | dois personagens, mãos (pegada) |
+| `pegada_4` | Pegada 4 — Gola e nuca: mao da frente na nuca, mao de tras na gola. (Entrega 5L) | EM_PE_SEPARADOS → estado PEGADA_4 | 30 quadros | JSON MiauStudio + reação do receptor (receptor/receptor_pegada_4.json) | corpo inteiro dos dois (pose MiauStudio de 30 valores) | sim | média | Em implementação | dois personagens, mãos (pegada) |
 
 ### Finalização (pose genérica) (3)
 
