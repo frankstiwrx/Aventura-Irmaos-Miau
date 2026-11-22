@@ -84,17 +84,20 @@ public class ConceitoRig2 {
     /** Indice 0 = lado direito do lutador (-x), 1 = lado esquerdo (+x). */
     static final class Corpo {
         double inclinacao, baixar, cabecaZ = 2, giroCabeca;
+        /** 6.2: deslocamento do quadril (lateral e para a frente), aplicado ao corpo todo exceto aos pes. */
+        double quadrilX, quadrilZ;
         final V[] ombro = new V[2], cotovelo = new V[2], mao = new V[2];
         final V[] quadril = new V[2], joelho = new V[2], tornozelo = new V[2];
         final double[] guinadaPe = new double[2];
+        /** 6.2: inclinacao do pe em graus (positivo = calcanhar levantado, negativo = ponta levantada). */
+        final double[] inclinacaoPe = new double[2];
         V cabeca, pescoco, pelve;
 
-        /** Coordenada neutra -> pose: abaixa o corpo e inclina o tronco em torno da cintura. */
+        /** Coordenada neutra -> pose: desloca o quadril, abaixa o corpo e inclina o tronco em torno da cintura. */
         V transformar(V v) {
-            V b = new V(v.x(), v.y() + baixar, v.z());
-            if (v.y() >= PIVO_CINTURA || inclinacao == 0) return b;
-            double r = Math.toRadians(inclinacao), py = PIVO_CINTURA + baixar, dy = b.y() - py;
-            return new V(b.x(), py + dy * Math.cos(r) + b.z() * Math.sin(r), -dy * Math.sin(r) + b.z() * Math.cos(r));
+            if (v.y() >= PIVO_CINTURA || inclinacao == 0) return new V(v.x() + quadrilX, v.y() + baixar, v.z() + quadrilZ);
+            double r = Math.toRadians(inclinacao), py = PIVO_CINTURA + baixar, dy = v.y() + baixar - py;
+            return new V(v.x() + quadrilX, py + dy * Math.cos(r) + v.z() * Math.sin(r), -dy * Math.sin(r) + v.z() * Math.cos(r) + quadrilZ);
         }
 
         V dir(V n, double yNeutro) {
@@ -181,23 +184,50 @@ public class ConceitoRig2 {
     static double limitar(double v, double min, double max) { return Math.max(min, Math.min(max, v)); }
 
     /**
-     * Parametros de pose do laboratorio. Os bracos sao descritos por angulos (elevacao, avanco,
-     * flexao do cotovelo) relativos ao tronco; a vista (guinada da camera) nao faz parte da pose,
-     * por isso girar o personagem nunca altera os membros.
+     * Parametros de pose. Os bracos sao descritos por angulos (elevacao, avanco, flexao do cotovelo)
+     * relativos ao tronco; as pernas por alvos de tornozelo no espaco do corpo. A vista (guinada da
+     * camera) nao faz parte da pose, por isso girar o personagem nunca altera os membros.
+     *
+     * 6.2: todos os valores ficam explicitos aqui (antes alguns vinham direto da PoseBase), para que
+     * uma animacao possa interpolar qualquer canal ao longo do tempo. PoseBase so fornece o padrao.
      */
     static final class ParametrosPose {
         PoseBase base;
         PresetPernas pernas = PresetPernas.DA_POSE;
         double giroCabeca;
+        // corpo
+        double inclinacao, baixar, cabecaZ, quadrilX, quadrilZ, ombros;
+        // bracos
         final double[] elevacao = new double[2], avanco = new double[2], flexao = new double[2];
         final V[] poloLocal = new V[2];
+        // pernas
+        final V[] pe = new V[2], poloPerna = new V[2];
+        final double[] guinadaPe = new double[2], inclinacaoPe = new double[2];
 
         /** Valores que reproduzem exatamente a pose-base. */
         static ParametrosPose padrao(PoseBase b) {
             ParametrosPose p = new ParametrosPose();
             p.base = b;
+            p.restaurarCorpo();
             p.restaurarBracos();
+            p.restaurarPernas();
             return p;
+        }
+
+        void restaurarCorpo() {
+            inclinacao = base.inclinacao;
+            baixar = base.baixar;
+            cabecaZ = base.cabecaZ;
+            quadrilX = quadrilZ = ombros = 0;
+        }
+
+        void restaurarPernas() {
+            for (int i = 0; i < 2; i++) {
+                pe[i] = base.pes[i];
+                poloPerna[i] = base.polosPerna[i];
+                guinadaPe[i] = base.guinadaPe[i];
+                inclinacaoPe[i] = 0;
+            }
         }
 
         void restaurarBracos() {
@@ -230,25 +260,71 @@ public class ConceitoRig2 {
         ParametrosPose copia() {
             ParametrosPose p = new ParametrosPose();
             p.base = base; p.pernas = pernas; p.giroCabeca = giroCabeca;
+            p.inclinacao = inclinacao; p.baixar = baixar; p.cabecaZ = cabecaZ;
+            p.quadrilX = quadrilX; p.quadrilZ = quadrilZ; p.ombros = ombros;
             for (int i = 0; i < 2; i++) {
                 p.elevacao[i] = elevacao[i]; p.avanco[i] = avanco[i]; p.flexao[i] = flexao[i]; p.poloLocal[i] = poloLocal[i];
+                p.pe[i] = pe[i]; p.poloPerna[i] = poloPerna[i]; p.guinadaPe[i] = guinadaPe[i]; p.inclinacaoPe[i] = inclinacaoPe[i];
             }
             return p;
         }
+
+        /**
+         * Interpolacao canal a canal entre duas poses (k = 0 -> a, k = 1 -> b). Os polos sao
+         * misturados e normalizados; o preset de pernas e a base vem de b quando k >= 1.
+         */
+        static ParametrosPose interpolar(ParametrosPose a, ParametrosPose b, double kCorpo, double kBracos, double kPernas) {
+            ParametrosPose r = a.copia();
+            r.base = kCorpo >= 1 ? b.base : a.base;
+            r.giroCabeca = mix(a.giroCabeca, b.giroCabeca, kCorpo);
+            r.inclinacao = mix(a.inclinacao, b.inclinacao, kCorpo);
+            r.cabecaZ = mix(a.cabecaZ, b.cabecaZ, kCorpo);
+            r.quadrilX = mix(a.quadrilX, b.quadrilX, kCorpo);
+            r.quadrilZ = mix(a.quadrilZ, b.quadrilZ, kCorpo);
+            r.ombros = mix(a.ombros, b.ombros, kCorpo);
+            r.baixar = mix(a.baixar, b.baixar, kPernas);
+            for (int i = 0; i < 2; i++) {
+                r.elevacao[i] = mix(a.elevacao[i], b.elevacao[i], kBracos);
+                r.avanco[i] = mix(a.avanco[i], b.avanco[i], kBracos);
+                r.flexao[i] = mix(a.flexao[i], b.flexao[i], kBracos);
+                r.poloLocal[i] = mixDir(a.poloLocal[i], b.poloLocal[i], kBracos);
+                r.pe[i] = mixV(a.pe[i], b.pe[i], kPernas);
+                r.poloPerna[i] = mixDir(a.poloPerna[i], b.poloPerna[i], kPernas);
+                r.guinadaPe[i] = mix(a.guinadaPe[i], b.guinadaPe[i], kPernas);
+                r.inclinacaoPe[i] = mix(a.inclinacaoPe[i], b.inclinacaoPe[i], kPernas);
+            }
+            return r;
+        }
+
+        static ParametrosPose interpolar(ParametrosPose a, ParametrosPose b, double k) { return interpolar(a, b, k, k, k); }
+    }
+
+    static double mix(double a, double b, double k) { return k <= 0 ? a : k >= 1 ? b : a + (b - a) * k; }
+
+    static V mixV(V a, V b, double k) { return k <= 0 ? a : k >= 1 ? b : a.mais(b.menos(a).vezes(k)); }
+
+    static V mixDir(V a, V b, double k) {
+        if (k <= 0) return a;
+        if (k >= 1) return b;
+        V m = a.unit().vezes(1 - k).mais(b.unit().vezes(k));
+        return m.tam() < 1e-6 ? b : m.unit().vezes(mix(a.tam(), b.tam(), k));
     }
 
     /** Monta o esqueleto de uma pose. A camera nao participa: a mesma pose serve para qualquer vista. */
     static Corpo montarPose(ParametrosPose pp) {
         pp.limitarTudo();
-        PoseBase b = pp.base;
         Corpo c = new Corpo();
-        c.inclinacao = b.inclinacao;
-        c.baixar = b.baixar;
-        c.cabecaZ = b.cabecaZ;
+        c.inclinacao = pp.inclinacao;
+        c.baixar = pp.baixar;
+        c.cabecaZ = pp.cabecaZ;
+        c.quadrilX = pp.quadrilX;
+        c.quadrilZ = pp.quadrilZ;
         c.giroCabeca = pp.giroCabeca;
-        V[] pes = b.pes.clone(), polosP = b.polosPerna.clone();
-        c.guinadaPe[0] = b.guinadaPe[0];
-        c.guinadaPe[1] = b.guinadaPe[1];
+        V[] pes = pp.pe.clone(), polosP = pp.poloPerna.clone();
+        for (int i = 0; i < 2; i++) {
+            c.guinadaPe[i] = pp.guinadaPe[i];
+            c.inclinacaoPe[i] = pp.inclinacaoPe[i];
+        }
         switch (pp.pernas) {
             case JOELHOS -> c.baixar += 14;
             case ESQUERDA_FRENTE -> {
@@ -277,7 +353,7 @@ public class ConceitoRig2 {
         c.cabeca = c.transformar(new V(0, CABECA_Y, c.cabecaZ));
         for (int i = 0; i < 2; i++) {
             double lado = i == 0 ? -1 : 1;
-            c.ombro[i] = c.transformar(new V(lado * 34, 90, 0));
+            c.ombro[i] = c.transformar(new V(lado * 34, 90 - pp.ombros, 0));
             V dirB = girarBraco(new V(0, 1, 0), pp.elevacao[i], pp.avanco[i], lado);
             V alvo = c.ombro[i].mais(dirB.vezes(alcance(pp.flexao[i])));
             V[] br = ik(c.ombro[i], alvo, BRACO, ANTEBRACO, girarBraco(pp.poloLocal[i], pp.elevacao[i], pp.avanco[i], lado));
@@ -647,9 +723,14 @@ public class ConceitoRig2 {
             double a = Math.toRadians(c.guinadaPe[i]);
             V d = new V(Math.sin(a), 0, Math.cos(a));
             V t = c.tornozelo[i];
-            Point2D centro = cam.p(t.mais(new V(0, 7, 0)).mais(d.vezes(6)));
+            // 6.2: inclinacao do pe em torno do tornozelo (calcanhar/ponta); sem inclinacao, igual a 6.0.4
+            double ip = Math.toRadians(c.inclinacaoPe[i]);
+            java.util.function.DoubleFunction<V> ponto = frente -> ip == 0
+                    ? t.mais(new V(0, 7, 0)).mais(d.vezes(frente))
+                    : t.mais(d.vezes(frente * Math.cos(ip) - 7 * Math.sin(ip))).mais(new V(0, frente * Math.sin(ip) + 7 * Math.cos(ip), 0));
+            Point2D centro = cam.p(ponto.apply(6));
             double rel = Math.toRadians(cam.graus) + a;
-            double rx = Math.hypot(10.5 * Math.cos(rel), 15 * Math.sin(rel)), ry = 7;
+            double rx = Math.hypot(10.5 * Math.cos(rel), 15 * Math.sin(rel) * Math.cos(ip)), ry = 7;
             p.forma(new Ellipse2D.Double(centro.getX() - rx, centro.getY() - ry, 2 * rx, 2 * ry),
                     misturar(PELO, PELO_LONGE, longe), PELO_BORDA, .9);
             // 6.1: os dedos somem gradualmente quando o pe vira de costas (antes sumiam de uma vez em -0,3)
@@ -659,7 +740,7 @@ public class ConceitoRig2 {
             double sinal = Math.signum(Math.sin(rel) + 1e-9);
             comOpacidade(f, () -> {
                 for (int k = -1; k <= 1; k += 2) {
-                    Point2D q = cam.p(t.mais(new V(0, 7, 0)).mais(d.vezes(17 + 3 * k * sinal)).mais(lado.vezes(4 * k)));
+                    Point2D q = cam.p(ponto.apply(17 + 3 * k * sinal).mais(lado.vezes(4 * k)));
                     p.linha(PELO_BORDA, .8, q.getX(), q.getY() + 1, q.getX(), q.getY() + 5);
                 }
             });
