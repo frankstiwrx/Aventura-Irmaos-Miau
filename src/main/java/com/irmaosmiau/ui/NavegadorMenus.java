@@ -217,6 +217,8 @@ public final class NavegadorMenus {
                     return null;
                 }
                 return foco == null ? vizinho(alvo, null, 1) : null;
+            case PERFIS:
+                return null;                                   // so a selecao de lutadores usa
             case VOLTAR:
             default:
                 AbstractButton v = botaoVoltar(alvo);

@@ -19,7 +19,9 @@ import java.util.List;
 public final class LeitorNavegacao {
 
     /** O que a tela deve fazer. */
-    public enum Comando { ANTERIOR, PROXIMO, ESQUERDA, DIREITA, CONFIRMAR, VOLTAR }
+    public enum Comando { ANTERIOR, PROXIMO, ESQUERDA, DIREITA, CONFIRMAR, VOLTAR,
+        /** X / Quadrado: so na selecao de lutadores (abre os perfis); os outros leitores nunca emitem. */
+        PERFIS }
 
     public static final float ZONA_MORTA = 0.5f;
     public static final float NEUTRO = 0.3f;
@@ -31,6 +33,18 @@ public final class LeitorNavegacao {
     private long proximoPasso;
     private boolean confirmarAntes;
     private boolean voltarAntes;
+    /** Le o X / Quadrado como PERFIS (so a selecao de lutadores liga). */
+    private final boolean comPerfis;
+    private boolean perfisAntes;
+
+    public LeitorNavegacao() {
+        this(false);
+    }
+
+    /** @param comPerfis true = o X / Quadrado vira {@link Comando#PERFIS} (uma vez por toque) */
+    public LeitorNavegacao(boolean comPerfis) {
+        this.comPerfis = comPerfis;
+    }
 
     /** Exige soltar tudo antes do proximo comando (troca de tela, pausa, foco). */
     public void desarmar() {
@@ -52,19 +66,22 @@ public final class LeitorNavegacao {
             desarmar();
             confirmarAntes = false;
             voltarAntes = false;
+            perfisAntes = false;
             return saida;
         }
         Comando d = direcao(estado);
         boolean confirmar = estado.pressionado(BotaoGamepad.SUL);
         boolean voltar = estado.pressionado(BotaoGamepad.LESTE);
+        boolean perfis = comPerfis && estado.pressionado(BotaoGamepad.OESTE);
 
         if (!armado) {
-            if (d == null && !confirmar && !voltar) {
+            if (d == null && !confirmar && !voltar && !perfis) {
                 armado = true;
             }
             direcao = null;
             confirmarAntes = confirmar;
             voltarAntes = voltar;
+            perfisAntes = perfis;
             return saida;
         }
 
@@ -84,8 +101,12 @@ public final class LeitorNavegacao {
         if (voltar && !voltarAntes) {
             saida.add(Comando.VOLTAR);
         }
+        if (perfis && !perfisAntes) {
+            saida.add(Comando.PERFIS);
+        }
         confirmarAntes = confirmar;
         voltarAntes = voltar;
+        perfisAntes = perfis;
         return saida;
     }
 
