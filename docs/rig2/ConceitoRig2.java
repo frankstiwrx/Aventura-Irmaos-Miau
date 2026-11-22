@@ -406,7 +406,7 @@ public class ConceitoRig2 {
         m.put("peito", superficie(c, 112, 0, 2));
         m.put("gola_dir", superficie(c, 96, -24, 3));
         m.put("gola_esq", superficie(c, 96, 24, 3));
-        m.put("nuca", superficie(c, 74, 180, 3));
+        m.put("nuca", c.pescoco.mais(c.dir(new V(0, -8, -13), 60))); // atras do pescoco visivel, acima da gola
         m.put("faixa", superficie(c, 155, 0, 4));
         return m;
     }
