@@ -7,7 +7,6 @@ Este é o registro dos marcos aprovados manualmente pela equipe. As versões his
 | **6.0.4** | Conceito visual: cinco perspectivas, kimono, cabeça, focinho de perfil, pescoço curto; braços e antebraços 145%, pernas 120% | `3d8db58` (gerador e prévias), `f52094a` (documentação) | `docs/rig2/previas-6.0.4/` |
 | **6.1** | Laboratório interativo: rotação contínua de 0° a 180°, giro da cabeça, braços, presets de pernas, esqueleto, profundidade | `5932f67`, `5dbf241`, `3e5b42b`, `8f37aca` | `docs/rig2/laboratorio-6.1/` |
 | **6.2** | Animações: idle neutro (respiração), idle de combate, caminhada, transições neutra ↔ combate | `036f247`, `84816ac`, `775a029`, `e32d2b7`, `679ff7b` | `docs/rig2/laboratorio-6.2/` e `historico/rig2-6.2-aprovado.zip` |
-
 | 6.3 | *Em avaliação (não homologada):* inventário, catálogo, corrida, agachamento, pulo, dois lutadores, pegadas 1 a 3, derrubada forçada defendida e laboratório de combate | ver `git log` (`2c47fe0` em diante) | `docs/rig2/laboratorio-6.3/` |
 
 ## Cópia executável da 6.2
