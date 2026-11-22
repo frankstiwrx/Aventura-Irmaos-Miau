@@ -12,16 +12,21 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `previas/combate-3-4.png` / `.svg` | Posição de combate na vista principal (3/4, 40°). |
 | `previas/estrutura-3-4.png` / `.svg` | Vista técnica: raízes, articulações, ossos, ordem das camadas e guinada da câmera. |
 | `previas-refinadas/` | As mesmas três prévias após o refinamento 6.0.2 (perfil, pescoço e gola), mais `comparativo-prancha.png` e `comparativo-combate.png` (antes × depois). |
-| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.2. |
+| `previas-6.0.3/` | Versão atual: pescoço com metade da exposição da 6.0.2 e perfil sem o traço da bochecha. Inclui `comparativo-prancha.png` e `comparativo-combate.png` com as três versões (6.0.1, 6.0.2 e 6.0.3). |
+| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.3. |
 | `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
-As prévias de `previas/` são as originais da 6.0.1 e não são regeradas; o gerador daquela versão está no commit `e99b380`. Para regenerar as prévias refinadas e os comparativos, com Java 23 e sem compilar o projeto:
+As prévias de cada versão ficam congeladas:
+- `previas/`: 6.0.1, gerador no commit `e99b380`;
+- `previas-refinadas/`: 6.0.2, gerador no commit `8727d73`.
+
+O gerador atual produz a 6.0.3. Para regenerá-la, com os comparativos, use Java 23 sem compilar o projeto:
 
 ```
-java docs/rig2/ConceitoRig2.java docs/rig2/previas-refinadas docs/rig2/previas
+java docs/rig2/ConceitoRig2.java docs/rig2/previas-6.0.3 docs/rig2/previas docs/rig2/previas-refinadas
 ```
 
-O segundo argumento é opcional e só serve para montar os comparativos. O gerador também confere:
+O primeiro argumento é a pasta de saída. Os seguintes são opcionais: são as versões anteriores usadas nos comparativos, da mais antiga para a mais nova. O gerador também confere:
 - que braço, antebraço, coxa, canela e pescoço mantêm o comprimento nas duas poses;
 - que o pescoço continua preso ao tronco e que a cabeça mantém a altura nas cinco vistas;
 - que o rosto de frente e o de 3/4 não usam a silhueta de perfil.
@@ -236,3 +241,30 @@ A silhueta de perfil só entra perto de 90° (peso suave entre ~60° e 90°, e o
 - **Rosto de frente e em 3/4:** a cabeça é a mesma da 6.0.1, mas agora fica 5 unidades mais alta e com o pescoço visível embaixo.
 - **Pescoço no combate:** como o tronco inclina 8° e a cabeça recua, o pescoço aparece um pouco mais que na pose neutra. Vale avaliar se deve ficar mais curto nessa pose.
 - O Miau Preto continua sem versão.
+
+## 9. Ajuste 6.0.3: pescoço mais discreto e perfil mais limpo
+
+Meio-termo entre a 6.0.1 (cabeça colada na gola) e a 6.0.2 (pescoço aparente demais). Nada mais do conceito mudou. As prévias estão em `previas-6.0.3/`.
+
+### Pescoço e cabeça
+- **A cabeça desceu 2,5 unidades:** o centro passou de y 31 para y 33,5 (na 6.0.1 era 36).
+  - A faixa de pescoço visível acima da gola ficou com cerca de metade da exposição da 6.0.2.
+  - A altura total do personagem ficou 2,5 unidades acima da 6.0.1 e 2,5 abaixo da 6.0.2.
+- **Pescoço e gola não mudaram de construção.** O pescoço continua indo do pivô do pescoço ao pivô da cabeça, com a sombra curta da cabeça. Ele ainda termina reto na borda de baixo da gola, e a gola continua o abraçando por fora. Como a cabeça desceu, o trecho visível encurtou sozinho; não foi preciso mexer na gola.
+
+### Rosto de perfil
+- **Traço removido:** saiu o traço interno da bochecha, perto da boca. O focinho agora é definido só pela silhueta externa (testa, ponte do nariz, ponta do nariz, lábio e queixo), pelo nariz rosa e pela boca.
+- **Silhueta, olho, orelhas e boca do perfil:** iguais aos da 6.0.2. Sem o traço, a leitura ficou boa, então não foi preciso compensar no contorno.
+
+### Frente e 3/4
+O rosto é o mesmo da 6.0.1 e da 6.0.2: o traço removido só existia no perfil. A única diferença é a altura da cabeça (2,5 unidades mais baixa que na 6.0.2), comum a todas as vistas.
+
+### Verificações
+O gerador continua conferindo tudo a cada execução, e todas as conferências passaram:
+- comprimentos dos ossos e do pescoço;
+- pescoço preso ao tronco nas cinco vistas;
+- altura e largura da cabeça;
+- frente e 3/4 sem a silhueta de perfil;
+- rotação contínua do rosto.
+
+`comparativo-prancha.png` e `comparativo-combate.png` mostram as três versões lado a lado.
