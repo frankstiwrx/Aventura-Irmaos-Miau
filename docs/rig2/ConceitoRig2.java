@@ -26,6 +26,8 @@ public class ConceitoRig2 {
     /** Comprimentos fixos (unidades do laboratorio: cabeca = 70). Base x 145% / 145% / 120%. */
     static final double BRACO = 39, ANTEBRACO = 30, COXA = 46.5, CANELA = 46;
     static final double RAIO_CABECA = 35, CHAO = 270, PIVO_CINTURA = 158;
+    /** 6.0.2: centro da cabeca 5 unidades mais alto (era 36) para mostrar um pouco de pescoco. */
+    static final double CABECA_Y = 31, PESCOCO_Y = 76;
 
     /** Secoes elipticas do casaco: y neutro, meia-largura (a) e meia-profundidade (b). */
     static final double[] TY = {70, 80, 88, 100, 120, 140, 152, 164, 180, 196};
@@ -112,8 +114,8 @@ public class ConceitoRig2 {
 
     static void montar(Corpo c, V[] maos, V[] polosB, V[] pes, V[] polosP) {
         c.pelve = c.transformar(new V(0, 165, 0));
-        c.pescoco = c.transformar(new V(0, 76, 0));
-        c.cabeca = c.transformar(new V(0, 36, c.cabecaZ));
+        c.pescoco = c.transformar(new V(0, PESCOCO_Y, 0));
+        c.cabeca = c.transformar(new V(0, CABECA_Y, c.cabecaZ));
         for (int i = 0; i < 2; i++) {
             double s = i == 0 ? -1 : 1;
             c.ombro[i] = c.transformar(new V(s * 34, 90, 0));
@@ -362,7 +364,10 @@ public class ConceitoRig2 {
          * "Trapaca" de camera classica da animacao 2D: entre a frente e o perfil o rosto gira 75% do
          * angulo do corpo, para manter os dois olhos legiveis no 3/4 de combate (corpo 40 -> rosto 30).
          */
-        static double guinadaCabeca(double g) { return g > 0 && g < 90 ? g * .75 : g; }
+        static double guinadaCabeca(double g) {
+            // 6.0.2: curva suave (sem salto em 90 graus); continua dando exatamente 30 para o corpo a 40.
+            return g > 0 && g < 90 ? g - 10 / Math.sin(Math.toRadians(80)) * Math.sin(Math.toRadians(2 * g)) : g;
+        }
 
         void sombraChao() {
             double x0 = Math.min(cam.p(c.tornozelo[0]).getX(), cam.p(c.tornozelo[1]).getX());
@@ -585,7 +590,7 @@ public class ConceitoRig2 {
             linhaSup(new double[][] {{84, 180}, {148, 180}}, .5, COSTURA, .8);
             // peito de pelo na abertura em V
             List<Point2D> v = new ArrayList<>(), volta = new ArrayList<>();
-            for (double y = 79; y <= 109; y += 2) {
+            for (double y = 77; y <= 109; y += 2) {
                 double hwO = Math.toDegrees(5.5 / interp(TA, y));
                 double fo = phiLapelaFora(y) - hwO, fi = phiLapelaDentro(y) + hwO;
                 if (vis(y, (fo + fi) / 2) > .02) { v.add(sp(y, fo, .6)); volta.add(sp(y, fi, .6)); }
@@ -593,8 +598,10 @@ public class ConceitoRig2 {
             if (v.size() > 2) {
                 Collections.reverse(volta);
                 v.addAll(volta);
-                p.forma(poligono(v), new Color(200, 204, 212), new Color(150, 154, 162), .8);
+                // 6.0.2: mesmo tom da base do pescoco, para o peito continuar o pescoco sem degrau
+                p.forma(poligono(v), PELO_SOMBRA, new Color(150, 154, 162), .8);
             }
+            pescoco(); // 6.0.2: depois do corpo do casaco, antes da gola que o abraca
             golaTras();
             // lapela de baixo (painel direito) e de cima (painel esquerdo, cruza por cima)
             lapela(LAPELA_DENTRO, 11, GOLA, BORDA);
@@ -656,28 +663,121 @@ public class ConceitoRig2 {
         }
 
         // ---------- cabeca
+        /**
+         * Silhueta de perfil (6.0.2), olhando para a direita, centro da cabeca na origem (raio 35).
+         * Cranio arredondado, testa descendo em uma "parada" suave, ponte do nariz curta, nariz,
+         * labio, queixo pequeno e mandibula voltando para o pescoco. Mesma altura (~72) e mesmo
+         * comprimento (~80) da cabeca 6.0.1 de perfil.
+         */
+        static final double[][] PERFIL = {
+            {-35, 2}, {-31, -17}, {-17, -32}, {1, -36}, {18, -31.5}, {29.5, -20}, {34.5, -10.5}, {37.5, -4.5},
+            {41.5, 0.5}, {45, 6}, {44.2, 11.2}, {41, 14.5}, {40.6, 19.5}, {36.5, 25.5}, {25, 31.5}, {9, 35.5},
+            {-8, 35}, {-23, 28.5}, {-32, 16}};
+
+        /** Peso do perfil (0 = cabeca 6.0.1, 1 = silhueta de perfil): so perto de 90 graus. */
+        static double pesoPerfil(double guinada) {
+            double s = Math.abs(Math.sin(Math.toRadians(guinada)));
+            double t = Math.max(0, Math.min(1, (s - .87) / .13));
+            return t * t * (3 - 2 * t);
+        }
+
+        static Path2D curvaFechada(double[][] q, double dir, double cx, double cy) {
+            int n = q.length;
+            Path2D p = new Path2D.Double();
+            p.moveTo(cx + q[0][0] * dir, cy + q[0][1]);
+            for (int i = 0; i < n; i++) {
+                double[] a = q[(i - 1 + n) % n], b = q[i], c = q[(i + 1) % n], d = q[(i + 2) % n];
+                p.curveTo(cx + (b[0] + (c[0] - a[0]) / 6) * dir, cy + b[1] + (c[1] - a[1]) / 6,
+                        cx + (c[0] - (d[0] - b[0]) / 6) * dir, cy + c[1] - (d[1] - b[1]) / 6,
+                        cx + c[0] * dir, cy + c[1]);
+            }
+            p.closePath();
+            return p;
+        }
+
+        /** Maior distancia do centro ate o contorno, ao longo de um raio (para misturar silhuetas). */
+        static double raio(Shape s, double cx, double cy, double ang) {
+            double ux = Math.cos(ang), uy = Math.sin(ang), melhor = 0;
+            double[] c = new double[6];
+            double x0 = 0, y0 = 0, mx = 0, my = 0;
+            for (PathIterator it = new FlatteningPathIterator(s.getPathIterator(null), .3); !it.isDone(); it.next()) {
+                int tipo = it.currentSegment(c);
+                double x1, y1;
+                if (tipo == PathIterator.SEG_MOVETO) { x0 = mx = c[0]; y0 = my = c[1]; continue; }
+                if (tipo == PathIterator.SEG_CLOSE) { x1 = mx; y1 = my; } else { x1 = c[0]; y1 = c[1]; }
+                double ex = x1 - x0, ey = y1 - y0, den = ux * ey - uy * ex;
+                if (Math.abs(den) > 1e-9) {
+                    double ax = x0 - cx, ay = y0 - cy;
+                    double t = (ax * ey - ay * ex) / den, u = (ax * uy - ay * ux) / den;
+                    if (t > 0 && u >= 0 && u <= 1) melhor = Math.max(melhor, t);
+                }
+                x0 = x1; y0 = y1;
+            }
+            return melhor;
+        }
+
+        static Point2D projCabeca(Point2D c2, double guinada, V v) {
+            double r = Math.toRadians(guinada), cs = Math.cos(r), sn = Math.sin(r);
+            return pt(c2.getX() + v.x() * cs + v.z() * sn,
+                    c2.getY() + v.y() + Camera.INCLINACAO * .5 * (-v.x() * sn + v.z() * cs));
+        }
+
+        /** Silhueta da cabeca sem orelhas. Frente e 3/4 identicos a 6.0.1; o perfil usa a curva PERFIL. */
+        static Area silhuetaCabeca(Point2D c2, double guinada) {
+            double r = Math.toRadians(guinada), cs = Math.cos(r), sn = Math.sin(r);
+            double rx = Math.hypot(RAIO_CABECA * cs, 38 * sn);
+            Point2D cc = projCabeca(c2, guinada, new V(0, 0, -2));
+            Area base = new Area(new Ellipse2D.Double(cc.getX() - rx, cc.getY() - RAIO_CABECA, 2 * rx, 2 * RAIO_CABECA));
+            Point2D fc = projCabeca(c2, guinada, new V(0, 10, .84 * RAIO_CABECA));
+            base.add(new Area(new Ellipse2D.Double(fc.getX() - 13, fc.getY() - 10, 26, 20)));
+            double w = pesoPerfil(guinada);
+            if (w <= 0) return base;
+            Area perfil = new Area(curvaFechada(PERFIL, sn >= 0 ? 1 : -1, c2.getX(), c2.getY()));
+            if (w >= 1) return perfil;
+            // transicao continua: mistura os raios das duas silhuetas a partir do centro
+            List<Point2D> q = new ArrayList<>();
+            for (int i = 0; i < 180; i++) {
+                double a = Math.toRadians(i * 2);
+                double rr = (1 - w) * raio(base, c2.getX(), c2.getY(), a) + w * raio(perfil, c2.getX(), c2.getY(), a);
+                q.add(pt(c2.getX() + rr * Math.cos(a), c2.getY() + rr * Math.sin(a)));
+            }
+            return new Area(poligono(q));
+        }
+
+        /**
+         * Pescoco (6.0.2): cilindro de pelo do pivo do pescoco ate o pivo da cabeca, desenhado depois do
+         * casaco e antes da gola, que o abraca por fora. A cabeca projeta uma sombra curta nele.
+         */
+        void pescoco() {
+            Point2D topo = cam.p(c.cabeca);
+            // termina reto logo abaixo da borda de baixo da gola (y ~78,5): nunca aparece abaixo dela
+            Point2D base = lerp(topo, cam.p(c.pescoco), (79 - CABECA_Y) / (PESCOCO_Y - CABECA_Y));
+            Area n = new Area(trapezio(topo, base, 26, 29));
+            p.preencher(n, PELO);
+            Area sombra = new Area(n);
+            sombra.intersect(silhuetaCabeca(topo, guinadaCabeca(cam.graus))
+                    .createTransformedArea(AffineTransform.getTranslateInstance(0, 5)));
+            p.preencher(sombra, PELO_SOMBRA);
+            Area lado = new Area(n);
+            lado.subtract(n.createTransformedArea(AffineTransform.getTranslateInstance(-4, 0)));
+            p.preencher(lado, PELO_SOMBRA);
+        }
+
         /** Cabeca: cranio levemente mais fundo que largo + focinho; o rosto vive na superficie e gira com ela. */
         void cabeca(V centro, double guinada) {
             Point2D c2 = cam.p(centro);
             double r = Math.toRadians(guinada), cs = Math.cos(r), sn = Math.sin(r);
-            java.util.function.Function<V, Point2D> hp = v -> pt(
-                    c2.getX() + v.x() * cs + v.z() * sn,
-                    c2.getY() + v.y() + Camera.INCLINACAO * .5 * (-v.x() * sn + v.z() * cs));
+            double w = pesoPerfil(guinada), dir = sn >= 0 ? 1 : -1;
+            java.util.function.Function<V, Point2D> hp = v -> projCabeca(c2, guinada, v);
             java.util.function.ToDoubleFunction<Double> encara = lon -> Math.cos(Math.toRadians(lon) + r);
+            // ponto do desenho de perfil (olhando para a direita), espelhado conforme o lado
+            java.util.function.BiFunction<Double, Double, Point2D> pp = (x, y) -> pt(c2.getX() + x * dir, c2.getY() + y);
 
             // orelhas: a mais distante primeiro
             int[] ordem = encara.applyAsDouble(-90.0) > encara.applyAsDouble(90.0) ? new int[] {1, -1} : new int[] {-1, 1};
-            for (int s : ordem) orelha(hp, s, encara);
+            for (int i = 0; i < 2; i++) orelha(hp, ordem[i], encara, i == 0, w, dir);
 
-            // cranio (elipsoide 35 x 35 x 38, um pouco para tras) + focinho (elipsoide 13 x 10 x 13)
-            double rx = Math.hypot(RAIO_CABECA * cs, 38 * sn);
-            Point2D cc = hp.apply(new V(0, 0, -2));
-            Area cranio = new Area(new Ellipse2D.Double(cc.getX() - rx, cc.getY() - RAIO_CABECA, 2 * rx, 2 * RAIO_CABECA));
-            V mc = new V(0, 10, .84 * RAIO_CABECA);
-            Point2D fc = hp.apply(mc);
-            Area focinho = new Area(new Ellipse2D.Double(fc.getX() - 13, fc.getY() - 10, 26, 20));
-            Area cab = new Area(cranio);
-            cab.add(focinho);
+            Area cab = silhuetaCabeca(c2, guinada);
             p.preencher(cab, PELO);
             // volume: meia-lua de sombra embaixo/a direita (luz fixa da tela)
             Area sombra = new Area(cab);
@@ -687,48 +787,69 @@ public class ConceitoRig2 {
             boolean rosto = cs > -.05;
             // contorno do focinho no 3/4: o focinho encobre a bochecha mais distante
             if (rosto && Math.abs(sn) > .25 && cs > .1) {
+                double rx = Math.hypot(RAIO_CABECA * cs, 38 * sn);
+                Point2D cc = hp.apply(new V(0, 0, -2)), fc = hp.apply(new V(0, 10, .84 * RAIO_CABECA));
+                Shape cranio = new Ellipse2D.Double(cc.getX() - rx, cc.getY() - RAIO_CABECA, 2 * rx, 2 * RAIO_CABECA);
                 List<Point2D> arcoF = new ArrayList<>();
-                double lado = Math.signum(sn);
                 for (double a = -65; a <= 65; a += 5) {
                     double ar = Math.toRadians(a);
-                    Point2D q = pt(fc.getX() + lado * 13 * Math.cos(ar), fc.getY() + 10 * Math.sin(ar));
+                    Point2D q = pt(fc.getX() + dir * 13 * Math.cos(ar), fc.getY() + 10 * Math.sin(ar));
                     if (cranio.contains(q)) arcoF.add(q);
                 }
                 if (arcoF.size() > 2) p.tracar(polilinha(arcoF), new Color(205, 209, 216), 1.1);
             }
-            // olhos sobre a esfera: aproximam-se e estreitam conforme giram
+            // perfil: bochecha/almofada dos bigodes, um traco leve
+            if (rosto && w > 0) {
+                Path2D bochecha = new Path2D.Double();
+                Point2D b0 = pp.apply(21.0, 9.0), b1 = pp.apply(30.0, 12.5), b2 = pp.apply(33.0, 22.5);
+                bochecha.moveTo(b0.getX(), b0.getY());
+                bochecha.quadTo(b1.getX(), b1.getY(), b2.getX(), b2.getY());
+                p.tracar(bochecha, new Color(205, 209, 216, (int) Math.round(255 * w)), 1.1);
+            }
+            // olhos sobre a esfera: aproximam-se e estreitam conforme giram; no perfil recuam da testa
             for (int s = -1; s <= 1; s += 2) {
                 double lon = 18 * s, k = encara.applyAsDouble(lon);
                 if (k <= .12) continue;
                 double la = Math.toRadians(lon), lt = Math.toRadians(-3);
                 Point2D o = hp.apply(new V(RAIO_CABECA * Math.cos(lt) * Math.sin(la), RAIO_CABECA * Math.sin(lt),
                         RAIO_CABECA * Math.cos(lt) * Math.cos(la)));
-                double w = 3.1 * Math.max(.42, k);
-                p.preencher(new Ellipse2D.Double(o.getX() - w, o.getY() - 3.2, 2 * w, 6.4), OLHO);
+                o = lerp(o, pp.apply(25.0, -4.0), w);
+                double larg = (1 - w) * 3.1 * Math.max(.42, k) + w * 2.5, alt = (1 - w) * 3.2 + w * 3.1;
+                p.preencher(new Ellipse2D.Double(o.getX() - larg, o.getY() - alt, 2 * larg, 2 * alt), OLHO);
             }
             if (rosto) {
-                Point2D a = hp.apply(new V(-3.5, 8, 38.5)), f = hp.apply(new V(0, 8.5, 41.8));
-                Point2D b = hp.apply(new V(3.5, 8, 38.5)), d = hp.apply(new V(0, 12.5, 40.2));
+                // perfil: nariz como uma cunha rosa na ponta do focinho
+                Point2D a = lerp(hp.apply(new V(-3.5, 8, 38.5)), pp.apply(40.2, 3.2), w);
+                Point2D f = lerp(hp.apply(new V(0, 8.5, 41.8)), pp.apply(45.9, 5.6), w);
+                Point2D b = lerp(hp.apply(new V(3.5, 8, 38.5)), pp.apply(45.0, 9.6), w);
+                Point2D d = lerp(hp.apply(new V(0, 12.5, 40.2)), pp.apply(41.6, 9.4), w);
                 p.preencher(poligono(List.of(a, f, b, d)), NARIZ);
-                Point2D m1 = hp.apply(new V(0, 17.5, 39.5));
-                Point2D me = hp.apply(new V(-5, 21.5, 37.5)), md = hp.apply(new V(5, 21.5, 37.5));
-                p.linha(BOCA, 1.4, d.getX(), d.getY(), m1.getX(), m1.getY(), me.getX(), me.getY());
+                Point2D m1 = lerp(hp.apply(new V(0, 17.5, 39.5)), pp.apply(41.8, 14.8), w);
+                Point2D me = lerp(hp.apply(new V(-5, 21.5, 37.5)), pp.apply(36.0, 17.6), w);
+                Point2D md = lerp(hp.apply(new V(5, 21.5, 37.5)), pp.apply(36.0, 17.6), w);
+                Point2D inicio = lerp(d, pp.apply(43.4, 9.8), w);
+                p.linha(BOCA, 1.4, inicio.getX(), inicio.getY(), m1.getX(), m1.getY(), me.getX(), me.getY());
                 p.linha(BOCA, 1.4, m1.getX(), m1.getY(), md.getX(), md.getY());
             }
         }
 
-        void orelha(java.util.function.Function<V, Point2D> hp, int s, java.util.function.ToDoubleFunction<Double> encara) {
+        void orelha(java.util.function.Function<V, Point2D> hp, int s, java.util.function.ToDoubleFunction<Double> encara,
+                    boolean longe, double w, double dir) {
             double lon = 48 * s, lo = Math.toRadians(lon);
             V base = esf(lon, -48, .97), tang = new V(Math.cos(lo), 0, -Math.sin(lo));
             V e1 = base.menos(tang.vezes(10.5)).mais(new V(0, 1.5, 0)), e2 = base.mais(tang.vezes(10.5)).mais(new V(0, 1.5, 0));
             V apice = base.mais(new V(s * 2, -34, -3));
             // orelha em concha: a base tem profundidade, entao ela nunca vira uma linha quando vista de lado
             V normal = new V(Math.sin(lo), 0, Math.cos(lo)), fundo = base.menos(normal.vezes(9)).mais(new V(0, 1.5, 0));
-            Point2D a = hp.apply(e1), b = hp.apply(apice), c2 = hp.apply(e2), f = hp.apply(fundo);
+            // perfil (6.0.2): as duas orelhas se separam; a de longe vai a frente, um pouco mais baixa
+            double dx = w * dir * (longe ? 10 : -4), dy = w * (longe ? 3 : 0);
+            AffineTransform desl = AffineTransform.getTranslateInstance(dx, dy);
+            Point2D a = desl.transform(hp.apply(e1), null), b = desl.transform(hp.apply(apice), null);
+            Point2D c2 = desl.transform(hp.apply(e2), null), f = desl.transform(hp.apply(fundo), null);
             Area concha = new Area(poligono(List.of(a, b, c2)));
             concha.add(new Area(poligono(List.of(a, b, f))));
             concha.add(new Area(poligono(List.of(f, b, c2))));
-            p.preencher(concha, PELO);
+            p.preencher(concha, longe && w > .5 ? PELO_LONGE : PELO);
             double k = encara.applyAsDouble(lon);
             if (k > .15) { // parte interna so aparece quando a orelha encara a camera
                 Point2D m = lerp(lerp(a, c2, .5), b, .25);
@@ -832,13 +953,13 @@ public class ConceitoRig2 {
         int w = 1400, h = 620;
         salvar(dir, "prancha-cinco-perspectivas", w, h, p -> {
             fundo(p);
-            p.texto("IRMÃO MIAU BRANCO  ·  RIG 2.0  ·  CINCO PERSPECTIVAS", 40, 42, 20, TEXTO, true, -1);
+            p.texto("IRMÃO MIAU BRANCO  ·  RIG 2.0  ·  CINCO PERSPECTIVAS  ·  REFINADO 6.0.2", 40, 42, 20, TEXTO, true, -1);
             p.texto("Mesmo esqueleto, mesmas medidas e mesma roupa nas cinco vistas: só muda o ângulo da câmera (guinada).",
                     40, 66, 13, SUAVE, false, -1);
             double esc = 1.22, chao = 528;
             for (int i = 0; i < 5; i++) cartao(p, 48 + i * 252, 86, 240, 488);
             Corpo n = neutro();
-            double[][] guias = {{-24, 0}, {34.2, 0}, {90, 0}, {155, 0}, {n.joelho[0].y(), 0}, {CHAO, 0}};
+            double[][] guias = {{CABECA_Y - 60, 0}, {CABECA_Y - 1.8, 0}, {90, 0}, {155, 0}, {n.joelho[0].y(), 0}, {CHAO, 0}};
             String[] nomes = {"orelhas", "olhos", "ombros", "faixa", "joelhos", "chão"};
             for (int i = 0; i < guias.length; i++) {
                 double y = chao + (guias[i][0] - CHAO) * esc;
@@ -887,14 +1008,15 @@ public class ConceitoRig2 {
                 "3  perna longe: pé + calça",
                 "4  perna perto + quadril: pé + calça",
                 "5  casaco: silhueta por seções elípticas",
-                "6  costuras, peito em V, gola de trás",
-                "7  lapelas (faixas presas à superfície)",
-                "8  faixa: volta, nó e pontas (só de frente)",
-                "9  cabeça: orelhas, crânio, focinho, rosto",
-                "10 braço perto: manga contínua + pata"};
+                "6  costuras e peito em V",
+                "7  pescoço (com a sombra curta da cabeça)",
+                "8  gola de trás e lapelas, por fora do pescoço",
+                "9  faixa: volta, nó e pontas (só de frente)",
+                "10 cabeça: orelhas, crânio, focinho, rosto",
+                "11 braço perto: manga contínua + pata"};
             for (int i = 0; i < camadas.length; i++) p.texto(camadas[i], x, y + 26 + i * 20, 12.5, SUAVE, false, -1);
 
-            y += 250;
+            y += 266;
             p.texto("COMPRIMENTOS FIXOS (unidades do rig, cabeça = 70)", x, y, 15, TEXTO, true, -1);
             String[] medidas = {
                 "braço 39  ·  antebraço 30   (≈145% do braço-base)",
@@ -903,7 +1025,7 @@ public class ConceitoRig2 {
                 "nenhuma pose ou vista estica ou encolhe um membro."};
             for (int i = 0; i < medidas.length; i++) p.texto(medidas[i], x, y + 26 + i * 20, 12.5, SUAVE, false, -1);
 
-            y += 130;
+            y += 124;
             p.texto("GUINADA DA CÂMERA (vista de cima)", x, y, 15, TEXTO, true, -1);
             double cx = x + 120, cy = y + 120, r = 82;
             p.tracar(circ(pt(cx, cy), r), new Color(166, 176, 190, 110), 1);
@@ -931,6 +1053,57 @@ public class ConceitoRig2 {
             }
         }
         System.out.println("OK: braco, antebraco, coxa e canela com comprimento constante nas duas poses.");
+
+        // 6.0.2: pescoco e cabeca
+        for (Corpo c : new Corpo[] {neutro(), combate()}) {
+            checar(c.cabeca.menos(c.pescoco).tam(), Math.hypot(PESCOCO_Y - CABECA_Y, c.cabecaZ - 0), "pescoco");
+            for (double g : VISTAS) {
+                Desenho d = new Desenho(null, c, g);
+                Point2D base = d.cam.p(c.pescoco), topo = d.cam.p(c.cabeca);
+                if (!d.tronco().contains(base)) throw new AssertionError("pescoco solto do tronco em " + g);
+                Rectangle2D r = Desenho.silhuetaCabeca(topo, Desenho.guinadaCabeca(g)).getBounds2D();
+                if (r.getHeight() < 69 || r.getHeight() > 74) throw new AssertionError("altura da cabeca em " + g + ": " + r.getHeight());
+                if (r.getWidth() < 69 || r.getWidth() > 82) throw new AssertionError("largura da cabeca em " + g + ": " + r.getWidth());
+            }
+        }
+        checar(Desenho.guinadaCabeca(40), 30, "rosto do 3/4");
+        for (double g : new double[] {0, 40, 140, 180})
+            checar(Desenho.pesoPerfil(Desenho.guinadaCabeca(g)), 0, "frente/3/4 sem silhueta de perfil em " + g);
+        checar(Desenho.pesoPerfil(Desenho.guinadaCabeca(90)), 1, "perfil");
+        double antes = Desenho.guinadaCabeca(89.9), depois = Desenho.guinadaCabeca(90);
+        if (Math.abs(depois - antes) > .5) throw new AssertionError("salto na guinada do rosto em 90");
+        System.out.println("OK: pescoco rigido e preso ao tronco, cabeca 69-74 de altura nas cinco vistas,"
+                + " rosto de frente/3/4 sem mistura de perfil, rotacao do rosto continua.");
+    }
+
+    /** Comparativo 6.0.1 x 6.0.2 a partir dos PNG (as previas originais nao sao regeradas). */
+    static void comparativo(Path original, Path refinado) throws IOException {
+        compor(original.resolve("prancha-cinco-perspectivas.png"), refinado.resolve("prancha-cinco-perspectivas.png"),
+                new Rectangle(40, 80, 1320, 500), false, refinado.resolve("comparativo-prancha.png"));
+        compor(original.resolve("combate-3-4.png"), refinado.resolve("combate-3-4.png"),
+                new Rectangle(20, 90, 720, 600), true, refinado.resolve("comparativo-combate.png"));
+    }
+
+    static void compor(Path a, Path b, Rectangle corte, boolean ladoALado, Path saida) throws IOException {
+        if (!Files.exists(a)) { System.out.println("sem original para comparar: " + a); return; }
+        BufferedImage ia = ImageIO.read(a.toFile()).getSubimage(corte.x, corte.y, corte.width, corte.height);
+        BufferedImage ib = ImageIO.read(b.toFile()).getSubimage(corte.x, corte.y, corte.width, corte.height);
+        int topo = 44, w = ladoALado ? corte.width * 2 + 30 : corte.width, h = ladoALado ? corte.height + topo : corte.height * 2 + topo * 2;
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setColor(FUNDO);
+        g.fillRect(0, 0, w, h);
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+        g.setColor(TEXTO);
+        int bx = ladoALado ? corte.width + 30 : 0, by = ladoALado ? topo : corte.height + topo * 2;
+        g.drawString("ANTES  ·  6.0.1", 16, 28);
+        g.drawString("DEPOIS  ·  6.0.2 (perfil, pescoço e gola)", bx + 16, ladoALado ? 28 : by - 16);
+        g.drawImage(ia, 0, topo, null);
+        g.drawImage(ib, bx, by, null);
+        g.dispose();
+        ImageIO.write(img, "png", saida.toFile());
+        System.out.println("gerado: " + saida);
     }
 
     static void checar(double v, double esperado, String nome) {
@@ -944,5 +1117,6 @@ public class ConceitoRig2 {
         prancha(saida);
         combate(saida);
         estrutura(saida);
+        if (args.length > 1) comparativo(Paths.get(args[1]), saida);
     }
 }
