@@ -1,0 +1,4 @@
+# id no jogo	estado no Rig 2.0	animacao no Rig 2.0	evidencia
+andar	Homologada	caminhada	aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2
+idle_combate	Homologada	idle-combate	aprovada manualmente na 6.2 (laboratorio); testes de AnimacoesRig2
+respiracao	Homologada	idle-neutro	aprovada manualmente na 6.2 (respiracao visual; o folego do jogo nao foi alterado)
