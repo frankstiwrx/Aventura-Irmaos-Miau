@@ -13,17 +13,19 @@ Primeira proposta conceitual do **Irmão Miau Branco** em várias perspectivas.
 | `previas/estrutura-3-4.png` / `.svg` | Vista técnica: raízes, articulações, ossos, ordem das camadas e guinada da câmera. |
 | `previas-refinadas/` | As mesmas três prévias após o refinamento 6.0.2 (perfil, pescoço e gola), mais `comparativo-prancha.png` e `comparativo-combate.png` (antes × depois). |
 | `previas-6.0.3/` | Versão atual: pescoço com metade da exposição da 6.0.2 e perfil sem o traço da bochecha. Inclui `comparativo-prancha.png` e `comparativo-combate.png` com as três versões (6.0.1, 6.0.2 e 6.0.3). |
-| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.3. |
+| `previas-6.0.4/` | **Versão atual:** pescoço curto, cabeça mais perto da gola. Inclui os comparativos 6.0.1 × 6.0.3 × 6.0.4 (`comparativo-prancha.png`, `comparativo-combate.png`) e o detalhe ampliado da cabeça, do pescoço e da gola (`comparativo-detalhe-pescoco.png`). |
+| `ConceitoRig2.java` | Gerador Java2D isolado. Produz os PNG e os SVG a partir das mesmas formas. Hoje gera a versão 6.0.4. |
 | `referencias/` | As referências recebidas: o SVG de perspectivas, quatro capturas do Rig 2.0 experimental e o perfil anatômico de gato usado no refinamento. |
 
 As prévias de cada versão ficam congeladas:
 - `previas/`: 6.0.1, gerador no commit `e99b380`;
-- `previas-refinadas/`: 6.0.2, gerador no commit `8727d73`.
+- `previas-refinadas/`: 6.0.2, gerador no commit `8727d73`;
+- `previas-6.0.3/`: 6.0.3, gerador no commit `7b7bf71`.
 
-O gerador atual produz a 6.0.3. Para regenerá-la, com os comparativos, use Java 23 sem compilar o projeto:
+O gerador atual produz a 6.0.4. Para regenerá-la, com os comparativos, use Java 23 sem compilar o projeto:
 
 ```
-java docs/rig2/ConceitoRig2.java docs/rig2/previas-6.0.3 docs/rig2/previas docs/rig2/previas-refinadas
+java docs/rig2/ConceitoRig2.java docs/rig2/previas-6.0.4 docs/rig2/previas docs/rig2/previas-6.0.3
 ```
 
 O primeiro argumento é a pasta de saída. Os seguintes são opcionais: são as versões anteriores usadas nos comparativos, da mais antiga para a mais nova. O gerador também confere:
@@ -268,3 +270,40 @@ O gerador continua conferindo tudo a cada execução, e todas as conferências p
 - rotação contínua do rosto.
 
 `comparativo-prancha.png` e `comparativo-combate.png` mostram as três versões lado a lado.
+
+## 10. Ajuste 6.0.4: pescoço curto (versão atual)
+
+Mais um passo na direção da 6.0.1, mantendo uma pequena folga entre a cabeça e a gola. As prévias estão em `previas-6.0.4/`.
+
+### O que mudou
+**A cabeça desceu mais 1,25 unidade:** o centro passou de y 33,5 para y 34,75.
+- A exposição do pescoço é medida pelo quanto a cabeça está acima da posição da 6.0.1, que tinha o centro em y 36 e a cabeça encostada na gola.
+- Era 5 unidades na 6.0.2 e 2,5 na 6.0.3; agora é 1,25. É metade da 6.0.3, e uma faixa curta de pescoço continua visível acima da gola.
+
+### Por que mover a cabeça e não encurtar o desenho do pescoço
+A solução que mais preserva as articulações é mover só o pivô da cabeça. Assim:
+- o pivô do pescoço (y 76), os ombros, o tronco, a gola, as lapelas, os braços (145%), os antebraços (145%) e as pernas (120%) ficam exatamente iguais;
+- o pescoço continua um segmento rígido entre os dois pivôs, então uma animação que gire ou incline a cabeça continua girando em torno do mesmo ponto;
+- o pescoço continua terminando na borda de baixo da gola, que o abraça por fora. Não foi preciso nenhum ajuste na gola.
+
+### O que não mudou
+- **Cabeça:** tamanho e formato iguais.
+- **Rosto:** o perfil da 6.0.3 (silhueta, focinho, nariz, boca sem traço, olho e orelhas) e os rostos de frente e 3/4 ficaram idênticos.
+- **Corpo:** mãos, pés, kimono, faixa e largura dos ombros também não mudaram.
+- **Altura total:** 1,25 unidade acima da 6.0.1.
+
+### Comparativos
+- `comparativo-prancha.png`: as cinco vistas nas versões 6.0.1, 6.0.3 e 6.0.4.
+- `comparativo-combate.png`: a pose de combate nas três versões.
+- `comparativo-detalhe-pescoco.png`: a região da cabeça, do pescoço e da gola ampliada 2,5x, com frente, 3/4, perfil, costas e combate.
+
+### Verificações
+O gerador rodou todas as conferências desta versão, e todas passaram:
+- comprimento constante de braço, antebraço, coxa, canela e pescoço nas duas poses;
+- pescoço preso ao tronco nas cinco vistas;
+- cabeça com 69 a 74 de altura em todas as vistas;
+- frente e 3/4 sem a silhueta de perfil;
+- rotação contínua do rosto.
+
+### Observação
+Na pose de combate o tronco inclina 8° e a cabeça recua um pouco, por isso o pescoço aparece ligeiramente mais do que na pose neutra. Vale observar isso quando as poses começarem a ser animadas.
