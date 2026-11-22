@@ -26,8 +26,11 @@ public class ConceitoRig2 {
     /** Comprimentos fixos (unidades do laboratorio: cabeca = 70). Base x 145% / 145% / 120%. */
     static final double BRACO = 39, ANTEBRACO = 30, COXA = 46.5, CANELA = 46;
     static final double RAIO_CABECA = 35, CHAO = 270, PIVO_CINTURA = 158;
-    /** 6.0.2: centro da cabeca 5 unidades mais alto (era 36) para mostrar um pouco de pescoco. */
-    static final double CABECA_Y = 31, PESCOCO_Y = 76;
+    /**
+     * Centro da cabeca. 6.0.1: 36 (cabeca colada na gola). 6.0.2: 31 (pescoco aparente).
+     * 6.0.3: 33,5, metade da exposicao de pescoco da 6.0.2.
+     */
+    static final double CABECA_Y = 33.5, PESCOCO_Y = 76;
 
     /** Secoes elipticas do casaco: y neutro, meia-largura (a) e meia-profundidade (b). */
     static final double[] TY = {70, 80, 88, 100, 120, 140, 152, 164, 180, 196};
@@ -798,14 +801,7 @@ public class ConceitoRig2 {
                 }
                 if (arcoF.size() > 2) p.tracar(polilinha(arcoF), new Color(205, 209, 216), 1.1);
             }
-            // perfil: bochecha/almofada dos bigodes, um traco leve
-            if (rosto && w > 0) {
-                Path2D bochecha = new Path2D.Double();
-                Point2D b0 = pp.apply(21.0, 9.0), b1 = pp.apply(30.0, 12.5), b2 = pp.apply(33.0, 22.5);
-                bochecha.moveTo(b0.getX(), b0.getY());
-                bochecha.quadTo(b1.getX(), b1.getY(), b2.getX(), b2.getY());
-                p.tracar(bochecha, new Color(205, 209, 216, (int) Math.round(255 * w)), 1.1);
-            }
+            // 6.0.3: o traco interno da bochecha no perfil foi removido; o focinho e definido pela silhueta.
             // olhos sobre a esfera: aproximam-se e estreitam conforme giram; no perfil recuam da testa
             for (int s = -1; s <= 1; s += 2) {
                 double lon = 18 * s, k = encara.applyAsDouble(lon);
@@ -953,7 +949,7 @@ public class ConceitoRig2 {
         int w = 1400, h = 620;
         salvar(dir, "prancha-cinco-perspectivas", w, h, p -> {
             fundo(p);
-            p.texto("IRMÃO MIAU BRANCO  ·  RIG 2.0  ·  CINCO PERSPECTIVAS  ·  REFINADO 6.0.2", 40, 42, 20, TEXTO, true, -1);
+            p.texto("IRMÃO MIAU BRANCO  ·  RIG 2.0  ·  CINCO PERSPECTIVAS  ·  REFINADO 6.0.3", 40, 42, 20, TEXTO, true, -1);
             p.texto("Mesmo esqueleto, mesmas medidas e mesma roupa nas cinco vistas: só muda o ângulo da câmera (guinada).",
                     40, 66, 13, SUAVE, false, -1);
             double esc = 1.22, chao = 528;
@@ -1076,19 +1072,22 @@ public class ConceitoRig2 {
                 + " rosto de frente/3/4 sem mistura de perfil, rotacao do rosto continua.");
     }
 
-    /** Comparativo 6.0.1 x 6.0.2 a partir dos PNG (as previas originais nao sao regeradas). */
-    static void comparativo(Path original, Path refinado) throws IOException {
-        compor(original.resolve("prancha-cinco-perspectivas.png"), refinado.resolve("prancha-cinco-perspectivas.png"),
-                new Rectangle(40, 80, 1320, 500), false, refinado.resolve("comparativo-prancha.png"));
-        compor(original.resolve("combate-3-4.png"), refinado.resolve("combate-3-4.png"),
-                new Rectangle(20, 90, 720, 600), true, refinado.resolve("comparativo-combate.png"));
+    /** Rotulos das versoes comparadas, na ordem dos argumentos (a ultima e a gerada agora). */
+    static final String[] ROTULOS = {"6.0.1  ·  original", "6.0.2  ·  perfil e pescoço", "6.0.3  ·  pescoço mais discreto, perfil sem traço"};
+
+    /** Comparativo entre versoes a partir dos PNG (as previas anteriores nao sao regeradas). */
+    static void comparativo(List<Path> anteriores, Path atual) throws IOException {
+        List<Path> todas = new ArrayList<>(anteriores);
+        todas.add(atual);
+        compor(todas, "prancha-cinco-perspectivas.png", new Rectangle(40, 80, 1320, 500), false, atual.resolve("comparativo-prancha.png"));
+        compor(todas, "combate-3-4.png", new Rectangle(20, 90, 720, 600), true, atual.resolve("comparativo-combate.png"));
     }
 
-    static void compor(Path a, Path b, Rectangle corte, boolean ladoALado, Path saida) throws IOException {
-        if (!Files.exists(a)) { System.out.println("sem original para comparar: " + a); return; }
-        BufferedImage ia = ImageIO.read(a.toFile()).getSubimage(corte.x, corte.y, corte.width, corte.height);
-        BufferedImage ib = ImageIO.read(b.toFile()).getSubimage(corte.x, corte.y, corte.width, corte.height);
-        int topo = 44, w = ladoALado ? corte.width * 2 + 30 : corte.width, h = ladoALado ? corte.height + topo : corte.height * 2 + topo * 2;
+    static void compor(List<Path> dirs, String nome, Rectangle corte, boolean ladoALado, Path saida) throws IOException {
+        int n = dirs.size(), topo = 44, gap = 30;
+        for (Path d : dirs) if (!Files.exists(d.resolve(nome))) { System.out.println("sem versao para comparar: " + d); return; }
+        int w = ladoALado ? corte.width * n + gap * (n - 1) : corte.width;
+        int h = ladoALado ? corte.height + topo : (corte.height + topo) * n;
         BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
@@ -1096,11 +1095,13 @@ public class ConceitoRig2 {
         g.fillRect(0, 0, w, h);
         g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
         g.setColor(TEXTO);
-        int bx = ladoALado ? corte.width + 30 : 0, by = ladoALado ? topo : corte.height + topo * 2;
-        g.drawString("ANTES  ·  6.0.1", 16, 28);
-        g.drawString("DEPOIS  ·  6.0.2 (perfil, pescoço e gola)", bx + 16, ladoALado ? 28 : by - 16);
-        g.drawImage(ia, 0, topo, null);
-        g.drawImage(ib, bx, by, null);
+        for (int i = 0; i < n; i++) {
+            BufferedImage parte = ImageIO.read(dirs.get(i).resolve(nome).toFile()).getSubimage(corte.x, corte.y, corte.width, corte.height);
+            int x = ladoALado ? i * (corte.width + gap) : 0, y = ladoALado ? 0 : i * (corte.height + topo);
+            String rotulo = ROTULOS[Math.max(0, ROTULOS.length - n + i)];
+            g.drawString(rotulo, x + 16, y + 28);
+            g.drawImage(parte, x, y + topo, null);
+        }
         g.dispose();
         ImageIO.write(img, "png", saida.toFile());
         System.out.println("gerado: " + saida);
@@ -1117,6 +1118,10 @@ public class ConceitoRig2 {
         prancha(saida);
         combate(saida);
         estrutura(saida);
-        if (args.length > 1) comparativo(Paths.get(args[1]), saida);
+        if (args.length > 1) {
+            List<Path> anteriores = new ArrayList<>();
+            for (int i = 1; i < args.length; i++) anteriores.add(Paths.get(args[i]));
+            comparativo(anteriores, saida);
+        }
     }
 }
