@@ -171,6 +171,7 @@ public class LaboratorioRig2 {
         pAnim.setLayout(new BoxLayout(pAnim, BoxLayout.Y_AXIS));
         pAnim.setBorder(new TitledBorder("Animações (6.2)"));
         for (String id : AnimacoesRig2.CATALOGO) cAnimacao.addItem(new ItemAnimacao(id, AnimacoesRig2.nome(id)));
+        for (String id : MovimentosRig2.IDS) cAnimacao.addItem(new ItemAnimacao(id, AnimacoesRig2.nome(id))); // 6.3: corrida, agachamento e pulo
         linha(pAnim, new JLabel("Animação"), cAnimacao);
         JPanel transporte = new JPanel(new GridLayout(2, 2, 4, 4));
         for (JButton b : new JButton[] {bTocar, bPausar, bParar, bReiniciar}) { b.setMargin(new Insets(2, 2, 2, 2)); transporte.add(b); }

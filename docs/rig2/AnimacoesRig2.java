@@ -61,9 +61,17 @@ public class AnimacoesRig2 {
                     inicio != null ? inicio : new IdleNeutro().amostrar(0), ConceitoRig2.PoseBase.COMBATE, IDLE_COMBATE);
             case COMBATE_PARA_NEUTRA -> new Transicao(COMBATE_PARA_NEUTRA, "Transição combate → neutra",
                     inicio != null ? inicio : new IdleCombate().amostrar(0), ConceitoRig2.PoseBase.NEUTRA, IDLE_NEUTRO);
-            default -> throw new IllegalArgumentException("animacao desconhecida: " + id);
+            default -> {
+                // 6.3: os movimentos novos ficam em MovimentosRig2 (as animacoes da 6.2 acima nao mudaram)
+                Animacao m = MovimentosRig2.criar(id, inicio);
+                if (m == null) throw new IllegalArgumentException("animacao desconhecida: " + id);
+                yield m;
+            }
         };
     }
+
+    /** 6.3: o mesmo que criar(); nome explicito para quem procura em qualquer biblioteca. */
+    static Animacao criarQualquer(String id, ConceitoRig2.ParametrosPose inicio) { return criar(id, inicio); }
 
     static String nome(String id) { return criar(id, null).nome(); }
 
