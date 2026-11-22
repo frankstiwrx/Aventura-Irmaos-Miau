@@ -45,7 +45,25 @@ public class LaboratorioRig2 {
     boolean esqueleto = false;
 
     // ===================================================================== interface
-    final JFrame janela = new JFrame("Rig 2.0 · Laboratório interativo (6.1) · experimental");
+    final JFrame janela = new JFrame("Rig 2.0 · Laboratório interativo (6.2) · experimental");
+    // 6.2: animacoes (a logica fica em AnimacoesRig2; a janela so pede e avanca o relogio)
+    final AnimacoesRig2.Reprodutor reprodutor = new AnimacoesRig2.Reprodutor();
+    final javax.swing.Timer relogio = new javax.swing.Timer(15, e -> passoDoRelogio());
+    long ultimoNano;
+    final JComboBox<ItemAnimacao> cAnimacao = new JComboBox<>();
+    final JComboBox<String> cVelocidade = new JComboBox<>(new String[] {"0,5×", "1,0×", "1,5×", "2,0×"});
+    final JButton bTocar = new JButton("▶ Reproduzir"), bPausar = new JButton("❚❚ Pausar"),
+            bParar = new JButton("■ Parar"), bReiniciar = new JButton("↺ Reiniciar");
+    final JCheckBox chTransicao = new JCheckBox("Transição animada ao trocar a pose", true);
+    final JLabel lAnimacao = new JLabel();
+
+    /** Item da lista de animacoes. */
+    record ItemAnimacao(String id, String nome) {
+        @Override public String toString() { return nome; }
+    }
+
+    /** Pose desenhada: a da animacao (com o giro manual da cabeca) ou a manual, quando nada toca. */
+    ConceitoRig2.ParametrosPose exibida() { return reprodutor.pose(pose); }
     final Visualizador vista = new Visualizador();
     final JSlider sCorpo = new JSlider(0, 180, (int) CORPO_PADRAO);
     final JSlider sCabeca = new JSlider((int) -ConceitoRig2.GIRO_CABECA_MAX, (int) ConceitoRig2.GIRO_CABECA_MAX, 0);
@@ -87,12 +105,15 @@ public class LaboratorioRig2 {
         }
 
         void sincronizar() {
-            elevacao.setValue((int) Math.round(pose.elevacao[i]));
-            avanco.setValue((int) Math.round(pose.avanco[i]));
-            flexao.setValue((int) Math.round(pose.flexao[i]));
-            lElev.setText(String.format("Elevação lateral: %+d°", (int) Math.round(pose.elevacao[i])));
-            lAv.setText(String.format("Avanço (à frente): %+d°", (int) Math.round(pose.avanco[i])));
-            lFlex.setText(String.format("Cotovelo flexionado: %d°", (int) Math.round(pose.flexao[i])));
+            ConceitoRig2.ParametrosPose ex = exibida(); // durante a animacao os controles mostram os valores animados
+            elevacao.setValue((int) Math.round(ex.elevacao[i]));
+            avanco.setValue((int) Math.round(ex.avanco[i]));
+            flexao.setValue((int) Math.round(ex.flexao[i]));
+            lElev.setText(String.format("Elevação lateral: %+d°", (int) Math.round(ex.elevacao[i])));
+            lAv.setText(String.format("Avanço (à frente): %+d°", (int) Math.round(ex.avanco[i])));
+            lFlex.setText(String.format("Cotovelo flexionado: %d°", (int) Math.round(ex.flexao[i])));
+            boolean livre = !reprodutor.ativo();
+            for (JComponent c : new JComponent[] {preset, elevacao, avanco, flexao}) c.setEnabled(livre);
         }
     }
 
@@ -146,6 +167,24 @@ public class LaboratorioRig2 {
         linha(pVista, lCabeca, sCabeca);
         controles.add(pVista);
 
+        JPanel pAnim = new JPanel();
+        pAnim.setLayout(new BoxLayout(pAnim, BoxLayout.Y_AXIS));
+        pAnim.setBorder(new TitledBorder("Animações (6.2)"));
+        for (String id : AnimacoesRig2.CATALOGO) cAnimacao.addItem(new ItemAnimacao(id, AnimacoesRig2.nome(id)));
+        linha(pAnim, new JLabel("Animação"), cAnimacao);
+        JPanel transporte = new JPanel(new GridLayout(2, 2, 4, 4));
+        for (JButton b : new JButton[] {bTocar, bPausar, bParar, bReiniciar}) { b.setMargin(new Insets(2, 2, 2, 2)); transporte.add(b); }
+        transporte.setAlignmentX(Component.LEFT_ALIGNMENT);
+        transporte.setMaximumSize(new Dimension(Integer.MAX_VALUE, 60));
+        pAnim.add(transporte);
+        cVelocidade.setSelectedIndex(1);
+        linha(pAnim, new JLabel("Velocidade"), cVelocidade);
+        chTransicao.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pAnim.add(chTransicao);
+        lAnimacao.setAlignmentX(Component.LEFT_ALIGNMENT);
+        pAnim.add(lAnimacao);
+        controles.add(pAnim);
+
         JPanel pPose = new JPanel();
         pPose.setLayout(new BoxLayout(pPose, BoxLayout.Y_AXIS));
         pPose.setBorder(new TitledBorder("Pose"));
@@ -190,6 +229,11 @@ public class LaboratorioRig2 {
         chEsqueleto.addActionListener(e -> { esqueleto = chEsqueleto.isSelected(); atualizar(); });
         bRestaurarPose.addActionListener(e -> restaurarPose());
         bRestaurarVista.addActionListener(e -> restaurarPerspectiva());
+        bTocar.addActionListener(e -> tocar());
+        bPausar.addActionListener(e -> { reprodutor.pausar(); atualizar(); });
+        bParar.addActionListener(e -> parar());
+        bReiniciar.addActionListener(e -> { reprodutor.reiniciar(); iniciarRelogio(); atualizar(); });
+        cVelocidade.addActionListener(e -> reprodutor.velocidade = new double[] {.5, 1, 1.5, 2}[cVelocidade.getSelectedIndex()]);
         teclado();
         atualizar();
         janela.pack();
@@ -224,11 +268,90 @@ public class LaboratorioRig2 {
 
     // ===================================================================== acoes
     void trocarPose(ConceitoRig2.PoseBase b) {
+        ConceitoRig2.ParametrosPose antes = exibida().copia();
+        boolean mudou = b != exibidaBase();
         ConceitoRig2.ParametrosPose nova = ConceitoRig2.ParametrosPose.padrao(b);
         nova.pernas = pose.pernas;
         nova.giroCabeca = pose.giroCabeca;
         pose = nova;           // o angulo do corpo e preservado
+        if (chTransicao.isSelected() && mudou) {
+            // 6.2: a troca vira uma transicao animada que parte da pose mostrada agora e segue para o idle
+            antes.giroCabeca -= pose.giroCabeca; // o giro manual e somado de novo pelo reprodutor
+            String id = b == ConceitoRig2.PoseBase.COMBATE ? AnimacoesRig2.NEUTRA_PARA_COMBATE : AnimacoesRig2.COMBATE_PARA_NEUTRA;
+            selecionarAnimacao(id);
+            reprodutor.tocar(AnimacoesRig2.criar(id, antes));
+            iniciarRelogio();
+        } else if (reprodutor.ativo()) {
+            reprodutor.parar();
+            relogio.stop();
+        }
         atualizar();
+    }
+
+    ConceitoRig2.PoseBase exibidaBase() { return reprodutor.ativo() ? reprodutor.atual.baseFinal() : pose.base; }
+
+    // ---------------------------------------------------------------- reproducao (6.2)
+    void tocar() {
+        ItemAnimacao item = (ItemAnimacao) cAnimacao.getSelectedItem();
+        if (item == null) return;
+        if (reprodutor.estado == AnimacoesRig2.Reprodutor.Estado.PAUSADO && reprodutor.atual != null
+                && reprodutor.atual.id().equals(item.id())) {
+            reprodutor.continuar();
+        } else {
+            ConceitoRig2.ParametrosPose inicio = exibida().copia();
+            inicio.giroCabeca -= pose.giroCabeca;
+            reprodutor.tocar(AnimacoesRig2.criar(item.id(), inicio));
+        }
+        iniciarRelogio();
+        atualizar();
+    }
+
+    /** Parar: a animacao sai e volta a edicao manual (a pose de antes, ou a nova base apos uma transicao). */
+    void parar() {
+        reprodutor.parar();
+        relogio.stop();
+        atualizar();
+    }
+
+    void iniciarRelogio() {
+        ultimoNano = System.nanoTime();
+        if (!relogio.isRunning()) relogio.start();
+    }
+
+    /** Chamado pelo Timer: avanca pelo tempo real decorrido (nao pela quantidade de repinturas). */
+    void passoDoRelogio() {
+        long agora = System.nanoTime();
+        double dt = (agora - ultimoNano) / 1e9;
+        ultimoNano = agora;
+        avancarRelogio(dt);
+    }
+
+    void avancarRelogio(double dt) {
+        if (!reprodutor.ativo()) { relogio.stop(); return; }
+        if (reprodutor.avancar(dt)) {
+            // a transicao terminou e o idle assumiu: a edicao manual passa a ser a nova base
+            ConceitoRig2.ParametrosPose nova = ConceitoRig2.ParametrosPose.padrao(reprodutor.atual.baseFinal());
+            nova.giroCabeca = pose.giroCabeca;
+            nova.pernas = pose.pernas;
+            pose = nova;
+            selecionarAnimacao(reprodutor.atual.id());
+        }
+        atualizar();
+    }
+
+    void selecionarAnimacao(String id) {
+        boolean antes = sincronizando;
+        sincronizando = true;
+        for (int k = 0; k < cAnimacao.getItemCount(); k++) if (cAnimacao.getItemAt(k).id().equals(id)) cAnimacao.setSelectedIndex(k);
+        sincronizando = antes;
+    }
+
+    String estadoAnimacao() {
+        if (!reprodutor.ativo()) return "Parado · edição manual";
+        String est = reprodutor.estado == AnimacoesRig2.Reprodutor.Estado.TOCANDO ? "Tocando" : "Pausado";
+        String ciclo = reprodutor.atual.emLoop() ? " · ciclo " + reprodutor.ciclo() : "";
+        return String.format("%s · %.2f s / %.2f s%s · %s", est, reprodutor.tempoNoCiclo(), reprodutor.atual.duracao(), ciclo,
+                cVelocidade.getSelectedItem());
     }
 
     void aplicarPresetBraco(int i, PresetBraco p) {
@@ -246,6 +369,7 @@ public class LaboratorioRig2 {
     }
 
     void restaurarPose() {
+        if (reprodutor.ativo()) { reprodutor.parar(); relogio.stop(); }
         pose = ConceitoRig2.ParametrosPose.padrao(pose.base);
         for (ControlesBraco cb : bracos) { sincronizando = true; cb.preset.setSelectedItem(PresetBraco.DA_POSE); sincronizando = false; }
         atualizar();
@@ -264,8 +388,9 @@ public class LaboratorioRig2 {
         try {
             sCorpo.setValue((int) Math.round(corpo));
             sCabeca.setValue((int) Math.round(pose.giroCabeca));
-            cPose.setSelectedItem(pose.base);
+            cPose.setSelectedItem(exibidaBase());
             cPernas.setSelectedItem(pose.pernas);
+            cPernas.setEnabled(!reprodutor.ativo()); // a animacao controla as pernas enquanto toca
             chEsqueleto.setSelected(esqueleto);
             for (ControlesBraco cb : bracos) cb.sincronizar();
         } finally {
@@ -276,6 +401,7 @@ public class LaboratorioRig2 {
         lCabeca.setText(String.format("Cabeça: %+d° em relação ao tronco (rosto a %.0f°)",
                 (int) Math.round(pose.giroCabeca), rosto));
         lStatus.setText("<html>" + estadoOssos() + "</html>");
+        lAnimacao.setText("<html><small>" + estadoAnimacao() + "</small></html>");
         vista.repaint();
     }
 
@@ -289,7 +415,7 @@ public class LaboratorioRig2 {
 
     /** Confere os comprimentos dos ossos da pose atual (mostrado no painel). */
     String estadoOssos() {
-        ConceitoRig2.Corpo c = ConceitoRig2.montarPose(pose);
+        ConceitoRig2.Corpo c = ConceitoRig2.montarPose(exibida());
         double pior = 0;
         double[] esperado = {ConceitoRig2.BRACO, ConceitoRig2.ANTEBRACO, ConceitoRig2.COXA, ConceitoRig2.CANELA};
         for (int i = 0; i < 2; i++) {
@@ -319,21 +445,51 @@ public class LaboratorioRig2 {
         ConceitoRig2.Pintor p = new ConceitoRig2.Pintor(g, w, h);
         ConceitoRig2.fundo(p);
         ConceitoRig2.cartao(p, 12, 12, w - 24, h - 24);
-        ConceitoRig2.Corpo c = ConceitoRig2.montarPose(pose);
+        ConceitoRig2.ParametrosPose ex = exibida();
+        ConceitoRig2.Corpo c = ConceitoRig2.montarPose(ex);
         double esc = Math.max(.3, Math.min((h - 120) / 315.0, (w - 80) / 240.0));
         double ox = w / 2.0, chao = h - 58;
         // linha do chao
         p.linha(new Color(166, 176, 190, 60), 1, 30, chao + 1, w - 30, chao + 1);
+        marcasDoChao(p, corpo, reprodutor.deslocamento(), ox, chao, esc);
         ConceitoRig2.figura(p, c, corpo, ox, chao, esc, 1, false);
         if (esqueleto) diagnostico(p, c, ox, chao, esc);
         // textos (coordenadas da tela)
-        double rosto = ConceitoRig2.Desenho.guinadaCabeca(corpo + pose.giroCabeca);
+        double rosto = ConceitoRig2.Desenho.guinadaCabeca(corpo + ex.giroCabeca);
         p.texto(String.format("CORPO %d°  ·  %s", (int) Math.round(corpo), nomeVista(corpo).toUpperCase(Locale.ROOT)),
                 32, 42, 16, ConceitoRig2.TEXTO, true, -1);
+        String pernas = reprodutor.ativo() ? "da animação" : pose.pernas.nome.toLowerCase(Locale.ROOT);
         p.texto(String.format("cabeça %+d° em relação ao tronco  ·  rosto a %.0f°  ·  pose %s  ·  pernas: %s",
-                (int) Math.round(pose.giroCabeca), rosto, pose.base.nome.toLowerCase(Locale.ROOT),
-                pose.pernas.nome.toLowerCase(Locale.ROOT)), 32, 62, 11.5, ConceitoRig2.SUAVE, false, -1);
-        p.texto("Rig 2.0 · laboratório experimental 6.1", w - 32, h - 26, 10.5, ConceitoRig2.SUAVE, false, 1);
+                (int) Math.round(pose.giroCabeca), rosto, exibidaBase().nome.toLowerCase(Locale.ROOT), pernas),
+                32, 62, 11.5, ConceitoRig2.SUAVE, false, -1);
+        if (reprodutor.ativo())
+            p.texto((reprodutor.estado == AnimacoesRig2.Reprodutor.Estado.TOCANDO ? "▶ " : "❚❚ ") + reprodutor.atual.nome()
+                    + String.format(Locale.ROOT, "  ·  %.2f s", reprodutor.tempoNoCiclo()), 32, 82, 11.5, ConceitoRig2.JUNTA, false, -1);
+        p.texto("Rig 2.0 · laboratório experimental 6.2", w - 32, h - 26, 10.5, ConceitoRig2.SUAVE, false, 1);
+    }
+
+    /**
+     * 6.2: marcas no chao que andam para tras na velocidade da caminhada no lugar. O pe de apoio anda
+     * junto com elas, entao da para ver que ele nao escorrega em relacao ao chao.
+     */
+    static void marcasDoChao(ConceitoRig2.Pintor p, double guinada, double deslocamento, double ox, double chao, double esc) {
+        if (deslocamento == 0) return;
+        double esp = 24;
+        p.salvar();
+        p.mover(ox, chao);
+        p.escalar(esc);
+        p.mover(0, -ConceitoRig2.CHAO);
+        ConceitoRig2.Camera cam = new ConceitoRig2.Camera(guinada);
+        double base = deslocamento - Math.floor(deslocamento / esp) * esp;
+        for (double z = -96 - base; z <= 96; z += esp) {
+            double alfa = 1 - Math.abs(z) / 100;
+            if (alfa <= 0) continue;
+            for (int lado = -1; lado <= 1; lado += 2) {
+                Point2D q = cam.p(new ConceitoRig2.V(lado * 30, ConceitoRig2.CHAO + 1, z));
+                p.preencher(new Ellipse2D.Double(q.getX() - 3, q.getY() - 1, 6, 2), new Color(166, 176, 190, (int) (150 * alfa)));
+            }
+        }
+        p.restaurar();
     }
 
     /** Esqueleto + diagnostico: eixo do tronco, centro e direcao da cabeca, lados perto/longe. */
@@ -440,6 +596,7 @@ public class LaboratorioRig2 {
             ref[0].janela.validate();
         });
         LaboratorioRig2 lab = ref[0];
+        SwingUtilities.invokeAndWait(() -> lab.chTransicao.setSelected(false)); // rotina da 6.1: troca instantanea
         // 1) perspectivas (janela inteira, pose de combate)
         int[] angulos = {0, 40, 65, 90, 140, 180};
         for (int a : angulos) {
@@ -534,9 +691,223 @@ public class LaboratorioRig2 {
         System.out.println("OK: todos os controles exercitados (extremos dos sliders, presets, botoes e teclado) sem excecoes.");
     }
 
+    // ===================================================================== capturas da 6.2 (animacoes)
+    /** Um quadro de animacao: fundo, marcas do chao, personagem e, opcionalmente, o esqueleto. */
+    static BufferedImage quadroAnim(ConceitoRig2.ParametrosPose pose, double guinada, double deslocamento, boolean esqueleto,
+                                    int w, int h, double esc) {
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        ConceitoRig2.Pintor p = new ConceitoRig2.Pintor(g, w, h);
+        ConceitoRig2.fundo(p);
+        ConceitoRig2.Corpo c = ConceitoRig2.montarPose(pose);
+        p.linha(new Color(166, 176, 190, 50), 1, 6, h - 23, w - 6, h - 23);
+        marcasDoChao(p, guinada, deslocamento, w / 2.0, h - 24, esc);
+        ConceitoRig2.figura(p, c, guinada, w / 2.0, h - 24, esc, 1, false);
+        if (esqueleto) {
+            p.salvar();
+            p.mover(w / 2.0, h - 24);
+            p.escalar(esc);
+            p.mover(0, -ConceitoRig2.CHAO);
+            new ConceitoRig2.Desenho(p, c, guinada).esqueleto(false);
+            p.restaurar();
+        }
+        g.dispose();
+        return img;
+    }
+
+    /** Folha de contato generica: quadros com uma legenda embaixo de cada um. */
+    static BufferedImage folhaQuadros(List<BufferedImage> quadros, List<String> legendas, int colunas, String titulo, String subtitulo) {
+        int qw = quadros.get(0).getWidth(), qh = quadros.get(0).getHeight(), topo = 54, rot = 22;
+        int linhas = (quadros.size() + colunas - 1) / colunas;
+        BufferedImage img = new BufferedImage(colunas * qw, topo + linhas * (qh + rot), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        g.setColor(ConceitoRig2.FUNDO);
+        g.fillRect(0, 0, img.getWidth(), img.getHeight());
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setColor(ConceitoRig2.TEXTO);
+        g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+        g.drawString(titulo, 12, 24);
+        g.setColor(ConceitoRig2.SUAVE);
+        g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        g.drawString(subtitulo, 12, 43);
+        for (int k = 0; k < quadros.size(); k++) {
+            int x = (k % colunas) * qw, y = topo + (k / colunas) * (qh + rot);
+            g.drawImage(quadros.get(k), x, y, null);
+            String s = legendas.get(k);
+            g.drawString(s, x + qw / 2 - g.getFontMetrics().stringWidth(s) / 2, y + qh + 15);
+        }
+        g.dispose();
+        return img;
+    }
+
+    /** Folha de uma animacao ao longo do tempo, numa perspectiva. */
+    static BufferedImage folhaAnimacao(String id, double guinada, int n, boolean esqueleto, int colunas, String titulo) {
+        AnimacoesRig2.Animacao a = AnimacoesRig2.criar(id, null);
+        List<BufferedImage> q = new ArrayList<>();
+        List<String> l = new ArrayList<>();
+        for (int k = 0; k < n; k++) {
+            double t = a.emLoop() ? a.duracao() * k / n : a.duracao() * k / (n - 1);
+            ConceitoRig2.ParametrosPose p = a.amostrar(t);
+            q.add(quadroAnim(p, guinada, a.deslocamento(t), esqueleto, 150, 230, .7));
+            l.add(String.format(Locale.ROOT, "%.2f s", t));
+        }
+        String sub = String.format(Locale.ROOT, "perspectiva %d°  ·  %s %.2f s  ·  %d quadros", (int) guinada,
+                a.emLoop() ? "ciclo de" : "duração", a.duracao(), n);
+        return folhaQuadros(q, l, colunas, titulo, sub);
+    }
+
+    void estadoAnimacao(String id, double t, double guinada, boolean comEsqueleto) {
+        reprodutor.velocidade = 1;
+        cVelocidade.setSelectedIndex(1);
+        selecionarAnimacao(id);
+        reprodutor.tocar(AnimacoesRig2.criar(id, null));
+        reprodutor.tempo = t;
+        corpo = guinada;
+        esqueleto = comEsqueleto;
+        atualizar();
+    }
+
+    /**
+     * Capturas da 6.2 e teste dos controles de reproducao (sem mostrar a janela). O relogio e avancado
+     * com passos fixos, para o resultado ser reproduzivel.
+     */
+    static void capturas62(Path dir) throws Exception {
+        Files.createDirectories(dir);
+        Path seq = dir.resolve("quadros");
+        Files.createDirectories(seq);
+        List<Throwable> erros = Collections.synchronizedList(new ArrayList<>());
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> erros.add(e));
+        final LaboratorioRig2[] ref = new LaboratorioRig2[1];
+        SwingUtilities.invokeAndWait(() -> {
+            ref[0] = new LaboratorioRig2();
+            ref[0].janela.setSize(1180, 900);
+            ref[0].janela.validate();
+        });
+        LaboratorioRig2 lab = ref[0];
+        BufferedImage[] img = new BufferedImage[1];
+
+        // 1) janela em diferentes animacoes
+        Object[][] janelas = {
+            {"janela-caminhada-040.png", AnimacoesRig2.CAMINHADA, .30, 40.0, false},
+            {"janela-caminhada-esqueleto-040.png", AnimacoesRig2.CAMINHADA, .30, 40.0, true},
+            {"janela-caminhada-090.png", AnimacoesRig2.CAMINHADA, .58, 90.0, false},
+            {"janela-idle-combate-040.png", AnimacoesRig2.IDLE_COMBATE, .6, 40.0, false},
+            {"janela-idle-neutro-040.png", AnimacoesRig2.IDLE_NEUTRO, 1.8, 40.0, false},
+            {"janela-transicao-neutra-combate-040.png", AnimacoesRig2.NEUTRA_PARA_COMBATE, .5, 40.0, false}};
+        for (Object[] j : janelas) {
+            SwingUtilities.invokeAndWait(() -> {
+                lab.estadoAnimacao((String) j[1], (Double) j[2], (Double) j[3], (Boolean) j[4]);
+                img[0] = lab.capturarJanela();
+            });
+            salvar(img[0], dir.resolve((String) j[0]));
+        }
+
+        // 2) folhas de contato
+        salvar(folhaAnimacao(AnimacoesRig2.IDLE_NEUTRO, 40, 8, false, 8, "Idle neutro (respiração)"), seq.resolve("idle-neutro-040.png"));
+        salvar(folhaAnimacao(AnimacoesRig2.IDLE_COMBATE, 40, 8, false, 8, "Idle de combate (guarda)"), seq.resolve("idle-combate-040.png"));
+        for (int a : new int[] {40, 90, 140})
+            salvar(folhaAnimacao(AnimacoesRig2.CAMINHADA, a, 12, false, 12, "Caminhada (no lugar) · um ciclo, dois passos"),
+                    seq.resolve(String.format("caminhada-%03d.png", a)));
+        for (int a : new int[] {0, 180})
+            salvar(folhaAnimacao(AnimacoesRig2.CAMINHADA, a, 6, false, 6, "Caminhada (no lugar)"), seq.resolve(String.format("caminhada-%03d.png", a)));
+        salvar(folhaAnimacao(AnimacoesRig2.CAMINHADA, 40, 8, true, 8, "Caminhada com esqueleto"), seq.resolve("caminhada-esqueleto-040.png"));
+        salvar(folhaAnimacao(AnimacoesRig2.NEUTRA_PARA_COMBATE, 40, 11, false, 11, "Transição neutra → combate"), seq.resolve("transicao-neutra-combate-040.png"));
+        salvar(folhaAnimacao(AnimacoesRig2.COMBATE_PARA_NEUTRA, 40, 11, false, 11, "Transição combate → neutra"), seq.resolve("transicao-combate-neutra-040.png"));
+        salvar(folhaAnimacao(AnimacoesRig2.NEUTRA_PARA_COMBATE, 90, 11, false, 11, "Transição neutra → combate"), seq.resolve("transicao-neutra-combate-090.png"));
+
+        // 3) experimento 6.1: caminhada girando 40 -> 65 -> 90 -> 140 -> 40 sem reiniciar o ciclo
+        AnimacoesRig2.Reprodutor r = new AnimacoesRig2.Reprodutor();
+        r.tocar(AnimacoesRig2.criar(AnimacoesRig2.CAMINHADA, null));
+        double[] marcos = {40, 65, 90, 140, 40};
+        int n = 24;
+        List<BufferedImage> q = new ArrayList<>();
+        List<String> l = new ArrayList<>();
+        double tempoAnterior = -1;
+        for (int k = 0; k < n; k++) {
+            double x = (double) k / (n - 1) * (marcos.length - 1);
+            int seg = Math.min((int) x, marcos.length - 2);
+            double ang = marcos[seg] + (marcos[seg + 1] - marcos[seg]) * (x - seg);
+            if (k > 0) r.avancar(1 / 12.0);
+            if (r.tempo <= tempoAnterior) throw new AssertionError("o ciclo reiniciou ao girar");
+            tempoAnterior = r.tempo;
+            q.add(quadroAnim(r.pose(ConceitoRig2.ParametrosPose.padrao(ConceitoRig2.PoseBase.NEUTRA)), ang, r.deslocamento(), false, 150, 230, .7));
+            l.add(String.format(Locale.ROOT, "%.0f° · %.2f s", ang, r.tempo));
+        }
+        salvar(folhaQuadros(q, l, 12, "Caminhada girando durante a reprodução: 40° → 65° → 90° → 140° → 40°",
+                "o relógio segue (1/12 s por quadro); a perspectiva muda sem reiniciar o ciclo de passos"), seq.resolve("caminhada-girando.png"));
+        System.out.println("OK: caminhada girando 40 -> 65 -> 90 -> 140 -> 40 sem reiniciar o ciclo.");
+
+        // 4) controles de reproducao pela propria interface
+        SwingUtilities.invokeAndWait(() -> {
+            lab.esqueleto = false;
+            lab.reprodutor.parar();
+            lab.relogio.stop();
+            lab.pose = ConceitoRig2.ParametrosPose.padrao(ConceitoRig2.PoseBase.NEUTRA);
+            lab.corpo = 40;
+            lab.atualizar();
+            lab.relogio.stop();
+            for (String id : AnimacoesRig2.CATALOGO) {
+                lab.selecionarAnimacao(id);
+                lab.bTocar.doClick();
+                lab.relogio.stop();
+                for (int k = 0; k < 30; k++) lab.avancarRelogio(1 / 60.0);
+                double t = lab.reprodutor.tempo;
+                lab.bPausar.doClick();
+                lab.avancarRelogio(.2);
+                if (lab.reprodutor.tempo != t) throw new AssertionError("pausado, o tempo andou: " + id);
+                lab.bTocar.doClick();               // continua de onde parou
+                lab.relogio.stop();
+                if (lab.reprodutor.tempo != t) throw new AssertionError("continuar reiniciou: " + id);
+                for (int v = 0; v < 4; v++) { lab.cVelocidade.setSelectedIndex(v); lab.avancarRelogio(1 / 60.0); }
+                lab.cVelocidade.setSelectedIndex(1);
+                lab.bReiniciar.doClick();
+                lab.relogio.stop();
+                if (lab.reprodutor.tempo != 0) throw new AssertionError("reiniciar falhou: " + id);
+                for (int a = 0; a <= 180; a += 20) { lab.sCorpo.setValue(a); lab.sCabeca.setValue(a % 40 == 0 ? 30 : -30); lab.avancarRelogio(1 / 30.0); }
+                lab.chEsqueleto.doClick(); lab.avancarRelogio(1 / 30.0); lab.capturarVista(220, 300); lab.chEsqueleto.doClick();
+                ConceitoRig2.ParametrosPose manual = lab.pose;
+                lab.bParar.doClick();
+                if (lab.exibida() != manual) throw new AssertionError("parar nao voltou a pose manual: " + id);
+            }
+            // troca de pose com transicao animada: neutra -> combate e de volta
+            lab.sCabeca.setValue(0);
+            lab.chTransicao.setSelected(true);
+            lab.cPose.setSelectedItem(ConceitoRig2.PoseBase.COMBATE);
+            lab.relogio.stop();
+            if (!lab.reprodutor.ativo() || !lab.reprodutor.atual.id().equals(AnimacoesRig2.NEUTRA_PARA_COMBATE))
+                throw new AssertionError("a troca de pose nao iniciou a transicao");
+            for (int k = 0; k < 90; k++) lab.avancarRelogio(1 / 60.0);
+            if (!lab.reprodutor.atual.id().equals(AnimacoesRig2.IDLE_COMBATE) || lab.pose.base != ConceitoRig2.PoseBase.COMBATE)
+                throw new AssertionError("a transicao nao terminou no idle de combate");
+            lab.cPose.setSelectedItem(ConceitoRig2.PoseBase.NEUTRA);
+            lab.relogio.stop();
+            for (int k = 0; k < 90; k++) lab.avancarRelogio(1 / 60.0);
+            if (!lab.reprodutor.atual.id().equals(AnimacoesRig2.IDLE_NEUTRO) || lab.pose.base != ConceitoRig2.PoseBase.NEUTRA)
+                throw new AssertionError("a transicao de volta nao terminou no idle neutro");
+            // restaurar pose para a animacao e devolve a edicao manual
+            lab.bRestaurarPose.doClick();
+            if (lab.reprodutor.ativo()) throw new AssertionError("restaurar pose nao parou a animacao");
+            // controles dos bracos ficam bloqueados durante a reproducao e voltam ao parar
+            lab.selecionarAnimacao(AnimacoesRig2.CAMINHADA);
+            lab.bTocar.doClick();
+            lab.relogio.stop();
+            if (lab.bracos[0].elevacao.isEnabled() || lab.cPernas.isEnabled()) throw new AssertionError("controles manuais livres durante a animacao");
+            lab.bParar.doClick();
+            if (!lab.bracos[0].elevacao.isEnabled() || !lab.cPernas.isEnabled()) throw new AssertionError("controles manuais nao voltaram");
+        });
+        SwingUtilities.invokeAndWait(lab.janela::dispose);
+        if (!erros.isEmpty()) throw new AssertionError("excecoes durante o uso dos controles: " + erros);
+        System.out.println("OK: reproduzir, pausar, continuar, velocidades, reiniciar, parar, troca de pose animada, giro do corpo e da cabeca"
+                + " durante a reproducao, esqueleto e bloqueio/liberacao dos controles manuais, sem excecoes.");
+    }
+
     public static void main(String[] args) throws Exception {
-        if (args.length > 1 && args[0].equals("--capturas")) {
+        if (args.length > 1 && args[0].equals("--capturas")) {          // capturas e controles da 6.1
             capturas(Paths.get(args[1]));
+            System.exit(0);
+        }
+        if (args.length > 1 && args[0].equals("--capturas-6.2")) {      // animacoes da 6.2
+            capturas62(Paths.get(args[1]));
             System.exit(0);
         }
         SwingUtilities.invokeLater(() -> new LaboratorioRig2().janela.setVisible(true));
