@@ -9,7 +9,7 @@ parte manual: "passou no Maven" não significa "aprovado visualmente".
 mvn clean test
 ```
 
-Esperado: `Tests run: 1323, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
+Esperado: `Tests run: 1328, Failures: 0, Errors: 0, Skipped: 0` e `BUILD SUCCESS`
 (o número cresce quando novos testes entram). No NetBeans: **Test Project** (Alt+F6).
 
 `mvn clean verify` também testa o JAR final (`JarExecutavelIT`, 4 testes): manifesto, DLLs do GLFW
@@ -737,3 +737,10 @@ enviadas (rasteira, forçar queda, arrasto) olhando os **quadros do meio**:
 3. JOGAR em FINALIZAÇÃO com perfis: as mesmas técnicas liberadas; os atributos continuam os do editor.
 4. JOGAR em PONTOS + FINALIZAÇÃO com perfis: omoplata e gogoplata mostram "GRADUAÇÃO" (o perfil conta como faixa branca).
 5. Originais: continuam dependendo da faixa escolhida na seleção.
+
+# v0.1.0 Beta: avisos dos controles e créditos
+
+1. Abrir o jogo com configurações antigas: nenhuma janela de avisos aparece.
+2. CONFIGURAÇÕES → CONTROLES: só uma linha curta se algo precisar de atenção; o botão AVISOS (n) mostra os detalhes.
+3. SALVAR em CONTROLES: o botão AVISOS some e não volta na próxima abertura.
+4. Menu principal: "by frankstiwrx · 2026" no canto inferior esquerdo; "v0.1.0" e o selo BETA no direito. A descrição e as opções continuam livres.

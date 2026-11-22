@@ -82,6 +82,10 @@ Arquivo próprio, ao lado de `configuracoes.json` (que não mudou de formato):
 | Ação ausente (arquivo de versão anterior) | Recebe a tecla padrão se estiver livre; senão fica **sem tecla**, com aviso, e a tela CONTROLES pede uma tecla antes de salvar |
 | Falha de disco ao salvar | Mensagem na tela; os controles anteriores continuam valendo |
 
+**Avisos na abertura (v0.1.0):** nenhuma janela é aberta. Atualizações de padrões antigos já aplicadas
+ficam no botão **AVISOS** da tela CONTROLES; o que precisa de ação (tecla perdida para o teclado-controle do J2,
+ação sem tecla ou botão, arquivo inválido) aparece numa linha curta nessa tela. SALVAR grava e encerra os avisos.
+
 ## Tela CONFIGURAÇÕES → CONTROLES
 
 - Botões JOGADOR 1 / JOGADOR 2; lista com rolagem agrupada em MOVIMENTO, COMBATE, DEFESA.
