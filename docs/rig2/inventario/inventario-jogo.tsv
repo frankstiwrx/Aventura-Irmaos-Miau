@@ -1,0 +1,411 @@
+TECNICA	empurrao	Empurrão / pressão	EMPURRÃO	EM_PE_PEGADA,EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=CIMA, familia=R1]	10	AVANCO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]			-	-	solo/empurrao	true	true	-
+TECNICA	queda_pegada	Queda com a pegada	QUEDA	EM_PE_PEGADA	QUALQUER	ComandoSolo[direcao=DIREITA, familia=R1]	24	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	queda_pegada		-	-	solo/queda_pegada	false	false	-
+TECNICA	entrada_pernas	Entrada nas pernas	PERNAS	EM_PE_PEGADA,EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=BAIXO, familia=R1]	14	PERNAS	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			-	-	solo/entrada_pernas	true	true	-
+TECNICA	puxar_guarda	Puxar guarda	PUXAR GUARDA	EM_PE_PEGADA,EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=BAIXO, familia=L1],ComandoSolo[direcao=ESQUERDA, familia=R1]	10	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]			-	-	solo/puxar_guarda	true	true	-
+TECNICA	entrar_guarda	Entrar na guarda	ENTRAR	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	retencao_pes		-	-	solo/entrar_guarda	false	false	-
+TECNICA	passagem_em_pe	Passagem em pé (toreando)	PASSAR	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=CIMA, familia=R1]	16	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	conectar_guarda,retencao_pes		-	-	solo/passagem_em_pe	false	false	-
+TECNICA	levantar_tecnico	Levantar técnico	LEVANTAR	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_SEPARADOS, porCima=NENHUM, controlador=NENHUM]	entrar_guarda		-	-	solo/levantar_tecnico	true	false	-
+TECNICA	retencao_pes	Manter distância (pés)	PÉS	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	NENHUM	null			-	-	solo/retencao_pes	true	true	-
+TECNICA	conectar_guarda	Puxar guarda (do chão)	PUXAR GUARDA	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	8	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]			-	-	solo/conectar_guarda	false	false	-
+TECNICA	subir_por_cima	Subir por cima	SUBIR	SOLO_DISPUTADO	QUALQUER	ComandoSolo[direcao=CIMA, familia=RS]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	puxar_para_guarda		-	-	solo/subir_por_cima	false	false	-
+TECNICA	puxar_para_guarda	Puxar guarda	PUXAR GUARDA	SOLO_DISPUTADO	QUALQUER	ComandoSolo[direcao=BAIXO, familia=RS]	8	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]			-	-	solo/puxar_para_guarda	false	false	-
+TECNICA	levantar_do_solo	Levantar	LEVANTAR	SOLO_DISPUTADO	QUALQUER	ComandoSolo[direcao=CIMA, familia=R1]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]	subir_por_cima		-	-	solo/levantar_do_solo	false	false	-
+TECNICA	postura	Postura	POSTURA	GUARDA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura	true	true	-
+TECNICA	abrir_guarda	Abrir a guarda do outro	ABRIR	GUARDA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	16	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	quebrar_postura,raspagem		-	-	solo/abrir_guarda	false	false	-
+TECNICA	raspagem	Raspagem	RASPAR	GUARDA,GUARDA_ABERTA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	controlar_pernas,postura		-	-	solo/raspagem	false	false	-
+TECNICA	quebrar_postura	Quebrar a postura	QUEBRAR	GUARDA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	QUEBRAR_POSTURA	null			-	-	solo/quebrar_postura	true	false	-
+TECNICA	soltar_guarda	Soltar a própria guarda	SOLTAR	GUARDA	POR_BAIXO	ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]			-	-	solo/soltar_guarda	false	false	-
+TECNICA	passar_guarda	Passar a guarda	PASSAR	GUARDA_ABERTA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	20	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem,retencao		-	-	solo/passar_guarda	false	false	-
+TECNICA	joelho_cortando	Joelho cortando	MEIA	GUARDA_ABERTA	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	14	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	retencao		-	-	solo/joelho_cortando	false	false	-
+TECNICA	controlar_pernas	Controlar as pernas	CONTROLAR	GUARDA_ABERTA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/controlar_pernas	true	true	-
+TECNICA	fechar_guarda	Fechar a guarda	FECHAR	GUARDA_ABERTA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	10	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	controlar_pernas		-	-	solo/fechar_guarda	false	false	-
+TECNICA	retencao	Manter a guarda	MANTER	GUARDA_ABERTA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	NENHUM	null			-	-	solo/retencao	true	true	-
+TECNICA	levantar_da_guarda	Levantar da guarda	LEVANTAR	DE_LA_RIVA,GUARDA_ABERTA,GUARDA_ARANHA,GUARDA_BORBOLETA,GUARDA_LACO,MEIA_GUARDA,SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=R1]	16	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_SEPARADOS, porCima=NENHUM, controlador=NENHUM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/levantar_da_guarda	false	false	-
+TECNICA	liberar_perna	Liberar a perna e passar	PASSAR	MEIA_GUARDA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	18	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem_meia,recuperar_guarda		-	-	solo/liberar_perna	false	false	-
+TECNICA	postura_meia	Pressão de ombro	PRESSÃO	MEIA_GUARDA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_meia	true	true	-
+TECNICA	recuperar_guarda	Recuperar a guarda	REC. GUARDA	MEIA_GUARDA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	12	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	postura_meia		-	-	solo/recuperar_guarda	false	false	-
+TECNICA	underhook_meia	Underhook (tirar a pressão do ombro)	UNDERHOOK	MEIA_GUARDA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	QUEBRAR_POSTURA	null			-	-	solo/underhook_meia	true	false	-
+TECNICA	raspagem_meia	Raspagem da meia-guarda	RASPAR	MEIA_GUARDA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	postura_meia		-	-	solo/raspagem_meia	false	false	-
+TECNICA	consolidar	Consolidar a pressão	PRESSÃO	CONTROLE_LATERAL	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/consolidar	true	true	-
+TECNICA	montar	Ir para a montada	MONTAR	CONTROLE_LATERAL	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=RS]	18	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MONTADA, porCima=INICIADOR, controlador=INICIADOR]	escape_quadril,recuperar_meia		-	-	solo/montar	false	false	-
+TECNICA	joelho_na_barriga	Joelho na barriga	JOELHO	CONTROLE_LATERAL	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=JOELHO_BARRIGA, porCima=INICIADOR, controlador=INICIADOR]	escape_quadril		-	-	solo/joelho_na_barriga	false	false	-
+TECNICA	enquadrar	Enquadrar (criar espaço)	ENQUADRAR	CONTROLE_LATERAL	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/enquadrar	true	true	-
+TECNICA	escape_quadril	Escape de quadril (recuperar a guarda)	REC. GUARDA	CONTROLE_LATERAL	CONTROLADO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	12	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	consolidar		-	-	solo/escape_quadril	true	true	-
+TECNICA	recuperar_meia	Joelho no meio (recuperar meia-guarda)	REC. MEIA	CONTROLE_LATERAL	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=R1]	10	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=OUTRO, controlador=INICIADOR]	consolidar		-	-	solo/recuperar_meia	true	false	-
+TECNICA	virar_joelhos	Virar para os joelhos	VIRAR	CONTROLE_LATERAL	CONTROLADO	ComandoSolo[direcao=CIMA, familia=RS]	14	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	pegar_costas_virada		-	-	solo/virar_joelhos	true	true	-
+TECNICA	pegar_costas_virada	Pegar as costas na virada	COSTAS	CONTROLE_LATERAL	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=R1]	8	null	OUTRO_EXPOSTO	NENHUM	Desfecho[destino=COSTAS, porCima=INICIADOR, controlador=INICIADOR]			-	-	solo/pegar_costas_virada	false	false	-
+TECNICA	montar_do_joelho	Ir para a montada	MONTAR	JOELHO_BARRIGA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=RS]	12	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MONTADA, porCima=INICIADOR, controlador=INICIADOR]	fugir_do_joelho		-	-	solo/montar_do_joelho	false	false	-
+TECNICA	pressao_joelho	Pressão do joelho	PRESSÃO	JOELHO_BARRIGA	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/pressao_joelho	true	true	-
+TECNICA	voltar_cem_quilos	Voltar aos cem quilos	100 KG	JOELHO_BARRIGA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=MANTEM, controlador=MANTEM]			-	-	solo/voltar_cem_quilos	false	false	-
+TECNICA	fugir_do_joelho	Empurrar o joelho (recuperar a guarda)	REC. GUARDA	JOELHO_BARRIGA	CONTROLADO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	pressao_joelho		-	-	solo/fugir_do_joelho	true	true	-
+TECNICA	enquadrar_joelho	Enquadrar o joelho	ENQUADRAR	JOELHO_BARRIGA	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/enquadrar_joelho	true	true	-
+TECNICA	inverter_joelho	Inverter (base alta)	INVERTER	JOELHO_BARRIGA	CONTROLADO	ComandoSolo[direcao=CIMA, familia=R1]	8	null	OUTRO_EXPOSTO	NENHUM	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]			-	-	solo/inverter_joelho	false	false	-
+TECNICA	estabilizar_montada	Estabilizar a montada	BASE	MONTADA	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/estabilizar_montada	true	false	-
+TECNICA	montada_alta	Montada alta	ALTA	MONTADA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=RS]	0	null	SE_NAO_CONTRADA	MONTADA_ALTA	null			-	-	solo/montada_alta	true	true	-
+TECNICA	pegar_costas	Pegar as costas	COSTAS	MONTADA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	16	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=COSTAS, porCima=INICIADOR, controlador=INICIADOR]	escape_montada,ponte		-	-	solo/pegar_costas	false	false	-
+TECNICA	ponte	Ponte (upa)	UPA	MONTADA	CONTROLADO	ComandoSolo[direcao=CIMA, familia=R1]	8	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=GUARDA, porCima=INICIADOR, controlador=OUTRO]	estabilizar_montada		-	-	solo/ponte	false	false	-
+TECNICA	escape_montada	Escape da montada (meia-guarda)	ESCAPAR	MONTADA	CONTROLADO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	14	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=OUTRO, controlador=INICIADOR]	estabilizar_montada		-	-	solo/escape_montada	true	true	-
+TECNICA	enquadrar_montada	Enquadrar	ENQUADRAR	MONTADA	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/enquadrar_montada	true	true	-
+TECNICA	ajustar_ganchos	Ajustar os ganchos	GANCHOS	COSTAS	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/ajustar_ganchos	true	true	-
+TECNICA	defender_maos	Defender com as mãos	DEFENDER	COSTAS	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/defender_maos	true	true	-
+TECNICA	girar_nas_costas	Tirar os ganchos e girar	GIRAR	COSTAS	CONTROLADO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	16	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=GUARDA, porCima=INICIADOR, controlador=OUTRO]	ajustar_ganchos		-	-	solo/girar_nas_costas	true	true	-
+TECNICA	escapar_neutro	Escapar para o neutro	ESCAPAR	COSTAS	CONTROLADO	ComandoSolo[direcao=CIMA, familia=R1]	12	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	ajustar_ganchos		-	-	solo/escapar_neutro	true	true	-
+TECNICA	costas_para_montada	Virar para a montada	MONTADA	COSTAS	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=RS]	14	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MONTADA, porCima=INICIADOR, controlador=INICIADOR]	girar_nas_costas		-	-	solo/costas_para_montada	false	false	-
+TECNICA	costas_para_cem	Ir para os cem quilos	100 KG	COSTAS	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=RS]	12	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	girar_nas_costas		-	-	solo/costas_para_cem	false	false	-
+TECNICA	triangulo_corpo	Triângulo de corpo (travar o quadril)	TRIÂNGULO	COSTAS	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/triangulo_corpo	true	true	-
+TECNICA	tiro_guarda	Tiro de guarda	TIRO GUARDA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=L1],ComandoSolo[direcao=ESQUERDA, familia=RS]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]		PEGADA_APLICADOR	-	-	solo/tiro_guarda	true	true	-
+TECNICA	derrubada_forcada	Derrubada forçada	FORÇAR QUEDA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=L2],ComandoSolo[direcao=BAIXO, familia=RS]	16	AVANCO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]		PEGADA_APLICADOR	-	-	solo/derrubada_forcada	true	false	-
+TECNICA	puxar_borboleta	Puxar para a borboleta	BORBOLETA	EM_PE_PEGADA,EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=ESQUERDA, familia=L1]	10	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_BORBOLETA, porCima=OUTRO, controlador=INICIADOR]		PERTO_PARA_PUXAR	-	-	solo/puxar_borboleta	false	false	-
+TECNICA	puxar_dlr	Puxar para a De La Riva	DE LA RIVA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=L1]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=DE_LA_RIVA, porCima=OUTRO, controlador=INICIADOR]		PEGADA_APLICADOR	-	-	solo/puxar_dlr	false	false	-
+TECNICA	rasteira	Rasteira	RASTEIRA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=L2]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]		PEGADA_APLICADOR	-	-	solo/rasteira	true	true	-
+TECNICA	projecao_quadril	Projeção de quadril	QUADRIL	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=L2]	22	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]		PEGADA_APLICADOR,PEGADA_CRUZADA_OU_NUCA	-	-	solo/projecao_quadril	false	false	-
+TECNICA	queda_manga	Queda pela manga	MANGA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=L2]	18	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]		PEGADA_APLICADOR,PEGADA_MANGAS	-	-	solo/queda_manga	false	false	-
+TECNICA	prender_pernas	Prender as pernas	PRENDER	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=ESQUERDA, familia=RS]	12	BASE	SE_NAO_CONTRADA	CONTROLAR_PERNAS	null	retencao_pes	PERTO_NO_CHAO	-	-	solo/prender_pernas	true	true	-
+TECNICA	segurar_pernas	Segurar as pernas (arrastar)	SEGURAR	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS]	10	BASE	SE_NAO_CONTRADA	SEGURAR_PERNAS	null	retencao_pes	PERTO_NO_CHAO	-	-	solo/segurar_pernas	true	true	-
+TECNICA	soltar_pernas	Soltar as pernas	SOLTAR		POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS]	0	null	SE_NAO_CONTRADA	SOLTAR_PERNAS	null			-	-	solo/soltar_pernas	false	false	-
+TECNICA	recuar	Recuar (dar distância)	RECUAR	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	RECUAR	null			-	-	solo/recuar	true	false	-
+TECNICA	joelho_direto	Joelho na barriga direto	JOELHO	EM_PE_CONTRA_SOLO	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=R1]	14	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=JOELHO_BARRIGA, porCima=INICIADOR, controlador=INICIADOR]	conectar_guarda,retencao_pes	PERTO_NO_CHAO	-	-	solo/joelho_direto	true	true	-
+TECNICA	afastar_do_chao	Afastar (criar distância)	AFASTAR	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=R1]	0	null	SE_NAO_CONTRADA	RECUAR	null			-	-	solo/afastar_do_chao	true	false	-
+TECNICA	conectar_borboleta	Sentar na borboleta	BORBOLETA	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=ESQUERDA, familia=L1]	8	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_BORBOLETA, porCima=OUTRO, controlador=INICIADOR]	recuar	PERTO_NO_CHAO	-	-	solo/conectar_borboleta	false	false	-
+TECNICA	conectar_dlr	Gancho De La Riva	DE LA RIVA	EM_PE_CONTRA_SOLO	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=L1]	10	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=DE_LA_RIVA, porCima=OUTRO, controlador=INICIADOR]	recuar	PERTO_NO_CHAO	-	-	solo/conectar_dlr	false	false	-
+TECNICA	desequilibrar_guarda	Puxar e desequilibrar	DESEQ.	GUARDA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=R1]	8	null	SE_NAO_CONTRADA	DESEQUILIBRAR	null	postura		-	-	solo/desequilibrar_guarda	true	true	-
+TECNICA	angulo_guarda	Ajustar o ângulo do quadril	ÂNGULO	GUARDA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=R1],ComandoSolo[direcao=ESQUERDA, familia=R1]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/angulo_guarda	true	true	-
+TECNICA	afastar_da_guarda	Abrir e afastar com os pés	AFASTAR	DE_LA_RIVA,GUARDA,GUARDA_ABERTA,GUARDA_ARANHA,GUARDA_BORBOLETA,GUARDA_LACO,MEIA_GUARDA,SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=R1]	12	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=OUTRO, controlador=NENHUM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/afastar_da_guarda	true	true	-
+TECNICA	sair_da_guarda	Criar espaço e levantar	LEVANTAR	DE_LA_RIVA,GUARDA,GUARDA_ABERTA,GUARDA_ARANHA,GUARDA_BORBOLETA,GUARDA_LACO,MEIA_GUARDA,SINGLE_LEG_X	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=R1]	16	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]	quebrar_postura,retencao,reter_aranha,reter_borboleta,reter_dlr,reter_slx,travar_laco		-	-	solo/sair_da_guarda	false	false	-
+TECNICA	abandonar_posicao	Soltar a posição	SOLTAR	CONTROLE_LATERAL,COSTAS,JOELHO_BARRIGA,MONTADA	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=R1]	6	CONTROLE_REDUZIDO	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]			-	-	solo/abandonar_posicao	false	false	-
+TECNICA	pegar_manga	Pegar a manga	MANGA	DE_LA_RIVA,GUARDA_ABERTA,GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=L2]	0	null	SE_NAO_CONTRADA	PEGAR_MANGA	null			-	-	solo/pegar_manga	true	true	-
+TECNICA	ir_borboleta	Para a guarda borboleta	BORBOLETA	DE_LA_RIVA,GUARDA_ABERTA	POR_BAIXO	ComandoSolo[direcao=ESQUERDA, familia=L1]	6	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_BORBOLETA, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/ir_borboleta	false	false	-
+TECNICA	ir_dlr	Para a De La Riva	DE LA RIVA	GUARDA_ABERTA,GUARDA_BORBOLETA,GUARDA_LACO	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=L1]	6	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=DE_LA_RIVA, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/ir_dlr	false	false	-
+TECNICA	ir_laco	Para a guarda laço	LAÇO	DE_LA_RIVA,GUARDA_ABERTA,GUARDA_ARANHA,GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=L1]	6	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_LACO, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx	CONEXAO_MANGA	-	-	solo/ir_laco	false	false	-
+TECNICA	ir_aberta	Voltar à guarda aberta	ABERTA	DE_LA_RIVA,GUARDA_ARANHA,GUARDA_BORBOLETA,GUARDA_LACO,SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=L1]	6	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/ir_aberta	false	false	-
+TECNICA	raspagem_borboleta	Raspagem de borboleta (elevação)	ELEVAR	GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	postura_borboleta		-	-	solo/raspagem_borboleta	false	false	-
+TECNICA	deseq_borboleta	Desequilibrar para o lado	DESEQ.	GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	8	null	SE_NAO_CONTRADA	DESEQUILIBRAR	null	postura_borboleta		-	-	solo/deseq_borboleta	true	true	-
+TECNICA	reter_borboleta	Manter os ganchos	MANTER	GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/reter_borboleta	true	false	-
+TECNICA	passar_borboleta	Amassar e passar	PASSAR	GUARDA_BORBOLETA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	18	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem_borboleta		-	-	solo/passar_borboleta	false	false	-
+TECNICA	postura_borboleta	Afundar o quadril (base)	BASE	GUARDA_BORBOLETA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_borboleta	true	false	-
+TECNICA	tirar_ganchos	Tirar os ganchos	GANCHOS	GUARDA_BORBOLETA	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/tirar_ganchos	true	true	-
+TECNICA	raspagem_dlr	Raspagem De La Riva	RASPAR	DE_LA_RIVA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	12	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	postura_dlr		-	-	solo/raspagem_dlr	false	false	-
+TECNICA	reter_dlr	Manter o gancho	MANTER	DE_LA_RIVA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/reter_dlr	true	false	-
+TECNICA	deseq_dlr	Desequilibrar a perna	DESEQ.	DE_LA_RIVA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	8	null	SE_NAO_CONTRADA	DESEQUILIBRAR	null	postura_dlr		-	-	solo/deseq_dlr	true	true	-
+TECNICA	berimbolo	Berimbolo	BERIMBOLO	DE_LA_RIVA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=L1_L2]	20	BASE	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=COSTAS, porCima=INICIADOR, controlador=INICIADOR]	livrar_gancho,postura_dlr		-	-	solo/berimbolo	true	true	-
+TECNICA	berimbolo_kiss	Kiss of the dragon (inversão por baixo)	KISS DRAGON	DE_LA_RIVA	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=L1_L2]	24	BASE	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=COSTAS, porCima=INICIADOR, controlador=INICIADOR]	livrar_gancho,postura_dlr		-	-	solo/berimbolo_kiss	true	true	-
+TECNICA	berimbolo_invertido	Baby bolo (berimbolo para cima)	BABY BOLO	DE_LA_RIVA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=L1_L2]	16	BASE	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	postura_dlr		-	-	solo/berimbolo_invertido	true	true	-
+TECNICA	passar_dlr	Quebrar o gancho e passar	PASSAR	DE_LA_RIVA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	18	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	berimbolo,raspagem_dlr		-	-	solo/passar_dlr	false	false	-
+TECNICA	postura_dlr	Base (quadril para trás)	BASE	DE_LA_RIVA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_dlr	true	false	-
+TECNICA	livrar_gancho	Livrar a perna do gancho	LIVRAR	DE_LA_RIVA	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	reter_dlr		-	-	solo/livrar_gancho	false	false	-
+TECNICA	raspagem_laco	Raspagem do laço	RASPAR	GUARDA_LACO	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	null	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	postura_laco		-	-	solo/raspagem_laco	false	false	-
+TECNICA	travar_laco	Travar o laço	TRAVAR	GUARDA_LACO	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/travar_laco	true	false	-
+TECNICA	passar_laco	Passar o laço	PASSAR	GUARDA_LACO	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	20	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem_laco		-	-	solo/passar_laco	false	false	-
+TECNICA	postura_laco	Base	BASE	GUARDA_LACO	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_laco	true	false	-
+TECNICA	soltar_manga	Soltar a manga	SOLTAR MANGA	GUARDA_LACO	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	travar_laco		-	-	solo/soltar_manga	false	false	-
+TECNICA	ir_aranha	Para a guarda aranha	ARANHA	GUARDA_ABERTA,GUARDA_LACO	POR_BAIXO	ComandoSolo[direcao=ESQUERDA, familia=L2]	6	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ARANHA, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx	CONEXAO_MANGA	-	-	solo/ir_aranha	false	false	-
+TECNICA	raspagem_aranha	Raspagem da aranha	RASPAR	GUARDA_ARANHA	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	14	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	postura_aranha		-	-	solo/raspagem_aranha	false	false	-
+TECNICA	reter_aranha	Esticar e recolher (manter)	MANTER	GUARDA_ARANHA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/reter_aranha	true	false	-
+TECNICA	deseq_aranha	Desequilibrar com os pés	DESEQ.	GUARDA_ARANHA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	8	null	SE_NAO_CONTRADA	DESEQUILIBRAR	null	postura_aranha		-	-	solo/deseq_aranha	true	true	-
+TECNICA	passar_aranha	Passar a aranha	PASSAR	GUARDA_ARANHA	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	20	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem_aranha		-	-	solo/passar_aranha	false	false	-
+TECNICA	postura_aranha	Base (cotovelos para dentro)	BASE	GUARDA_ARANHA	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_aranha	true	false	-
+TECNICA	livrar_mangas	Livrar as mangas	LIVRAR	GUARDA_ARANHA	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	reter_aranha		-	-	solo/livrar_mangas	false	false	-
+TECNICA	ir_slx	Para a single-leg X	SLX	DE_LA_RIVA,GUARDA_BORBOLETA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=L2]	8	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=SINGLE_LEG_X, porCima=MANTEM, controlador=MANTEM]	liberar_perna,passar_aranha,passar_borboleta,passar_dlr,passar_guarda,passar_laco,passar_slx		-	-	solo/ir_slx	false	false	-
+TECNICA	raspagem_slx	Raspagem da single-leg X	RASPAR	SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=RS]	12	null	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]	postura_slx		-	-	solo/raspagem_slx	false	false	-
+TECNICA	reter_slx	Manter o X	MANTER	SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/reter_slx	true	false	-
+TECNICA	passar_slx	Livrar a perna e passar	PASSAR	SINGLE_LEG_X	POR_CIMA	ComandoSolo[direcao=CIMA, familia=RS]	18	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]	raspagem_slx		-	-	solo/passar_slx	false	false	-
+TECNICA	postura_slx	Base (peso na perna presa)	BASE	SINGLE_LEG_X	POR_CIMA	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	POSTURA	null			-	-	solo/postura_slx	true	false	-
+TECNICA	livrar_slx	Tirar a perna do X	LIVRAR	SINGLE_LEG_X	POR_CIMA	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	reter_slx		-	-	solo/livrar_slx	false	false	-
+TECNICA	entrada_perna_guarda	Abrir a guarda e entrar na perna	→ PERNA	GUARDA	POR_BAIXO	ComandoSolo[direcao=DIREITA, familia=RS]	14	BASE	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	postura		-	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	solo/entrada_perna_guarda	true	true	-
+TECNICA	entrada_perna_dominante	Abandonar o controle e disputar a perna	→ PERNA	CONTROLE_LATERAL,COSTAS,JOELHO_BARRIGA,MONTADA	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=R1]	16	CONTROLE_REDUZIDO	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	escape_montada,escape_quadril,fugir_do_joelho,girar_nas_costas,recuperar_meia		-	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	solo/entrada_perna_dominante	true	true	-
+TECNICA	costas_perna_pe_reta	Largar as costas e atacar o pé (chave de pé reta)	→ PÉ RETA	COSTAS	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=L1_L2]	16	CONTROLE_REDUZIDO	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	escapar_neutro,girar_nas_costas		-	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	solo/costas_perna_pe_reta	true	true	-
+TECNICA	costas_perna_joelho	Largar as costas e atacar o joelho (chave de joelho)	→ JOELHO	COSTAS	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=L1_L2]	16	CONTROLE_REDUZIDO	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	escapar_neutro,girar_nas_costas		-	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	solo/costas_perna_joelho	true	true	-
+TECNICA	costas_perna_toe_hold	Largar as costas e atacar o pé (toe hold)	→ TOE HOLD	COSTAS	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=L1_L2]	16	CONTROLE_REDUZIDO	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	escapar_neutro,girar_nas_costas		-	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	solo/costas_perna_toe_hold	true	true	-
+TECNICA	costas_perna_panturrilha	Largar as costas e atacar a panturrilha	→ PANTURR.	COSTAS	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=L1_L2]	16	CONTROLE_REDUZIDO	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	escapar_neutro,girar_nas_costas		-	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	solo/costas_perna_panturrilha	true	true	-
+TECNICA	entrada_perna_aberta	Controlar a perna (ashi garami)	ASHI	GUARDA_ABERTA,SINGLE_LEG_X	POR_BAIXO	ComandoSolo[direcao=CIMA, familia=L1_L2]	10	BASE	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	controlar_pernas,postura_slx		-	-	solo/entrada_perna_aberta	true	true	-
+TECNICA	entrada_perna_aberta_dlr	Da De La Riva para a perna	ASHI	DE_LA_RIVA	POR_BAIXO	ComandoSolo[direcao=BAIXO, familia=L1_L2]	10	BASE	SEM_POSTURA_DO_OUTRO	NENHUM	Desfecho[destino=ASHI_GARAMI, porCima=OUTRO, controlador=INICIADOR]	postura_dlr		-	-	solo/entrada_perna_aberta_dlr	true	true	-
+TECNICA	single_leg	Single leg (uma perna)	SINGLE LEG	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=CIMA, familia=L2]	14	PERNAS	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]			EM_PE	-	solo/single_leg	true	true	explosiva:Perfil[id=single_leg, alcancePx=170, contatoPx=62, alvo=MEIA_GUARDA, acompanha=true, defesa=SPRAWL, pegada=false]
+TECNICA	high_crotch	High crotch (por fora, no quadril)	HIGH CROTCH	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=DIREITA, familia=L2]	14	PERNAS	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			EM_PE	-	solo/high_crotch	true	true	explosiva:Perfil[id=high_crotch, alcancePx=170, contatoPx=60, alvo=CONTROLE_LATERAL, acompanha=true, defesa=SPRAWL, pegada=false]
+TECNICA	ankle_pick	Ankle pick (puxa a cabeça, pega o tornozelo)	TORNOZELO	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=ESQUERDA, familia=L2]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]			EM_PE	-	solo/ankle_pick	true	true	explosiva:Perfil[id=ankle_pick, alcancePx=130, contatoPx=70, alvo=EM_PE_CONTRA_SOLO, acompanha=false, defesa=BASE, pegada=false]
+TECNICA	carregada_ombro	Carregada no ombro	OMBRO	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=BAIXO, familia=L2]	18	PERNAS	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			EM_PE	-	solo/carregada_ombro	true	true	explosiva:Perfil[id=carregada_ombro, alcancePx=160, contatoPx=56, alvo=CONTROLE_LATERAL, acompanha=true, defesa=SPRAWL, pegada=false]
+TECNICA	body_lock	Agarrar a cintura (body lock)	CINTURA	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=DIREITA, familia=R1]	14	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			EM_PE	-	solo/body_lock	true	true	explosiva:Perfil[id=body_lock, alcancePx=150, contatoPx=54, alvo=CONTROLE_LATERAL, acompanha=true, defesa=BASE, pegada=false]
+TECNICA	single_leg_joelhos	Single leg de joelhos	SINGLE LEG	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=CIMA, familia=L2]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]			DE_JOELHOS	-	solo/single_leg_joelhos	true	true	explosiva:Perfil[id=single_leg_joelhos, alcancePx=120, contatoPx=56, alvo=MEIA_GUARDA, acompanha=true, defesa=BASE, pegada=false]
+TECNICA	double_leg_joelhos	Double leg de joelhos (tombar de lado)	DOUBLE LEG	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=DIREITA, familia=L2]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			DE_JOELHOS	-	solo/double_leg_joelhos	true	true	explosiva:Perfil[id=double_leg_joelhos, alcancePx=120, contatoPx=54, alvo=CONTROLE_LATERAL, acompanha=true, defesa=BASE, pegada=false]
+TECNICA	arm_drag	Arrastar o braço (arm drag)	ARM DRAG	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=ESQUERDA, familia=L2]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=COSTAS, porCima=INICIADOR, controlador=INICIADOR]			DE_JOELHOS	-	solo/arm_drag	true	true	explosiva:Perfil[id=arm_drag, alcancePx=110, contatoPx=58, alvo=COSTAS, acompanha=true, defesa=BASE, pegada=false]
+TECNICA	snap_down	Puxar a cabeça (snap down)	SNAP DOWN	EM_PE_SEPARADOS	QUALQUER	ComandoSolo[direcao=BAIXO, familia=L2]	10	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]			DE_JOELHOS	-	solo/snap_down	true	true	explosiva:Perfil[id=snap_down, alcancePx=110, contatoPx=58, alvo=CONTROLE_LATERAL, acompanha=true, defesa=BASE, pegada=false]
+TECNICA	uchi_mata	Uchi-mata (ceifa por dentro da coxa)	UCHI-MATA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=L1_L2]	20	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]		PEGADA_APLICADOR	EM_PE	-	solo/uchi_mata	true	true	explosiva:Perfil[id=uchi_mata, alcancePx=999, contatoPx=0, alvo=CONTROLE_LATERAL, acompanha=true, defesa=BASE, pegada=true]
+TECNICA	osoto_gari	Osoto-gari (grande ceifada por fora)	OSOTO	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=L1_L2]	16	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=CONTROLE_LATERAL, porCima=INICIADOR, controlador=INICIADOR]		PEGADA_APLICADOR	EM_PE	-	solo/osoto_gari	true	true	explosiva:Perfil[id=osoto_gari, alcancePx=999, contatoPx=0, alvo=CONTROLE_LATERAL, acompanha=true, defesa=BASE, pegada=true]
+TECNICA	puxar_aranha	Puxar para a guarda aranha	ARANHA	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=L1_L2]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ARANHA, porCima=OUTRO, controlador=INICIADOR]		PEGADA_APLICADOR,PEGADA_MANGAS	EM_PE	-	solo/puxar_aranha	true	true	-
+TECNICA	puxar_laco	Puxar para a guarda laço	LAÇO	EM_PE_PEGADA	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=L1_L2]	12	BASE	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_LACO, porCima=OUTRO, controlador=INICIADOR]		PEGADA_APLICADOR	EM_PE	-	solo/puxar_laco	true	true	-
+TECNICA	consolidar_ashi	Ajustar o controle da perna	AJUSTAR	ASHI_GARAMI	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	CONSOLIDAR	null			-	-	solo/consolidar_ashi	true	true	-
+TECNICA	ashi_para_slx	Subir para o single-leg X	SLX	ASHI_GARAMI	CONTROLADOR	ComandoSolo[direcao=DIREITA, familia=RS]	12	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=SINGLE_LEG_X, porCima=OUTRO, controlador=INICIADOR]	girar_livrar_perna		-	-	solo/ashi_para_slx	false	false	-
+TECNICA	ashi_para_guarda	Recompor a guarda aberta	G. ABERTA	ASHI_GARAMI	CONTROLADOR	ComandoSolo[direcao=CIMA, familia=RS]	10	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]			-	-	solo/ashi_para_guarda	false	false	-
+TECNICA	raspagem_ashi	Raspar levantando (do ashi)	RASPAR	ASHI_GARAMI	CONTROLADOR	ComandoSolo[direcao=ESQUERDA, familia=RS]	14	BASE	CONTROLE_PROPRIO	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]	esconder_pe		-	-	solo/raspagem_ashi	false	false	-
+TECNICA	soltar_perna	Soltar a perna	SOLTAR	ASHI_GARAMI	CONTROLADOR	ComandoSolo[direcao=BAIXO, familia=R1]	6	null	SE_NAO_CONTRADA	NENHUM	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]			-	-	solo/soltar_perna	false	false	-
+TECNICA	esconder_pe	Esconder o pé	ESCONDER	ASHI_GARAMI	CONTROLADO	ComandoSolo[direcao=BAIXO, familia=RS]	0	null	SE_NAO_CONTRADA	ENQUADRAR	null			-	-	solo/esconder_pe	true	false	-
+TECNICA	girar_livrar_perna	Girar e livrar a perna	GIRAR	ASHI_GARAMI	CONTROLADO	ComandoSolo[direcao=DIREITA, familia=RS],ComandoSolo[direcao=ESQUERDA, familia=RS]	14	null	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	consolidar_ashi		-	-	solo/girar_livrar_perna	false	false	-
+TECNICA	levantar_do_ashi	Levantar e puxar a perna	LEVANTAR	ASHI_GARAMI	CONTROLADO	ComandoSolo[direcao=CIMA, familia=R1]	12	BASE	ESTABILIDADE_BAIXA	NENHUM	Desfecho[destino=EM_PE_CONTRA_SOLO, porCima=INICIADOR, controlador=NENHUM]	consolidar_ashi		-	-	solo/levantar_do_ashi	false	false	-
+FINALIZACAO	armlock@guarda	Armlock	ARMLOCK	BRACO	BRANCA	GUARDA	CONTROLADOR	L1	CIMA	OUTRO_SEM_POSTURA	10	0.35	BRACO	armlock	finalizacao/armlock@guarda	true	true	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	kimura@guarda	Kimura	KIMURA	BRACO	BRANCA	GUARDA	CONTROLADOR	L1	DIREITA	OUTRO_SEM_POSTURA	10	0.35	OMBRO	kimura	finalizacao/kimura@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	omoplata@guarda	Omoplata	OMOPLATA	BRACO	AZUL	GUARDA	CONTROLADOR	L1	BAIXO	OUTRO_SEM_POSTURA	10	0.35	OMBRO	omoplata	finalizacao/omoplata@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	chave_punho@guarda	Chave de punho	PUNHO	BRACO	AZUL	GUARDA	CONTROLADOR	L1	ESQUERDA	CONTROLE	10	0.35	PUNHO	chave_punho	finalizacao/chave_punho@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	cruzado@guarda	Estrangulamento cruzado	CRUZADO	ESTRANGULAMENTO	BRANCA	GUARDA	CONTROLADOR	L2	CIMA	CONTROLE	10	0.4	PESCOCO	cruzado	finalizacao/cruzado@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	triangulo@guarda	Triângulo	TRIÂNGULO	ESTRANGULAMENTO	BRANCA	GUARDA	CONTROLADOR	L2	DIREITA	OUTRO_SEM_POSTURA	10	0.4	PESCOCO	triangulo	finalizacao/triangulo@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	guilhotina@guarda	Guilhotina	GUILHOT.	ESTRANGULAMENTO	BRANCA	GUARDA	CONTROLADOR	L2	BAIXO	OUTRO_EXPOSTO	10	0.4	PESCOCO	guilhotina	finalizacao/guilhotina@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	loop_choke@guarda	Estrangulamento em laço (loop choke)	LOOP	ESTRANGULAMENTO	ROXA	GUARDA	CONTROLADOR	L2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	loop_choke	finalizacao/loop_choke@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	gogoplata@guarda	Gogoplata (canela no pescoço)	GOGOPLATA	ESTRANGULAMENTO	MARROM	GUARDA	CONTROLADOR	L1_L2	CIMA	OUTRO_SEM_POSTURA	14	0.4	PESCOCO	gogoplata	finalizacao/gogoplata@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	baratoplata@guarda	Baratoplata (ombro pela perna)	BARATOPL.	BRACO	ROXA	GUARDA	CONTROLADOR	L1_L2	DIREITA	OUTRO_SEM_POSTURA	14	0.35	OMBRO	baratoplata	finalizacao/baratoplata@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	tarikoplata@guarda	Tarikoplata (ombro com a perna)	TARIKOPL.	BRACO	MARROM	GUARDA	CONTROLADOR	L1_L2	BAIXO	OUTRO_SEM_POSTURA	14	0.35	OMBRO	tarikoplata	finalizacao/tarikoplata@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	ezequiel_guarda@guarda	Ezequiel da guarda	EZEQUIEL	ESTRANGULAMENTO	AZUL	GUARDA	CONTROLADOR	L1_L2	ESQUERDA	CONTROLE	10	0.4	PESCOCO	ezequiel_guarda	finalizacao/ezequiel_guarda@guarda	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	americana@controle_lateral	Americana	AMERICANA	BRACO	BRANCA	CONTROLE_LATERAL	CONTROLADOR	L1	CIMA	CONTROLE	10	0.35	OMBRO	americana	finalizacao/americana@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	kimura@controle_lateral	Kimura	KIMURA	BRACO	BRANCA	CONTROLE_LATERAL	CONTROLADOR	L1	DIREITA	CONTROLE	10	0.35	OMBRO	kimura	finalizacao/kimura@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	armlock@controle_lateral	Armlock (girando)	ARMLOCK	BRACO	AZUL	CONTROLE_LATERAL	CONTROLADOR	L1	BAIXO	CONTROLE	10	0.35	BRACO	armlock	finalizacao/armlock@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]
+FINALIZACAO	braco_reto@controle_lateral	Chave de braço reto	BRAÇO RETO	BRACO	AZUL	CONTROLE_LATERAL	CONTROLADOR	L1	ESQUERDA	CONTROLE	10	0.35	BRACO	braco_reto	finalizacao/braco_reto@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	cortando_pao@controle_lateral	Estrangulamento cortando o pão	PÃO	ESTRANGULAMENTO	AZUL	CONTROLE_LATERAL	CONTROLADOR	L2	CIMA	CONTROLE	10	0.4	PESCOCO	cortando_pao	finalizacao/cortando_pao@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	katagatame@controle_lateral	Katagatame	KATA-GAT.	ESTRANGULAMENTO	AZUL	CONTROLE_LATERAL	CONTROLADOR	L2	DIREITA	CONTROLE	10	0.4	PESCOCO	katagatame	finalizacao/katagatame@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	ezequiel@controle_lateral	Ezequiel	EZEQUIEL	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	L2	BAIXO	CONTROLE	14	0.4	PESCOCO	ezequiel	finalizacao/ezequiel@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	baseball_bat@controle_lateral	Estrangulamento baseball bat	BASEBALL	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	L2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	baseball_bat	finalizacao/baseball_bat@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	norte_sul@controle_lateral	Estrangulamento norte-sul	NORTE-SUL	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	L1_L2	CIMA	CONTROLE	14	0.4	PESCOCO	norte_sul	finalizacao/norte_sul@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	darce@controle_lateral	D'arce	D'ARCE	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	L1_L2	DIREITA	CONTROLE	14	0.4	PESCOCO	darce	finalizacao/darce@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]
+FINALIZACAO	anaconda@controle_lateral	Anaconda	ANACONDA	ESTRANGULAMENTO	MARROM	CONTROLE_LATERAL	CONTROLADOR	L1_L2	BAIXO	CONTROLE	14	0.4	PESCOCO	anaconda	finalizacao/anaconda@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]
+FINALIZACAO	gravata_peruana@controle_lateral	Gravata peruana (peruvian necktie)	PERUANA	ESTRANGULAMENTO	MARROM	CONTROLE_LATERAL	CONTROLADOR	L1_L2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	gravata_peruana	finalizacao/gravata_peruana@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	cortador_papel@controle_lateral	Estrangulamento cortador de papel (paper cutter)	PAPEL	ESTRANGULAMENTO	AZUL	CONTROLE_LATERAL	CONTROLADOR	R2	CIMA	CONTROLE	10	0.4	PESCOCO	cortador_papel	finalizacao/cortador_papel@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	lapela@controle_lateral	Estrangulamento de lapela dos 100 kg	LAPELA	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	R2	DIREITA	CONTROLE	14	0.4	PESCOCO	lapela	finalizacao/lapela@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	von_flue@controle_lateral	Estrangulamento Von Flue (ombro no pescoço)	VON FLUE	ESTRANGULAMENTO	ROXA	CONTROLE_LATERAL	CONTROLADOR	R2	BAIXO	CONTROLE	14	0.4	PESCOCO	von_flue	finalizacao/von_flue@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	mir_lock@controle_lateral	Mir lock (chave de ombro com o punho preso)	MIR LOCK	BRACO	ROXA	CONTROLE_LATERAL	CONTROLADOR	R2	ESQUERDA	CONTROLE	14	0.35	OMBRO	mir_lock	finalizacao/mir_lock@controle_lateral	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA_ABERTA, porCima=INICIADOR, controlador=OUTRO]
+FINALIZACAO	armlock@montada	Armlock da montada	ARMLOCK	BRACO	BRANCA	MONTADA	CONTROLADOR	L1	CIMA	CONTROLE	10	0.35	BRACO	armlock	finalizacao/armlock@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	americana@montada	Americana	AMERICANA	BRACO	BRANCA	MONTADA	CONTROLADOR	L1	DIREITA	CONTROLE	10	0.35	OMBRO	americana	finalizacao/americana@montada	true	true	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	kimura@montada	Kimura da montada	KIMURA	BRACO	AZUL	MONTADA	CONTROLADOR	L1	BAIXO	CONTROLE	10	0.35	OMBRO	kimura	finalizacao/kimura@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	chave_punho@montada	Chave de punho	PUNHO	BRACO	AZUL	MONTADA	CONTROLADOR	L1	ESQUERDA	CONTROLE	10	0.35	PUNHO	chave_punho	finalizacao/chave_punho@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	cruzado@montada	Estrangulamento cruzado	CRUZADO	ESTRANGULAMENTO	BRANCA	MONTADA	CONTROLADOR	L2	CIMA	CONTROLE	10	0.4	PESCOCO	cruzado	finalizacao/cruzado@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	ezequiel@montada	Ezequiel	EZEQUIEL	ESTRANGULAMENTO	AZUL	MONTADA	CONTROLADOR	L2	DIREITA	CONTROLE	10	0.4	PESCOCO	ezequiel	finalizacao/ezequiel@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	katagatame@montada	Katagatame	KATA-GAT.	ESTRANGULAMENTO	AZUL	MONTADA	CONTROLADOR	L2	BAIXO	CONTROLE	10	0.4	PESCOCO	katagatame	finalizacao/katagatame@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	triangulo@montada	Triângulo da montada	TRIÂNGULO	ESTRANGULAMENTO	ROXA	MONTADA	CONTROLADOR	L2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	triangulo	finalizacao/triangulo@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	monoplata@montada	Monoplata	MONOPLATA	BRACO	MARROM	MONTADA	CONTROLADOR	L1_L2	CIMA	CONTROLE	14	0.35	OMBRO	monoplata	finalizacao/monoplata@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	armlock_s@montada	Armlock da montada em S (barriga para baixo)	ARMLOCK S	BRACO	AZUL	MONTADA	CONTROLADOR	L1_L2	DIREITA	CONTROLE	10	0.35	BRACO	armlock_s	finalizacao/armlock_s@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	gola_unica@montada	Estrangulamento de gola única	GOLA ÚNICA	ESTRANGULAMENTO	AZUL	MONTADA	CONTROLADOR	L1_L2	BAIXO	CONTROLE	10	0.4	PESCOCO	gola_unica	finalizacao/gola_unica@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	mao_de_vaca@montada	Mão de vaca (chave de punho)	MÃO DE VACA	BRACO	ROXA	MONTADA	CONTROLADOR	L1_L2	ESQUERDA	CONTROLE	14	0.35	PUNHO	mao_de_vaca	finalizacao/mao_de_vaca@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	lapela@montada	Estrangulamento de lapela da montada	LAPELA	ESTRANGULAMENTO	AZUL	MONTADA	CONTROLADOR	R2	CIMA	CONTROLE	10	0.4	PESCOCO	lapela	finalizacao/lapela@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	biceps@montada	Chave de bíceps (esmagamento)	BÍCEPS	BRACO	MARROM	MONTADA	CONTROLADOR	R2	DIREITA	CONTROLE	14	0.35	BRACO	biceps	finalizacao/biceps@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	antebraco@montada	Estrangulamento com o antebraço	ANTEBRAÇO	ESTRANGULAMENTO	AZUL	MONTADA	CONTROLADOR	R2	BAIXO	CONTROLE	10	0.4	PESCOCO	antebraco	finalizacao/antebraco@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	null
+FINALIZACAO	guilhotina@montada	Guilhotina da montada (cotovelo alto)	GUILHOT.	ESTRANGULAMENTO	ROXA	MONTADA	CONTROLADOR	R2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	guilhotina	finalizacao/guilhotina@montada	false	false	Desfecho[destino=MEIA_GUARDA, porCima=INICIADOR, controlador=OUTRO]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	armlock@costas	Armlock das costas	ARMLOCK	BRACO	AZUL	COSTAS	CONTROLADOR	L1	CIMA	CONTROLE	10	0.35	BRACO	armlock	finalizacao/armlock@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	kimura@costas	Kimura das costas	KIMURA	BRACO	ROXA	COSTAS	CONTROLADOR	L1	DIREITA	CONTROLE	14	0.35	OMBRO	kimura	finalizacao/kimura@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	braco_reto@costas	Chave de braço reto	BRAÇO RETO	BRACO	AZUL	COSTAS	CONTROLADOR	L1	BAIXO	CONTROLE	10	0.35	BRACO	braco_reto	finalizacao/braco_reto@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	hammerlock@costas	Hammerlock	HAMMER	BRACO	ROXA	COSTAS	CONTROLADOR	L1	ESQUERDA	CONTROLE	14	0.35	OMBRO	hammerlock	finalizacao/hammerlock@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	mata_leao@costas	Mata-leão	MATA-LEÃO	ESTRANGULAMENTO	BRANCA	COSTAS	CONTROLADOR	L2	CIMA	CONTROLE	10	0.4	PESCOCO	mata_leao	finalizacao/mata_leao@costas	true	true	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	arco_flecha@costas	Arco e flecha	ARCO	ESTRANGULAMENTO	AZUL	COSTAS	CONTROLADOR	L2	DIREITA	CONTROLE	10	0.4	PESCOCO	arco_flecha	finalizacao/arco_flecha@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	gola_tras@costas	Estrangulamento de gola por trás	GOLA	ESTRANGULAMENTO	AZUL	COSTAS	CONTROLADOR	L2	BAIXO	CONTROLE	10	0.4	PESCOCO	gola_tras	finalizacao/gola_tras@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	cruzado_tras@costas	Estrangulamento cruzado pelas costas	CRUZADO	ESTRANGULAMENTO	ROXA	COSTAS	CONTROLADOR	L2	ESQUERDA	CONTROLE	14	0.4	PESCOCO	cruzado_tras	finalizacao/cruzado_tras@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	short_choke@costas	Short choke (estrangulamento curto)	SHORT	ESTRANGULAMENTO	AZUL	COSTAS	CONTROLADOR	R2	CIMA	CONTROLE	10	0.4	PESCOCO	short_choke	finalizacao/short_choke@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	ezequiel@costas	Ezequiel pelas costas	EZEQUIEL	ESTRANGULAMENTO	ROXA	COSTAS	CONTROLADOR	R2	DIREITA	CONTROLE	14	0.4	PESCOCO	ezequiel	finalizacao/ezequiel@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	triangulo@costas	Triângulo pelas costas	TRIÂNGULO	ESTRANGULAMENTO	MARROM	COSTAS	CONTROLADOR	R2	BAIXO	CONTROLE	14	0.4	PESCOCO	triangulo	finalizacao/triangulo@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]
+FINALIZACAO	lapela@costas	Estrangulamento de lapela por trás	LAPELA	ESTRANGULAMENTO	AZUL	COSTAS	CONTROLADOR	R2	ESQUERDA	CONTROLE	10	0.4	PESCOCO	lapela	finalizacao/lapela@costas	false	false	Desfecho[destino=GUARDA, porCima=OUTRO, controlador=INICIADOR]	null
+FINALIZACAO	chave_pe_reta@ashi_garami	Chave de pé reta	PÉ RETA	PERNA	ROXA	ASHI_GARAMI	CONTROLADOR	L1_L2	CIMA	CONTROLE	14	0.35	TORNOZELO	chave_pe_reta	finalizacao/chave_pe_reta@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	chave_joelho@ashi_garami	Chave de joelho	JOELHO	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1_L2	DIREITA	CONTROLE	14	0.35	JOELHO	chave_joelho	finalizacao/chave_joelho@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	toe_hold@ashi_garami	Toe hold (mata-leão no pé)	TOE HOLD	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1_L2	BAIXO	CONTROLE	14	0.35	PE	toe_hold	finalizacao/toe_hold@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	panturrilha@ashi_garami	Compressão de panturrilha	PANTURR.	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1_L2	ESQUERDA	CONTROLE	14	0.35	PANTURRILHA	panturrilha	finalizacao/panturrilha@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	aoki_lock@ashi_garami	Aoki lock (chave de tornozelo girando)	AOKI	PERNA	ROXA	ASHI_GARAMI	CONTROLADOR	L2	CIMA	CONTROLE	14	0.35	TORNOZELO	aoki_lock	finalizacao/aoki_lock@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	estima_lock@ashi_garami	Estima lock (chave de pé)	ESTIMA	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L2	DIREITA	CONTROLE	14	0.35	PE	estima_lock	finalizacao/estima_lock@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	pe_reta_5050@ashi_garami	Chave de pé reta da 50/50 (variação)	PÉ 50/50	PERNA	ROXA	ASHI_GARAMI	CONTROLADOR	L2	BAIXO	CONTROLE	14	0.35	TORNOZELO	pe_reta_5050	finalizacao/pe_reta_5050@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]
+FINALIZACAO	joelho_invertido@ashi_garami	Chave de joelho invertida	JOELHO INV.	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1	CIMA	CONTROLE	14	0.35	JOELHO	joelho_invertido	finalizacao/joelho_invertido@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	banana_split@ashi_garami	Banana split (abrir as pernas)	BANANA	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1	DIREITA	CONTROLE	14	0.35	QUADRIL	banana_split	finalizacao/banana_split@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	null
+FINALIZACAO	kneebar_giro@ashi_garami	Chave de joelho com giro (variação)	JOELHO GIRO	PERNA	MARROM	ASHI_GARAMI	CONTROLADOR	L1	BAIXO	CONTROLE	14	0.35	JOELHO	kneebar_giro	finalizacao/kneebar_giro@ashi_garami	false	false	Desfecho[destino=SOLO_DISPUTADO, porCima=NENHUM, controlador=NENHUM]	Desfecho[destino=CONTROLE_LATERAL, porCima=OUTRO, controlador=OUTRO]
+FINALIZACAO	armlock@guarda_aranha	Armlock da aranha	ARMLOCK	BRACO	AZUL	GUARDA_ARANHA	POR_BAIXO	L1	DIREITA	MANGA	10	0.35	BRACO	armlock	finalizacao/armlock@guarda_aranha	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]
+FINALIZACAO	omoplata@guarda_aranha	Omoplata da aranha	OMOPLATA	BRACO	AZUL	GUARDA_ARANHA	POR_BAIXO	L1	ESQUERDA	MANGA	10	0.35	OMBRO	omoplata	finalizacao/omoplata@guarda_aranha	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]
+FINALIZACAO	triangulo@guarda_aranha	Triângulo da aranha	TRIÂNGULO	ESTRANGULAMENTO	AZUL	GUARDA_ARANHA	POR_BAIXO	L2	DIREITA	MANGA	10	0.4	PESCOCO	triangulo	finalizacao/triangulo@guarda_aranha	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]
+FINALIZACAO	omoplata@guarda_laco	Omoplata do laço	OMOPLATA	BRACO	AZUL	GUARDA_LACO	POR_BAIXO	L1	ESQUERDA	MANGA	10	0.35	OMBRO	omoplata	finalizacao/omoplata@guarda_laco	false	false	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]	Desfecho[destino=GUARDA_ABERTA, porCima=MANTEM, controlador=MANTEM]
+TRANSICAO	estabelecer_pegada	Estabelecer pegada	EM_PE_SEPARADOS	QUALQUER	PREPARADA	30	EM_PE_PEGADA,EM_PE_SEPARADOS	pegada_1
+TRANSICAO	queda	Queda	EM_PE_PEGADA	CONTROLADOR	PREPARADA	45	EM_PE_PEGADA,EM_PE_SEPARADOS,GUARDA	-
+TRANSICAO	puxar_guarda	Puxar para a guarda	EM_PE_PEGADA	QUALQUER	RAPIDA	20	EM_PE_PEGADA,GUARDA	-
+TRANSICAO	passagem_guarda	Passagem de guarda	GUARDA	POR_CIMA	DISPUTA	60	CONTROLE_LATERAL,GUARDA,MONTADA	-
+TRANSICAO	raspagem	Raspagem	GUARDA	POR_BAIXO	PREPARADA	45	GUARDA,MONTADA	-
+TRANSICAO	reposicao_guarda	Reposição de guarda	CONTROLE_LATERAL	POR_BAIXO	DISPUTA	40	CONTROLE_LATERAL,GUARDA	-
+QUADROS	afastar_da_guarda:ATACA	cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	afastar_da_guarda:RECEBE	braço dir., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	afastar_do_chao:ATACA	cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	ajustar_ganchos:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	ajustar_ganchos:RECEBE	joelho dir., tronco
+QUADROS	americana@montada:ATACA	braço dir., braço esq., cabeça, cintura, mão dir., mão esq., tronco
+QUADROS	americana@montada:RECEBE	braço dir., cabeça, mão dir.
+QUADROS	angulo_guarda:ATACA	cintura, joelho dir., joelho esq., rotação global
+QUADROS	angulo_guarda:RECEBE	tronco
+QUADROS	ankle_pick:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	ankle_pick:RECEBE	cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	arm_drag:ATACA	braço dir., braço esq., cintura, deslocamento, mão dir., mão esq., tronco
+QUADROS	arm_drag:RECEBE	braço dir., cabeça, cintura, deslocamento, mão dir., mão esq., tronco
+QUADROS	armlock@guarda:ATACA	cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global
+QUADROS	armlock@guarda:RECEBE	braço dir., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	berimbolo:ATACA	cintura, deslocamento, joelho dir., joelho esq., pé dir., pé esq., rotação global, tronco
+QUADROS	berimbolo:RECEBE	cabeça, deslocamento, joelho esq., mão dir., mão esq., pé dir., tronco
+QUADROS	berimbolo_invertido:ATACA	cintura, deslocamento, joelho dir., mão dir., mão esq., pé dir., rotação global, tronco
+QUADROS	berimbolo_invertido:RECEBE	cabeça, deslocamento, joelho dir., pé dir., rotação global, tronco
+QUADROS	berimbolo_kiss:ATACA	cintura, deslocamento, joelho dir., joelho esq., pé dir., pé esq., rotação global, tronco
+QUADROS	berimbolo_kiss:RECEBE	cabeça, deslocamento, joelho dir., joelho esq., pé dir., tronco
+QUADROS	body_lock:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., tronco
+QUADROS	body_lock:RECEBE	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	carregada_ombro:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	carregada_ombro:RECEBE	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	consolidar:ATACA	deslocamento, joelho esq., mão dir., mão esq., tronco
+QUADROS	consolidar:RECEBE	cabeça, cintura, tronco
+QUADROS	consolidar_ashi:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq.
+QUADROS	consolidar_ashi:RECEBE	braço dir., cabeça, joelho dir., mão dir., pé dir., tronco
+QUADROS	controlar_pernas:ATACA	braço dir., braço esq., mão dir., mão esq., tronco
+QUADROS	controlar_pernas:RECEBE	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	costas_perna_joelho:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	costas_perna_joelho:RECEBE	braço dir., joelho dir., mão dir., pé dir.
+QUADROS	costas_perna_panturrilha:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	costas_perna_panturrilha:RECEBE	braço dir., joelho dir., mão dir., pé dir.
+QUADROS	costas_perna_pe_reta:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	costas_perna_pe_reta:RECEBE	braço dir., joelho dir., mão dir., pé dir.
+QUADROS	costas_perna_toe_hold:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	costas_perna_toe_hold:RECEBE	braço dir., joelho dir., mão dir., pé dir.
+QUADROS	defender_maos:ATACA	braço dir., braço esq., cabeça, mão dir., mão esq., tronco
+QUADROS	defender_maos:RECEBE	mão dir., mão esq., tronco
+QUADROS	derrubada_forcada:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	derrubada_forcada_defendida:RECEBE	cabeça, cintura, deslocamento, joelho esq., mão dir., mão esq., pé esq., tronco
+QUADROS	deseq_aranha:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	deseq_aranha:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	deseq_borboleta:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	deseq_borboleta:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	deseq_dlr:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	deseq_dlr:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	desequilibrar_guarda:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	desequilibrar_guarda:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	desequilibrar_pes:ATACA	joelho dir., joelho esq., pé dir., pé esq.
+QUADROS	desequilibrar_pes:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	double_leg_joelhos:ATACA	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	double_leg_joelhos:RECEBE	braço dir., braço esq., cabeça, cintura, deslocamento, mão dir., mão esq., tronco
+QUADROS	empurrao:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	empurrao:RECEBE	braço dir., braço esq., cabeça, cintura, joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	enquadrar:ATACA	braço dir., braço esq., cabeça, cintura, mão dir., mão esq., tronco
+QUADROS	enquadrar:RECEBE	cabeça, deslocamento, tronco
+QUADROS	enquadrar_joelho:ATACA	braço dir., braço esq., cabeça, cintura, mão dir., mão esq., tronco
+QUADROS	enquadrar_joelho:RECEBE	cabeça, deslocamento, tronco
+QUADROS	enquadrar_montada:ATACA	braço dir., braço esq., cintura, mão dir., mão esq., tronco
+QUADROS	enquadrar_montada:RECEBE	cabeça, deslocamento, tronco
+QUADROS	entrada_perna_aberta:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global
+QUADROS	entrada_perna_aberta:RECEBE	braço dir., cabeça, joelho dir., mão dir., pé dir., tronco
+QUADROS	entrada_perna_aberta_dlr:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global
+QUADROS	entrada_perna_aberta_dlr:RECEBE	braço dir., cabeça, joelho dir., mão dir., pé dir., tronco
+QUADROS	entrada_perna_dominante:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	entrada_perna_dominante:RECEBE	braço dir., joelho dir., mão dir., pé dir.
+QUADROS	entrada_perna_guarda:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., rotação global
+QUADROS	entrada_perna_guarda:RECEBE	braço dir., cabeça, joelho dir., mão dir., pé dir., tronco
+QUADROS	entrada_pernas:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	entrada_pernas:RECEBE	braço dir., braço esq., cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	escapar_neutro:ATACA	braço dir., braço esq., cabeça, cintura, joelho dir., mão dir., mão esq., rotação global, tronco
+QUADROS	escapar_neutro:RECEBE	mão esq., tronco
+QUADROS	escape_montada:ATACA	braço dir., cintura, joelho dir., joelho esq., mão dir., pé dir.
+QUADROS	escape_montada:RECEBE	deslocamento, tronco
+QUADROS	escape_quadril:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	escape_quadril:RECEBE	deslocamento, tronco
+QUADROS	esconder_pe:ATACA	cintura, joelho dir., mão dir., pé dir.
+QUADROS	estabilizar_montada:ATACA	braço dir., braço esq., deslocamento, joelho dir., joelho esq., mão dir., mão esq.
+QUADROS	fugir_do_joelho:ATACA	braço dir., braço esq., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	fugir_do_joelho:RECEBE	deslocamento, tronco
+QUADROS	girar_nas_costas:ATACA	braço dir., braço esq., cabeça, cintura, joelho dir., mão dir., mão esq., rotação global, tronco
+QUADROS	girar_nas_costas:RECEBE	mão esq., tronco
+QUADROS	high_crotch:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	high_crotch:RECEBE	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	joelho_direto:ATACA	braço dir., braço esq., deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	joelho_direto:RECEBE	braço dir., braço esq., cintura, joelho dir., mão dir., mão esq., tronco
+QUADROS	levantar_tecnico:ATACA	braço esq., joelho dir., mão dir., mão esq., pé dir., rotação global
+QUADROS	mata_leao@costas:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, mão dir., mão esq., tronco
+QUADROS	mata_leao@costas:RECEBE	cabeça, mão dir., mão esq., tronco
+QUADROS	montada_alta:ATACA	cintura, deslocamento, joelho dir., joelho esq., tronco
+QUADROS	montada_alta:RECEBE	cabeça, tronco
+QUADROS	osoto_gari:ATACA	cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., tronco
+QUADROS	osoto_gari:RECEBE	cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	pegar_manga:ATACA	braço dir., mão dir.
+QUADROS	pegar_manga:RECEBE	braço dir., mão dir.
+QUADROS	pernas_presas:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., mão dir., mão esq., tronco
+QUADROS	pernas_presas:RECEBE	braço dir., joelho dir., joelho esq., mão dir., pé dir., pé esq.
+QUADROS	postura:ATACA	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	postura:RECEBE	braço dir., braço esq., joelho dir., mão dir., mão esq.
+QUADROS	postura_aranha:ATACA	cintura, deslocamento, joelho esq., pé esq., tronco
+QUADROS	postura_borboleta:ATACA	cintura, deslocamento, joelho esq., pé esq., tronco
+QUADROS	postura_dlr:ATACA	cintura, deslocamento, joelho esq., pé esq., tronco
+QUADROS	postura_firme:ATACA	braço dir., braço esq., joelho dir., joelho esq., mão dir., mão esq.
+QUADROS	postura_firme:RECEBE	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	postura_laco:ATACA	cintura, deslocamento, joelho esq., pé esq., tronco
+QUADROS	postura_meia:ATACA	braço dir., cabeça, deslocamento, mão dir., tronco
+QUADROS	postura_meia:RECEBE	cabeça
+QUADROS	postura_quebrada:RECEBE	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	postura_recompor:ATACA	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	postura_slx:ATACA	cintura, deslocamento, joelho esq., pé esq., tronco
+QUADROS	prender_pernas:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., tronco
+QUADROS	prender_pernas:RECEBE	braço dir., joelho dir., joelho esq., mão dir., pé dir., pé esq.
+QUADROS	pressao_joelho:ATACA	deslocamento, joelho dir., mão dir., tronco
+QUADROS	pressao_joelho:RECEBE	cintura, tronco
+QUADROS	puxar_aranha:ATACA	cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	puxar_aranha:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	puxar_guarda:ATACA	deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., tronco
+QUADROS	puxar_guarda:RECEBE	cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	puxar_laco:ATACA	cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	puxar_laco:RECEBE	braço dir., cabeça, deslocamento, mão dir., tronco
+QUADROS	quebrar_postura:ATACA	braço dir., braço esq., joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq.
+QUADROS	rasteira:ATACA	braço dir., braço esq., deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	rasteira:RECEBE	braço dir., braço esq., cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	rasteira_defendida:RECEBE	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	recuar:ATACA	joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	recuperar_meia:ATACA	braço dir., cintura, joelho dir., mão dir., pé dir.
+QUADROS	retencao:ATACA	braço dir., cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq.
+QUADROS	retencao:RECEBE	cabeça, deslocamento, tronco
+QUADROS	retencao_pes:ATACA	cintura, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	retencao_pes:RECEBE	braço dir., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	reter_aranha:ATACA	joelho dir., joelho esq.
+QUADROS	reter_borboleta:ATACA	joelho dir., joelho esq.
+QUADROS	reter_dlr:ATACA	joelho dir., joelho esq.
+QUADROS	reter_slx:ATACA	joelho dir., joelho esq.
+QUADROS	segurando_pernas:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., tronco
+QUADROS	segurando_pernas:RECEBE	joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq.
+QUADROS	segurar_pernas:ATACA	braço dir., braço esq., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., tronco
+QUADROS	segurar_pernas:RECEBE	joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq.
+QUADROS	single_leg:ATACA	braço dir., braço esq., cabeça, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	single_leg:RECEBE	braço dir., braço esq., cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	single_leg_joelhos:ATACA	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	single_leg_joelhos:RECEBE	braço dir., braço esq., cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	snap_down:ATACA	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	snap_down:RECEBE	braço dir., braço esq., cabeça, deslocamento, mão dir., mão esq., tronco
+QUADROS	tirar_ganchos:ATACA	braço dir., braço esq., mão dir., mão esq., tronco
+QUADROS	tirar_ganchos:RECEBE	joelho dir., joelho esq.
+QUADROS	tiro_guarda:ATACA	deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	tiro_guarda:RECEBE	cabeça, deslocamento, joelho esq., mão dir., mão esq., pé esq., tronco
+QUADROS	travar_laco:ATACA	braço dir., joelho dir., mão dir.
+QUADROS	triangulo_corpo:ATACA	joelho dir., joelho esq., pé dir., pé esq., tronco
+QUADROS	triangulo_corpo:RECEBE	cabeça, tronco
+QUADROS	uchi_mata:ATACA	braço dir., cabeça, cintura, deslocamento, joelho dir., joelho esq., mão dir., mão esq., pé dir., pé esq., tronco
+QUADROS	uchi_mata:RECEBE	cabeça, deslocamento, joelho dir., mão dir., mão esq., pé dir., tronco
+QUADROS	underhook_meia:ATACA	braço dir., braço esq., cintura, joelho dir., mão dir., mão esq.
+QUADROS	virar_joelhos:ATACA	braço dir., braço esq., cabeça, cintura, joelho dir., joelho esq., mão dir., mão esq., rotação global, tronco
+QUADROS	virar_joelhos:RECEBE	mão dir., tronco
+POSTURA	AJOELHAR	getContrato=TRANSICAO_AJOELHAR; getCusto=0.5; getDestino=AJOELHADO; getDuracaoTicks=12; getOrigem=EM_PE; isRapida=false
+POSTURA	DEITAR	getContrato=TRANSICAO_DEITAR; getCusto=0.5; getDestino=DEITADO; getDuracaoTicks=14; getOrigem=AJOELHADO; isRapida=false
+POSTURA	ERGUER_JOELHOS	getContrato=TRANSICAO_ERGUER_JOELHOS; getCusto=0.8; getDestino=AJOELHADO; getDuracaoTicks=14; getOrigem=DEITADO; isRapida=false
+POSTURA	LEVANTAR	getContrato=TRANSICAO_LEVANTAR; getCusto=1.2; getDestino=EM_PE; getDuracaoTicks=12; getOrigem=AJOELHADO; isRapida=false
+POSTURA	RAPIDA_DEITAR	getContrato=TRANSICAO_RAPIDA_DEITAR; getCusto=2.5; getDestino=DEITADO; getDuracaoTicks=10; getOrigem=EM_PE; isRapida=true
+POSTURA	RAPIDA_LEVANTAR_DO_CHAO	getContrato=TRANSICAO_RAPIDA_LEVANTAR_DO_CHAO; getCusto=4.0; getDestino=EM_PE; getDuracaoTicks=16; getOrigem=DEITADO; isRapida=true
+POSTURA	RAPIDA_LEVANTAR	getContrato=TRANSICAO_RAPIDA_LEVANTAR; getCusto=2.0; getDestino=EM_PE; getDuracaoTicks=8; getOrigem=AJOELHADO; isRapida=true
+POSTURA	LEVANTADA_TECNICA	getContrato=TRANSICAO_LEVANTADA_TECNICA; getCusto=4.0; getDestino=EM_PE; getDuracaoTicks=30; getOrigem=DEITADO; isRapida=false
+ACROBACIA	ESTRELA_ESQUERDA	getCusto=5.0; getDeslocamentoFrentePx=0; getDuracaoTicks=26; getRotulo=ESTRELA (ESQUERDA); isEstrela=true
+ACROBACIA	ESTRELA_DIREITA	getCusto=5.0; getDeslocamentoFrentePx=0; getDuracaoTicks=26; getRotulo=ESTRELA (DIREITA); isEstrela=true
+ACROBACIA	MORTAL_FRENTE	getCusto=7.0; getDeslocamentoFrentePx=60; getDuracaoTicks=28; getRotulo=MORTAL PARA A FRENTE; isEstrela=false
+ACROBACIA	MORTAL_TRAS	getCusto=7.0; getDeslocamentoFrentePx=-55; getDuracaoTicks=30; getRotulo=MORTAL PARA TRÁS; isEstrela=false
+POSICAO	EM_PE_SEPARADOS	Em pé, separados	false	false	true
+POSICAO	EM_PE_PEGADA	Em pé, disputa de pegada	false	false	true
+POSICAO	GUARDA	Guarda	true	true	false
+POSICAO	MEIA_GUARDA	Meia-guarda	true	true	false
+POSICAO	CONTROLE_LATERAL	Controle lateral (cem quilos)	true	false	false
+POSICAO	MONTADA	Montada	true	false	false
+POSICAO	COSTAS	Controle das costas	true	false	false
+POSICAO	GUARDA_ABERTA	Guarda aberta	true	true	false
+POSICAO	JOELHO_BARRIGA	Joelho na barriga	true	false	false
+POSICAO	EM_PE_CONTRA_SOLO	Um em pé, outro no chão	true	false	false
+POSICAO	SOLO_DISPUTADO	Solo disputado	true	false	false
+POSICAO	GUARDA_BORBOLETA	Guarda borboleta	true	true	false
+POSICAO	DE_LA_RIVA	Guarda De La Riva	true	true	false
+POSICAO	GUARDA_LACO	Guarda laço	true	true	false
+POSICAO	GUARDA_ARANHA	Guarda aranha	true	true	false
+POSICAO	SINGLE_LEG_X	Single-leg X	true	true	false
+POSICAO	ASHI_GARAMI	Ashi garami (controle de perna)	true	false	false
+INTERACAO	LIVRE
+INTERACAO	PEGADA_1
+INTERACAO	PEGADA_2
+INTERACAO	PEGADA_3
+INTERACAO	PEGADA_4
